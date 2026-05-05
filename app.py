@@ -1211,8 +1211,7 @@ def hien_thi_tab_phan_tich():
         st.info("ℹ️ Chưa có kết quả. Vui lòng upload video ở tab TRANG CHỦ.")
         return
     
-    bt_key = st.session_state.exercise
-    bt = BAI_TAP[bt_key]
+    bt = st.session_state.exercise
     tk = st.session_state.stats
     df = st.session_state.angle_df
     
