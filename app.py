@@ -78,7 +78,7 @@ MAX_FILE_SIZE_MB = 500
 SKIP_FRAMES = 1
 RESIZE_WIDTH = 540 # Giảm thêm một chút để ổn định RAM
 OUTPUT_QUALITY = 50 # Giảm chất lượng ảnh lưu đĩa để tiết kiệm RAM khi đọc
-MAX_FRAMES = 5000
+MAX_FRAMES = 2000 # Giới hạn 2000 để đảm bảo 100% không OOM trên RAM 1GB
 THUMBNAIL_QUALITY = 90
 THUMBNAIL_WIDTH = 400
 
@@ -517,9 +517,15 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
         for p in danh_sach_frame_paths:
             if os.path.exists(p):
                 zipf.write(p, os.path.basename(p))
+
+    # LƯU DỮ LIỆU KHUNG HÌNH RA FILE JSON ĐỂ TIẾT KIỆM RAM
+    json_path = os.path.join(tempfile.gettempdir(), f'frames_data_{timestamp}.json')
+    import json
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(danh_sach_frame_data, f, ensure_ascii=False)
     
     gc.collect()
-    return out_path, None, None, du_lieu_goc, frame_count, len(du_lieu_goc), thu_muc_frame, zip_path, danh_sach_frame_paths, {}, danh_sach_frame_data, all_warnings
+    return out_path, None, None, du_lieu_goc, frame_count, len(du_lieu_goc), thu_muc_frame, zip_path, danh_sach_frame_paths, {}, json_path, all_warnings
 
 
 # ============================================
@@ -1799,19 +1805,24 @@ def hien_thi_lich_nhac_nho():
 def hien_thi_frames_day_du():
     """Hiển thị tất cả frames với phân trang - TỐI ƯU TỐC ĐỘ"""
     
-    if not st.session_state.all_frames_data:
-        st.info("📭 Không có frame nào để hiển thị.")
+    if not st.session_state.get('all_frames_data_path') or not os.path.exists(st.session_state.all_frames_data_path):
+        st.info("📭 Không có dữ liệu khung hình để hiển thị.")
         return
     
-    total_frames = len(st.session_state.all_frames_data)
+    # Đọc dữ liệu từ file JSON thay vì RAM
+    import json
+    with open(st.session_state.all_frames_data_path, 'r', encoding='utf-8') as f:
+        all_frames_data = json.load(f)
+    
+    total_frames = len(all_frames_data)
     
     # Chuẩn bị dữ liệu
-    frame_paths = [f['path'] for f in st.session_state.all_frames_data]
-    dung_flags = [f.get('dung', False) for f in st.session_state.all_frames_data]
-    timestamps = [f.get('timestamp', '00:00') for f in st.session_state.all_frames_data]
-    goc_vai_list = [f.get('goc_vai') for f in st.session_state.all_frames_data]
-    goc_khuyu_list = [f.get('goc_khuyu') for f in st.session_state.all_frames_data]
-    frame_indices = [f.get('index', i) for i, f in enumerate(st.session_state.all_frames_data)]
+    frame_paths = [f['path'] for f in all_frames_data]
+    dung_flags = [f.get('dung', False) for f in all_frames_data]
+    timestamps = [f.get('timestamp', '00:00') for f in all_frames_data]
+    goc_vai_list = [f.get('goc_vai') for f in all_frames_data]
+    goc_khuyu_list = [f.get('goc_khuyu') for f in all_frames_data]
+    frame_indices = [f.get('index', i) for i, f in enumerate(all_frames_data)]
     
     st.markdown(f"### 📸 TẤT CẢ FRAMES ĐÃ XỬ LÝ (Tổng: {total_frames} frames)")
     
@@ -1845,9 +1856,9 @@ def hien_thi_frames_day_du():
     if loc_frame == "Tất cả":
         filtered_indices = list(range(total_frames))
     elif loc_frame == "PASS (Đúng)":
-        filtered_indices = [i for i, f in enumerate(st.session_state.all_frames_data) if f.get('dung')]
+        filtered_indices = [i for i, f in enumerate(all_frames_data) if f.get('dung')]
     else:
-        filtered_indices = [i for i, f in enumerate(st.session_state.all_frames_data) if not f.get('dung')]
+        filtered_indices = [i for i, f in enumerate(all_frames_data) if not f.get('dung')]
     
     total_filtered = len(filtered_indices)
     total_pages = max(1, (total_filtered + frames_per_page - 1) // frames_per_page)
@@ -1917,7 +1928,7 @@ def hien_thi_frames_day_du():
             idx = i + j
             if idx < len(thumbnails) and thumbnails[idx] is not None:
                 original_idx = page_indices[idx]
-                frame_data = st.session_state.all_frames_data[original_idx]
+                frame_data = all_frames_data[original_idx]
                 border_color = "#00FF00" if frame_data.get('dung') else "#FF4444"
                 
                 cols[j].markdown(f"""
@@ -1936,7 +1947,7 @@ def hien_thi_frames_day_du():
     with col_stat1:
         st.metric("📊 Tổng số frames", total_frames)
     with col_stat2:
-        pass_count = sum(1 for f in st.session_state.all_frames_data if f.get('dung'))
+        pass_count = sum(1 for f in all_frames_data if f.get('dung'))
         st.metric("✅ Số frame PASS", pass_count)
     with col_stat3:
         fail_count = total_frames - pass_count
@@ -2118,7 +2129,7 @@ def main():
                             st.session_state.exercise = bai_tap
                             st.session_state.all_frames_paths = frame_paths
                             st.session_state.temp_video_file = output_path
-                            st.session_state.all_frames_data = all_frames_data
+                            st.session_state.all_frames_data_path = all_frames_data
                             
                             try:
                                 os.unlink(video_path)
