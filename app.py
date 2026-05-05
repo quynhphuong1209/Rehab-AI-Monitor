@@ -483,9 +483,21 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
         
         if warnings_list: all_warnings.extend(warnings_list)
         
+        # Chuyển đổi sang kiểu dữ liệu Python thuần túy để JSON có thể serialize được
         danh_sach_frame_data.append({
-            'index': frame_count, 'timestamp': time_str, 'path': frame_path,
-            'goc_vai': goc_v, 'goc_khuyu': goc_k, 'dung': dung, 'eval_info': eval_info
+            'index': int(frame_count), 
+            'timestamp': str(time_str), 
+            'path': str(frame_path),
+            'goc_vai': float(goc_v) if goc_v is not None else None, 
+            'goc_khuyu': float(goc_k) if goc_k is not None else None, 
+            'dung': bool(dung) if dung is not None else False, 
+            'eval_info': {
+                'shoulder_correct': bool(eval_info['shoulder_correct']) if 'shoulder_correct' in eval_info else False,
+                'elbow_correct': bool(eval_info['elbow_correct']) if 'elbow_correct' in eval_info else False,
+                'shoulder_ref': float(eval_info['shoulder_ref']) if 'shoulder_ref' in eval_info else 0,
+                'elbow_ref': float(eval_info['elbow_ref']) if 'elbow_ref' in eval_info else 0,
+                'warnings': [str(w) for w in eval_info.get('warnings', [])]
+            } if eval_info else {}
         })
         
         if goc_v is not None:
