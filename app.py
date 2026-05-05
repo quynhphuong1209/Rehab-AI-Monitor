@@ -75,8 +75,8 @@ MAX_FILE_SIZE_MB = 500
 # CẤU HÌNH XỬ LÝ - CHẤT LƯỢNG CAO
 # ============================================
 SKIP_FRAMES = 1
-RESIZE_WIDTH = 640
-OUTPUT_QUALITY = 85
+RESIZE_WIDTH = 540 # Giảm thêm một chút để ổn định RAM
+OUTPUT_QUALITY = 50 # Giảm chất lượng ảnh lưu đĩa để tiết kiệm RAM khi đọc
 MAX_FRAMES = 5000
 THUMBNAIL_QUALITY = 90
 THUMBNAIL_WIDTH = 400
@@ -195,7 +195,7 @@ def tinh_goc(a, b, c):
 def get_pose_model():
     return mp_pose.Pose(
         static_image_mode=False,
-        model_complexity=1,
+        model_complexity=0, # Dùng bản Lite để tiết kiệm RAM tối đa
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5,
         enable_segmentation=False,
@@ -501,6 +501,12 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
             if progress - last_progress >= 0.05:
                 callback(progress)
                 last_progress = progress
+        
+        # GIẢI PHÓNG BỘ NHỚ TRIỆT ĐỂ
+        del frame
+        del xu_ly
+        if processed_count % 100 == 0:
+            gc.collect()
     
     cap.release()
     writer.release()
