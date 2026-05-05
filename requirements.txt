@@ -1,7 +1,7 @@
 streamlit
 opencv-python-headless
-numpy
+numpy<2.0.0
 pandas
-mediapipe
+mediapipe==0.10.14
 plotly
 Pillow
