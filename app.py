@@ -74,10 +74,10 @@ MAX_FILE_SIZE_MB = 500
 # ============================================
 # CẤU HÌNH XỬ LÝ - CHẤT LƯỢNG CAO
 # ============================================
-SKIP_FRAMES = 2
+SKIP_FRAMES = 1
 RESIZE_WIDTH = 640
-OUTPUT_QUALITY = 80
-MAX_FRAMES = 1000
+OUTPUT_QUALITY = 85
+MAX_FRAMES = 5000
 THUMBNAIL_QUALITY = 90
 THUMBNAIL_WIDTH = 400
 
@@ -407,29 +407,19 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
 # ============================================
 def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     cap = cv2.VideoCapture(duong_dan_video)
-    
     if not cap.isOpened():
         raise Exception(f"Không thể mở file video: {duong_dan_video}")
     
     fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
     tong_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    
-    if MAX_FRAMES is not None and tong_frame > MAX_FRAMES:
+    if MAX_FRAMES and tong_frame > MAX_FRAMES:
         tong_frame = MAX_FRAMES
     
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
     is_portrait = width < height
-    
-    if is_portrait:
-        output_width = width
-        output_height = height
-        rotate_needed = False
-    else:
-        output_width = height
-        output_height = width
-        rotate_needed = True
+    output_width, output_height = (width, height) if is_portrait else (height, width)
+    rotate_needed = not is_portrait
     
     timestamp = int(time.time())
     out_path = os.path.join(tempfile.gettempdir(), f'processed_video_{timestamp}.webm')
@@ -437,7 +427,6 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     
     fourcc = cv2.VideoWriter_fourcc(*'vp80')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (output_width, output_height))
-    
     if not writer.isOpened():
         out_path = os.path.join(tempfile.gettempdir(), f'processed_video_{timestamp}.mp4')
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -451,27 +440,22 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     
     frame_count = 0
     processed_count = 0
-    dem_hop_le = 0
     last_progress = 0
-    
     import gc
+
     while cap.isOpened():
         ret, frame = cap.read()
-        if not ret:
+        if not ret or (MAX_FRAMES and processed_count >= MAX_FRAMES):
             break
             
         frame_count += 1
-        
-        # SKIP FRAME ĐỂ TIẾT KIỆM RAM
-        if frame_count % SKIP_FRAMES != 0:
+        # XỬ LÝ 100% FRAME (KHÔNG SKIP) THEO YÊU CẦU CỦA USER
+        if SKIP_FRAMES > 1 and frame_count % SKIP_FRAMES != 0:
             continue
             
         processed_count += 1
-        if MAX_FRAMES and processed_count > MAX_FRAMES:
-            break
-            
-        if processed_count % 50 == 0:
-            gc.collect()
+        if processed_count % 30 == 0:
+            gc.collect() # Giải phóng RAM thường xuyên hơn
         
         if rotate_needed:
             frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
@@ -479,17 +463,14 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
         h, w = frame.shape[:2]
         if w > RESIZE_WIDTH:
             scale = RESIZE_WIDTH / w
-            new_w = RESIZE_WIDTH
-            new_h = int(h * scale)
-            frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
-            h, w = frame.shape[:2]
+            frame = cv2.resize(frame, (RESIZE_WIDTH, int(h * scale)), interpolation=cv2.INTER_AREA)
         
         xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(
             frame, model, chuan, frame_count, fps
         )
         
         if xu_ly.shape[1] != output_width or xu_ly.shape[0] != output_height:
-            xu_ly = cv2.resize(xu_ly, (output_width, output_height), interpolation=cv2.INTER_LANCZOS4)
+            xu_ly = cv2.resize(xu_ly, (output_width, output_height))
         
         writer.write(xu_ly)
         
@@ -497,41 +478,23 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
         cv2.imwrite(frame_path, xu_ly, [cv2.IMWRITE_JPEG_QUALITY, OUTPUT_QUALITY])
         danh_sach_frame_paths.append(frame_path)
         
-        timestamp_frame = frame_count / fps
-        minutes = int(timestamp_frame // 60)
-        seconds = int(timestamp_frame % 60)
+        ts_frame = frame_count / fps
+        time_str = f"{int(ts_frame // 60):02d}:{int(ts_frame % 60):02d}"
         
-        if warnings_list:
-            all_warnings.extend(warnings_list)
+        if warnings_list: all_warnings.extend(warnings_list)
         
-        frame_data = {
-            'index': frame_count,
-            'timestamp': f"{minutes:02d}:{seconds:02d}",
-            'timestamp_seconds': timestamp_frame,
-            'path': frame_path,
-            'goc_vai': goc_v,
-            'goc_khuyu': goc_k,
-            'dung': dung,
-            'eval_info': eval_info,
-            'warnings': warnings_list
-        }
-        danh_sach_frame_data.append(frame_data)
+        danh_sach_frame_data.append({
+            'index': frame_count, 'timestamp': time_str, 'path': frame_path,
+            'goc_vai': goc_v, 'goc_khuyu': goc_k, 'dung': dung, 'eval_info': eval_info
+        })
         
         if goc_v is not None:
-            dem_hop_le += 1
             du_lieu_goc.append({
-                'frame': frame_count,
-                'timestamp': f"{minutes:02d}:{seconds:02d}",
-                'timestamp_seconds': timestamp_frame,
-                'goc_vai': float(goc_v),
-                'goc_khuyu': float(goc_k),
-                'dung': bool(dung),
-                'vai_dung': eval_info['shoulder_correct'],
-                'khuyu_dung': eval_info['elbow_correct'],
-                'vai_chuan': eval_info['shoulder_ref'],
-                'khuyu_chuan': eval_info['elbow_ref']
+                'frame': frame_count, 'timestamp': time_str, 'timestamp_seconds': ts_frame,
+                'goc_vai': float(goc_v), 'goc_khuyu': float(goc_k), 'dung': bool(dung),
+                'vai_dung': eval_info['shoulder_correct'], 'khuyu_dung': eval_info['elbow_correct'],
+                'vai_chuan': eval_info['shoulder_ref'], 'khuyu_chuan': eval_info['elbow_ref']
             })
-        
         
         if callback and tong_frame > 0:
             progress = min(frame_count / tong_frame, 1.0)
@@ -542,20 +505,16 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     cap.release()
     writer.release()
     
-    if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
-        raise Exception("Không thể tạo file video output")
+    # TẠO ZIP TRÊN ĐĨA ĐỂ TIẾT KIỆM RAM
+    zip_path = os.path.join(tempfile.gettempdir(), f'frames_{timestamp}.zip')
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for p in danh_sach_frame_paths:
+            if os.path.exists(p):
+                zipf.write(p, os.path.basename(p))
     
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for idx, path in enumerate(danh_sach_frame_paths):
-            if os.path.exists(path):
-                with open(path, 'rb') as f:
-                    zipf.writestr(f"frame_{idx:06d}.jpg", f.read())
-    
-    zip_bytes = zip_buffer.getvalue()
-    zip_buffer.close()
-    
-    return out_path, None, None, du_lieu_goc, frame_count, dem_hop_le, thu_muc_frame, zip_bytes, danh_sach_frame_paths, {}, danh_sach_frame_data, all_warnings
+    gc.collect()
+    return out_path, None, None, du_lieu_goc, frame_count, len(du_lieu_goc), thu_muc_frame, zip_path, danh_sach_frame_paths, {}, danh_sach_frame_data, all_warnings
+
 
 # ============================================
 # TÍNH TOÁN METRICS CHI TIẾT
@@ -2212,17 +2171,16 @@ def main():
             st.video(st.session_state.temp_video_file)
             
             # Đọc dữ liệu video để phục vụ cho nút tải xuống
-            with open(st.session_state.temp_video_file, 'rb') as f:
-                video_data = f.read()
-            
             file_ext = os.path.splitext(st.session_state.temp_video_file)[1]
             mime_type = "video/webm" if file_ext == ".webm" else "video/mp4"
             col1, col2 = st.columns(2)
             with col1:
-                st.download_button("📥 Tải video xuống", video_data, f"video_processed{file_ext}", mime_type)
+                with open(st.session_state.temp_video_file, 'rb') as f:
+                    st.download_button("📥 Tải video xuống", f, f"video_processed{file_ext}", mime_type)
             with col2:
-                if st.session_state.frames_zip:
-                    st.download_button("📥 Tải tất cả frames (ZIP)", st.session_state.frames_zip, "tat_ca_frames.zip", "application/zip")
+                if st.session_state.frames_zip and os.path.exists(st.session_state.frames_zip):
+                    with open(st.session_state.frames_zip, "rb") as f:
+                        st.download_button("📥 Tải tất cả frames (ZIP)", f, "tat_ca_frames.zip", "application/zip")
             
             st.markdown("---")
             
