@@ -588,8 +588,8 @@ def ve_bieu_do_goc_vai(df, bt):
             font=dict(size=20, color='white', family='Arial Black'),
             x=0.5
         ),
-        xaxis=dict(title="<b>Số Frame</b>", title_font=dict(size=14, color='white'), gridcolor='rgba(255,255,255,0.1)'),
-        yaxis=dict(title="<b>Góc (độ)</b>", title_font=dict(size=14, color='white'), gridcolor='rgba(255,255,255,0.1)',
+        xaxis=dict(title=dict(text="<b>Số Frame</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)'),
+        yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)',
                    range=[0, 180]),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(26,26,46,0.9)',
@@ -639,8 +639,8 @@ def ve_bieu_do_goc_khuyu(df, bt):
             font=dict(size=20, color='white', family='Arial Black'),
             x=0.5
         ),
-        xaxis=dict(title="<b>Số Frame</b>", title_font=dict(size=14, color='white'), gridcolor='rgba(255,255,255,0.1)'),
-        yaxis=dict(title="<b>Góc (độ)</b>", title_font=dict(size=14, color='white'), gridcolor='rgba(255,255,255,0.1)',
+        xaxis=dict(title=dict(text="<b>Số Frame</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)'),
+        yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)',
                    range=[0, 180]),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(26,26,46,0.9)',
@@ -694,11 +694,11 @@ def ve_bieu_do_histogram(df, bt):
         bargap=0.05
     )
     
-    fig.update_xaxes(title_text="<b>Góc (độ)</b>", title_font=dict(size=12, color='white'), 
+    fig.update_xaxes(title=dict(text="<b>Góc (độ)</b>", font=dict(size=12, color='white')), 
                      gridcolor='rgba(255,255,255,0.1)', row=1, col=1)
-    fig.update_xaxes(title_text="<b>Góc (độ)</b>", title_font=dict(size=12, color='white'),
+    fig.update_xaxes(title=dict(text="<b>Góc (độ)</b>", font=dict(size=12, color='white')),
                      gridcolor='rgba(255,255,255,0.1)', row=1, col=2)
-    fig.update_yaxes(title_text="<b>Tần suất</b>", title_font=dict(size=12, color='white'),
+    fig.update_yaxes(title=dict(text="<b>Tần suất</b>", font=dict(size=12, color='white')),
                      gridcolor='rgba(255,255,255,0.1)', row=1, col=1)
     
     return fig
@@ -730,7 +730,7 @@ def ve_bieu_do_boxplot(df):
             font=dict(size=20, color='white', family='Arial Black'),
             x=0.5
         ),
-        yaxis=dict(title="<b>Góc (độ)</b>", title_font=dict(size=14, color='white'),
+        yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')),
                    gridcolor='rgba(255,255,255,0.1)', range=[0, 180]),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(26,26,46,0.9)',
