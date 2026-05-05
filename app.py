@@ -300,18 +300,41 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     
     lm = ket_qua.pose_landmarks.landmark
     
-    vai_t = (int(lm[mp_pose.PoseLandmark.LEFT_SHOULDER].x * w), 
-             int(lm[mp_pose.PoseLandmark.LEFT_SHOULDER].y * h))
-    khuyu_t = (int(lm[mp_pose.PoseLandmark.LEFT_ELBOW].x * w), 
-               int(lm[mp_pose.PoseLandmark.LEFT_ELBOW].y * h))
-    co_tay = (int(lm[mp_pose.PoseLandmark.LEFT_WRIST].x * w), 
-              int(lm[mp_pose.PoseLandmark.LEFT_WRIST].y * h))
-    hong = (int(lm[mp_pose.PoseLandmark.LEFT_HIP].x * w), 
-            int(lm[mp_pose.PoseLandmark.LEFT_HIP].y * h))
+    # Lấy tọa độ cả hai bên
+    # Bên trái
+    vai_t = (int(lm[mp_pose.PoseLandmark.LEFT_SHOULDER].x * w), int(lm[mp_pose.PoseLandmark.LEFT_SHOULDER].y * h))
+    khuyu_t = (int(lm[mp_pose.PoseLandmark.LEFT_ELBOW].x * w), int(lm[mp_pose.PoseLandmark.LEFT_ELBOW].y * h))
+    co_tay_t = (int(lm[mp_pose.PoseLandmark.LEFT_WRIST].x * w), int(lm[mp_pose.PoseLandmark.LEFT_WRIST].y * h))
+    hong_t = (int(lm[mp_pose.PoseLandmark.LEFT_HIP].x * w), int(lm[mp_pose.PoseLandmark.LEFT_HIP].y * h))
     
-    goc_vai = tinh_goc(hong, vai_t, khuyu_t)
-    goc_khuyu = tinh_goc(vai_t, khuyu_t, co_tay)
+    # Bên phải
+    vai_p = (int(lm[mp_pose.PoseLandmark.RIGHT_SHOULDER].x * w), int(lm[mp_pose.PoseLandmark.RIGHT_SHOULDER].y * h))
+    khuyu_p = (int(lm[mp_pose.PoseLandmark.RIGHT_ELBOW].x * w), int(lm[mp_pose.PoseLandmark.RIGHT_ELBOW].y * h))
+    co_tay_p = (int(lm[mp_pose.PoseLandmark.RIGHT_WRIST].x * w), int(lm[mp_pose.PoseLandmark.RIGHT_WRIST].y * h))
+    hong_p = (int(lm[mp_pose.PoseLandmark.RIGHT_HIP].x * w), int(lm[mp_pose.PoseLandmark.RIGHT_HIP].y * h))
     
+    # Tính toán góc cả hai bên
+    goc_vai_t = tinh_goc(hong_t, vai_t, khuyu_t)
+    goc_khuyu_t = tinh_goc(vai_t, khuyu_t, co_tay_t)
+    
+    goc_vai_p = tinh_goc(hong_p, vai_p, khuyu_p)
+    goc_khuyu_p = tinh_goc(vai_p, khuyu_p, co_tay_p)
+    
+    # Tự động chọn bên đang tập (bên có góc vai lớn hơn hoặc đang vận động)
+    # Với Codman, tay tập thường đưa ra xa thân mình hơn tay vịn
+    nhip_t = abs(goc_vai_t - 45) # Giả định chuẩn Codman là 45
+    nhip_p = abs(goc_vai_p - 45)
+    
+    # Chọn bên có góc gần với mục tiêu tập luyện hơn hoặc có sự thay đổi
+    if abs(goc_vai_t - 10) > abs(goc_vai_p - 10): # So sánh với tư thế đứng thẳng (10 độ)
+        goc_vai, goc_khuyu = goc_vai_t, goc_khuyu_t
+        khop_chinh = vai_t
+        khop_phu = khuyu_t
+    else:
+        goc_vai, goc_khuyu = goc_vai_p, goc_khuyu_p
+        khop_chinh = vai_p
+        khop_phu = khuyu_p
+
     chuan_vai = chuan["vai"]
     chuan_khuyu = chuan["khuyu"]
     ss = chuan["sai_so"]
@@ -327,9 +350,9 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     warnings_list = get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, ss)
     
     # Vẽ góc tại khớp
-    cv2.putText(frame_output, f"{goc_vai:.0f}", (vai_t[0]-50, vai_t[1]-25), 
+    cv2.putText(frame_output, f"{goc_vai:.0f}", (khop_chinh[0]-50, khop_chinh[1]-25), 
                cv2.FONT_HERSHEY_DUPLEX, 0.8, mau_vai, 2)
-    cv2.putText(frame_output, f"{goc_khuyu:.0f}", (khuyu_t[0]+25, khuyu_t[1]-25), 
+    cv2.putText(frame_output, f"{goc_khuyu:.0f}", (khop_phu[0]+25, khop_phu[1]-25), 
                cv2.FONT_HERSHEY_DUPLEX, 0.8, mau_khuyu, 2)
     
     # BOX THÔNG TIN - CẢI THIỆN RÕ NÉT
@@ -762,7 +785,7 @@ BAI_TAP = {
         "ten": "Bài tập con lắc Codman",
         "icon": "🔄",
         "mo_ta": "Bài tập dao động tay thụ động theo quán tính, giúp thả lỏng khớp vai, giảm đau và chống dính khớp.",
-        "chuan": {"vai": 45, "khuyu": 160, "sai_so": 15},
+        "chuan": {"vai": 45, "khuyu": 160, "sai_so": 20},
         "youtube": "https://youtu.be/a4eCRWuqO40",
         "thoi_gian": 30, 
         "lan": 10,
@@ -831,7 +854,7 @@ BAI_TAP = {
         "ten": "Bài tập với gậy (Pulley Exercise)",
         "icon": "🏒",
         "mo_ta": "Sử dụng gậy hoặc ròng rọc hỗ trợ nâng tay và xoay vai bị hạn chế vận động.",
-        "chuan": {"vai": 90, "khuyu": 170, "sai_so": 15},
+        "chuan": {"vai": 90, "khuyu": 170, "sai_so": 20},
         "youtube": "https://www.youtube.com/watch?v=s2O8WHT5o2k",
         "thoi_gian": 45, 
         "lan": 12,
@@ -909,7 +932,7 @@ BAI_TAP = {
         "ten": "Bài tập với dây kháng lực (Theraband Exercise)",
         "icon": "💪",
         "mo_ta": "Tăng cường sức mạnh cơ chóp xoay và cơ quanh khớp vai bằng dây thun kháng lực.",
-        "chuan": {"vai": 60, "khuyu": 90, "sai_so": 15},
+        "chuan": {"vai": 60, "khuyu": 90, "sai_so": 20},
         "youtube": "https://www.youtube.com/watch?v=njDHDnZ6lis",
         "thoi_gian": 40, 
         "lan": 15,
