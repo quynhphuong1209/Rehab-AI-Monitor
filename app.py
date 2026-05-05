@@ -28,8 +28,7 @@ import hashlib
 import threading
 import queue
 from concurrent.futures import ThreadPoolExecutor
-import matplotlib.pyplot as plt
-import seaborn as sns
+
 from PIL import Image, ImageDraw, ImageFont
 
 # IMPORT MEDIAPIPE
