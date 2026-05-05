@@ -27,6 +27,7 @@ import subprocess
 import hashlib
 import threading
 import queue
+import gc
 from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image, ImageDraw, ImageFont
@@ -441,7 +442,6 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     frame_count = 0
     processed_count = 0
     last_progress = 0
-    import gc
 
     while cap.isOpened():
         ret, frame = cap.read()
