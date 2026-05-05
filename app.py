@@ -74,10 +74,10 @@ MAX_FILE_SIZE_MB = 500
 # ============================================
 # CẤU HÌNH XỬ LÝ - CHẤT LƯỢNG CAO
 # ============================================
-SKIP_FRAMES = 1
-RESIZE_WIDTH = 720
-OUTPUT_QUALITY = 95
-MAX_FRAMES = None
+SKIP_FRAMES = 2
+RESIZE_WIDTH = 640
+OUTPUT_QUALITY = 80
+MAX_FRAMES = 1000
 THUMBNAIL_QUALITY = 90
 THUMBNAIL_WIDTH = 400
 
@@ -454,10 +454,24 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     dem_hop_le = 0
     last_progress = 0
     
-    while cap.isOpened() and (MAX_FRAMES is None or frame_count < MAX_FRAMES):
+    import gc
+    while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
+            
+        frame_count += 1
+        
+        # SKIP FRAME ĐỂ TIẾT KIỆM RAM
+        if frame_count % SKIP_FRAMES != 0:
+            continue
+            
+        processed_count += 1
+        if MAX_FRAMES and processed_count > MAX_FRAMES:
+            break
+            
+        if processed_count % 50 == 0:
+            gc.collect()
         
         if rotate_needed:
             frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
@@ -518,8 +532,6 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
                 'khuyu_chuan': eval_info['elbow_ref']
             })
         
-        frame_count += 1
-        processed_count += 1
         
         if callback and tong_frame > 0:
             progress = min(frame_count / tong_frame, 1.0)
