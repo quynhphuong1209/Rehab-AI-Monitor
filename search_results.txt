@@ -1,0 +1,13 @@
+122: if 'current_upload_key' not in st.session_state:
+123: st.session_state.current_upload_key = None
+140: if 'uploaded_file_name' not in st.session_state:
+141: st.session_state.uploaded_file_name = None
+1201: st.info("ℹ️ Chưa có kết quả. Vui lòng upload video ở tab TRANG CHỦ.")
+2011: st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
+2013: file_upload = st.file_uploader(
+2019: if file_upload is not None and not st.session_state.processing:
+2020: file_size_mb = file_upload.size / (1024 * 1024)
+2025: st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.1f} MB)")
+2043: file_content = file_upload.getvalue()
+2052: is_mov = file_upload.name.lower().endswith('.mov')
+2187: st.info("ℹ️ Chưa có video. Hãy upload và xử lý video ở tab TRANG CHỦ.")

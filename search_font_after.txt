@@ -1,0 +1,10 @@
+590: xaxis=dict(title="<b>Số Frame</b>", title_font=dict(size=14, color='white'), gridcolor='rgba(255,255,255,0.1)'),
+591: yaxis=dict(title="<b>Góc (độ)</b>", title_font=dict(size=14, color='white'), gridcolor='rgba(255,255,255,0.1)',
+641: xaxis=dict(title="<b>Số Frame</b>", title_font=dict(size=14, color='white'), gridcolor='rgba(255,255,255,0.1)'),
+642: yaxis=dict(title="<b>Góc (độ)</b>", title_font=dict(size=14, color='white'), gridcolor='rgba(255,255,255,0.1)',
+696: fig.update_xaxes(title_text="<b>Góc (độ)</b>", title_font=dict(size=12, color='white'),
+698: fig.update_xaxes(title_text="<b>Góc (độ)</b>", title_font=dict(size=12, color='white'),
+700: fig.update_yaxes(title_text="<b>Tần suất</b>", title_font=dict(size=12, color='white'),
+732: yaxis=dict(title="<b>Góc (độ)</b>", title_font=dict(size=14, color='white'),
+1389: fig_combined.update_layout(height=800, title="Thống kê góc vai", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(26,26,46,0.9)', font=dict(color='white'))
+1497: fig_combined.update_layout(height=800, title="Thống kê góc khuỷu", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(26,26,46,0.9)', font=dict(color='white'))
