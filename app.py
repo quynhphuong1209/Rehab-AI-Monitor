@@ -196,7 +196,7 @@ def tinh_goc(a, b, c):
 def get_pose_model():
     return mp_pose.Pose(
         static_image_mode=False,
-        model_complexity=0, # Dùng bản Lite để tiết kiệm RAM tối đa
+        model_complexity=1, # Dùng bản Lite để tiết kiệm RAM tối đa
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5,
         enable_segmentation=False,
