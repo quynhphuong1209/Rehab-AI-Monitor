@@ -78,7 +78,7 @@ MAX_FILE_SIZE_MB = 500
 SKIP_FRAMES = 1
 RESIZE_WIDTH = 540 # Giảm thêm một chút để ổn định RAM
 OUTPUT_QUALITY = 50 # Giảm chất lượng ảnh lưu đĩa để tiết kiệm RAM khi đọc
-MAX_FRAMES = 2000 # Giới hạn 2000 để đảm bảo 100% không OOM trên RAM 1GB
+MAX_FRAMES = 3000 # Nâng lên 3000 frames (đã an toàn nhờ cơ chế lưu JSON trên đĩa)
 THUMBNAIL_QUALITY = 90
 THUMBNAIL_WIDTH = 400
 
