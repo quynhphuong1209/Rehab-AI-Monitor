@@ -60,6 +60,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Fix lỗi hiển thị chữ "upload" và "arrow_down" do trình duyệt không tải được font Material Symbols
+st.markdown("""
+<style>
+.material-symbols-rounded {
+    display: none !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 MAX_FILE_SIZE_MB = 500
 
 # ============================================
