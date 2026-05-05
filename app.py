@@ -1309,7 +1309,7 @@ def hien_thi_tab_phan_tich():
         
         # Biểu đồ đường góc vai
         fig_vai = ve_bieu_do_goc_vai(df, bt)
-        st.plotly_chart(fig_vai, use_container_width=True)
+        st.plotly_chart(fig_vai, width='stretch')
         
         # Thống kê góc vai
         col1, col2, col3 = st.columns(3)
@@ -1348,7 +1348,7 @@ def hien_thi_tab_phan_tich():
             height=450,
             font=dict(color='white')
         )
-        st.plotly_chart(fig_hist_vai, use_container_width=True)
+        st.plotly_chart(fig_hist_vai, width='stretch')
         
         st.markdown("---")
         
@@ -1381,12 +1381,12 @@ def hien_thi_tab_phan_tich():
                 borderwidth=1
             )
         )
-        st.plotly_chart(fig_box, use_container_width=True)
+        st.plotly_chart(fig_box, width='stretch')
         
         # Nút tải biểu đồ
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("💾 Tải biểu đồ góc vai (PNG)", use_container_width=True, key="save_vai"):
+            if st.button("💾 Tải biểu đồ góc vai (PNG)", width='stretch', key="save_vai"):
                 try:
                     img_path = "temp_vai_chart.png"
                     fig_vai.write_image(img_path, width=1200, height=600, scale=2)
@@ -1396,7 +1396,7 @@ def hien_thi_tab_phan_tich():
                 except:
                     st.warning("⚠️ Cần cài đặt kaleido để xuất ảnh: pip install -U kaleido")
         with col2:
-            if st.button("💾 Tải Histogram + Boxplot (PNG)", use_container_width=True, key="save_vai_stats"):
+            if st.button("💾 Tải Histogram + Boxplot (PNG)", width='stretch', key="save_vai_stats"):
                 try:
                     # Tạo figure tổng hợp
                     fig_combined = make_subplots(rows=2, cols=1, 
@@ -1420,7 +1420,7 @@ def hien_thi_tab_phan_tich():
         
         # Biểu đồ đường góc khuỷu
         fig_khuyu = ve_bieu_do_goc_khuyu(df, bt)
-        st.plotly_chart(fig_khuyu, use_container_width=True)
+        st.plotly_chart(fig_khuyu, width='stretch')
         
         # Thống kê góc khuỷu
         col1, col2, col3 = st.columns(3)
@@ -1459,7 +1459,7 @@ def hien_thi_tab_phan_tich():
             height=450,
             font=dict(color='white')
         )
-        st.plotly_chart(fig_hist_khuyu, use_container_width=True)
+        st.plotly_chart(fig_hist_khuyu, width='stretch')
         
         st.markdown("---")
         
@@ -1490,12 +1490,12 @@ def hien_thi_tab_phan_tich():
                 borderwidth=1
             )
         )
-        st.plotly_chart(fig_box2, use_container_width=True)
+        st.plotly_chart(fig_box2, width='stretch')
         
         # Nút tải biểu đồ
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("💾 Tải biểu đồ góc khuỷu (PNG)", use_container_width=True, key="save_khuyu"):
+            if st.button("💾 Tải biểu đồ góc khuỷu (PNG)", width='stretch', key="save_khuyu"):
                 try:
                     img_path = "temp_khuyu_chart.png"
                     fig_khuyu.write_image(img_path, width=1200, height=600, scale=2)
@@ -1505,7 +1505,7 @@ def hien_thi_tab_phan_tich():
                 except:
                     st.warning("⚠️ Cần cài đặt kaleido để xuất ảnh: pip install -U kaleido")
         with col2:
-            if st.button("💾 Tải Histogram + Boxplot (PNG)", use_container_width=True, key="save_khuyu_stats"):
+            if st.button("💾 Tải Histogram + Boxplot (PNG)", width='stretch', key="save_khuyu_stats"):
                 try:
                     fig_combined = make_subplots(rows=2, cols=1, 
                                                   subplot_titles=("Histogram góc khuỷu", "Boxplot so sánh"),
@@ -1574,7 +1574,7 @@ def hien_thi_tab_phan_tich():
                     font=dict(color='white'),
                     height=500
                 )
-                st.plotly_chart(fig_warning, use_container_width=True)
+                st.plotly_chart(fig_warning, width='stretch')
         else:
             st.success("🎉 Không phát hiện lỗi nào! Bệnh nhân thực hiện động tác rất tốt.")
     
@@ -1592,7 +1592,7 @@ def hien_thi_tab_phan_tich():
         
         with col1:
             st.markdown("#### 📄 DỮ LIỆU DẠNG BẢNG")
-            st.dataframe(df, use_container_width=True, height=300)
+            st.dataframe(df, width='stretch', height=300)
             
             csv_data = df.to_csv(index=False).encode('utf-8')
             st.download_button(
@@ -1600,7 +1600,7 @@ def hien_thi_tab_phan_tich():
                 csv_data,
                 f"ket_qua_phan_tich_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 "text/csv",
-                use_container_width=True
+                width='stretch'
             )
         
         with col2:
@@ -1612,7 +1612,7 @@ def hien_thi_tab_phan_tich():
                            f"{tk['tb_goc_vai']:.1f}°", f"{tk['tb_goc_khuyu']:.1f}°", 
                            f"{tk['frame_dung']}", f"{tk['tong_frame_hop_le']}"]
             })
-            st.dataframe(stats_df, use_container_width=True, hide_index=True)
+            st.dataframe(stats_df, width='stretch', hide_index=True)
             
             stats_csv = stats_df.to_csv(index=False, encoding='utf-8')
             st.download_button(
@@ -1620,13 +1620,13 @@ def hien_thi_tab_phan_tich():
                 stats_csv,
                 f"thong_ke_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 "text/csv",
-                use_container_width=True
+                width='stretch'
             )
         
         st.markdown("---")
         st.markdown("#### 🖼️ TẢI XUỐNG TẤT CẢ BIỂU ĐỒ")
         
-        if st.button("📸 Tải xuống tất cả biểu đồ (ZIP)", use_container_width=True):
+        if st.button("📸 Tải xuống tất cả biểu đồ (ZIP)", width='stretch'):
             try:
                 import zipfile
                 from io import BytesIO
@@ -1849,7 +1849,7 @@ def hien_thi_frames_day_du():
     with col4:
         st.write("")
         st.write("")
-        if st.button("🔄 Làm mới", use_container_width=True, key="refresh_thumbnails"):
+        if st.button("🔄 Làm mới", width='stretch', key="refresh_thumbnails"):
             st.cache_data.clear()
             st.rerun()
     
@@ -1887,7 +1887,7 @@ def hien_thi_frames_day_du():
     col_prev, col_page, col_next, col_info = st.columns([1, 2, 1, 2])
     
     with col_prev:
-        if st.button("◀ Trang trước", use_container_width=True, key="prev_page"):
+        if st.button("◀ Trang trước", width='stretch', key="prev_page"):
             if st.session_state.current_page > 1:
                 st.session_state.current_page -= 1
                 st.rerun()
@@ -1901,7 +1901,7 @@ def hien_thi_frames_day_du():
             st.rerun()
     
     with col_next:
-        if st.button("Trang sau ▶", use_container_width=True, key="next_page"):
+        if st.button("Trang sau ▶", width='stretch', key="next_page"):
             if st.session_state.current_page < total_pages:
                 st.session_state.current_page += 1
                 st.rerun()
@@ -2057,7 +2057,7 @@ def main():
             else:
                 st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.1f} MB)")
                 
-                if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", use_container_width=True):
+                if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", width='stretch'):
                     st.session_state.processing = True
                     st.session_state.has_data = False
                     st.session_state.all_frames_data = []
@@ -2170,14 +2170,14 @@ def main():
         elif st.session_state.processing:
             st.warning("⏳ Đang xử lý video, vui lòng chờ...")
             
-            if st.button("❌ Hủy xử lý", use_container_width=True):
+            if st.button("❌ Hủy xử lý", width='stretch'):
                 st.session_state.processing = False
                 st.rerun()
         
         elif st.session_state.has_data:
             st.success("✅ Đã có kết quả phân tích! Hãy xem các tab PHÂN TÍCH và VIDEO & ẢNH.")
             
-            if st.button("🔄 PHÂN TÍCH VIDEO MỚI", use_container_width=True):
+            if st.button("🔄 PHÂN TÍCH VIDEO MỚI", width='stretch'):
                 keys_to_clear = ['has_data', 'angle_df', 'stats', 'frames_zip', 'exercise', 
                                 'temp_video_file', 'video_base64', 'processed_video_bytes', 
                                 'all_frames_data', 'all_frames_paths', 'thumbnail_cache', 'preloaded_thumbnails']
