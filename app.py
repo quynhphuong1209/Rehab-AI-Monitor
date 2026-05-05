@@ -1211,7 +1211,8 @@ def hien_thi_tab_phan_tich():
         st.info("ℹ️ Chưa có kết quả. Vui lòng upload video ở tab TRANG CHỦ.")
         return
     
-    bt = st.session_state.exercise
+    bt_key = st.session_state.exercise
+    bt = BAI_TAP[bt_key]
     tk = st.session_state.stats
     df = st.session_state.angle_df
     
@@ -2358,4 +2359,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        st.error(f"💥 Lỗi khởi động ứng dụng: {e}")
+        import traceback
+        st.code(traceback.format_exc())
