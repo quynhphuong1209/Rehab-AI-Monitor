@@ -85,13 +85,16 @@ if 'forgot_password_mode' not in st.session_state:
     st.session_state.forgot_password_mode = False
 
 # KIỂM TRA ĐĂNG NHẬP GOOGLE NATIVE (Streamlit 1.42+)
-if hasattr(st, "user") and st.user and st.user.get("email"):
-    st.session_state.logged_in = True
-    st.session_state.user_info = {
-        "username": st.user.get("name") or st.user.get("email").split("@")[0],
-        "email": st.user.get("email"),
-        "auth_type": "google"
-    }
+try:
+    if st.user and st.user.email:
+        st.session_state.logged_in = True
+        st.session_state.user_info = {
+            "username": st.user.name or st.user.email.split("@")[0],
+            "email": st.user.email,
+            "auth_type": "google"
+        }
+except:
+    pass
 
 
 # ============================================
