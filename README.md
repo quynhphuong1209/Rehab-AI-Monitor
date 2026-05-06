@@ -1,13 +1,3 @@
----
-title: Rehab AI Monitor
-emoji: 🏥
-colorFrom: blue
-colorTo: indigo
-sdk: streamlit
-pinned: false
-license: mit
----
-
 # 🏥 Rehab AI Monitor
 
 **Hệ thống giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính.**
@@ -61,7 +51,17 @@ Hệ thống giúp tự động hóa việc giám sát và đánh giá các bài
 ## 👩‍⚕️ Nhóm nghiên cứu
 - **Giảng viên hướng dẫn:** TS. Trần Hồng Việt
 - **Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương
-- **Thành viên:** Kim Mạnh Hưng, Nguyễn Hải An, Phan Vân Anh, Nguyễn Thị Thanh Nga.
+- **Thành viên:** Kim Mạnh Hưng, Nguyễn Hải An, Phan Vân Anh, Nguyễn Thị Thanh Nga, Nguyễn Thị Thơm, Nguyễn Thị Thu Hương
 
 ---
 © 2025-2026 Rehab AI Monitor Team - Đại học Y tế Công cộng.
+
+---
+title: Rehab AI Monitor
+emoji: 🏥
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+pinned: false
+license: mit
+---
