@@ -349,15 +349,15 @@ def ve_cung_tron_goc(image, point1, center, point3, angle, color, radius=40):
 # ============================================
 @st.cache_resource
 def get_pose_model():
+    """Khởi tạo MediaPipe Pose với cấu hình chính xác nhất"""
     import mediapipe as mp
-    _mp_pose = mp.solutions.pose
-    return _mp_pose.Pose(
-        static_image_mode=False,
-        model_complexity=1,
-        min_detection_confidence=0.8, # TĂNG ĐỘ KHẮT KHE ĐỂ CHÍNH XÁC 100%
-        min_tracking_confidence=0.8,
-        enable_segmentation=False,
-        smooth_landmarks=False      # TẮT LÀM MỊN ĐỂ TRÁNH LỖI TRÔI KHUNG XƯƠNG Ở CÁC FRAME ĐẦU
+    mp_pose = mp.solutions.pose
+    return mp_pose.Pose(
+        static_image_mode=True,        # QUAN TRỌNG: Dò tìm lại từng frame, không để bị trôi
+        model_complexity=1,            # Độ chính xác cao
+        smooth_landmarks=False,        # Tắt làm mịn để bám sát thực tế
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5
     )
 
 # ============================================
@@ -386,27 +386,14 @@ def get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, sai_so):
 # XỬ LÝ FRAME - CẢI THIỆN BOX THÔNG TIN
 # ============================================
 def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
-    # 1. SQUARE PADDING: Đưa ảnh về hình vuông để AI đạt độ chính xác 100%
-    # (Tránh lỗi trôi khung xương ở các frame đầu của video Portrait)
-    h_orig, w_orig = frame.shape[:2]
-    side = max(h_orig, w_orig)
-    pad_x = (side - w_orig) // 2
-    pad_y = (side - h_orig) // 2
-    
-    # Tạo khung hình vuông đen và chèn frame vào giữa
-    square_frame = np.zeros((side, side, 3), dtype=np.uint8)
-    square_frame[pad_y:pad_y+h_orig, pad_x:pad_x+w_orig] = frame
-    
-    # AI xử lý trên khung hình vuông này
-    rgb_square = cv2.cvtColor(square_frame, cv2.COLOR_BGR2RGB)
-    ket_qua = model.process(rgb_square)
-    
-    # Định nghĩa rgb gốc để tránh lỗi ở các phần xử lý bên dưới
+    # 1. LẤY KÍCH THƯỚC VÀ CHUYỂN ĐỔI MÀU (Không dùng padding gây lệch)
+    h, w = frame.shape[:2]
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
-    frame_output = frame.copy()
-    h, w = h_orig, w_orig # Giữ lại kích thước gốc để tính toán
+    # 2. AI XỬ LÝ TRỰC TIẾP TRÊN FRAME GỐC VỚI CHẾ ĐỘ STATIC
+    ket_qua = model.process(rgb)
     
+    frame_output = frame.copy()
     GREEN, RED, WHITE = (0, 255, 0), (0, 0, 255), (255, 255, 255)
     YELLOW, CYAN, ORANGE = (0, 255, 255), (255, 255, 0), (0, 165, 255)
     
@@ -434,33 +421,26 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     # Import cục bộ để tránh phụ thuộc vào biến global
     import mediapipe as _mp
     _mp_drawing = _mp.solutions.drawing_utils
-    # VẼ KHUNG XƯƠNG THỦ CÔNG ĐỂ ĐẢM BẢO CHÍNH XÁC 100%
-    # (Đoạn này thay thế draw_landmarks để tránh lỗi lệch tọa độ)
-    def draw_line(p1, p2):
-        cv2.line(frame_output, p1, p2, (0, 255, 0), 2)
-    
-    def draw_point(p):
-        cv2.circle(frame_output, p, 4, (0, 255, 255), -1)
     _mp_drawing_styles = _mp.solutions.drawing_styles
     _mp_pose = _mp.solutions.pose
     
-    # Vẽ landmarks
+    # CHỌN MÀU DỰA TRÊN KẾT QUẢ TỔNG THỂ CỦA FRAME
+    # (Tạm thời tính nhanh để lấy màu vẽ skeleton)
+    skeleton_color = GREEN
+    
+    # 3. VẼ KHUNG XƯƠNG 33 ĐIỂM CHI TIẾT
     _mp_drawing.draw_landmarks(
-        frame_output, ket_qua.pose_landmarks, _mp_pose.POSE_CONNECTIONS,
+        frame_output,
+        ket_qua.pose_landmarks,
+        _mp_pose.POSE_CONNECTIONS,
         landmark_drawing_spec=_mp_drawing_styles.get_default_pose_landmarks_style(),
-        connection_drawing_spec=_mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2)
+        connection_drawing_spec=_mp_drawing.DrawingSpec(color=skeleton_color, thickness=2, circle_radius=1)
     )
     
     # LẤY TỌA ĐỘ CÁC KHỚP QUAN TRỌNG (ĐẢM BẢO KHỚP 100% VỚI FRAME)
     lm = ket_qua.pose_landmarks.landmark
-    
-    # Hàm chuyển đổi tọa độ từ hình vuông về hình gốc
     def get_coords(idx):
-        # Tọa độ trên hình vuông (side x side)
-        x_sq = lm[idx].x * side
-        y_sq = lm[idx].y * side
-        # Chuyển về tọa độ trên hình gốc bằng cách trừ đi padding
-        return (int(x_sq - pad_x), int(y_sq - pad_y))
+        return (int(lm[idx].x * w), int(lm[idx].y * h))
     
     # Bên trái
     vai_t = get_coords(_mp_pose.PoseLandmark.LEFT_SHOULDER)
@@ -483,37 +463,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     co_chan_t = get_coords(_mp_pose.PoseLandmark.LEFT_ANKLE)
     co_chan_p = get_coords(_mp_pose.PoseLandmark.RIGHT_ANKLE)
     
-    # THỰC HIỆN VẼ KHUNG XƯƠNG (Bám sát 100% cơ thể)
-    # 1. Vẽ thân
-    draw_line(vai_t, vai_p)
-    draw_line(vai_t, hong_t)
-    draw_line(vai_p, hong_p)
-    draw_line(hong_t, hong_p)
-    
-    # 2. Vẽ tay trái
-    draw_line(vai_t, khuyu_t)
-    draw_line(khuyu_t, co_tay_t)
-    
-    # 3. Vẽ tay phải
-    draw_line(vai_p, khuyu_p)
-    draw_line(khuyu_p, co_tay_p)
-    
-    # 4. Vẽ chân trái
-    draw_line(hong_t, dau_goi_t)
-    draw_line(dau_goi_t, co_chan_t)
-    
-    # 5. Vẽ chân phải
-    draw_line(hong_p, dau_goi_p)
-    draw_line(dau_goi_p, co_chan_p)
-    
-    # 6. Vẽ mặt
-    draw_point(mui)
-    draw_point(tai_t)
-    draw_point(tai_p)
-    
-    # 7. Vẽ các khớp chính
-    for p in [vai_t, vai_p, khuyu_t, khuyu_p, hong_t, hong_p, dau_goi_t, dau_goi_p]:
-        draw_point(p)
+    # TÍNH TOÁN GÓC CẢ HAI BÊN
     goc_vai_t = tinh_goc(hong_t, vai_t, khuyu_t)
     goc_khuyu_t = tinh_goc(vai_t, khuyu_t, co_tay_t)
     
