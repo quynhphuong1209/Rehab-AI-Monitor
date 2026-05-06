@@ -3056,20 +3056,73 @@ def main():
             <div class="lecturer-name">TS. Trần Hồng Việt</div>
             <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
             <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+            <p style="color: #aaa; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown("""
+            <div class="member-card" style="border-color: #ffd700; border: 2px solid #ffd700;">
+                <div class="member-name">Đinh Lê Quỳnh Phương</div>
+                <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
+                <div class="member-class">Chuyên ngành Khoa học dữ liệu Y sinh</div>
+                <div class="member-id">MSSV: 2211090031</div>
+                <div class="member-id">📧 2211090031@studenthuph.edu.vn</div>
+                <div class="member-id">📱 0382665916</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
+        thanh_vien = [
+            ("Kim Mạnh Hưng", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
+            ("Nguyễn Hải An", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
+            ("Phan Vân Anh", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
+            ("Nguyễn Thị Thanh Nga", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
+        ]
+        
+        cols = st.columns(4)
+        for i, (ten, vai_tro, lop, mssv) in enumerate(thanh_vien):
+            with cols[i]:
+                st.markdown(f"""
+                <div class="member-card">
+                    <div class="member-name">{ten}</div>
+                    <div class="member-role">{vai_tro}</div>
+                    <div class="member-class">{lop}</div>
+                    <div class="member-id">MSSV: {mssv}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        st.markdown("### 🩺 CHUYÊN GIA LÂM SÀNG")
+        chuyen_gia = [
+            ("Nguyễn Thị Thơm", "Chuyên gia PHCN", "CNCQ KTPHCN3-1A", "2216030122"),
+            ("Nguyễn Thị Thu Hương", "Chuyên gia PHCN", "CNCQYTCC22-1A", "2317010071"),
+        ]
+        
+        cols = st.columns(2)
+        for i, (ten, vai_tro, lop, mssv) in enumerate(chuyen_gia):
+            with cols[i]:
+                st.markdown(f"""
+                <div class="member-card">
+                    <div class="member-name">{ten}</div>
+                    <div class="member-role">{vai_tro}</div>
+                    <div class="member-class">{lop}</div>
+                    <div class="member-id">MSSV: {mssv}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
         st.markdown("""
-        <div class="member-card" style="border: 2px solid #ffd700;">
-            <div class="member-name">Đinh Lê Quỳnh Phương</div>
-            <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
-            <div class="member-id">MSSV: 2211090031</div>
+        <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1.5rem; text-align: center;">
+            <p style="color: #ffd700; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
+            <p style="color: #ccc;">Khoa Phục hồi chức năng</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
         </div>
         """, unsafe_allow_html=True)
-        
-        st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
-        st.info("Nhóm nghiên cứu bao gồm các sinh viên chuyên ngành Khoa học dữ liệu Y sinh - HUPH.")
 
     # ==================== TAB 11: PHẢN HỒI ====================
     with tab11:
