@@ -149,12 +149,12 @@ st.markdown("""
 MAX_FILE_SIZE_MB = 500
 
 # ============================================
-# CẤU HÌNH XỬ LÝ - CHẤT LƯỢNG CAO
+# CẤU HÌNH XỬ LÝ - TỐI ƯU TỐC ĐỘ
 # ============================================
-SKIP_FRAMES = 1
-RESIZE_WIDTH = 540 # Giảm thêm một chút để ổn định RAM
-OUTPUT_QUALITY = 50 # Giảm chất lượng ảnh lưu đĩa để tiết kiệm RAM khi đọc
-MAX_FRAMES = 3000 # Nâng lên 3000 frames (đã an toàn nhờ cơ chế lưu JSON trên đĩa)
+SKIP_FRAMES = 2    # Xử lý cách 1 frame để tăng tốc gấp đôi (vẫn đủ độ mịn cho PHCN)
+RESIZE_WIDTH = 480 # Giảm thêm một chút để xử lý cực nhanh
+OUTPUT_QUALITY = 45 
+MAX_FRAMES = 2000  # Giới hạn để đảm bảo tốc độ trên server
 THUMBNAIL_QUALITY = 90
 THUMBNAIL_WIDTH = 400
 
@@ -1943,8 +1943,9 @@ def hien_thi_lich_nhac_nho():
 # ============================================
 # HÀM HIỂN THỊ LỊCH FRAMES ĐẦY ĐỦ
 # ============================================
+@st.fragment
 def hien_thi_frames_day_du():
-    """Hiển thị tất cả frames với phân trang - TỐI ƯU TỐC ĐỘ"""
+    """Hiển thị frames với Streamlit Fragment (Chỉ load lại vùng này, cực nhanh)"""
     
     if not st.session_state.get('all_frames_data_path') or not os.path.exists(st.session_state.all_frames_data_path):
         st.info("📭 Không có dữ liệu khung hình để hiển thị.")
