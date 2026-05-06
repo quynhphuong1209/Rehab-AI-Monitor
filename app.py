@@ -1609,7 +1609,17 @@ def hien_thi_tab_phan_tich():
     if video_path and os.path.exists(video_path):
         st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH CHI TIẾT")
         with st.container():
-           # TẠO CÁC TAB CON TRONG TAB PHÂN TÍCH
+            st.video(video_path)
+            with open(video_path, "rb") as file:
+                st.download_button(
+                    label="📥 Tải video kết quả (.mp4)",
+                    data=file,
+                    file_name=f"ket_qua_rehab_{int(time.time())}.mp4",
+                    mime="video/mp4"
+                )
+        st.markdown("---")
+
+    # TẠO CÁC TAB CON TRONG TAB PHÂN TÍCH
     sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5 = st.tabs([
         "📈 GÓC VAI", 
         "📊 GÓC KHUỶU", 
