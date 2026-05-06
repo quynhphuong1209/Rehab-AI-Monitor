@@ -113,8 +113,30 @@ st.set_page_config(
 # Fix lỗi hiển thị chữ "upload" và "arrow_down" do trình duyệt không tải được font Material Symbols
 st.markdown("""
 <style>
+/* Ẩn hoàn toàn Material Symbols icon text */
 .material-symbols-rounded {
     display: none !important;
+    visibility: hidden !important;
+    font-size: 0 !important;
+    color: transparent !important;
+}
+/* Ẩn chữ "upload" trong file uploader */
+[data-testid="stFileUploader"] .material-symbols-rounded,
+[data-testid="stFileUploaderDropzone"] span[class*="material"],
+button[data-testid*="upload"] span[class*="material"] {
+    display: none !important;
+}
+/* Ẩn chữ "arrow_down" trong expander */
+[data-testid="stExpander"] .material-symbols-rounded,
+details summary .material-symbols-rounded,
+[data-testid="stExpanderToggleIcon"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+/* Phòng ngừa toàn bộ icon dạng text */
+span[class^="material"], span[class*=" material"] {
+    font-size: 0 !important;
+    color: transparent !important;
 }
 </style>
 """, unsafe_allow_html=True)
