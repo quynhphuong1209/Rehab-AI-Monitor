@@ -110,30 +110,39 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Fix lỗi hiển thị chữ "upload", "arrow_right" do font Material Symbols chưa được load
+# Fix icon Material Symbols bị hiện chữ thô đè lên nội dung
 st.markdown("""
 <style>
-/* Load font Material Symbols từ Google CDN */
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
-
-/* Đảm bảo font áp dụng đúng cho tất cả icon elements */
+/* Ẩn chữ thô khi font chưa load xong */
 .material-symbols-rounded {
-    font-family: 'Material Symbols Rounded' !important;
-    font-weight: normal !important;
-    font-style: normal !important;
-    font-size: 20px !important;
-    line-height: 1 !important;
-    letter-spacing: normal !important;
-    text-transform: none !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    overflow: hidden !important;
     display: inline-block !important;
-    white-space: nowrap !important;
-    word-wrap: normal !important;
-    direction: ltr !important;
-    -webkit-font-feature-settings: 'liga' !important;
-    -webkit-font-smoothing: antialiased !important;
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 </style>
+<script>
+(function() {
+    // Load Material Symbols font và hiện icon khi sẵn sàng
+    var font = new FontFace(
+        'Material Symbols Rounded',
+        'url(https://fonts.gstatic.com/s/materialsymbolsrounded/v235/syl0-zNym6-2r347v-N9m672B7ScmHEk5s3oVs7LfAk.woff2)',
+        { style: 'normal', weight: '400', display: 'block' }
+    );
+    font.load().then(function(loadedFont) {
+        document.fonts.add(loadedFont);
+        // Khi font sẵn sàng, hiện icons đúng kích thước
+        var style = document.createElement('style');
+        style.textContent = '.material-symbols-rounded { font-family: "Material Symbols Rounded" !important; font-size: 20px !important; line-height: 1 !important; width: auto !important; height: auto !important; overflow: visible !important; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24 !important; }';
+        document.head.appendChild(style);
+    }).catch(function() {
+        // Font thất bại - giữ nguyên hidden để không đè nội dung
+        console.log('Material Symbols font failed to load, icons hidden');
+    });
+})();
+</script>
 """, unsafe_allow_html=True)
 
 MAX_FILE_SIZE_MB = 500
