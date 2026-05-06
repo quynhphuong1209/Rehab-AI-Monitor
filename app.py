@@ -401,6 +401,9 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     rgb_square = cv2.cvtColor(square_frame, cv2.COLOR_BGR2RGB)
     ket_qua = model.process(rgb_square)
     
+    # Định nghĩa rgb gốc để tránh lỗi ở các phần xử lý bên dưới
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
     frame_output = frame.copy()
     h, w = h_orig, w_orig # Giữ lại kích thước gốc để tính toán
     
