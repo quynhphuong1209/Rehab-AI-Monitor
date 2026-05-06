@@ -19,6 +19,7 @@ import tempfile
 import time
 import plotly.graph_objects as go
 import plotly.express as px
+import plotly.figure_factory as ff
 from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import warnings
