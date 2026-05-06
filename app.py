@@ -2243,21 +2243,6 @@ def hien_thi_tab_phan_tich():
                 comments.append("🤝 Hệ số tương quan ICC cao, kết quả có độ lặp lại và đồng nhất tốt.")
 
             st.info("\n".join(comments))
-            
-            fig_box = ve_bieu_do_boxplot(df)
-            fig_box.write_image("temp_box.png", width=1000, height=500, scale=2)
-            zip_file.write("temp_box.png", "boxplot.png")
-            os.remove("temp_box.png")
-                
-                zip_buffer.seek(0)
-                st.download_button(
-                    "✅ Click để tải xuống",
-                    zip_buffer,
-                    "tat_ca_bieu_do.zip",
-                    "application/zip"
-                )
-            except Exception as e:
-                st.error(f"❌ Lỗi xuất ảnh: {e}\nVui lòng cài đặt: pip install -U kaleido")
 
     # === SUB TAB 5: ĐÁNH GIÁ KHOA HỌC ===
     with sub_tab5:
