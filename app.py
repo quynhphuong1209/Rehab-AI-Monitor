@@ -2970,23 +2970,83 @@ def main():
         
     # ==================== TAB 9: ĐỀ TÀI NCKH ====================
     with tab9:
-        st.markdown("### 📚 ĐỀ TÀI: PHÁT TRIỂN MÔ HÌNH GIÁM SÁT TẬP LUYỆN PHCN TỪ XA")
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid #2a5298;">
+            <h2 style="color: white; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
+            <p style="color: #ffd700; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
+            <p style="color: #ccc;">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
             st.markdown("""
-            Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) ngày càng tăng cao. 
-            Mặc dù nhu cầu lớn, song năng lực cung cấp dịch vụ tại Việt Nam vẫn còn hạn chế. Dự án này nhằm phát triển giải pháp giám sát tập luyện từ xa dựa trên AI.
+            Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
+            
+            Theo Tổ chức Y tế Thế giới (WHO), hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng, chiếm gần một phần ba dân số toàn cầu. Tại Việt Nam, theo Hội Phục hồi chức năng Việt Nam (2023), có khoảng 7,06% dân số từ 2 tuổi trở lên là người khuyết tật, trong đó phần lớn cần được can thiệp PHCN.
+            
+            Mặc dù nhu cầu PHCN lớn, song năng lực cung cấp dịch vụ này tại Việt Nam vẫn còn hạn chế. Trung bình 10.000 người dân chỉ có 0,25 nhân viên phục hồi chức năng, thấp hơn đáng kể so với khuyến nghị của WHO là 0,5-1 người/10.000 dân. Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà sau khi xuất viện mà thiếu sự giám sát chuyên môn.
+            
+            Xuất phát từ thực tiễn trên, nhóm nghiên cứu quyết định thực hiện đề tài: **"Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)"**.
             """)
+        
         with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
             st.markdown("""
-            **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá các bài tập PHCN khớp vai.
-            **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công của chuyên gia.
+            **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập phục hồi chức năng cho bệnh nhân viêm quanh khớp vai, bao gồm:
+            - Bài tập con lắc Codman
+            - Bài tập với gậy
+            - Bài tập với dây kháng lực
+            
+            **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công trên một tập dữ liệu nhỏ.
             """)
+        
+        with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP NGHIÊN CỨU", expanded=True):
+            st.markdown("""
+            **Đối tượng nghiên cứu:** 05 bệnh nhân viêm quanh khớp vai + nhóm chuyên gia PHCN tại Khoa Phục hồi chức năng, Bệnh viện Đa khoa Phạm Ngọc Thạch.
+            
+            **Thiết kế nghiên cứu:** Nghiên cứu định lượng, phát triển mô hình học máy.
+            
+            **Công nghệ sử dụng:** 
+            - MediaPipe Pose Estimation cho ước lượng tư thế
+            - Python và các thư viện xử lý ảnh (OpenCV, NumPy, Pandas)
+            - Streamlit cho giao diện người dùng
+            - Plotly cho trực quan hóa dữ liệu
+            
+            **Cỡ mẫu dự kiến:** 500-1000 chuỗi chuyển động.
+            """)
+        
         with st.expander("📊 KẾT QUẢ DỰ KIẾN", expanded=True):
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric("Độ chính xác (Accuracy)", "≥ 90%")
+                st.metric("F1-Score", "≥ 0.85")
             with col2:
+                st.metric("Sai số MAE", "< 5°")
                 st.metric("Hệ số ICC", "≥ 0.75")
+            with col3:
+                st.metric("Precision", "≥ 0.85")
+                st.metric("Recall", "≥ 0.85")
+        
+        with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
+            st.markdown("""
+            **- Về khoa học và đào tạo:** Xây dựng mô hình nhận diện động tác PHCN, tạo bộ dữ liệu chuẩn hóa, là tài liệu thực hành cho sinh viên ngành Khoa học dữ liệu y sinh.
+            
+            **- Về phát triển kinh tế:** Giảm chi phí đi lại, giảm tải cho nhân viên y tế, tối ưu nguồn lực bệnh viện.
+            
+            **- Về xã hội:** Tăng khả năng tiếp cận dịch vụ PHCN, thúc đẩy chuyển đổi số y tế, xây dựng hệ thống chăm sóc sức khỏe thông minh.
+            """)
+        
+        with st.expander("📚 TÀI LIỆU THAM KHẢO", expanded=False):
+            st.markdown("""
+            1. WHO. Rehabilitation 2030: A call for action.
+            2. Cieza A, et al. Global estimates of the need for rehabilitation. Lancet. 2021.
+            3. Lugaresi C, et al. MediaPipe: A Framework for Building Perception Pipelines. arXiv. 2019.
+            4. Cao Z, et al. OpenPose: Realtime Multi-Person 2D Pose Estimation. arXiv. 2019.
+            5. Hellstén T, et al. Reliability and validity of computer vision-based markerless human pose estimation. Healthc Technol Lett. 2025.
+            6. Ino T, et al. Validity and Reliability of OpenPose-Based Motion Analysis. J Sports Sci Med. 2024.
+            7. Aguilar-Ortega R, et al. UCO Physical Rehabilitation: New Dataset and Study. Sensors. 2023.
+            8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
+            """)
 
     # ==================== TAB 10: THÀNH VIÊN ====================
     with tab10:
