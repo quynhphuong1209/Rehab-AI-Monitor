@@ -36,21 +36,10 @@ from concurrent.futures import ThreadPoolExecutor
 from PIL import Image, ImageDraw, ImageFont
 
 # IMPORT MEDIAPIPE
-try:
-    import mediapipe as mp
-    if hasattr(mp, 'solutions'):
-        mp_pose = mp.solutions.pose
-        mp_drawing = mp.solutions.drawing_utils
-        mp_drawing_styles = mp.solutions.drawing_styles
-    else:
-        raise AttributeError("MediaPipe solutions not found")
-except (ImportError, AttributeError) as e:
-    st.error(f"Lỗi import MediaPipe: {e}")
-    import mediapipe.python.solutions as mp_solutions
-    mp = mp_solutions
-    mp_pose = mp.pose
-    mp_drawing = mp.drawing_utils
-    mp_drawing_styles = mp.drawing_styles
+import mediapipe as mp
+mp_pose = mp.solutions.pose
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
 
 warnings.filterwarnings("ignore")
 
