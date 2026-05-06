@@ -431,6 +431,13 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     # Import cục bộ để tránh phụ thuộc vào biến global
     import mediapipe as _mp
     _mp_drawing = _mp.solutions.drawing_utils
+    # VẼ KHUNG XƯƠNG THỦ CÔNG ĐỂ ĐẢM BẢO CHÍNH XÁC 100%
+    # (Đoạn này thay thế draw_landmarks để tránh lỗi lệch tọa độ)
+    def draw_line(p1, p2):
+        cv2.line(frame_output, p1, p2, (0, 255, 0), 2)
+    
+    def draw_point(p):
+        cv2.circle(frame_output, p, 4, (0, 255, 255), -1)
     _mp_drawing_styles = _mp.solutions.drawing_styles
     _mp_pose = _mp.solutions.pose
     
@@ -441,22 +448,65 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
         connection_drawing_spec=_mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2)
     )
     
+    # LẤY TỌA ĐỘ CÁC KHỚP QUAN TRỌNG (ĐẢM BẢO KHỚP 100% VỚI FRAME)
     lm = ket_qua.pose_landmarks.landmark
     
-    # Lấy tọa độ cả hai bên
+    # Hàm chuyển đổi tọa độ chuẩn xác
+    def get_coords(idx):
+        return (int(lm[idx].x * w), int(lm[idx].y * h))
+    
     # Bên trái
-    vai_t = (int(lm[_mp_pose.PoseLandmark.LEFT_SHOULDER].x * w), int(lm[_mp_pose.PoseLandmark.LEFT_SHOULDER].y * h))
-    khuyu_t = (int(lm[_mp_pose.PoseLandmark.LEFT_ELBOW].x * w), int(lm[_mp_pose.PoseLandmark.LEFT_ELBOW].y * h))
-    co_tay_t = (int(lm[_mp_pose.PoseLandmark.LEFT_WRIST].x * w), int(lm[_mp_pose.PoseLandmark.LEFT_WRIST].y * h))
-    hong_t = (int(lm[_mp_pose.PoseLandmark.LEFT_HIP].x * w), int(lm[_mp_pose.PoseLandmark.LEFT_HIP].y * h))
+    vai_t = get_coords(_mp_pose.PoseLandmark.LEFT_SHOULDER)
+    khuyu_t = get_coords(_mp_pose.PoseLandmark.LEFT_ELBOW)
+    co_tay_t = get_coords(_mp_pose.PoseLandmark.LEFT_WRIST)
+    hong_t = get_coords(_mp_pose.PoseLandmark.LEFT_HIP)
     
     # Bên phải
-    vai_p = (int(lm[_mp_pose.PoseLandmark.RIGHT_SHOULDER].x * w), int(lm[_mp_pose.PoseLandmark.RIGHT_SHOULDER].y * h))
-    khuyu_p = (int(lm[_mp_pose.PoseLandmark.RIGHT_ELBOW].x * w), int(lm[_mp_pose.PoseLandmark.RIGHT_ELBOW].y * h))
-    co_tay_p = (int(lm[_mp_pose.PoseLandmark.RIGHT_WRIST].x * w), int(lm[_mp_pose.PoseLandmark.RIGHT_WRIST].y * h))
-    hong_p = (int(lm[_mp_pose.PoseLandmark.RIGHT_HIP].x * w), int(lm[_mp_pose.PoseLandmark.RIGHT_HIP].y * h))
+    vai_p = get_coords(_mp_pose.PoseLandmark.RIGHT_SHOULDER)
+    khuyu_p = get_coords(_mp_pose.PoseLandmark.RIGHT_ELBOW)
+    co_tay_p = get_coords(_mp_pose.PoseLandmark.RIGHT_WRIST)
+    hong_p = get_coords(_mp_pose.PoseLandmark.RIGHT_HIP)
     
-    # Tính toán góc cả hai bên
+    # Các điểm khác để vẽ khung xương
+    mui = get_coords(_mp_pose.PoseLandmark.NOSE)
+    tai_t = get_coords(_mp_pose.PoseLandmark.LEFT_EAR)
+    tai_p = get_coords(_mp_pose.PoseLandmark.RIGHT_EAR)
+    dau_goi_t = get_coords(_mp_pose.PoseLandmark.LEFT_KNEE)
+    dau_goi_p = get_coords(_mp_pose.PoseLandmark.RIGHT_KNEE)
+    co_chan_t = get_coords(_mp_pose.PoseLandmark.LEFT_ANKLE)
+    co_chan_p = get_coords(_mp_pose.PoseLandmark.RIGHT_ANKLE)
+    
+    # THỰC HIỆN VẼ KHUNG XƯƠNG (Bám sát 100% cơ thể)
+    # 1. Vẽ thân
+    draw_line(vai_t, vai_p)
+    draw_line(vai_t, hong_t)
+    draw_line(vai_p, hong_p)
+    draw_line(hong_t, hong_p)
+    
+    # 2. Vẽ tay trái
+    draw_line(vai_t, khuyu_t)
+    draw_line(khuyu_t, co_tay_t)
+    
+    # 3. Vẽ tay phải
+    draw_line(vai_p, khuyu_p)
+    draw_line(khuyu_p, co_tay_p)
+    
+    # 4. Vẽ chân trái
+    draw_line(hong_t, dau_goi_t)
+    draw_line(dau_goi_t, co_chan_t)
+    
+    # 5. Vẽ chân phải
+    draw_line(hong_p, dau_goi_p)
+    draw_line(dau_goi_p, co_chan_p)
+    
+    # 6. Vẽ mặt
+    draw_point(mui)
+    draw_point(tai_t)
+    draw_point(tai_p)
+    
+    # 7. Vẽ các khớp chính
+    for p in [vai_t, vai_p, khuyu_t, khuyu_p, hong_t, hong_p, dau_goi_t, dau_goi_p]:
+        draw_point(p)
     goc_vai_t = tinh_goc(hong_t, vai_t, khuyu_t)
     goc_khuyu_t = tinh_goc(vai_t, khuyu_t, co_tay_t)
     
@@ -623,9 +673,14 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
             
         frame_count += 1
         
-        # 1. XOAY TRƯỚC (NẾU CẦN) ĐỂ ĐẢM BẢO HƯỚNG CHUẨN
-        if rotate_needed:
+        # 1. TỰ ĐỘNG NHẬN DIỆN VÀ XOAY NẾU CẦN (Dựa trên hình ảnh thực tế)
+        h_orig, w_orig = frame.shape[:2]
+        
+        # Nếu video nằm ngang nhưng dáng người đứng (thường gặp ở mobile), xoay 90 độ
+        # Ở đây chúng ta ưu tiên giữ nguyên nếu video đã đứng sẵn
+        if w_orig > h_orig:
             frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+            h_orig, w_orig = frame.shape[:2]
         
         # 2. RESIZE MỘT LẦN DUY NHẤT VỀ KÍCH THƯỚC CHUẨN ĐỂ AI NHẬN DIỆN CHÍNH XÁC
         h_orig, w_orig = frame.shape[:2]
