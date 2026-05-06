@@ -1073,6 +1073,45 @@ def ve_bieu_do_radar(tk):
     return fig
 
 def ve_bieu_do_boxplot(df):
+    """Vẽ biểu đồ boxplot so sánh"""
+    fig = go.Figure()
+    
+    fig.add_trace(go.Box(
+        y=df['goc_vai'],
+        name='Góc vai',
+        marker_color='#00CED1',
+        boxmean='sd',
+        hovertemplate='Góc vai: %{y:.1f}°<extra></extra>'
+    ))
+    
+    fig.add_trace(go.Box(
+        y=df['goc_khuyu'],
+        name='Góc khuỷu',
+        marker_color='#FF6B6B',
+        boxmean='sd',
+        hovertemplate='Góc khuỷu: %{y:.1f}°<extra></extra>'
+    ))
+    
+    fig.update_layout(
+        title=dict(
+            text="<b>📦 SO SÁNH PHÂN PHỐI GÓC (BOX PLOT)</b>",
+            font=dict(size=20, color='white', family='Arial Black'),
+            x=0.5
+        ),
+        yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')),
+                   gridcolor='rgba(255,255,255,0.1)', range=[0, 180]),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(26,26,46,0.9)',
+        showlegend=True,
+        legend=dict(
+            bgcolor='rgba(0,0,0,0.5)',
+            bordercolor='white',
+            borderwidth=1,
+            font=dict(color='white', size=12)
+        )
+    )
+    
+    return fig
 
 # ============================================
 # LƯU BIỂU ĐỒ THÀNH ẢNH
