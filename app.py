@@ -89,16 +89,27 @@ if 'forgot_password_mode' not in st.session_state:
 if 'processed_video_path' not in st.session_state:
     st.session_state.processed_video_path = None
 
-# KIỂM TRA ĐĂNG NHẬP GOOGLE (nếu đang dùng Streamlit auth)
+# KIỂM TRA ĐĂNG NHẬP GOOGLE (Hỗ trợ Streamlit Cloud Identity)
 try:
-    if hasattr(st, 'user') and st.user and getattr(st.user, 'email', None):
+    # Cách 1: Sử dụng st.experimental_user (Chuẩn mới của Streamlit Cloud)
+    if hasattr(st, 'experimental_user') and st.experimental_user.get("is_logged_in", False):
+        user = st.experimental_user
+        st.session_state.logged_in = True
+        st.session_state.user_info = {
+            "username": user.get("name") or user.get("email", "").split("@")[0],
+            "email": user.get("email"),
+            "auth_type": "google"
+        }
+    # Cách 2: Sử dụng st.user (Chuẩn cũ)
+    elif hasattr(st, 'user') and st.user and getattr(st.user, 'email', None):
         st.session_state.logged_in = True
         st.session_state.user_info = {
             "username": getattr(st.user, 'name', None) or st.user.email.split("@")[0],
             "email": st.user.email,
             "auth_type": "google"
         }
-except Exception:
+except Exception as e:
+    # st.write(f"Debug Auth: {e}") # Bật cái này nếu muốn debug lỗi đăng nhập
     pass
 
 
