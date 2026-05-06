@@ -2970,7 +2970,7 @@ def main():
         
     # ==================== TAB 9: ĐỀ TÀI NCKH ====================
     with tab9:
-        st.markdown(f"### 📚 ĐỀ TÀI: {bai_tap['de_tai']}")
+        st.markdown("### 📚 ĐỀ TÀI: PHÁT TRIỂN MÔ HÌNH GIÁM SÁT TẬP LUYỆN PHCN TỪ XA")
         with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
             st.markdown("""
             Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) ngày càng tăng cao. 
