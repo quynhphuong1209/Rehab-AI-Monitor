@@ -2229,8 +2229,9 @@ def hien_thi_dang_nhap_dang_ky():
         with t_google:
             st.markdown("""<div style="text-align:center; padding:20px;"><h3>Truy cập nhanh</h3><p>Đăng nhập bằng tài khoản Google của bạn</p></div>""", unsafe_allow_html=True)
             if st.button("🌐 TIẾP TỤC VỚI GOOGLE", use_container_width=True, type="primary"):
-                st.session_state.auth_initiated = True
-                st.login("google")
+                try:
+                    st.session_state.auth_initiated = True
+                    st.login("google")
                 except Exception as e:
                     st.error(f"⚠️ Lỗi cấu hình Google: {e}")
 
