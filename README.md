@@ -56,12 +56,3 @@ Hệ thống giúp tự động hóa việc giám sát và đánh giá các bài
 ---
 © 2025-2026 Rehab AI Monitor Team - Đại học Y tế Công cộng.
 
----
-title: Rehab AI Monitor
-emoji: 🏥
-colorFrom: blue
-colorTo: indigo
-sdk: streamlit
-pinned: false
-license: mit
----
