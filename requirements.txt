@@ -1,4 +1,6 @@
-streamlit
+httpx
+Authlib>=1.3.2
+streamlit==1.57.0
 opencv-python-headless
 mediapipe
 numpy
@@ -6,5 +8,3 @@ pandas
 plotly
 Pillow
 kaleido
-Authlib
-httpx
