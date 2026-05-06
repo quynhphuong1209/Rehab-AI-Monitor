@@ -100,14 +100,17 @@ if not st.session_state.get('logged_in'):
         elif hasattr(st, 'user') and st.user and getattr(st.user, 'email', None):
             user_detected = st.user
             
-        if user_detected:
+        if user_detected and user_detected.get("email"):
             st.session_state.logged_in = True
             st.session_state.user_info = {
                 "username": user_detected.get("name") or user_detected.get("email", "").split("@")[0],
                 "email": user_detected.get("email"),
                 "auth_type": "google"
             }
-            st.rerun() # Chuyển hướng ngay lập tức vào app chính
+            # Xóa trạng thái đang chờ auth
+            if 'auth_initiated' in st.session_state:
+                del st.session_state['auth_initiated']
+            st.rerun() 
     except Exception as e:
         pass
 
@@ -2276,7 +2279,6 @@ def hien_thi_dang_nhap_dang_ky():
             
             if st.button("🌐 TIẾP TỤC VỚI GOOGLE", use_container_width=True, type="primary"):
                 try:
-                    # Ghi nhận trạng thái để sau khi redirect quay lại sẽ check
                     st.session_state.auth_initiated = True
                     st.login("google")
                 except Exception as e:
