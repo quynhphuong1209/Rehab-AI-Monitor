@@ -53,6 +53,36 @@ except (ImportError, AttributeError) as e:
 warnings.filterwarnings("ignore")
 
 # ============================================
+# QUẢN LÝ NGƯỜI DÙNG & BẢO MẬT
+# ============================================
+USER_DATA_FILE = "users.json"
+
+def load_users():
+    if os.path.exists(USER_DATA_FILE):
+        try:
+            with open(USER_DATA_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_users(users):
+    with open(USER_DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=4)
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password, hashed):
+    return hash_password(password) == hashed
+
+# Khởi tạo trạng thái đăng nhập
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'user_info' not in st.session_state:
+    st.session_state.user_info = None
+
+# ============================================
 # CẤU HÌNH TRANG
 # ============================================
 st.set_page_config(
@@ -1924,9 +1954,72 @@ def hien_thi_frames_day_du():
 
 
 # ============================================
+# GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
+# ============================================
+def hien_thi_dang_nhap_dang_ky():
+    st.markdown("""
+    <div style="text-align: center; padding: 1rem 0 2rem 0;">
+        <h1 style="color: #ffd700; font-size: 2.5rem;">🏥 Rehab AI Monitor</h1>
+        <p style="color: #aaa; font-size: 1.1rem;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        tab_login, tab_register = st.tabs(["🔑 ĐĂNG NHẬP", "📝 ĐĂNG KÝ MỚI"])
+        
+        with tab_login:
+            with st.form("login_form"):
+                username = st.text_input("Tên đăng nhập", placeholder="Nhập tên đăng nhập của bạn")
+                password = st.text_input("Mật khẩu", type="password", placeholder="Nhập mật khẩu")
+                submitted = st.form_submit_button("ĐĂNG NHẬP", use_container_width=True)
+                
+                if submitted:
+                    users = load_users()
+                    if username in users and verify_password(password, users[username]['password']):
+                        st.session_state.logged_in = True
+                        st.session_state.user_info = {"username": username}
+                        st.success("🎉 Đăng nhập thành công!")
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error("❌ Tên đăng nhập hoặc mật khẩu không chính xác")
+                        
+        with tab_register:
+            with st.form("register_form"):
+                st.info("💡 Tạo tài khoản để bắt đầu theo dõi tiến trình tập luyện")
+                new_username = st.text_input("Tên đăng nhập mới", placeholder="Chọn tên đăng nhập")
+                new_password = st.text_input("Mật khẩu mới", type="password", placeholder="Tối thiểu 6 ký tự")
+                confirm_password = st.text_input("Xác nhận mật khẩu", type="password", placeholder="Nhập lại mật khẩu")
+                reg_submitted = st.form_submit_button("ĐĂNG KÝ TÀI KHOẢN", use_container_width=True)
+                
+                if reg_submitted:
+                    if not new_username or not new_password:
+                        st.warning("⚠️ Vui lòng nhập đầy đủ thông tin")
+                    elif len(new_password) < 6:
+                        st.warning("⚠️ Mật khẩu phải có ít nhất 6 ký tự")
+                    elif new_password != confirm_password:
+                        st.error("❌ Mật khẩu xác nhận không khớp")
+                    else:
+                        users = load_users()
+                        if new_username in users:
+                            st.error("❌ Tên đăng nhập đã tồn tại")
+                        else:
+                            users[new_username] = {
+                                "password": hash_password(new_password),
+                                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            }
+                            save_users(users)
+                            st.success("✅ Đăng ký thành công! Hãy chuyển sang Tab Đăng nhập.")
+
+# ============================================
 # MAIN - GIỮ NGUYÊN CẤU TRÚC TAB
 # ============================================
 def main():
+    if not st.session_state.logged_in:
+        hien_thi_dang_nhap_dang_ky()
+        return
+
     st.markdown("""
     <div class="main-header">
         <h1>🏥 Hệ thống giám sát tập luyện Phục hồi chức năng từ xa</h1>
@@ -1937,7 +2030,14 @@ def main():
     """, unsafe_allow_html=True)
     
     with st.sidebar:
-        st.markdown("### 👤 THÔNG TIN BỆNH NHÂN")
+        st.markdown(f"### 👤 Xin chào, **{st.session_state.user_info['username']}**")
+        if st.button("🚪 Đăng xuất", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.user_info = None
+            st.rerun()
+            
+        st.markdown("---")
+        st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
         ten_benh_nhan = st.text_input("Họ và tên", placeholder="VD: Nguyễn Văn A")
         ma_benh_nhan = st.text_input("Mã số bệnh nhân", placeholder="VD: BN0001")
         col1, col2 = st.columns(2)
@@ -1946,7 +2046,8 @@ def main():
         
         st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
         chan_doan = st.selectbox("Chẩn đoán", ["","Viêm quanh khớp vai", "Hội chứng chóp xoay", "Đông cứng khớp vai"])
-        muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
+        muc_do_dau = st.slider("Mức độ dau (VAS 0-10)", 0, 10, 3)
+
         
         st.markdown("### 🎯 CHỌN BÀI TẬP")
         ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
