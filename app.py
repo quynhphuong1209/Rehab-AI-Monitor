@@ -29,6 +29,7 @@ import subprocess
 import hashlib
 import threading
 import queue
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 import gc
 from concurrent.futures import ThreadPoolExecutor
 
@@ -427,81 +428,78 @@ def hien_thi_tab_phan_hoi():
         """, unsafe_allow_html=True)
 
 # ============================================
-# HÀM HIỂN THỊ TAB: PHÂN TÍCH REAL-TIME (MỚI)
+# LỚP XỬ LÝ VIDEO REAL-TIME (WEBRTC)
 # ============================================
+class PoseProcessor(VideoProcessorBase):
+    def __init__(self):
+        self.pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+        self.bai_tap = None
+
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        img = cv2.flip(img, 1)
+        h, w, _ = img.shape
+        
+        # Xử lý với MediaPipe
+        results = self.pose.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        
+        if results.pose_landmarks:
+            mp_drawing.draw_landmarks(img, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+            
+            try:
+                landmarks = results.pose_landmarks.landmark
+                # Lấy tọa độ các khớp (Bên trái)
+                vai = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y * h]
+                khuyu = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y * h]
+                co_tay = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y * h]
+                hong = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y * h]
+                
+                g_vai = tinh_goc(hong, vai, khuyu)
+                g_khuyu = tinh_goc(vai, khuyu, co_tay)
+                
+                # Hiển thị
+                cv2.putText(img, f"VAI: {int(g_vai)}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                cv2.putText(img, f"KHUYU: {int(g_khuyu)}", (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                
+                # Cảnh báo (Nếu có bài tập chuẩn)
+                if self.bai_tap:
+                    if abs(g_vai - self.bai_tap['chuan']['vai']) > self.bai_tap['chuan']['sai_so']:
+                        cv2.putText(img, "⚠️ SAI TU THE VAI!", (w//2-150, h//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+            except: pass
+            
+        import av
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
+
 def hien_thi_tab_realtime(bai_tap):
-    """Xử lý Camera trực tiếp và phân tích tại chỗ"""
+    """Xử lý Camera trực tiếp qua Trình duyệt (WebRTC)"""
     st.markdown("### 📹 TẬP LUYỆN TRỰC TIẾP VỚI AI (REAL-TIME)")
+    st.info("💡 Trình duyệt sẽ yêu cầu quyền Camera. Hãy nhấn 'Allow' để bắt đầu.")
     
-    col_c1, col_c2 = st.columns([2, 1])
+    RTC_CONFIGURATION = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
     
-    with col_c2:
+    col1, col2 = st.columns([2, 1])
+    
+    with col2:
         st.markdown(f"""
         <div class="info-box">
-            <h4>🎯 MỤC TIÊU: {bai_tap['ten']}</h4>
-            <p>🦾 Vai chuẩn: {bai_tap['chuan']['vai']}°</p>
-            <p>💪 Khuỷu chuẩn: {bai_tap['chuan']['khuyu']}°</p>
-            <p style="color: #ffd700;">AI sẽ tự động nhận diện và báo lỗi ngay trên màn hình.</p>
+            <h4>🎯 BÀI TẬP: {bai_tap['ten']}</h4>
+            <p>🦾 Mục tiêu Vai: {bai_tap['chuan']['vai']}°</p>
+            <p>💪 Mục tiêu Khuỷu: {bai_tap['chuan']['khuyu']}°</p>
+            <hr>
+            <p style="font-size: 0.8rem; color: #aaa;">Hệ thống sẽ vẽ khung xương và tính góc trực tiếp trên video của bạn.</p>
         </div>
         """, unsafe_allow_html=True)
-        
-        running = st.toggle("🚀 BẬT / TẮT CAMERA", key="realtime_toggle")
-        
-    with col_c1:
-        placeholder = st.empty()
-        
-        if running:
-            cap = cv2.VideoCapture(0)
-            if not cap.isOpened():
-                st.error("❌ Không tìm thấy Webcam! Vui lòng kiểm tra lại thiết bị.")
-                return
 
-            # Cấu hình Pose
-            with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-                while cap.isOpened() and st.session_state.get("realtime_toggle", False):
-                    success, frame = cap.read()
-                    if not success: break
-
-                    # Xử lý frame
-                    frame = cv2.flip(frame, 1)
-                    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    results = pose.process(image)
-                    
-                    # Vẽ và tính toán
-                    if results.pose_landmarks:
-                        mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-                        
-                        # Tính góc (Lấy ví dụ bên trái)
-                        try:
-                            landmarks = results.pose_landmarks.landmark
-                            h, w, _ = image.shape
-                            
-                            # Tọa độ các khớp
-                            vai = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y * h]
-                            khuyu = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y * h]
-                            co_tay = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y * h]
-                            hong = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y * h]
-                            
-                            goc_vai = tinh_goc(hong, vai, khuyu)
-                            goc_khuyu = tinh_goc(vai, khuyu, co_tay)
-                            
-                            # Hiển thị góc lên hình
-                            cv2.putText(image, f"VAI: {int(goc_vai)}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                            cv2.putText(image, f"KHUYU: {int(goc_khuyu)}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                            
-                            # Kiểm tra lỗi
-                            diff_vai = abs(goc_vai - bai_tap['chuan']['vai'])
-                            diff_khuyu = abs(goc_khuyu - bai_tap['chuan']['khuyu'])
-                            
-                            if diff_vai > bai_tap['chuan']['sai_so'] or diff_khuyu > bai_tap['chuan']['sai_so']:
-                                cv2.putText(image, "⚠️ SAI TU THE!", (w//2-100, h//2), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 4)
-                        except: pass
-                    
-                    placeholder.image(image, channels="RGB")
-                    
-                cap.release()
-        else:
-            placeholder.info("📷 Nhấn nút bên phải để bắt đầu tập luyện trực tiếp.")
+    with col1:
+        webrtc_ctx = webrtc_streamer(
+            key="rehab-pose",
+            video_processor_factory=PoseProcessor,
+            rtc_configuration=RTC_CONFIGURATION,
+            media_stream_constraints={"video": True, "audio": False},
+        )
+        
+        if webrtc_ctx.video_processor:
+            webrtc_ctx.video_processor.bai_tap = bai_tap
 
 
 # ============================================
