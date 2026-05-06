@@ -719,8 +719,19 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     cap.release()
     writer.release()
     
-    # ĐÃ XÓA TẠO ZIP TRÊN ĐĨA ĐỂ TIẾT KIỆM RAM/DISK (Tạo file ZIP 300MB có thể gây OOM)
-    zip_path = None
+    # TẠO FILE ZIP CHỨA TẤT CẢ FRAMES (Phục vụ tải xuống ở Tab 3)
+    zip_path = os.path.join(tempfile.gettempdir(), f"frames_{timestamp}.zip")
+    try:
+        import zipfile
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for frame_data in danh_sach_frame_data:
+                f_path = frame_data['path']
+                if os.path.exists(f_path):
+                    # Lưu vào zip với tên file rút gọn
+                    zipf.write(f_path, os.path.basename(f_path))
+    except Exception as e:
+        st.warning(f"⚠️ Không thể tạo file ZIP: {e}")
+        zip_path = None
 
     # LƯU DỮ LIỆU KHUNG HÌNH RA FILE JSON ĐỂ TIẾT KIỆM RAM
     json_path = os.path.join(tempfile.gettempdir(), f'frames_data_{timestamp}.json')
