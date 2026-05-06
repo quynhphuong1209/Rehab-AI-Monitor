@@ -1857,7 +1857,12 @@ def hien_thi_tab_phan_tich():
         col_pie, col_metrics = st.columns([1, 1])
         
         with col_pie:
-            st.plotly_chart(ve_bieu_do_tron_thong_ke(tk), use_container_width=True)
+            fig_pie = ve_bieu_do_tron_thong_ke(tk)
+            st.plotly_chart(fig_pie, use_container_width=True)
+            try:
+                img_pie = fig_pie.to_image(format="png")
+                st.download_button("📥 Tải ảnh biểu đồ tròn", img_pie, "phan_bo_ket_qua.png", "image/png", use_container_width=True)
+            except: pass
             
         with col_metrics:
             st.markdown("#### 📑 CHỈ SỐ HIỆU SUẤT")
@@ -1889,22 +1894,44 @@ def hien_thi_tab_phan_tich():
     # === TAB 2: PHÂN TÍCH KHỚP ===
     with tab_joint:
         st.markdown("#### 📈 BIỂU ĐỒ GÓC VAI")
-        st.plotly_chart(ve_bieu_do_goc_vai(df, bt), use_container_width=True)
-        st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
+        fig_vai = ve_bieu_do_goc_vai(df, bt)
+        st.plotly_chart(fig_vai, use_container_width=True)
+        col_m1, col_dl1 = st.columns([2, 1])
+        with col_m1:
+            st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
+        with col_dl1:
+            try:
+                st.download_button("📥 Tải ảnh biểu đồ Vai", fig_vai.to_image(format="png"), "bieu_do_vai.png", "image/png", use_container_width=True)
+            except: pass
         
         st.markdown("---")
         st.markdown("#### 📊 BIỂU ĐỒ GÓC KHUỶU")
-        st.plotly_chart(ve_bieu_do_goc_khuyu(df, bt), use_container_width=True)
-        st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
+        fig_khuyu = ve_bieu_do_goc_khuyu(df, bt)
+        st.plotly_chart(fig_khuyu, use_container_width=True)
+        col_m2, col_dl2 = st.columns([2, 1])
+        with col_m2:
+            st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
+        with col_dl2:
+            try:
+                st.download_button("📥 Tải ảnh biểu đồ Khuỷu", fig_khuyu.to_image(format="png"), "bieu_do_khuyu.png", "image/png", use_container_width=True)
+            except: pass
         
         st.markdown("---")
-        st.plotly_chart(ve_bieu_do_histogram(df, bt), use_container_width=True)
+        fig_hist = ve_bieu_do_histogram(df, bt)
+        st.plotly_chart(fig_hist, use_container_width=True)
+        try:
+            st.download_button("📥 Tải ảnh biểu đồ Histogram", fig_hist.to_image(format="png"), "histogram_goc.png", "image/png")
+        except: pass
 
     # === TAB 3: NÂNG CAO (BOXPLOT) ===
     with tab_advanced:
         st.markdown("### 📦 PHÂN TÍCH BIÊN ĐỘ VẬN ĐỘNG (ROM)")
         st.info("💡 Biểu đồ này giúp bác sĩ so sánh sự ổn định của góc khớp giữa các lần thực hiện đúng và sai.")
-        st.plotly_chart(ve_bieu_do_boxplot_phan_loai(df), use_container_width=True)
+        fig_box = ve_bieu_do_boxplot_phan_loai(df)
+        st.plotly_chart(fig_box, use_container_width=True)
+        try:
+            st.download_button("📥 Tải ảnh biểu đồ Boxplot", fig_box.to_image(format="png"), "boxplot_rom.png", "image/png")
+        except: pass
 
     # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
     with tab_clinical:
