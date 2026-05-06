@@ -992,6 +992,138 @@ def ve_bieu_do_histogram(df, bt):
     return fig
 
 
+def ve_bieu_do_tron_thong_ke(tk):
+    """Vẽ biểu đồ tròn thống kê kết quả tập luyện (Pass/Nearly/Fail)"""
+    labels = ['ĐÚNG (Pass)', 'GẦN ĐÚNG (Nearly)', 'SAI (Fail)']
+    
+    # Tính toán số lượng cho từng loại
+    fail_count = tk['tong_frame_hop_le'] - tk['frame_dung'] - tk['frame_gan_dung']
+    values = [tk['frame_dung'], tk['frame_gan_dung'], max(0, fail_count)]
+    
+    colors = ['#00FF00', '#FFA500', '#FF4444'] # Xanh, Cam, Đỏ
+    
+    fig = go.Figure(data=[go.Pie(
+        labels=labels, 
+        values=values, 
+        hole=.4,
+        marker=dict(colors=colors, line=dict(color='#1a1a2e', width=2)),
+        textinfo='percent+label',
+        hovertemplate="<b>%{label}</b><br>Số lượng: %{value} frames<br>Tỷ lệ: %{percent}<extra></extra>"
+    )])
+    
+    fig.update_layout(
+        title=dict(
+            text="<b>📊 PHÂN BỔ KẾT QUẢ TẬP LUYỆN</b>",
+            font=dict(size=18, color='white'),
+            x=0.5
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5),
+        height=450,
+        margin=dict(t=80, b=50, l=20, r=20)
+    )
+    return fig
+
+def ve_bieu_do_boxplot_phan_loai(df):
+    """Vẽ biểu đồ Boxplot phân loại góc theo kết quả (Đúng/Sai/Gần đúng)"""
+    # Gán nhãn cho từng frame
+    plot_df = df.copy()
+    def classify(row):
+        if row['dung']: return 'ĐÚNG (Pass)'
+        if row['gan_dung']: return 'GẦN ĐÚNG (Nearly)'
+        return 'SAI (Fail)'
+    
+    plot_df['Phân loại'] = plot_df.apply(classify, axis=1)
+    
+    fig = make_subplots(rows=1, cols=2, subplot_titles=("<b>Góc Vai theo nhóm</b>", "<b>Góc Khuỷu theo nhóm</b>"))
+    
+    colors = {'ĐÚNG (Pass)': '#00FF00', 'GẦN ĐÚNG (Nearly)': '#FFA500', 'SAI (Fail)': '#FF4444'}
+    
+    for label in ['ĐÚNG (Pass)', 'GẦN ĐÚNG (Nearly)', 'SAI (Fail)']:
+        subset = plot_df[plot_df['Phân loại'] == label]
+        if not subset.empty:
+            # Boxplot Vai
+            fig.add_trace(go.Box(
+                y=subset['goc_vai'],
+                name=label,
+                marker_color=colors[label],
+                boxmean='sd',
+                legendgroup=label,
+                showlegend=True
+            ), row=1, col=1)
+            
+            # Boxplot Khuỷu
+            fig.add_trace(go.Box(
+                y=subset['goc_khuyu'],
+                name=label,
+                marker_color=colors[label],
+                boxmean='sd',
+                legendgroup=label,
+                showlegend=False
+            ), row=1, col=2)
+            
+    fig.update_layout(
+        title=dict(
+            text="<b>📦 PHÂN TÍCH BIÊN ĐỘ THEO NHÓM KẾT QUẢ</b>",
+            font=dict(size=18, color='white'),
+            x=0.5
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
+        height=500,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+        margin=dict(t=80, b=100)
+    )
+    
+    fig.update_yaxes(title_text="Góc (độ)", gridcolor='rgba(255,255,255,0.1)')
+    
+    return fig
+
+def lay_nhan_dinh_lam_sang(goc_vai, goc_khuyu, bt):
+    """Cung cấp nhận định lâm sàng dựa trên lỗi phát hiện"""
+    cv = bt['chuan']['vai']
+    ck = bt['chuan']['khuyu']
+    ss = bt['chuan']['sai_so']
+    
+    nhan_dinh = []
+    
+    # Phân tích góc vai
+    if goc_vai > cv + ss:
+        nhan_dinh.append({
+            "loai": "VAI - QUÁ BIÊN ĐỘ",
+            "chi_so": f"{goc_vai:.1f}° > {cv+ss}°",
+            "canh_bao": "Nguy cơ trật khớp vai hoặc tổn thương bao khớp phía trước.",
+            "loi_khuyen": "Cần kiểm soát cơ delta tốt hơn, tránh vung tay quá đà."
+        })
+    elif goc_vai < cv - ss:
+        nhan_dinh.append({
+            "loai": "VAI - THIẾU BIÊN ĐỘ",
+            "chi_so": f"{goc_vai:.1f}° < {cv-ss}°",
+            "canh_bao": "Dấu hiệu của hội chứng đông cứng khớp vai hoặc đau do chạm (Impingement).",
+            "loi_khuyen": "Thực hiện các bài tập kéo giãn nhẹ nhàng trước khi tập chính thức."
+        })
+        
+    # Phân tích góc khuỷu
+    if goc_khuyu > ck + ss:
+        nhan_dinh.append({
+            "loai": "KHUỶU - QUÁ DUỖI",
+            "chi_so": f"{goc_khuyu:.1f}° > {ck+ss}°",
+            "canh_bao": "Gây áp lực lên mỏm khuỷu và dây chằng bên trong.",
+            "loi_khuyen": "Giữ khớp khuỷu hơi gập nhẹ (micro-bend) để bảo vệ khớp."
+        })
+    elif goc_khuyu < ck - ss:
+        nhan_dinh.append({
+            "loai": "KHUỶU - QUÁ GẬP",
+            "chi_so": f"{goc_khuyu:.1f}° < {ck-ss}°",
+            "canh_bao": "Căng cơ nhị đầu quá mức, nguy cơ viêm gân vùng khuỷu.",
+            "loi_khuyen": "Thả lỏng cánh tay và tập trung vào cơ mục tiêu."
+        })
+        
+    return nhan_dinh
+
 def ve_bieu_do_radar(tk):
     """Vẽ biểu đồ Radar so sánh các chỉ số khoa học"""
     categories = [
@@ -1573,7 +1705,7 @@ st.markdown("""
 # HÀM HIỂN THỊ TAB 2 - THIẾT KẾ LẠI
 # ============================================
 def hien_thi_tab_phan_tich():
-    """Hiển thị tab phân tích với thiết kế sáng tạo"""
+    """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
     
     if not st.session_state.has_data or not st.session_state.stats:
         st.info("ℹ️ Chưa có kết quả. Vui lòng upload video ở tab TRANG CHỦ.")
@@ -1583,164 +1715,160 @@ def hien_thi_tab_phan_tich():
     tk = st.session_state.stats
     df = st.session_state.angle_df
     
-    # Header thông tin
+    # 1. HEADER CHỈ SỐ TỔNG QUAN (CỐ ĐỊNH)
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
                 border-radius: 20px; padding: 1.5rem; margin-bottom: 2rem; 
-                border: 1px solid #2a5298;">
+                border: 1px solid #2a5298; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h2 style="color: #ffd700; margin: 0;">📊 KẾT QUẢ PHÂN TÍCH</h2>
+                <h2 style="color: #ffd700; margin: 0; font-size: 1.8rem;">📊 DASHBOARD PHÂN TÍCH LÂM SÀNG</h2>
                 <p style="color: #aaa; margin: 0.5rem 0 0 0;">
-                    🏥 Bài tập: {bt['ten']} | ⏱️ Thời gian xử lý: {tk['thoi_gian']:.1f} giây
+                    🏥 Bài tập: {bt['ten']} | 🛡️ Độ tin cậy (ICC): {tk.get('icc', 0):.2f}
                 </p>
             </div>
             <div style="text-align: right;">
-                <p style="color: #00CED1; margin: 0;">✅ Độ chính xác: {tk['do_chinh_xac']:.1f}%</p>
-                <p style="color: #FF6B6B; margin: 0;">📸 Tổng số frame: {tk['tong_frame']}</p>
+                <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
+                    <span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
+                </div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # HIỂN THỊ VIDEO ĐÃ PHÂN TÍCH
-    video_path = st.session_state.get('processed_video_path')
-    if video_path and os.path.exists(video_path):
-        st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH CHI TIẾT")
-        with st.container():
-            st.video(video_path)
-            with open(video_path, "rb") as file:
-                st.download_button(
-                    label="📥 Tải video kết quả (.mp4)",
-                    data=file,
-                    file_name=f"ket_qua_rehab_{int(time.time())}.mp4",
-                    mime="video/mp4"
-                )
-        st.markdown("---")
-
-    # TẠO CÁC TAB CON
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5 = st.tabs([
-        "📈 GÓC VAI", 
-        "📊 GÓC KHUỶU", 
-        "⚠️ CẢNH BÁO CHI TIẾT",
-        "📁 XUẤT DỮ LIỆU",
-        "🔬 ĐÁNH GIÁ KHOA HỌC"
+    # 2. HỆ THỐNG TAB NỘI BỘ
+    tab_overview, tab_joint, tab_advanced, tab_clinical, tab_export = st.tabs([
+        "🏠 TỔNG QUAN", 
+        "📈 PHÂN TÍCH KHỚP", 
+        "📦 NÂNG CAO (BOXPLOT)",
+        "🩺 NHẬN ĐỊNH LÂM SÀNG",
+        "📁 XUẤT BÁO CÁO"
     ])
-    
-    # === SUB TAB 1: GÓC VAI ===
-    with sub_tab1:
-        st.markdown("### 📈 PHÂN TÍCH CHI TIẾT GÓC VAI")
-        fig_vai = ve_bieu_do_goc_vai(df, bt)
-        st.plotly_chart(fig_vai, use_container_width=True)
+
+    # === TAB 1: TỔNG QUAN ===
+    with tab_overview:
+        col_pie, col_metrics = st.columns([1, 1])
         
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("📊 Giá trị trung bình", f"{tk['tb_goc_vai']:.1f}°", delta=f"Chuẩn: {bt['chuan']['vai']}°")
-        with col2:
-            st.metric("📈 Giá trị lớn nhất", f"{tk['max_goc_vai']:.1f}°")
-        with col3:
-            st.metric("📉 Giá trị nhỏ nhất", f"{tk['min_goc_vai']:.1f}°")
-
-    # === SUB TAB 2: GÓC KHUỶU ===
-    with sub_tab2:
-        st.markdown("### 📊 PHÂN TÍCH CHI TIẾT GÓC KHUỶU")
-        fig_khuyu = ve_bieu_do_goc_khuyu(df, bt)
-        st.plotly_chart(fig_khuyu, use_container_width=True)
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("📊 Giá trị trung bình", f"{tk['tb_goc_khuyu']:.1f}°", delta=f"Chuẩn: {bt['chuan']['khuyu']}°")
-        with col2:
-            st.metric("📈 Giá trị lớn nhất", f"{tk['max_goc_khuyu']:.1f}°")
-        with col3:
-            st.metric("📉 Giá trị nhỏ nhất", f"{tk['min_goc_khuyu']:.1f}°")
-
-    # === SUB TAB 3: CẢNH BÁO ===
-    with sub_tab3:
-        st.markdown("### ⚠️ PHÂN TÍCH LỖI ĐỘNG TÁC")
-        if tk.get('warnings') and len(tk['warnings']) > 0:
-            warning_counts = {}
-            for w in tk['warnings']:
-                warning_counts[w] = warning_counts.get(w, 0) + 1
+        with col_pie:
+            st.plotly_chart(ve_bieu_do_tron_thong_ke(tk), use_container_width=True)
             
-            for warning, count in warning_counts.items():
-                st.error(f"❌ {warning} (Xuất hiện {count} lần)")
-            
-            fig_warning = go.Figure(data=[go.Pie(
-                labels=list(warning_counts.keys()),
-                values=list(warning_counts.values()),
-                hole=0.4,
-                marker_colors=['#FF6B6B', '#FFB347', '#4ECDC4', '#45B7D1']
-            )])
-            fig_warning.update_layout(title="Phân bố các loại lỗi", paper_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
-            st.plotly_chart(fig_warning, use_container_width=True)
-        else:
-            st.success("🎉 Không phát hiện lỗi nào! Bệnh nhân thực hiện rất tốt.")
+        with col_metrics:
+            st.markdown("#### 📑 CHỈ SỐ HIỆU SUẤT")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-value">{tk['frame_dung']}</div>
+                    <div class="metric-label">✅ Frames Đúng (Pass)</div>
+                </div>
+                <div class="metric-card" style="margin-top: 15px;">
+                    <div class="metric-value" style="color: #FFA500;">{tk['frame_gan_dung']}</div>
+                    <div class="metric-label">⚠️ Frames Gần Đúng</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with c2:
+                fail_frames = tk['tong_frame_hop_le'] - tk['frame_dung'] - tk['frame_gan_dung']
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-value" style="color: #FF4444;">{max(0, fail_frames)}</div>
+                    <div class="metric-label">❌ Frames Sai (Fail)</div>
+                </div>
+                <div class="metric-card" style="margin-top: 15px;">
+                    <div class="metric-value" style="color: #ffd700;">{tk['do_chinh_xac']:.1f}%</div>
+                    <div class="metric-label">🎯 Hiệu suất tổng thể</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-    # === SUB TAB 4: XUẤT DỮ LIỆU ===
-    with sub_tab4:
-        st.markdown("### 📁 XUẤT DỮ LIỆU PHÂN TÍCH")
+    # === TAB 2: PHÂN TÍCH KHỚP ===
+    with tab_joint:
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("#### 📄 DỮ LIỆU DẠNG BẢNG")
-            st.dataframe(df, height=300)
-            csv_data = df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Tải file CSV đầy đủ", csv_data, f"ket_qua_{int(time.time())}.csv", "text/csv")
-        
+            st.plotly_chart(ve_bieu_do_goc_vai(df, bt), use_container_width=True)
+            st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
         with col2:
-            st.markdown("#### 🖼️ TẢI XUỐNG BIỂU ĐỒ")
-            if st.button("📸 Tải tất cả biểu đồ (ZIP)"):
+            st.plotly_chart(ve_bieu_do_goc_khuyu(df, bt), use_container_width=True)
+            st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
+        
+        st.markdown("---")
+        st.plotly_chart(ve_bieu_do_histogram(df, bt), use_container_width=True)
+
+    # === TAB 3: NÂNG CAO (BOXPLOT) ===
+    with tab_advanced:
+        st.markdown("### 📦 PHÂN TÍCH BIÊN ĐỘ VẬN ĐỘNG (ROM)")
+        st.info("💡 Biểu đồ này giúp bác sĩ so sánh sự ổn định của góc khớp giữa các lần thực hiện đúng và sai.")
+        st.plotly_chart(ve_bieu_do_boxplot_phan_loai(df), use_container_width=True)
+
+    # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
+    with tab_clinical:
+        st.markdown("### 🩺 NHẬN ĐỊNH CHUYÊN MÔN")
+        
+        # Lấy nhận định dựa trên giá trị trung bình
+        insights = lay_nhan_dinh_lam_sang(tk['tb_goc_vai'], tk['tb_goc_khuyu'], bt)
+        
+        if insights:
+            for item in insights:
+                st.markdown(f"""
+                <div style="background: rgba(255,165,0,0.1); border-left: 5px solid #FFA500; padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                    <h4 style="color: #FFA500; margin-top: 0;">⚠️ {item['loai']} ({item['chi_so']})</h4>
+                    <p style="color: #fff;"><strong>🔴 Cảnh báo lâm sàng:</strong> {item['canh_warning' if 'canh_warning' in item else 'canh_bao']}</p>
+                    <p style="color: #00CED1;"><strong>💡 Lời khuyên y tế:</strong> {item['loi_khuyen']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.success("✅ **NHẬN ĐỊNH:** Biên độ vận động của bệnh nhân nằm trong giới hạn an toàn. Động tác thực hiện ổn định, không phát hiện dấu hiệu bất thường về lâm sàng.")
+            
+        st.markdown("---")
+        st.markdown("#### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU")
+        col_r, col_t = st.columns([1, 1.2])
+        with col_r:
+            st.plotly_chart(ve_bieu_do_radar(tk), use_container_width=True)
+        with col_t:
+            st.markdown(f"""
+            <div style="background: rgba(26,26,46,0.6); padding: 1rem; border-radius: 15px; border: 1px solid #2a5298;">
+                <table style="width: 100%; color: white;">
+                    <tr style="border-bottom: 1px solid #333;"><td><b>Chỉ số</b></td><td><b>Giá trị</b></td><td><b>Mục tiêu</b></td></tr>
+                    <tr><td>Accuracy</td><td>{tk['do_chinh_xac']:.1f}%</td><td>≥ 90%</td></tr>
+                    <tr><td>F1-Score</td><td>{tk.get('f1_score', 0):.2f}</td><td>≥ 0.85</td></tr>
+                    <tr><td>MAE</td><td>{tk.get('mae_tong', 0):.1f}°</td><td>< 5°</td></tr>
+                    <tr><td>ICC</td><td>{tk.get('icc', 0):.2f}</td><td>≥ 0.75</td></tr>
+                </table>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # === TAB 5: XUẤT BÁO CÁO ===
+    with tab_export:
+        st.markdown("### 📁 QUẢN LÝ DỮ LIỆU VÀ XUẤT BÁO CÁO")
+        
+        # Thống kê tổng hợp
+        stats_summary = pd.DataFrame({
+            "Hạng mục": ["Tổng thời gian xử lý", "Tổng số khung hình", "Số lần tập đúng", "Số lần tập sai", "Góc vai trung bình", "Góc khuỷu trung bình"],
+            "Giá trị": [f"{tk['thoi_gian']:.1f}s", tk['tong_frame'], tk['frame_dung'], tk['tong_frame_hop_le'] - tk['frame_dung'], f"{tk['tb_goc_vai']:.1f}°", f"{tk['tb_goc_khuyu']:.1f}°"]
+        })
+        st.table(stats_summary)
+        
+        col_c, col_z = st.columns(2)
+        with col_c:
+            st.markdown("#### 📊 Dữ liệu thô (Raw Data)")
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Tải file CSV kết quả", csv, f"rehab_data_{int(time.time())}.csv", "text/csv", use_container_width=True)
+        
+        with col_z:
+            st.markdown("#### 🖼️ Hình ảnh & Biểu đồ")
+            if st.button("📸 Tải xuống tất cả Biểu đồ (ZIP)", use_container_width=True):
                 try:
                     import zipfile
                     from io import BytesIO
                     zip_buffer = BytesIO()
                     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                        fig_vai.write_image("temp_vai.png")
-                        zip_file.write("temp_vai.png", "vai.png")
-                        fig_khuyu.write_image("temp_khuyu.png")
-                        zip_file.write("temp_khuyu.png", "khuyu.png")
-                        fig_box = ve_bieu_do_boxplot(df)
-                        fig_box.write_image("temp_box.png")
-                        zip_file.write("temp_box.png", "boxplot.png")
+                        # Lưu các biểu đồ thành ảnh (cần kaleido)
+                        for name, fig in [("vai", ve_bieu_do_goc_vai(df, bt)), ("khuyu", ve_bieu_do_goc_khuyu(df, bt)), ("dist", ve_bieu_do_tron_thong_ke(tk))]:
+                            img_bytes = fig.to_image(format="png")
+                            zip_file.writestr(f"chart_{name}.png", img_bytes)
+                    
                     zip_buffer.seek(0)
-                    st.download_button("✅ Click để tải ZIP", zip_buffer, "bieu_do.zip", "application/zip")
-                except:
-                    st.error("❌ Cần cài đặt kaleido để xuất ảnh")
-
-    # === SUB TAB 5: ĐÁNH GIÁ KHOA HỌC ===
-    with sub_tab5:
-        st.markdown("### 🔬 ĐÁNH GIÁ CHỈ SỐ KHOA HỌC")
-        col_radar, col_metrics = st.columns([1, 1])
-        
-        with col_radar:
-            fig_radar = ve_bieu_do_radar(tk)
-            st.plotly_chart(fig_radar, use_container_width=True)
-            
-        with col_metrics:
-            st.markdown("#### 📊 BẢNG CHỈ SỐ CHI TIẾT")
-            def get_indicator(val, target, unit="", is_lower_better=False):
-                is_pass = val < target if is_lower_better else val >= target
-                color = "#00FF00" if is_pass else "#FF4444"
-                return f"<span style='color: {color}; font-weight: bold;'>{'✅' if is_pass else '❌'} {val:.2f}{unit}</span>"
-
-            st.markdown(f"""
-            <div style="background: rgba(26,26,46,0.6); padding: 1rem; border-radius: 15px; border: 1px solid #2a5298;">
-                <table style="width: 100%;">
-                    <tr><td>Độ chính xác</td><td>{get_indicator(tk['do_chinh_xac'], 90, "%")}</td><td>≥ 90%</td></tr>
-                    <tr><td>F1-Score</td><td>{get_indicator(tk.get('f1_score', 0), 0.85)}</td><td>≥ 0.85</td></tr>
-                    <tr><td>Sai số MAE</td><td>{get_indicator(tk.get('mae_tong', 0), 5, "°", True)}</td><td>&lt; 5°</td></tr>
-                    <tr><td>Hệ số ICC</td><td>{get_indicator(tk.get('icc', 0), 0.75)}</td><td>≥ 0.75</td></tr>
-                </table>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("#### 📝 NHẬN XÉT CHUYÊN GIA")
-            comments = []
-            if tk['do_chinh_xac'] >= 90: comments.append("🌟 Độ chính xác đạt chuẩn nghiên cứu.")
-            else: comments.append("⚠️ Độ chính xác cần cải thiện.")
-            if tk.get('mae_tong', 10) < 5: comments.append("📏 Sai số MAE cực thấp, ổn định.")
-            else: comments.append("📐 Sai số MAE còn cao.")
-            st.info("\n".join(comments))
+                    st.download_button("✅ Click để tải ZIP", zip_buffer, "bieu_do_lam_sang.zip", "application/zip", use_container_width=True)
+                except Exception as e:
+                    st.error(f"❌ Lỗi: {e}. Vui lòng cài đặt: pip install -U kaleido")
 # HÀM HIỂN THỊ LỊCH NHẮC NHỞ
 # ============================================
 def hien_thi_lich_nhac_nho():
