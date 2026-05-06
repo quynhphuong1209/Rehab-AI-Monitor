@@ -474,14 +474,15 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     output_width, output_height = (width, height) if is_portrait else (height, width)
     rotate_needed = not is_portrait
     
+    # ƯU TIÊN MP4 NGAY TỪ ĐẦU ĐỂ TRÁNH LỖI FFMPEG
     timestamp = int(time.time())
-    out_path = os.path.join(tempfile.gettempdir(), f'processed_video_{timestamp}.webm')
-    thu_muc_frame = tempfile.mkdtemp()
+    out_path = os.path.join(tempfile.gettempdir(), f'processed_video_{timestamp}.mp4')
     
-    fourcc = cv2.VideoWriter_fourcc(*'vp80')
+    # Thử codec 'avc1' (H.264) trước, nếu không được thì dùng 'mp4v'
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (output_width, output_height))
+    
     if not writer.isOpened():
-        out_path = os.path.join(tempfile.gettempdir(), f'processed_video_{timestamp}.mp4')
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (output_width, output_height))
     
