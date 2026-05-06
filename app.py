@@ -2836,8 +2836,8 @@ def main():
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
-        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "📈 TIẾN TRIỂN", "📹 TRỰC TIẾP", 
-        "🎬 VIDEO & ẢNH", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", 
+        "🏠 TRANG CHỦ", "📹 TRỰC TIẾP", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH",
+        "⏰ LỊCH NHẮC NHỞ", "📈 TIẾN TRIỂN", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", 
         "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
     ])
     
@@ -3050,20 +3050,16 @@ def main():
                 st.session_state.processing = False
                 st.rerun()
     
-    # ==================== TAB 2: PHÂN TÍCH ====================
+    # ==================== TAB 2: TRỰC TIẾP (REAL-TIME) ====================
     with tab2:
+        hien_thi_tab_realtime(bai_tap)
+
+    # ==================== TAB 3: PHÂN TÍCH ====================
+    with tab3:
         hien_thi_tab_phan_tich()
     
-    # ==================== TAB 3: TIẾN TRIỂN ====================
-    with tab3:
-        hien_thi_tab_tien_trien()
-        
-    # ==================== TAB 4: TRỰC TIẾP (REAL-TIME) ====================
+    # ==================== TAB 4: VIDEO & ẢNH ====================
     with tab4:
-        hien_thi_tab_realtime(bai_tap)
-    
-    # ==================== TAB 5: VIDEO & ẢNH ====================
-    with tab5:
         if st.session_state.has_data and st.session_state.temp_video_file and os.path.exists(st.session_state.temp_video_file):
             st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
             st.video(st.session_state.temp_video_file)
@@ -3083,11 +3079,15 @@ def main():
             hien_thi_frames_day_du()
         else:
             st.info("ℹ️ Chưa có video. Hãy upload và xử lý video ở tab TRANG CHỦ.")
-    
-    # ==================== TAB 6: LỊCH NHẮC NHỞ ====================
-    with tab6:
+
+    # ==================== TAB 5: LỊCH NHẮC NHỞ ====================
+    with tab5:
         hien_thi_lich_nhac_nho()
-    
+
+    # ==================== TAB 6: TIẾN TRIỂN ====================
+    with tab6:
+        hien_thi_tab_tien_trien()
+
     # ==================== TAB 7: HƯỚNG DẪN ====================
     with tab7:
         hien_thi_tab_huong_dan()
