@@ -1,8 +1,8 @@
-streamlit
+streamlit==1.57.0
 opencv-python-headless
-numpy<2.0.0
+mediapipe
+numpy
 pandas
-mediapipe==0.10.14
 plotly
 Pillow
 kaleido
