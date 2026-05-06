@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import math
+import json
 
 # FIX LỖI LIBGL CHO OPENCV TRÊN HEADLESS ENVIRONMENT
 os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'
@@ -254,6 +256,8 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
                    cv2.FONT_HERSHEY_DUPLEX, 0.7, (200, 200, 200), 2)
         cv2.putText(frame_output, "NO POSE DETECTED", (20, 115), 
                    cv2.FONT_HERSHEY_DUPLEX, 0.6, (0, 0, 255), 2)
+        del rgb
+        del ket_qua
         return frame_output, None, None, None, None, []
     
     # Vẽ landmarks
@@ -358,6 +362,9 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     if warnings_list:
         cv2.putText(frame_output, warnings_list[0][:40], (20, 160), 
                    cv2.FONT_HERSHEY_DUPLEX, 0.45, YELLOW, 1)
+    
+    del rgb
+    del ket_qua
     
     return frame_output, goc_vai, goc_khuyu, tong_the, {
         'shoulder_correct': vai_dung,
@@ -487,12 +494,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     cap.release()
     writer.release()
     
-    # TẠO ZIP TRÊN ĐĨA ĐỂ TIẾT KIỆM RAM
-    zip_path = os.path.join(tempfile.gettempdir(), f'frames_{timestamp}.zip')
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for p in danh_sach_frame_paths:
-            if os.path.exists(p):
-                zipf.write(p, os.path.basename(p))
+    # ĐÃ XÓA TẠO ZIP TRÊN ĐĨA ĐỂ TIẾT KIỆM RAM/DISK (Tạo file ZIP 300MB có thể gây OOM)
+    zip_path = None
 
     # LƯU DỮ LIỆU KHUNG HÌNH RA FILE JSON ĐỂ TIẾT KIỆM RAM
     json_path = os.path.join(tempfile.gettempdir(), f'frames_data_{timestamp}.json')
@@ -2024,21 +2027,24 @@ def main():
                     try:
                         status_text.info("📤 Đang đọc file video...")
                         try:
-                            file_content = file_upload.getvalue()
-                        except ValueError:
-                            st.warning("⚠️ File tải lên đã hết hạn lưu trữ tạm thời do trang web vừa tải lại. Vui lòng CHỌN LẠI FILE VIDEO và bấm Bắt đầu phân tích!")
+                            # TỐI ƯU RAM: Đọc file theo chunk thay vì getvalue() (tránh tải toàn bộ file vào RAM)
+                            is_mov = file_upload.name.lower().endswith('.mov')
+                            suffix = '.mp4' if not is_mov else '.mov'
+                            
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+                                file_upload.seek(0)
+                                while True:
+                                    chunk = file_upload.read(1024 * 1024) # Đọc từng chunk 1MB
+                                    if not chunk:
+                                        break
+                                    tmp_file.write(chunk)
+                                video_path = tmp_file.name
+                        except Exception as e:
+                            st.warning(f"⚠️ Lỗi đọc file: {e}. Vui lòng thử lại!")
                             st.session_state.processing = False
                             st.stop()
                         
                         progress_bar.progress(0.1)
-                        status_text.info("💾 Đang lưu file tạm...")
-                        
-                        is_mov = file_upload.name.lower().endswith('.mov')
-                        suffix = '.mp4' if not is_mov else '.mov'
-                        
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-                            tmp_file.write(file_content)
-                            video_path = tmp_file.name
                         
                         if is_mov:
                             status_text.info("🔄 Đang chuyển đổi MOV sang MP4...")
