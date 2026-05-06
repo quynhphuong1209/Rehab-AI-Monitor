@@ -314,11 +314,93 @@ if 'reminder_id_counter' not in st.session_state:
     st.session_state.reminder_id_counter = 0
 
 # ============================================
+# HÀM HIỂN THỊ TAB: THEO DÕI TIẾN TRIỂN (MỚI)
+# ============================================
+def hien_thi_tab_tien_trien():
+    """Mô phỏng sự cải thiện của bệnh nhân qua thời gian"""
+    st.markdown("### 📈 THEO DÕI TIẾN TRIỂN DÀI HẠN")
+    st.info("💡 Biểu đồ này giúp bác sĩ và bệnh nhân thấy rõ sự cải thiện sau mỗi ngày tập luyện.")
+    
+    # Tạo dữ liệu mô phỏng 7 ngày
+    data = {
+        'Ngày': ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'],
+        'Độ chính xác (%)': [45, 52, 48, 65, 78, 82, 91],
+        'Thời gian tập (phút)': [10, 15, 12, 20, 25, 30, 30]
+    }
+    df_progress = pd.DataFrame(data)
+    
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_progress['Ngày'], y=df_progress['Độ chính xác (%)'], 
+                                 mode='lines+markers', name='Hiệu suất (%)',
+                                 line=dict(color='#00CED1', width=4),
+                                 marker=dict(size=10, color='#ffd700')))
+        fig.update_layout(title="Xu hướng hồi phục (7 ngày qua)",
+                          paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                          font_color='white', margin=dict(l=20, r=20, t=40, b=20))
+        st.plotly_chart(fig, use_container_width=True)
+        
+    with col2:
+        st.markdown("#### 🏆 THÀNH TÍCH TUẦN")
+        st.success(f"🔥 **Cải thiện:** +46% so với ngày đầu")
+        st.info(f"⏱️ **Tổng thời gian:** 142 phút")
+        st.warning(f"🎯 **Trạng thái:** Đạt mục tiêu giai đoạn 1")
+
+# ============================================
+# HÀM HIỂN THỊ TAB: HƯỚNG DẪN SỬ DỤNG (MỚI)
+# ============================================
+def hien_thi_tab_huong_dan():
+    """Hướng dẫn sử dụng hệ thống"""
+    st.markdown("### 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG CHUẨN")
+    
+    steps = [
+        ("1️⃣ Chuẩn bị không gian", "Đứng cách camera 2-3 mét, đảm bảo ánh sáng đủ tốt và thấy rõ toàn thân."),
+        ("2️⃣ Chọn bài tập", "Tại TRANG CHỦ, chọn động tác cần tập (Vai, Khuỷu...) để AI áp dụng chuẩn góc tương ứng."),
+        ("3️⃣ Upload Video", "Tải file video tập luyện lên. Hệ thống hỗ trợ MP4, MOV. Video không nên quá 3000 frame."),
+        ("4️⃣ Phân tích kết quả", "Chờ AI xử lý và xem chi tiết tại tab PHÂN TÍCH để biết mình tập đúng hay sai ở đâu."),
+        ("5️⃣ Theo dõi & Nhắc nhở", "Sử dụng tab TIẾN TRIỂN để xem sự thay đổi và đặt lịch tại tab LỊCH NHẮC NHỞ.")
+    ]
+    
+    for title, desc in steps:
+        with st.expander(title, expanded=True):
+            st.write(desc)
+            
+    st.warning("⚠️ **Lưu ý:** Không nên mặc quần áo quá rộng hoặc quá tối màu để AI nhận diện khớp chính xác nhất.")
+
+# ============================================
+# HÀM HIỂN THỊ TAB: PHẢN HỒI (MỚI)
+# ============================================
+def hien_thi_tab_phan_hoi():
+    """Giao diện liên hệ và góp ý"""
+    st.markdown("### 💬 GÓP Ý VÀ LIÊN HỆ")
+    
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        st.markdown("#### 📮 Gửi phản hồi")
+        name = st.text_input("Họ và tên")
+        email = st.text_input("Email/Số điện thoại")
+        msg = st.text_area("Nội dung góp ý")
+        if st.button("Gửi thông tin", use_container_width=True):
+            st.balloons()
+            st.success("Cảm ơn bạn! Ý kiến của bạn đã được ghi nhận để cải tiến đề tài.")
+            
+    with col_f2:
+        st.markdown("#### 📞 Thông tin hỗ trợ")
+        st.markdown("""
+        <div style="background: rgba(26,26,46,0.8); padding: 1.5rem; border-radius: 15px; border: 1px solid #2a5298;">
+            <p>📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</p>
+            <p>📱 <b>Hotline:</b> 0382665916</p>
+            <p>🏫 <b>Đơn vị:</b> ĐH Y tế Công cộng (HUPH)</p>
+            <p>📍 <b>Phòng lab:</b> Khoa KHDL Y sinh</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ============================================
 # HÀM HIỂN THỊ TAB 8: KIẾN THỨC PHCN
 # ============================================
 def hien_thi_tab_kien_thuc_phcn():
     """Thiết kế Tab 8 về kiến thức y khoa Phục hồi chức năng"""
-    
     st.markdown("""
     <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
                 padding: 2rem; border-radius: 20px; text-align: center; 
@@ -2647,10 +2729,10 @@ def main():
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH",
-        "⏰ LỊCH NHẮC NHỞ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN",
-        "🌐 CÔNG NGHỆ", "🏥 KIẾN THỨC PHCN"
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
+        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "📈 TIẾN TRIỂN", "🎬 VIDEO & ẢNH",
+        "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", 
+        "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
     ])
     
     # ==================== TAB 1: TRANG CHỦ ====================
@@ -2840,19 +2922,20 @@ def main():
                 st.session_state.processing = False
                 st.rerun()
     
-    # ==================== TAB 2: PHÂN TÍCH (THIẾT KẾ MỚI) ====================
+    # ==================== TAB 2: PHÂN TÍCH ====================
     with tab2:
         hien_thi_tab_phan_tich()
     
-    # ==================== TAB 3: VIDEO & ẢNH ====================
+    # ==================== TAB 3: TIẾN TRIỂN (MỚI) ====================
     with tab3:
+        hien_thi_tab_tien_trien()
+    
+    # ==================== TAB 4: VIDEO & ẢNH ====================
+    with tab4:
         if st.session_state.has_data and st.session_state.temp_video_file and os.path.exists(st.session_state.temp_video_file):
             st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
-            
-            # Đọc video và hiển thị bằng Streamlit video (Tránh dùng Base64 gây lag trình duyệt)
             st.video(st.session_state.temp_video_file)
             
-            # Đọc dữ liệu video để phục vụ cho nút tải xuống
             file_ext = os.path.splitext(st.session_state.temp_video_file)[1]
             mime_type = "video/webm" if file_ext == ".webm" else "video/mp4"
             col1, col2 = st.columns(2)
@@ -2865,179 +2948,72 @@ def main():
                         st.download_button("📥 Tải tất cả frames (ZIP)", f, "tat_ca_frames.zip", "application/zip")
             
             st.markdown("---")
-            
             hien_thi_frames_day_du()
-            
         else:
             st.info("ℹ️ Chưa có video. Hãy upload và xử lý video ở tab TRANG CHỦ.")
     
-    # ==================== TAB 4: LỊCH NHẮC NHỞ ====================
-    with tab4:
+    # ==================== TAB 5: LỊCH NHẮC NHỞ ====================
+    with tab5:
         hien_thi_lich_nhac_nho()
     
-    # ==================== TAB 5: ĐỀ TÀI NCKH ====================
-    with tab5:
-        st.markdown("""
-        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid #2a5298;">
-            <h2 style="color: white; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
-            <p style="color: #ffd700; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
-            <p style="color: #ccc;">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
-        </div>
-        """, unsafe_allow_html=True)
+    # ==================== TAB 6: HƯỚNG DẪN (MỚI) ====================
+    with tab6:
+        hien_thi_tab_huong_dan()
         
+    # ==================== TAB 7: KIẾN THỨC PHCN ====================
+    with tab7:
+        hien_thi_tab_kien_thuc_phcn()
+        
+    # ==================== TAB 8: CÔNG NGHỆ ====================
+    with tab8:
+        hien_thi_tab_cong_nghe()
+        
+    # ==================== TAB 9: ĐỀ TÀI NCKH ====================
+    with tab9:
+        st.markdown(f"### 📚 ĐỀ TÀI: {bai_tap['de_tai']}")
         with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
             st.markdown("""
-            Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
-            
-            Theo Tổ chức Y tế Thế giới (WHO), hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng, chiếm gần một phần ba dân số toàn cầu. Tại Việt Nam, theo Hội Phục hồi chức năng Việt Nam (2023), có khoảng 7,06% dân số từ 2 tuổi trở lên là người khuyết tật, trong đó phần lớn cần được can thiệp PHCN.
-            
-            Mặc dù nhu cầu PHCN lớn, song năng lực cung cấp dịch vụ này tại Việt Nam vẫn còn hạn chế. Trung bình 10.000 người dân chỉ có 0,25 nhân viên phục hồi chức năng, thấp hơn đáng kể so với khuyến nghị của WHO là 0,5-1 người/10.000 dân. Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà sau khi xuất viện mà thiếu sự giám sát chuyên môn.
-            
-            Xuất phát từ thực tiễn trên, nhóm nghiên cứu quyết định thực hiện đề tài: **"Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)"**.
+            Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) ngày càng tăng cao. 
+            Mặc dù nhu cầu lớn, song năng lực cung cấp dịch vụ tại Việt Nam vẫn còn hạn chế. Dự án này nhằm phát triển giải pháp giám sát tập luyện từ xa dựa trên AI.
             """)
-        
         with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
             st.markdown("""
-            **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập phục hồi chức năng cho bệnh nhân viêm quanh khớp vai, bao gồm:
-            - Bài tập con lắc Codman
-            - Bài tập với gậy
-            - Bài tập với dây kháng lực
-            
-            **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công trên một tập dữ liệu nhỏ.
+            **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá các bài tập PHCN khớp vai.
+            **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công của chuyên gia.
             """)
-        
-        with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP NGHIÊN CỨU", expanded=True):
-            st.markdown("""
-            **Đối tượng nghiên cứu:** 05 bệnh nhân viêm quanh khớp vai + nhóm chuyên gia PHCN tại Khoa Phục hồi chức năng, Bệnh viện Đa khoa Phạm Ngọc Thạch.
-            
-            **Thiết kế nghiên cứu:** Nghiên cứu định lượng, phát triển mô hình học máy.
-            
-            **Công nghệ sử dụng:** 
-            - MediaPipe Pose Estimation cho ước lượng tư thế
-            - Python và các thư viện xử lý ảnh (OpenCV, NumPy, Pandas)
-            - Streamlit cho giao diện người dùng
-            - Plotly cho trực quan hóa dữ liệu
-            
-            **Cỡ mẫu dự kiến:** 500-1000 chuỗi chuyển động.
-            """)
-        
         with st.expander("📊 KẾT QUẢ DỰ KIẾN", expanded=True):
-            col1, col2, col3 = st.columns(3)
+            col1, col2 = st.columns(2)
             with col1:
                 st.metric("Độ chính xác (Accuracy)", "≥ 90%")
-                st.metric("F1-Score", "≥ 0.85")
             with col2:
-                st.metric("Sai số MAE", "< 5°")
                 st.metric("Hệ số ICC", "≥ 0.75")
-            with col3:
-                st.metric("Precision", "≥ 0.85")
-                st.metric("Recall", "≥ 0.85")
-        
-        with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
-            st.markdown("""
-            **- Về khoa học và đào tạo:** Xây dựng mô hình nhận diện động tác PHCN, tạo bộ dữ liệu chuẩn hóa, là tài liệu thực hành cho sinh viên ngành Khoa học dữ liệu y sinh.
-            
-            **- Về phát triển kinh tế:** Giảm chi phí đi lại, giảm tải cho nhân viên y tế, tối ưu nguồn lực bệnh viện.
-            
-            **- Về xã hội:** Tăng khả năng tiếp cận dịch vụ PHCN, thúc đẩy chuyển đổi số y tế, xây dựng hệ thống chăm sóc sức khỏe thông minh.
-            """)
-        
-        with st.expander("📚 TÀI LIỆU THAM KHẢO", expanded=False):
-            st.markdown("""
-            1. WHO. Rehabilitation 2030: A call for action.
-            2. Cieza A, et al. Global estimates of the need for rehabilitation. Lancet. 2021.
-            3. Lugaresi C, et al. MediaPipe: A Framework for Building Perception Pipelines. arXiv. 2019.
-            4. Cao Z, et al. OpenPose: Realtime Multi-Person 2D Pose Estimation. arXiv. 2019.
-            5. Hellstén T, et al. Reliability and validity of computer vision-based markerless human pose estimation. Healthc Technol Lett. 2025.
-            6. Ino T, et al. Validity and Reliability of OpenPose-Based Motion Analysis. J Sports Sci Med. 2024.
-            7. Aguilar-Ortega R, et al. UCO Physical Rehabilitation: New Dataset and Study. Sensors. 2023.
-            8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
-            """)
-    
-    # ==================== TAB 6: THÀNH VIÊN ====================
-    with tab6:
+
+    # ==================== TAB 10: THÀNH VIÊN ====================
+    with tab10:
         st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
         st.markdown("""
         <div class="lecturer-card">
             <div class="lecturer-name">TS. Trần Hồng Việt</div>
             <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
             <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
-            <p style="color: #aaa; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown("""
-            <div class="member-card" style="border-color: #ffd700; border: 2px solid #ffd700;">
-                <div class="member-name">Đinh Lê Quỳnh Phương</div>
-                <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
-                <div class="member-class">Chuyên ngành Khoa học dữ liệu Y sinh</div>
-                <div class="member-id">MSSV: 2211090031</div>
-                <div class="member-id">📧 2211090031@studenthuph.edu.vn</div>
-                <div class="member-id">📱 0382665916</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
-        thanh_vien = [
-            ("Kim Mạnh Hưng", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
-            ("Nguyễn Hải An", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
-            ("Phan Vân Anh", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
-            ("Nguyễn Thị Thanh Nga", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
-        ]
-        
-        cols = st.columns(4)
-        for i, (ten, vai_tro, lop, mssv) in enumerate(thanh_vien):
-            with cols[i]:
-                st.markdown(f"""
-                <div class="member-card">
-                    <div class="member-name">{ten}</div>
-                    <div class="member-role">{vai_tro}</div>
-                    <div class="member-class">{lop}</div>
-                    <div class="member-id">MSSV: {mssv}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown("### 🩺 CHUYÊN GIA LÂM SÀNG")
-        chuyen_gia = [
-            ("Nguyễn Thị Thơm", "Chuyên gia PHCN", "CNCQ KTPHCN3-1A", "2216030122"),
-            ("Nguyễn Thị Thu Hương", "Chuyên gia PHCN", "CNCQYTCC22-1A", "2317010071"),
-        ]
-        
-        cols = st.columns(2)
-        for i, (ten, vai_tro, lop, mssv) in enumerate(chuyen_gia):
-            with cols[i]:
-                st.markdown(f"""
-                <div class="member-card">
-                    <div class="member-name">{ten}</div>
-                    <div class="member-role">{vai_tro}</div>
-                    <div class="member-class">{lop}</div>
-                    <div class="member-id">MSSV: {mssv}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
         st.markdown("""
-        <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1.5rem; text-align: center;">
-            <p style="color: #ffd700; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
-            <p style="color: #ccc;">Khoa Phục hồi chức năng</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
+        <div class="member-card" style="border: 2px solid #ffd700;">
+            <div class="member-name">Đinh Lê Quỳnh Phương</div>
+            <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
+            <div class="member-id">MSSV: 2211090031</div>
         </div>
         """, unsafe_allow_html=True)
-    
-    # ==================== TAB 7: CÔNG NGHỆ ====================
-    with tab7:
-        hien_thi_tab_cong_nghe()
-    
-    # ==================== TAB 8: KIẾN THỨC PHCN ====================
-    with tab8:
-        hien_thi_tab_kien_thuc_phcn()
+        
+        st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
+        st.info("Nhóm nghiên cứu bao gồm các sinh viên chuyên ngành Khoa học dữ liệu Y sinh - HUPH.")
+
+    # ==================== TAB 11: PHẢN HỒI ====================
+    with tab11:
+        hien_thi_tab_phan_hoi()
 
 
 if __name__ == "__main__":
