@@ -22,7 +22,6 @@ from datetime import datetime, timedelta
 import warnings
 import zipfile
 from io import BytesIO
-import base64
 import subprocess
 import hashlib
 import threading
@@ -140,10 +139,7 @@ if 'video_ready' not in st.session_state:
     st.session_state.video_ready = False
 if 'frames_ready' not in st.session_state:
     st.session_state.frames_ready = False
-if 'frame_thumbnails' not in st.session_state:
-    st.session_state.frame_thumbnails = {}
-if 'video_base64' not in st.session_state:
-    st.session_state.video_base64 = None
+
 if 'frames_loaded' not in st.session_state:
     st.session_state.frames_loaded = False
 if 'current_page' not in st.session_state:
@@ -158,12 +154,7 @@ if 'processing_status' not in st.session_state:
     st.session_state.processing_status = ""
 if 'all_frames_data' not in st.session_state:
     st.session_state.all_frames_data = []
-if 'thumbnail_cache' not in st.session_state:
-    st.session_state.thumbnail_cache = {}
-if 'frame_data_for_page' not in st.session_state:
-    st.session_state.frame_data_for_page = None
-if 'preloaded_thumbnails' not in st.session_state:
-    st.session_state.preloaded_thumbnails = {}
+
 if 'processing_queue' not in st.session_state:
     st.session_state.processing_queue = queue.Queue()
 if 'processing_result' not in st.session_state:
@@ -223,34 +214,7 @@ def get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, sai_so):
     
     return warnings_list
 
-# ============================================
-# TẠO THUMBNAIL CHẤT LƯỢNG CAO
-# ============================================
-def create_thumbnail_cached(image_path, width=THUMBNAIL_WIDTH, quality=THUMBNAIL_QUALITY):
-    cache_key = hashlib.md5(f"{image_path}_{width}_{quality}".encode()).hexdigest()
-    
-    if cache_key in st.session_state.thumbnail_cache:
-        return st.session_state.thumbnail_cache[cache_key]
-    
-    try:
-        img = cv2.imread(image_path)
-        if img is None:
-            return None
-        
-        h, w = img.shape[:2]
-        new_h = int(h * width / w)
-        thumb = cv2.resize(img, (width, new_h), interpolation=cv2.INTER_LANCZOS4)
-        
-        _, buffer = cv2.imencode('.jpg', thumb, [cv2.IMWRITE_JPEG_QUALITY, quality])
-        result = base64.b64encode(buffer).decode()
-        
-        if len(st.session_state.thumbnail_cache) > 300:
-            st.session_state.thumbnail_cache.clear()
-        
-        st.session_state.thumbnail_cache[cache_key] = result
-        return result
-    except Exception:
-        return None
+
 
 # ============================================
 # XỬ LÝ FRAME - CẢI THIỆN BOX THÔNG TIN
@@ -1915,43 +1879,31 @@ def hien_thi_frames_day_du():
     page_indices = filtered_indices[start_idx:end_idx]
     
     # === XỬ LÝ THUMBNAIL CHO TRANG HIỆN TẠI ===
-    with st.spinner(f"🖼️ Đang tải {len(page_indices)} ảnh..."):
-        thumbnails = []
-        for idx_in_page, original_idx in enumerate(page_indices):
-            try:
-                path = frame_paths[original_idx]
-                img = cv2.imread(path)
-                if img is None:
-                    thumbnails.append(None)
-                    continue
-                
-                # KHÔNG resize ảnh để giữ nguyên chất lượng 100% sắc nét (trình duyệt sẽ tự scale)
-                # Dùng ảnh gốc img luôn
-                _, buffer = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, 90])
-                thumbnails.append(base64.b64encode(buffer).decode())
-            except Exception as e:
-                thumbnails.append(None)
-    
     # Hiển thị grid 4 cột (mỗi hàng 4 ảnh)
     cols_per_row = 4
-    for i in range(0, len(thumbnails), cols_per_row):
+    for i in range(0, len(page_indices), cols_per_row):
         cols = st.columns(cols_per_row)
         for j in range(cols_per_row):
             idx = i + j
-            if idx < len(thumbnails) and thumbnails[idx] is not None:
+            if idx < len(page_indices):
                 original_idx = page_indices[idx]
+                path = frame_paths[original_idx]
+                if not os.path.exists(path):
+                    continue
+                
                 frame_data = all_frames_data[original_idx]
                 border_color = "#00FF00" if frame_data.get('dung') else "#FF4444"
                 
-                cols[j].markdown(f"""
-                <div style="text-align:center; margin-bottom: 15px; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 8px;">
-                    <img src="data:image/jpeg;base64,{thumbnails[idx]}" 
-                         style="width:100%; border-radius:8px; border:3px solid {border_color}; cursor:pointer;">
-                    <div style="margin-top: 8px;">
+                with cols[j]:
+                    st.markdown(f"""
+                    <div style="text-align:center; background: rgba(0,0,0,0.4); border-radius: 12px 12px 0 0; padding: 4px; border-top: 3px solid {border_color}; border-left: 3px solid {border_color}; border-right: 3px solid {border_color};">
                         <span style="color:#aaa; font-size:0.8rem; font-weight:bold;">⏱️ Frame #{frame_data['index']} | {frame_data.get('timestamp', '00:00')}</span>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+                    st.image(path, use_container_width=True)
+                    st.markdown(f"""
+                    <div style="height: 15px; margin-bottom: 15px;"></div>
+                    """, unsafe_allow_html=True)
     
     # Thống kê
     st.markdown("---")
@@ -2065,7 +2017,6 @@ def main():
                     st.session_state.stats = None
                     st.session_state.frames_zip = None
                     st.session_state.temp_video_file = None
-                    st.session_state.thumbnail_cache = {}
                     
                     progress_bar = st.progress(0)
                     status_text = st.empty()
@@ -2179,8 +2130,8 @@ def main():
             
             if st.button("🔄 PHÂN TÍCH VIDEO MỚI", width='stretch'):
                 keys_to_clear = ['has_data', 'angle_df', 'stats', 'frames_zip', 'exercise', 
-                                'temp_video_file', 'video_base64', 'processed_video_bytes', 
-                                'all_frames_data', 'all_frames_paths', 'thumbnail_cache', 'preloaded_thumbnails']
+                                'temp_video_file', 'processed_video_bytes', 
+                                'all_frames_data', 'all_frames_paths']
                 for key in keys_to_clear:
                     if key in st.session_state:
                         st.session_state[key] = None if key != 'has_data' else False
