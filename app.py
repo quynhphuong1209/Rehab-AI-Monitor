@@ -318,91 +318,64 @@ if 'reminder_id_counter' not in st.session_state:
 # HÀM HIỂN THỊ TAB: THEO DÕI TIẾN TRIỂN (MỚI)
 # ============================================
 def hien_thi_tab_tien_trien():
-    """Thiết kế Tab Tiến triển tập trung vào tính chuyên cần (Consistency)"""
-    st.markdown("### 📈 THEO DÕI TẦN SUẤT & TIẾN TRIỂN LÂM SÀNG")
+    """Thiết kế Tab Tiến triển sử dụng DỮ LIỆU THẬT từ lịch sử tập luyện"""
+    st.markdown("### 📈 THEO DÕI TIẾN TRIỂN THỜI GIAN THỰC")
     
-    # 1. Hàng chỉ số chuyên cần
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown(f"""
-        <div class="metric-card" style="border-left: 5px solid #00CED1;">
-            <div style="font-size: 0.9rem; color: #aaa;">Độ chuyên cần</div>
-            <div style="font-size: 1.8rem; color: #00CED1; font-weight: bold;">92.5%</div>
-            <div style="font-size: 0.8rem; color: #666;">28/30 ngày gần nhất</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with c2:
-        st.markdown(f"""
-        <div class="metric-card" style="border-left: 5px solid #ffd700;">
-            <div style="font-size: 0.9rem; color: #aaa;">Chuỗi tập luyện (Streak)</div>
-            <div style="font-size: 1.8rem; color: #ffd700; font-weight: bold;">12 Ngày</div>
-            <div style="font-size: 0.8rem; color: #666;">Kỷ lục cá nhân: 15 ngày</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with c3:
-        st.markdown(f"""
-        <div class="metric-card" style="border-left: 5px solid #FF6B6B;">
-            <div style="font-size: 0.9rem; color: #aaa;">Tổng giờ tập</div>
-            <div style="font-size: 1.8rem; color: #FF6B6B; font-weight: bold;">8.5 Giờ</div>
-            <div style="font-size: 0.8rem; color: #666;">Tháng này (Tháng 5)</div>
-        </div>
-        """, unsafe_allow_html=True)
+    history_file = "lich_su_tap_luyen.json"
+    history_data = []
+    
+    if os.path.exists(history_file):
+        try:
+            with open(history_file, 'r', encoding='utf-8') as f:
+                history_data = json.load(f)
+        except: pass
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # 2. Biểu đồ Heatmap mô phỏng tần suất tập luyện
-    st.markdown("#### 📅 LỊCH TẬP LUYỆN THƯỜNG XUYÊN")
-    
-    # Tạo dữ liệu heatmap mô phỏng 4 tuần
-    weeks = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4']
-    days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
-    # 1: tập đủ, 0.5: tập ít, 0: nghỉ
-    z_data = [
-        [1, 1, 0, 1, 1, 1, 1], # Tuần 1
-        [1, 1, 1, 1, 0, 1, 1], # Tuần 2
-        [1, 1, 1, 1, 1, 1, 1], # Tuần 3
-        [1, 1, 1, 0.5, 1, 1, 1] # Tuần 4
-    ]
-    
-    fig_heat = ff.create_annotated_heatmap(
-        z=z_data, x=days, y=weeks, 
-        colorscale=[[0, '#1a1a2e'], [0.5, '#2a5298'], [1, '#00CED1']],
-        showscale=False
-    )
-    fig_heat.update_layout(height=250, margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor='rgba(0,0,0,0)')
-    st.plotly_chart(fig_heat, use_container_width=True)
-    st.caption("💡 Màu xanh lam đậm thể hiện các ngày bệnh nhân thực hiện bài tập đầy đủ.")
-
-    # 3. Biểu đồ hiệu suất
-    st.markdown("#### 📈 CHỈ SỐ CẢI THIỆN ĐỘ CHÍNH XÁC")
-    data_line = {
-        'Ngày': ['01/5', '05/5', '10/5', '15/5', '20/5', '25/5', '30/5'],
-        'Accuracy (%)': [42, 55, 61, 68, 75, 84, 91]
-    }
-    df_line = pd.DataFrame(data_line)
-    fig_line = px.line(df_line, x='Ngày', y='Accuracy (%)', markers=True)
-    fig_line.update_traces(line_color='#ffd700', line_width=3)
-    fig_line.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='white')
-    st.plotly_chart(fig_line, use_container_width=True)
-    
-    # 4. Huy hiệu thành tích
-    st.markdown("#### 🏆 HUY HIỆU ĐẠT ĐƯỢC")
-    b1, b2, b3, b4 = st.columns(4)
-    badges = [
-        ("🎖️", "Kiên trì", "Tập 7 ngày liên tiếp"),
-        ("⚡", "Nỗ lực", "Vượt mục tiêu Accuracy"),
-        ("🎯", "Chính xác", "Đạt 90% lần đầu"),
-        ("🔥", "Chiến binh", "Hoàn thành 1 tháng")
-    ]
-    for i, (icon, name, desc) in enumerate(badges):
-        with [b1, b2, b3, b4][i]:
-            st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 15px; text-align: center; border: 1px solid #333;">
-                <div style="font-size: 2rem;">{icon}</div>
-                <div style="font-weight: bold; color: #ffd700;">{name}</div>
-                <div style="font-size: 0.7rem; color: #888;">{desc}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    if not history_data:
+        st.info("ℹ️ Hiện chưa có dữ liệu thực tế. Hãy tải video và phân tích để bắt đầu theo dõi tiến triển.")
+        # Hiển thị demo nếu chưa có dữ liệu
+        st.markdown("---")
+        st.markdown("#### 🔍 BẢN DEMO (Dữ liệu mẫu)")
+        # ... (giữ lại một phần giao diện demo để tab không bị trống)
+        z_data = [[1, 1, 0, 1, 1, 1, 1], [1, 1, 1, 1, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0.5, 1, 1, 1]]
+        fig_heat = ff.create_annotated_heatmap(z=z_data, x=['T2','T3','T4','T5','T6','T7','CN'], y=['W1','W2','W3','W4'], 
+                                              colorscale='Viridis', showscale=False)
+        fig_heat.update_layout(height=200, margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_heat, use_container_width=True)
+    else:
+        # CHẾ ĐỘ DỮ LIỆU THẬT
+        df_hist = pd.DataFrame(history_data)
+        
+        # 1. Chỉ số tổng hợp thực tế
+        c1, c2, c3 = st.columns(3)
+        avg_acc = df_hist['accuracy'].mean()
+        max_acc = df_hist['accuracy'].max()
+        total_sessions = len(df_hist)
+        
+        with c1:
+            st.metric("🎯 Độ chính xác TB", f"{avg_acc:.1f}%")
+        with c2:
+            st.metric("🏆 Kỷ lục đạt được", f"{max_acc:.1f}%")
+        with c3:
+            st.metric("🎬 Tổng số buổi tập", f"{total_sessions}")
+            
+        st.markdown("---")
+        
+        # 2. Biểu đồ tiến triển thực tế
+        st.markdown("#### 📉 BIỂU ĐỒ TĂNG TRƯỞNG HIỆU SUẤT")
+        fig_real = px.line(df_hist, x='ngay', y='accuracy', color='bai_tap', markers=True,
+                          title="Sự thay đổi độ chính xác qua các lần tập")
+        fig_real.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='white')
+        st.plotly_chart(fig_real, use_container_width=True)
+        
+        # 3. Bảng lịch sử chi tiết
+        st.markdown("#### 📑 NHẬT KÝ TẬP LUYỆN CHI TIẾT")
+        st.dataframe(df_hist[['ngay', 'bai_tap', 'accuracy', 'f1']], use_container_width=True)
+        
+        # 4. Nút xóa lịch sử (để làm mới nếu cần)
+        if st.button("🗑️ Xóa toàn bộ lịch sử", type="secondary"):
+            if os.path.exists(history_file):
+                os.remove(history_file)
+                st.rerun()
 
 # ============================================
 # HÀM HIỂN THỊ TAB: HƯỚNG DẪN SỬ DỤNG (MỚI)
@@ -2946,6 +2919,28 @@ def main():
                             st.success(f"✅ Xử lý hoàn tất trong {process_time:.1f} giây!")
                             st.info(f"📊 Tổng số frame: {total_frames} | Hợp lệ: {valid_frames} frames | Độ chính xác: {metrics['ty_le_tong_the']:.1f}%")
                             
+                            # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
+                            history_file = "lich_su_tap_luyen.json"
+                            new_entry = {
+                                "ngay": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                                "bai_tap": bai_tap['ten'],
+                                "accuracy": round(metrics["ty_le_tong_the"], 1),
+                                "f1": round(metrics["f1_score"], 2),
+                                "thoi_gian_tap": round(process_time, 1)
+                            }
+                            
+                            try:
+                                if os.path.exists(history_file):
+                                    with open(history_file, 'r', encoding='utf-8') as f:
+                                        history_data = json.load(f)
+                                else:
+                                    history_data = []
+                                
+                                history_data.append(new_entry)
+                                with open(history_file, 'w', encoding='utf-8') as f:
+                                    json.dump(history_data, f, ensure_ascii=False, indent=4)
+                            except: pass
+
                             st.session_state.processing = False
                             time.sleep(0.5)
                             st.rerun()
