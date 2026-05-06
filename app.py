@@ -110,18 +110,52 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Ẩn icon chữ thô của Streamlit (arrow_right, upload, keyboard_double...)
+# GIẢI PHÁP TỐI HẬU: Xóa sạch chữ đè (arrow_right, arrow_down, upload...)
 st.markdown("""
 <style>
-span.material-symbols-rounded {
+/* 1. CSS Aggressive: Ẩn mọi thứ có thể là icon text */
+span[data-testid="stIcon"], 
+.material-symbols-rounded, 
+span[class*="material"],
+[data-testid="stExpander"] svg + span,
+[data-testid="stFileUploader"] svg + span {
     display: none !important;
     visibility: hidden !important;
+    font-size: 0 !important;
     width: 0 !important;
     height: 0 !important;
-    overflow: hidden !important;
     position: absolute !important;
 }
+
+/* 2. Fix khoảng trống do ẩn icon */
+[data-testid="stExpander"] summary {
+    display: flex !important;
+    align-items: center !important;
+}
 </style>
+
+<script>
+// 3. JavaScript Aggressive: Tự động xóa text lỗi khỏi DOM liên tục
+const observer = new MutationObserver((mutations) => {
+    const iconTexts = ['arrow_right', 'arrow_down', 'upload', 'keyboard_double', 'expand_more'];
+    
+    // Tìm và xóa trong toàn bộ văn bản
+    document.querySelectorAll('span, div, button').forEach(el => {
+        if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
+            const text = el.textContent.trim();
+            if (iconTexts.includes(text)) {
+                el.style.display = 'none';
+                el.innerHTML = '';
+            }
+        }
+    });
+});
+
+observer.observe(document.body, {
+    childList: true,
+    subtree: true
+});
+</script>
 """, unsafe_allow_html=True)
 
 MAX_FILE_SIZE_MB = 500
