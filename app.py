@@ -33,15 +33,25 @@ from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image, ImageDraw, ImageFont
 
-# IMPORT MEDIAPIPE - Version 0.10.14 (stable)
-try:
-    import mediapipe as mp
-    mp_pose = mp.solutions.pose
-    mp_drawing = mp.solutions.drawing_utils
-    mp_drawing_styles = mp.solutions.drawing_styles
-except Exception as e:
-    st.error(f"🚨 KHÔNG THỂ KHỞI TẠO MEDIAPIPE: {e}")
-    st.stop()
+# MEDIAPIPE sẽ được load lazily khi cần xử lý video
+mp_pose = None
+mp_drawing = None
+mp_drawing_styles = None
+
+def init_mediapipe():
+    """Load MediaPipe chỉ khi cần thiết (lazy import)"""
+    global mp_pose, mp_drawing, mp_drawing_styles
+    if mp_pose is None:
+        try:
+            import mediapipe as mp
+            mp_pose = mp.solutions.pose
+            mp_drawing = mp.solutions.drawing_utils
+            mp_drawing_styles = mp.solutions.drawing_styles
+            return True
+        except Exception as e:
+            st.error(f"🚨 Không thể khởi tạo MediaPipe: {e}")
+            return False
+    return True
 
 warnings.filterwarnings("ignore")
 
@@ -221,9 +231,11 @@ def tinh_goc(a, b, c):
 # ============================================
 @st.cache_resource
 def get_pose_model():
-    return mp_pose.Pose(
+    import mediapipe as mp
+    _mp_pose = mp.solutions.pose
+    return _mp_pose.Pose(
         static_image_mode=False,
-        model_complexity=1, # Dùng bản Lite để tiết kiệm RAM tối đa
+        model_complexity=1,
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5,
         enable_segmentation=False,
@@ -294,27 +306,33 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
         del ket_qua
         return frame_output, None, None, None, None, []
     
+    # Import cục bộ để tránh phụ thuộc vào biến global
+    import mediapipe as _mp
+    _mp_drawing = _mp.solutions.drawing_utils
+    _mp_drawing_styles = _mp.solutions.drawing_styles
+    _mp_pose = _mp.solutions.pose
+    
     # Vẽ landmarks
-    mp_drawing.draw_landmarks(
-        frame_output, ket_qua.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-        landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style(),
-        connection_drawing_spec=mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2)
+    _mp_drawing.draw_landmarks(
+        frame_output, ket_qua.pose_landmarks, _mp_pose.POSE_CONNECTIONS,
+        landmark_drawing_spec=_mp_drawing_styles.get_default_pose_landmarks_style(),
+        connection_drawing_spec=_mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2)
     )
     
     lm = ket_qua.pose_landmarks.landmark
     
     # Lấy tọa độ cả hai bên
     # Bên trái
-    vai_t = (int(lm[mp_pose.PoseLandmark.LEFT_SHOULDER].x * w), int(lm[mp_pose.PoseLandmark.LEFT_SHOULDER].y * h))
-    khuyu_t = (int(lm[mp_pose.PoseLandmark.LEFT_ELBOW].x * w), int(lm[mp_pose.PoseLandmark.LEFT_ELBOW].y * h))
-    co_tay_t = (int(lm[mp_pose.PoseLandmark.LEFT_WRIST].x * w), int(lm[mp_pose.PoseLandmark.LEFT_WRIST].y * h))
-    hong_t = (int(lm[mp_pose.PoseLandmark.LEFT_HIP].x * w), int(lm[mp_pose.PoseLandmark.LEFT_HIP].y * h))
+    vai_t = (int(lm[_mp_pose.PoseLandmark.LEFT_SHOULDER].x * w), int(lm[_mp_pose.PoseLandmark.LEFT_SHOULDER].y * h))
+    khuyu_t = (int(lm[_mp_pose.PoseLandmark.LEFT_ELBOW].x * w), int(lm[_mp_pose.PoseLandmark.LEFT_ELBOW].y * h))
+    co_tay_t = (int(lm[_mp_pose.PoseLandmark.LEFT_WRIST].x * w), int(lm[_mp_pose.PoseLandmark.LEFT_WRIST].y * h))
+    hong_t = (int(lm[_mp_pose.PoseLandmark.LEFT_HIP].x * w), int(lm[_mp_pose.PoseLandmark.LEFT_HIP].y * h))
     
     # Bên phải
-    vai_p = (int(lm[mp_pose.PoseLandmark.RIGHT_SHOULDER].x * w), int(lm[mp_pose.PoseLandmark.RIGHT_SHOULDER].y * h))
-    khuyu_p = (int(lm[mp_pose.PoseLandmark.RIGHT_ELBOW].x * w), int(lm[mp_pose.PoseLandmark.RIGHT_ELBOW].y * h))
-    co_tay_p = (int(lm[mp_pose.PoseLandmark.RIGHT_WRIST].x * w), int(lm[mp_pose.PoseLandmark.RIGHT_WRIST].y * h))
-    hong_p = (int(lm[mp_pose.PoseLandmark.RIGHT_HIP].x * w), int(lm[mp_pose.PoseLandmark.RIGHT_HIP].y * h))
+    vai_p = (int(lm[_mp_pose.PoseLandmark.RIGHT_SHOULDER].x * w), int(lm[_mp_pose.PoseLandmark.RIGHT_SHOULDER].y * h))
+    khuyu_p = (int(lm[_mp_pose.PoseLandmark.RIGHT_ELBOW].x * w), int(lm[_mp_pose.PoseLandmark.RIGHT_ELBOW].y * h))
+    co_tay_p = (int(lm[_mp_pose.PoseLandmark.RIGHT_WRIST].x * w), int(lm[_mp_pose.PoseLandmark.RIGHT_WRIST].y * h))
+    hong_p = (int(lm[_mp_pose.PoseLandmark.RIGHT_HIP].x * w), int(lm[_mp_pose.PoseLandmark.RIGHT_HIP].y * h))
     
     # Tính toán góc cả hai bên
     goc_vai_t = tinh_goc(hong_t, vai_t, khuyu_t)
