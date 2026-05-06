@@ -1825,7 +1825,7 @@ def hien_thi_tab_phan_tich():
     # 1. HEADER CHỈ SỐ TỔNG QUAN (CỐ ĐỊNH)
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-                border-radius: 20px; padding: 1.5rem; margin-bottom: 2rem; 
+                border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
                 border: 1px solid #2a5298; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
@@ -1842,6 +1842,48 @@ def hien_thi_tab_phan_tich():
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # NEW: HÀNG THỐNG KÊ TỔNG QUAN (4 THẺ)
+    st.markdown(f"### 📈 THỐNG KÊ TỔNG QUAN")
+    c1, c2, c3, c4 = st.columns(4)
+    
+    with c1:
+        st.markdown(f"""
+        <div class="metric-card" style="height: 120px;">
+            <div class="metric-value" style="font-size: 1.8rem;">{tk['do_chinh_xac']:.1f}%</div>
+            <div class="metric-label">🎯 Độ chính xác tổng thể</div>
+            <div style="color: #666; font-size: 0.75rem;">{tk['frame_dung']}/{tk['tong_frame_hop_le']} frame đúng</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with c2:
+        st.markdown(f"""
+        <div class="metric-card" style="height: 120px;">
+            <div class="metric-value" style="font-size: 1.8rem; color: #00CED1;">{tk.get('ty_le_vai_dung', 0):.1f}%</div>
+            <div class="metric-label">🦾 Tỉ lệ đúng góc vai</div>
+            <div style="color: #666; font-size: 0.75rem;">Chuẩn: {bt['chuan']['vai']}° ±{bt['chuan']['sai_so']}°</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with c3:
+        st.markdown(f"""
+        <div class="metric-card" style="height: 120px;">
+            <div class="metric-value" style="font-size: 1.8rem; color: #FF6B6B;">{tk.get('ty_le_khuyu_dung', 0):.1f}%</div>
+            <div class="metric-label">💪 Tỉ lệ đúng góc khuỷu</div>
+            <div style="color: #666; font-size: 0.75rem;">Chuẩn: {bt['chuan']['khuyu']}° ±{bt['chuan']['sai_so']}°</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with c4:
+        st.markdown(f"""
+        <div class="metric-card" style="height: 120px;">
+            <div class="metric-value" style="font-size: 1.8rem; color: #ffd700;">{tk['tb_goc_vai']:.1f}°</div>
+            <div class="metric-label">📐 Góc vai trung bình</div>
+            <div style="color: #666; font-size: 0.75rem;">Min: {tk['min_goc_vai']:.0f}° | Max: {tk['max_goc_vai']:.0f}°</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # 2. HỆ THỐNG TAB NỘI BỘ
     tab_overview, tab_joint, tab_advanced, tab_clinical, tab_export = st.tabs([
