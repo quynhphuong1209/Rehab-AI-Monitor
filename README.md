@@ -8,4 +8,12 @@ pinned: false
 license: mit
 ---
 
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+# 🏥 Rehab AI Monitor
+
+**Hệ thống giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính.**
+
+🌐 **Truy cập trực tiếp tại đây:** [https://rehab-ai-monitor.streamlit.app/](https://rehab-ai-monitor.streamlit.app/)
+
+---
+
+*Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference*
