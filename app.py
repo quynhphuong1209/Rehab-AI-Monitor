@@ -386,22 +386,15 @@ def get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, sai_so):
 # XỬ LÝ FRAME - CẢI THIỆN BOX THÔNG TIN
 # ============================================
 def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
+    # ĐẢM BẢO KÍCH THƯỚC ĐỒNG NHẤT CHO AI
     h, w = frame.shape[:2]
-    
-    if w > RESIZE_WIDTH:
-        scale = RESIZE_WIDTH / w
-        new_w = RESIZE_WIDTH
-        new_h = int(h * scale)
-        frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
-        h, w = frame.shape[:2]
-    
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
     # TĂNG CƯỜNG ĐỘ TƯƠNG PHẢN ĐỂ AI NHÌN RÕ KHỚP XƯƠNG HƠN (CLAHE)
     try:
         lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
         l, a, b = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         cl = clahe.apply(l)
         limg = cv2.merge((cl,a,b))
         enhanced_frame = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
@@ -577,6 +570,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     return frame_output, goc_vai, goc_khuyu, tong_the, {
         'shoulder_correct': vai_dung,
         'elbow_correct': khuyu_dung,
+        'nearly_correct': gan_dung_tong_the,
         'shoulder_ref': chuan_vai,
         'elbow_ref': chuan_khuyu,
         'warnings': warnings_list
@@ -667,9 +661,11 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
             'goc_vai': float(goc_v) if goc_v is not None else None, 
             'goc_khuyu': float(goc_k) if goc_k is not None else None, 
             'dung': bool(dung) if dung is not None else False, 
+            'gan_dung': bool(eval_info['nearly_correct']) if eval_info else False,
             'eval_info': {
                 'shoulder_correct': bool(eval_info['shoulder_correct']) if 'shoulder_correct' in eval_info else False,
                 'elbow_correct': bool(eval_info['elbow_correct']) if 'elbow_correct' in eval_info else False,
+                'nearly_correct': bool(eval_info['nearly_correct']) if 'nearly_correct' in eval_info else False,
                 'shoulder_ref': float(eval_info['shoulder_ref']) if 'shoulder_ref' in eval_info else 0,
                 'elbow_ref': float(eval_info['elbow_ref']) if 'elbow_ref' in eval_info else 0,
                 'warnings': [str(w) for w in eval_info.get('warnings', [])]
@@ -679,7 +675,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
         if goc_v is not None:
             du_lieu_goc.append({
                 'frame': frame_count, 'timestamp': time_str, 'timestamp_seconds': ts_frame,
-                'goc_vai': float(goc_v), 'goc_khuyu': float(goc_k), 'dung': bool(dung),
+                'goc_vai': float(goc_v), 'goc_khuyu': float(goc_k), 
+                'dung': bool(dung), 'gan_dung': bool(eval_info['nearly_correct']),
                 'vai_dung': eval_info['shoulder_correct'], 'khuyu_dung': eval_info['elbow_correct'],
                 'vai_chuan': eval_info['shoulder_ref'], 'khuyu_chuan': eval_info['elbow_ref']
             })
@@ -745,17 +742,24 @@ def tinh_metrics_chi_tiet(df):
     if len(df) == 0:
         return {}
     
-    ty_le_vai_dung = df['vai_dung'].sum() / len(df) * 100
-    ty_le_khuyu_dung = df['khuyu_dung'].sum() / len(df) * 100
-    ty_le_tong_the = df['dung'].sum() / len(df) * 100
+    total = len(df)
+    dung_count = df['dung'].sum()
+    gan_dung_count = df['gan_dung'].sum()
+    
+    ty_le_tong_the = (dung_count / total) * 100
+    ty_le_gan_dung = (gan_dung_count / total) * 100
+    ty_le_vai_dung = df['vai_dung'].sum() / total * 100
+    ty_le_khuyu_dung = df['khuyu_dung'].sum() / total * 100
     
     return {
         "ty_le_tong_the": ty_le_tong_the,
+        "ty_le_gan_dung": ty_le_gan_dung,
         "ty_le_vai_dung": ty_le_vai_dung,
         "ty_le_khuyu_dung": ty_le_khuyu_dung,
         "tb_goc_vai": df['goc_vai'].mean(),
         "tb_goc_khuyu": df['goc_khuyu'].mean(),
-        "frame_dung": int(df['dung'].sum()),
+        "frame_dung": int(dung_count),
+        "frame_gan_dung": int(gan_dung_count),
         "min_goc_vai": df['goc_vai'].min(),
         "max_goc_vai": df['goc_vai'].max(),
         "min_goc_khuyu": df['goc_khuyu'].min(),
@@ -2158,7 +2162,12 @@ def hien_thi_frames_day_du():
                     continue
                 
                 frame_data = all_frames_data[original_idx]
-                border_color = "#00FF00" if frame_data.get('dung') else "#FF4444"
+                if frame_data.get('dung'):
+                    border_color = "#00FF00" # Xanh (Đúng)
+                elif frame_data.get('gan_dung'):
+                    border_color = "#FFFF00" # Vàng (Gần đúng)
+                else:
+                    border_color = "#FF4444" # Đỏ (Sai)
                 
                 with cols[j]:
                     st.markdown(f"""
@@ -2170,11 +2179,12 @@ def hien_thi_frames_day_du():
     
     # Thống kê
     st.markdown("---")
-    col_stat1, col_stat2, col_stat3, col_stat4 = st.columns(4)
+    col_stat1, col_stat2, col_stat3, col_stat4, col_stat5 = st.columns(5)
     with col_stat1: st.metric("📊 Tổng số frames", total_frames)
     with col_stat2: st.metric("✅ Số frame PASS", sum(1 for f in all_frames_data if f.get('dung')))
-    with col_stat3: st.metric("❌ Số frame FAIL", total_frames - sum(1 for f in all_frames_data if f.get('dung')))
-    with col_stat4: st.metric("📄 Tổng số trang", total_pages)
+    with col_stat3: st.metric("⚠️ Số frame GẦN ĐÚNG", sum(1 for f in all_frames_data if f.get('gan_dung')))
+    with col_stat4: st.metric("❌ Số frame FAIL", total_frames - sum(1 for f in all_frames_data if f.get('dung') or f.get('gan_dung')))
+    with col_stat5: st.metric("📄 Tổng số trang", total_pages)
 
 
 # ============================================
