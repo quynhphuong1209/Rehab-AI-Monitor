@@ -504,9 +504,11 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     tong_the = vai_dung and khuyu_dung
     gan_dung_tong_the = vai_gan_dung and khuyu_gan_dung
     
-    mau_vai = (0, 255, 0) if vai_dung else ((0, 255, 255) if vai_gan_dung else (0, 0, 255)) # Green -> Yellow -> Red
-    mau_khuyu = (0, 255, 0) if khuyu_dung else ((0, 255, 255) if khuyu_gan_dung else (0, 0, 255))
-    mau_tong = (0, 255, 0) if tong_the else ((0, 255, 255) if gan_dung_tong_the else (0, 0, 255))
+    # MÀU SẮC: Xanh (Đúng), Cam (Gần đúng), Đỏ (Sai)
+    ORANGE_BGR = (0, 165, 255)
+    mau_vai = (0, 255, 0) if vai_dung else (ORANGE_BGR if vai_gan_dung else (0, 0, 255))
+    mau_khuyu = (0, 255, 0) if khuyu_dung else (ORANGE_BGR if khuyu_gan_dung else (0, 0, 255))
+    mau_tong = (0, 255, 0) if tong_the else (ORANGE_BGR if gan_dung_tong_the else (0, 0, 255))
     
     # VẼ CUNG TRÒN GÓC TẠI KHỚP
     ve_cung_tron_goc(frame_output, pts_vai[0], pts_vai[1], pts_vai[2], goc_vai, mau_vai, radius=35)
@@ -533,10 +535,11 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
                cv2.FONT_HERSHEY_DUPLEX, 0.6, (200, 200, 200), 1)
     
     # Status
+    ORANGE_BGR = (0, 165, 255)
     if tong_the:
         status_text, status_color = "PASS", (0, 255, 0)
     elif gan_dung_tong_the:
-        status_text, status_color = "NEARLY PASS", (0, 255, 255)
+        status_text, status_color = "NEARLY PASS", ORANGE_BGR
     else:
         status_text, status_color = "FAIL", (0, 0, 255)
         
@@ -601,7 +604,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     thu_muc_frame = tempfile.mkdtemp()
     
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    writer = cv2.VideoWriter(out_path, fourcc, fps, (output_width, output_height))
+    writer = None # Sẽ khởi tạo động trong vòng lặp để khớp kích thước thật
     
     model = get_pose_model()
     du_lieu_goc = []
@@ -619,29 +622,35 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
             break
             
         frame_count += 1
-        # XỬ LÝ 100% FRAME (KHÔNG SKIP) THEO YÊU CẦU CỦA USER
-        if SKIP_FRAMES > 1 and frame_count % SKIP_FRAMES != 0:
-            continue
-            
-        processed_count += 1
-        if processed_count % 30 == 0:
-            gc.collect() # Giải phóng RAM thường xuyên hơn
         
+        # 1. XOAY TRƯỚC (NẾU CẦN) ĐỂ ĐẢM BẢO HƯỚNG CHUẨN
         if rotate_needed:
             frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
         
-        h, w = frame.shape[:2]
-        if w > RESIZE_WIDTH:
-            scale = RESIZE_WIDTH / w
-            frame = cv2.resize(frame, (RESIZE_WIDTH, int(h * scale)), interpolation=cv2.INTER_AREA)
+        # 2. RESIZE MỘT LẦN DUY NHẤT VỀ KÍCH THƯỚC CHUẨN ĐỂ AI NHẬN DIỆN CHÍNH XÁC
+        h_orig, w_orig = frame.shape[:2]
+        if w_orig != RESIZE_WIDTH:
+            scale = RESIZE_WIDTH / w_orig
+            new_h = int(h_orig * scale)
+            frame = cv2.resize(frame, (RESIZE_WIDTH, new_h), interpolation=cv2.INTER_AREA)
         
+        processed_count += 1
+        if processed_count % 30 == 0:
+            gc.collect() 
+            
+        # 3. XỬ LÝ FRAME VỚI KÍCH THƯỚC ĐÃ CHUẨN HÓA
         xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(
             frame, model, chuan, frame_count, fps
         )
         
-        if xu_ly.shape[1] != output_width or xu_ly.shape[0] != output_height:
-            xu_ly = cv2.resize(xu_ly, (output_width, output_height))
-        
+        # Đảm bảo VideoWriter nhận đúng kích thước đã xử lý
+        curr_h, curr_w = xu_ly.shape[:2]
+        if writer is None or (curr_w, curr_h) != (output_width, output_height):
+            # Khởi tạo lại writer nếu kích thước thực tế khác dự tính
+            output_width, output_height = curr_w, curr_h
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            writer = cv2.VideoWriter(out_path, fourcc, fps, (output_width, output_height))
+            
         writer.write(xu_ly)
         
         frame_path = os.path.join(thu_muc_frame, f"frame_{processed_count:06d}.jpg")
@@ -2165,7 +2174,7 @@ def hien_thi_frames_day_du():
                 if frame_data.get('dung'):
                     border_color = "#00FF00" # Xanh (Đúng)
                 elif frame_data.get('gan_dung'):
-                    border_color = "#FFFF00" # Vàng (Gần đúng)
+                    border_color = "#FFA500" # Cam (Gần đúng)
                 else:
                     border_color = "#FF4444" # Đỏ (Sai)
                 
