@@ -86,6 +86,8 @@ if 'user_info' not in st.session_state:
     st.session_state.user_info = None
 if 'forgot_password_mode' not in st.session_state:
     st.session_state.forgot_password_mode = False
+if 'processed_video_path' not in st.session_state:
+    st.session_state.processed_video_path = None
 
 # KIỂM TRA ĐĂNG NHẬP GOOGLE (nếu đang dùng Streamlit auth)
 try:
@@ -1318,11 +1320,13 @@ def hien_thi_tab_phan_tich():
     """, unsafe_allow_html=True)
 
     # HIỂN THỊ VIDEO ĐÃ PHÂN TÍCH (VỊ TRÍ ƯU TIÊN CAO NHẤT)
-    if st.session_state.processed_video_path and os.path.exists(st.session_state.processed_video_path):
+    # Dùng getattr để tránh lỗi AttributeError nếu biến chưa được khởi tạo
+    video_path = st.session_state.get('processed_video_path')
+    if video_path and os.path.exists(video_path):
         st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH CHI TIẾT")
         with st.container():
-            st.video(st.session_state.processed_video_path)
-            with open(st.session_state.processed_video_path, "rb") as file:
+            st.video(video_path)
+            with open(video_path, "rb") as file:
                 st.download_button(
                     label="📥 Tải video kết quả (.mp4)",
                     data=file,
