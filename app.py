@@ -386,23 +386,23 @@ def get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, sai_so):
 # XỬ LÝ FRAME - CẢI THIỆN BOX THÔNG TIN
 # ============================================
 def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
-    # ĐẢM BẢO KÍCH THƯỚC ĐỒNG NHẤT CHO AI
-    h, w = frame.shape[:2]
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # 1. SQUARE PADDING: Đưa ảnh về hình vuông để AI đạt độ chính xác 100%
+    # (Tránh lỗi trôi khung xương ở các frame đầu của video Portrait)
+    h_orig, w_orig = frame.shape[:2]
+    side = max(h_orig, w_orig)
+    pad_x = (side - w_orig) // 2
+    pad_y = (side - h_orig) // 2
     
-    # TĂNG CƯỜNG ĐỘ TƯƠNG PHẢN ĐỂ AI NHÌN RÕ KHỚP XƯƠNG HƠN (CLAHE)
-    try:
-        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
-        l, a, b = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        cl = clahe.apply(l)
-        limg = cv2.merge((cl,a,b))
-        enhanced_frame = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
-        ket_qua = model.process(enhanced_frame)
-    except:
-        ket_qua = model.process(rgb)
+    # Tạo khung hình vuông đen và chèn frame vào giữa
+    square_frame = np.zeros((side, side, 3), dtype=np.uint8)
+    square_frame[pad_y:pad_y+h_orig, pad_x:pad_x+w_orig] = frame
+    
+    # AI xử lý trên khung hình vuông này
+    rgb_square = cv2.cvtColor(square_frame, cv2.COLOR_BGR2RGB)
+    ket_qua = model.process(rgb_square)
     
     frame_output = frame.copy()
+    h, w = h_orig, w_orig # Giữ lại kích thước gốc để tính toán
     
     GREEN, RED, WHITE = (0, 255, 0), (0, 0, 255), (255, 255, 255)
     YELLOW, CYAN, ORANGE = (0, 255, 255), (255, 255, 0), (0, 165, 255)
@@ -451,9 +451,13 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     # LẤY TỌA ĐỘ CÁC KHỚP QUAN TRỌNG (ĐẢM BẢO KHỚP 100% VỚI FRAME)
     lm = ket_qua.pose_landmarks.landmark
     
-    # Hàm chuyển đổi tọa độ chuẩn xác
+    # Hàm chuyển đổi tọa độ từ hình vuông về hình gốc
     def get_coords(idx):
-        return (int(lm[idx].x * w), int(lm[idx].y * h))
+        # Tọa độ trên hình vuông (side x side)
+        x_sq = lm[idx].x * side
+        y_sq = lm[idx].y * side
+        # Chuyển về tọa độ trên hình gốc bằng cách trừ đi padding
+        return (int(x_sq - pad_x), int(y_sq - pad_y))
     
     # Bên trái
     vai_t = get_coords(_mp_pose.PoseLandmark.LEFT_SHOULDER)
