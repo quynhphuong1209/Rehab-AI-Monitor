@@ -8,4 +8,4 @@ numpy==1.26.4
 pandas
 plotly
 Pillow
-kaleido
+kaleido==0.2.1
