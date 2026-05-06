@@ -87,17 +87,13 @@ if 'user_info' not in st.session_state:
 if 'forgot_password_mode' not in st.session_state:
     st.session_state.forgot_password_mode = False
 
-# KIỂM TRA ĐĂNG NHẬP GOOGLE NATIVE (Streamlit 1.42+)
-try:
-    if st.user and st.user.email:
-        st.session_state.logged_in = True
-        st.session_state.user_info = {
-            "username": st.user.name or st.user.email.split("@")[0],
-            "email": st.user.email,
-            "auth_type": "google"
-        }
-except:
-    pass
+# KIỂM TRA ĐĂNG NHẬP (ĐÃ VÔ HIỆU HÓA ĐỂ DEMO)
+st.session_state.logged_in = True
+st.session_state.user_info = {
+    "username": "Người dùng Demo",
+    "email": "demo@example.com",
+    "auth_type": "local"
+}
 
 
 # ============================================
