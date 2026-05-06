@@ -8,4 +8,3 @@ Pillow
 kaleido
 Authlib
 httpx
-streamlit-webrtc
