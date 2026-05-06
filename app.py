@@ -2127,7 +2127,6 @@ def hien_thi_frames_day_du():
     page_indices = filtered_indices[start_idx:end_idx]
     
     # === XỬ LÝ THUMBNAIL CHO TRANG HIỆN TẠI ===
-    # Hiển thị grid 4 cột (mỗi hàng 4 ảnh)
     cols_per_row = 4
     for i in range(0, len(page_indices), cols_per_row):
         cols = st.columns(cols_per_row)
@@ -2145,27 +2144,18 @@ def hien_thi_frames_day_du():
                 with cols[j]:
                     st.markdown(f"""
                     <div style="text-align:center; background: rgba(0,0,0,0.4); border-radius: 12px 12px 0 0; padding: 4px; border-top: 3px solid {border_color}; border-left: 3px solid {border_color}; border-right: 3px solid {border_color};">
-                        <span style="color:#aaa; font-size:0.8rem; font-weight:bold;">⏱️ Frame #{frame_data['index']} | {frame_data.get('timestamp', '00:00')}</span>
+                        <span style="color:#aaa; font-size:0.8rem; font-weight:bold;">⏱️ Frame #{frame_data['index']}</span>
                     </div>
                     """, unsafe_allow_html=True)
                     st.image(path, use_container_width=True)
-                    st.markdown(f"""
-                    <div style="height: 15px; margin-bottom: 15px;"></div>
-                    """, unsafe_allow_html=True)
     
     # Thống kê
     st.markdown("---")
     col_stat1, col_stat2, col_stat3, col_stat4 = st.columns(4)
-    with col_stat1:
-        st.metric("📊 Tổng số frames", total_frames)
-    with col_stat2:
-        pass_count = sum(1 for f in all_frames_data if f.get('dung'))
-        st.metric("✅ Số frame PASS", pass_count)
-    with col_stat3:
-        fail_count = total_frames - pass_count
-        st.metric("❌ Số frame FAIL", fail_count)
-    with col_stat4:
-        st.metric("📄 Tổng số trang", total_pages)
+    with col_stat1: st.metric("📊 Tổng số frames", total_frames)
+    with col_stat2: st.metric("✅ Số frame PASS", sum(1 for f in all_frames_data if f.get('dung')))
+    with col_stat3: st.metric("❌ Số frame FAIL", total_frames - sum(1 for f in all_frames_data if f.get('dung')))
+    with col_stat4: st.metric("📄 Tổng số trang", total_pages)
 
 
 # ============================================
@@ -2181,106 +2171,66 @@ def hien_thi_dang_nhap_dang_ky():
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # CHẾ ĐỘ QUÊN MẬT KHẨU
-        if st.session_state.forgot_password_mode:
+        # 1. QUÊN MẬT KHẨU
+        if st.session_state.get('forgot_password_mode'):
             st.markdown("### 🔄 Khôi phục mật khẩu")
             with st.form("forgot_password_form"):
-                user_reset = st.text_input("Tên đăng nhập")
-                email_reset = st.text_input("Email đã đăng ký")
-                new_pass = st.text_input("Mật khẩu mới", type="password")
-                confirm_new_pass = st.text_input("Xác nhận mật khẩu mới", type="password")
-                
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    submit_reset = st.form_submit_button("Đặt lại mật khẩu", use_container_width=True)
-                with col_btn2:
-                    if st.form_submit_button("Quay lại", use_container_width=True):
-                        st.session_state.forgot_password_mode = False
-                        st.rerun()
-                
-                if submit_reset:
+                u_reset = st.text_input("Tên đăng nhập")
+                e_reset = st.text_input("Email đã đăng ký")
+                n_pass = st.text_input("Mật khẩu mới", type="password")
+                c_pass = st.text_input("Xác nhận mật khẩu mới", type="password")
+                if st.form_submit_button("ĐẶT LẠI MẬT KHẨU", use_container_width=True):
                     users = load_users()
-                    if user_reset in users and users[user_reset].get('email') == email_reset:
-                        if new_pass == confirm_new_pass and len(new_pass) >= 6:
-                            users[user_reset]['password'] = hash_password(new_pass)
+                    if u_reset in users and users[u_reset].get('email') == e_reset:
+                        if n_pass == c_pass and len(n_pass) >= 6:
+                            users[u_reset]['password'] = hash_password(n_pass)
                             save_users(users)
-                            st.success("✅ Mật khẩu đã được thay đổi! Vui lòng đăng nhập lại.")
+                            st.success("✅ Thành công!")
                             st.session_state.forgot_password_mode = False
-                            time.sleep(1)
                             st.rerun()
-                        else:
-                            st.error("❌ Mật khẩu không khớp hoặc quá ngắn (tối thiểu 6 ký tự)")
-                    else:
-                        st.error("❌ Thông tin Tên đăng nhập hoặc Email không chính xác")
+                        else: st.error("❌ Mật khẩu không khớp hoặc quá ngắn")
+                    else: st.error("❌ Thông tin sai")
+                if st.form_submit_button("QUAY LẠI"):
+                    st.session_state.forgot_password_mode = False
+                    st.rerun()
             return
 
-        tab_login, tab_register, tab_google = st.tabs(["🔑 ĐĂNG NHẬP", "📝 ĐĂNG KÝ MỚI", "🌐 GOOGLE"])
-        
-        with tab_login:
-            with st.form("login_form"):
-                username = st.text_input("Tên đăng nhập", placeholder="Nhập tên đăng nhập của bạn")
-                password = st.text_input("Mật khẩu", type="password", placeholder="Nhập mật khẩu")
-                submitted = st.form_submit_button("ĐĂNG NHẬP", use_container_width=True)
-                
-                if submitted:
+        t_login, t_register, t_google = st.tabs(["🔑 ĐĂNG NHẬP", "📝 ĐĂNG KÝ", "🌐 GOOGLE"])
+        with t_login:
+            with st.form("login_form_new"):
+                u = st.text_input("Tên đăng nhập")
+                p = st.text_input("Mật khẩu", type="password")
+                if st.form_submit_button("ĐĂNG NHẬP", use_container_width=True):
                     users = load_users()
-                    if username in users and verify_password(password, users[username]['password']):
+                    if u in users and verify_password(p, users[u]['password']):
                         st.session_state.logged_in = True
-                        st.session_state.user_info = {"username": username}
-                        st.success("🎉 Đăng nhập thành công!")
-                        time.sleep(0.5)
+                        st.session_state.user_info = {"username": u}
                         st.rerun()
-                    else:
-                        st.error("❌ Tên đăng nhập hoặc mật khẩu không chính xác")
-            
-            if st.button("❓ Quên mật khẩu?", key="forgot_btn", use_container_width=True):
+                    else: st.error("❌ Sai thông tin")
+            if st.button("❓ Quên mật khẩu?", use_container_width=True):
                 st.session_state.forgot_password_mode = True
                 st.rerun()
-                        
-        with tab_register:
-            with st.form("register_form"):
-                st.info("💡 Tạo tài khoản để bắt đầu theo dõi tiến trình tập luyện")
-                new_username = st.text_input("Tên đăng nhập mới", placeholder="Chọn tên đăng nhập")
-                new_email = st.text_input("Email của bạn", placeholder="Vd: example@gmail.com")
-                new_password = st.text_input("Mật khẩu mới", type="password", placeholder="Tối thiểu 6 ký tự")
-                confirm_password = st.text_input("Xác nhận mật khẩu", type="password", placeholder="Nhập lại mật khẩu")
-                reg_submitted = st.form_submit_button("ĐĂNG KÝ TÀI KHOẢN", use_container_width=True)
-                
-                if reg_submitted:
-                    if not new_username or not new_password or not new_email:
-                        st.warning("⚠️ Vui lòng nhập đầy đủ thông tin (bao gồm Email)")
-                    elif "@" not in new_email:
-                        st.warning("⚠️ Vui lòng nhập Email hợp lệ")
-                    elif len(new_password) < 6:
-                        st.warning("⚠️ Mật khẩu phải có ít nhất 6 ký tự")
-                    elif new_password != confirm_password:
-                        st.error("❌ Mật khẩu xác nhận không khớp")
+        
+        with t_register:
+            with st.form("register_form_new"):
+                nu = st.text_input("Tên đăng nhập mới")
+                ne = st.text_input("Email")
+                np = st.text_input("Mật khẩu", type="password")
+                if st.form_submit_button("ĐĂNG KÝ", use_container_width=True):
+                    if not nu or not ne or len(np) < 6: st.warning("⚠️ Nhập đủ thông tin")
                     else:
                         users = load_users()
-                        if new_username in users:
-                            st.error("❌ Tên đăng nhập đã tồn tại")
+                        if nu in users: st.error("❌ Đã tồn tại")
                         else:
-                            users[new_username] = {
-                                "password": hash_password(new_password),
-                                "email": new_email,
-                                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            }
+                            users[nu] = {"password": hash_password(np), "email": ne}
                             save_users(users)
-                            st.success("✅ Đăng ký thành công! Hãy chuyển sang Tab Đăng nhập.")
-                            
-        with tab_google:
-            st.markdown("""
-            <div style="text-align: center; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px dashed rgba(255,255,255,0.2);">
-                <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="48">
-                <h3 style="margin-top: 15px; color: white;">Kết nối an toàn</h3>
-                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Sử dụng tài khoản Google để truy cập ngay lập tức mà không cần mật khẩu</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
+                            st.success("✅ Thành công!")
+        
+        with t_google:
+            st.markdown("""<div style="text-align:center; padding:20px;"><h3>Truy cập nhanh</h3><p>Đăng nhập bằng tài khoản Google của bạn</p></div>""", unsafe_allow_html=True)
             if st.button("🌐 TIẾP TỤC VỚI GOOGLE", use_container_width=True, type="primary"):
-                try:
-                    st.session_state.auth_initiated = True
-                    st.login("google")
+                st.session_state.auth_initiated = True
+                st.login("google")
                 except Exception as e:
                     st.error(f"⚠️ Lỗi cấu hình Google: {e}")
 
