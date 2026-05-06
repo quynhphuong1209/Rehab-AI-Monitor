@@ -403,29 +403,70 @@ def hien_thi_tab_huong_dan():
 # HÀM HIỂN THỊ TAB: PHẢN HỒI (MỚI)
 # ============================================
 def hien_thi_tab_phan_hoi():
-    """Giao diện liên hệ và góp ý"""
-    st.markdown("### 💬 GÓP Ý VÀ LIÊN HỆ")
+    """Giao diện cộng đồng: Góp ý và hiển thị bình luận công khai"""
+    st.markdown("### 💬 CỘNG ĐỒNG REHAB-AI: GÓP Ý & THẢO LUẬN")
     
-    col_f1, col_f2 = st.columns(2)
+    feedback_file = "phan_hoi.json"
+    
+    # Tải danh sách phản hồi hiện có
+    comments = []
+    if os.path.exists(feedback_file):
+        try:
+            with open(feedback_file, 'r', encoding='utf-8') as f:
+                comments = json.load(f)
+        except: pass
+
+    col_f1, col_f2 = st.columns([1, 1.2])
+    
     with col_f1:
-        st.markdown("#### 📮 Gửi phản hồi")
-        name = st.text_input("Họ và tên")
-        email = st.text_input("Email/Số điện thoại")
-        msg = st.text_area("Nội dung góp ý")
-        if st.button("Gửi thông tin", use_container_width=True):
-            st.balloons()
-            st.success("Cảm ơn bạn! Ý kiến của bạn đã được ghi nhận để cải tiến đề tài.")
+        st.markdown("#### 📮 Để lại ý kiến của bạn")
+        with st.form("feedback_form", clear_on_submit=True):
+            user_name = st.text_input("Tên của bạn", value=st.session_state.user_info.get('username', ''))
+            user_msg = st.text_area("Nội dung góp ý/thảo luận")
+            submitted = st.form_submit_button("Gửi bình luận", use_container_width=True)
             
-    with col_f2:
-        st.markdown("#### 📞 Thông tin hỗ trợ")
+            if submitted:
+                if user_name and user_msg:
+                    new_comment = {
+                        "name": user_name,
+                        "message": user_msg,
+                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                    }
+                    comments.insert(0, new_comment) # Đưa bình luận mới lên đầu
+                    with open(feedback_file, 'w', encoding='utf-8') as f:
+                        json.dump(comments, f, ensure_ascii=False, indent=4)
+                    st.balloons()
+                    st.success("Cảm ơn bạn! Bình luận đã được đăng công khai.")
+                    st.rerun()
+                else:
+                    st.warning("⚠️ Vui lòng nhập đầy đủ tên và nội dung.")
+
+        st.markdown("#### 📞 Thông tin hỗ trợ kỹ thuật")
         st.markdown("""
-        <div style="background: rgba(26,26,46,0.8); padding: 1.5rem; border-radius: 15px; border: 1px solid #2a5298;">
+        <div style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 15px; border: 1px solid #2a5298;">
             <p>📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</p>
-            <p>📱 <b>Hotline:</b> 0382665916</p>
-            <p>🏫 <b>Đơn vị:</b> ĐH Y tế Công cộng (HUPH)</p>
-            <p>📍 <b>Phòng lab:</b> Khoa KHDL Y sinh</p>
+            <p>🏫 <b>Đơn vị:</b> Khoa KHDL Y sinh - HUPH</p>
+            <p>📍 <b>Vị trí:</b> 1A Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
         </div>
         """, unsafe_allow_html=True)
+            
+    with col_f2:
+        st.markdown(f"#### 🗨️ Thảo luận gần đây ({len(comments)})")
+        
+        if not comments:
+            st.info("Chưa có bình luận nào. Hãy là người đầu tiên để lại ý kiến!")
+        else:
+            # Hiển thị danh sách bình luận dưới dạng thẻ
+            for c in comments[:20]: # Hiển thị 20 bình luận mới nhất
+                st.markdown(f"""
+                <div style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #00CED1;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <b style="color: #ffd700;">👤 {c['name']}</b>
+                        <span style="color: #666; font-size: 0.8rem;">{c['time']}</span>
+                    </div>
+                    <p style="color: #ccc; margin-top: 5px; font-size: 0.95rem;">{c['message']}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
 # ============================================
 # LỚP XỬ LÝ VIDEO REAL-TIME (WEBRTC)
