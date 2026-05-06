@@ -266,11 +266,11 @@ def get_pose_model():
     _mp_pose = mp.solutions.pose
     return _mp_pose.Pose(
         static_image_mode=False,
-        model_complexity=1,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5,
+        model_complexity=2,        # NÂNG CẤP LÊN MODEL MẠNH NHẤT (HEAVY) ĐỂ CHÍNH XÁC TUYỆT ĐỐI
+        min_detection_confidence=0.7, # TĂNG ĐỘ TIN CẬY NHẬN DIỆN
+        min_tracking_confidence=0.7,   # TĂNG ĐỘ TIN CẬY THEO DÕI
         enable_segmentation=False,
-        smooth_landmarks=True
+        smooth_landmarks=True      # BẬT LÀM MỊN ĐỂ KHÔNG BỊ RUNG GIẬT
     )
 
 # ============================================
