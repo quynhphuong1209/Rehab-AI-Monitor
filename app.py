@@ -12,6 +12,8 @@ os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 os.environ['MEDIAPIPE_DISABLE_GPU'] = '0'
 
 import streamlit as st
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
+
 import cv2
 import numpy as np
 import pandas as pd
@@ -51,6 +53,59 @@ except (ImportError, AttributeError) as e:
     mp_drawing_styles = mp.drawing_styles
 
 warnings.filterwarnings("ignore")
+
+# CẤU HÌNH WEB-RTC CHO REAL-TIME
+RTC_CONFIGURATION = RTCConfiguration(
+    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+)
+
+class VideoProcessor(VideoTransformerBase):
+    def __init__(self):
+        self.pose = mp_pose.Pose(
+            static_image_mode=False,
+            model_complexity=1,
+            smooth_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
+
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(img_rgb)
+        
+        if results.pose_landmarks:
+            mp_drawing.draw_landmarks(
+                img, 
+                results.pose_landmarks, 
+                mp_pose.POSE_CONNECTIONS,
+                mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
+                mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=2)
+            )
+            
+            # Tính góc khuỷu tay trái làm ví dụ
+            landmarks = results.pose_landmarks.landmark
+            try:
+                p1 = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                p2 = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+                p3 = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+                
+                # Hàm tính góc (đã có trong code của bạn)
+                # Lưu ý: Vì transform chạy ở luồng riêng nên ta copy logic tính góc vào đây cho chắc
+                a = np.array(p1)
+                b = np.array(p2)
+                c = np.array(p3)
+                radians = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
+                angle = np.abs(radians*180.0/np.pi)
+                if angle > 180.0: angle = 360-angle
+                
+                h, w, _ = img.shape
+                cv2.putText(img, f"Goc: {int(angle)}", 
+                            (int(p2[0]*w), int(p2[1]*h) - 20), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+            except:
+                pass
+        return img
 
 # ============================================
 # QUẢN LÝ NGƯỜI DÙNG & BẢO MẬT
@@ -2139,10 +2194,28 @@ def main():
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH",
-        "⏰ LỊCH NHẮC NHỞ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN"
+    tab_live, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "🔴 GIÁM SÁT TRỰC TIẾP", "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", 
+        "🎬 VIDEO & ẢNH", "⏰ LỊCH NHẮC NHỞ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN"
     ])
+    
+    # ==================== TAB LIVE: GIÁM SÁT TRỰC TIẾP ====================
+    with tab_live:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px; border-left: 5px solid #FF4B4B;">
+            <h3 style="color: white; margin: 0;">🔴 Chế độ Live Monitoring</h3>
+            <p style="color: #e0e0e0; margin-top: 10px;">Hệ thống sẽ phân tích khung xương và tính toán góc khớp của bạn ngay lập tức qua Camera.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        webrtc_streamer(
+            key="rehab-live",
+            video_transformer_factory=VideoProcessor,
+            rtc_configuration=RTC_CONFIGURATION,
+            media_stream_constraints={"video": True, "audio": False},
+        )
+        
+        st.info("💡 Mẹo: Đặt camera sao cho thấy toàn bộ cơ thể để AI nhận diện tốt nhất.")
     
     # ==================== TAB 1: TRANG CHỦ ====================
     with tab1:
