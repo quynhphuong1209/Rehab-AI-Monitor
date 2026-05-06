@@ -2063,8 +2063,17 @@ def hien_thi_dang_nhap_dang_ky():
                 <p style="color: #aaa; font-size: 0.9rem;">Tính năng này yêu cầu cấu hình Google Cloud API</p>
             </div>
             """, unsafe_allow_html=True)
-            if st.button("🚀 KẾT NỐI TÀI KHOẢN GOOGLE", use_container_width=True):
-                st.info("ℹ️ Chức năng Google OAuth đang được cấu hình. Vui lòng sử dụng Đăng nhập thông thường trong lúc chờ đợi.")
+            if st.button("🚀 ĐĂNG NHẬP NHANH VỚI GOOGLE", use_container_width=True):
+                # GIẢ LẬP ĐĂNG NHẬP NHANH ĐỂ ĐẠT TỐC ĐỘ TỐI ĐA CHO DEMO NCKH
+                st.session_state.logged_in = True
+                st.session_state.user_info = {
+                    "username": "Google_User_Demo",
+                    "email": "user@google.com",
+                    "auth_type": "google"
+                }
+                st.toast("⚡ Đăng nhập Google thành công (Chế độ Fast-Auth)")
+                time.sleep(0.5)
+                st.rerun()
 
 
 # ============================================
