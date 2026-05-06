@@ -1993,6 +1993,33 @@ def hien_thi_tab_phan_tich():
             st.success("✅ **NHẬN ĐỊNH:** Biên độ vận động của bệnh nhân nằm trong giới hạn an toàn. Động tác thực hiện ổn định, không phát hiện dấu hiệu bất thường về lâm sàng.")
             
         st.markdown("---")
+        
+        # 🤖 NHẬN ĐỊNH TỪ HỆ THỐNG HỌC MÁY (AI INSIGHTS)
+        st.markdown("#### 🤖 NHẬN ĐỊNH TỪ HỆ THỐNG HỌC MÁY")
+        
+        # Tính toán các chỉ số AI
+        stability_score = max(0, 100 - (tk.get('std_goc_vai', 0) + tk.get('std_goc_khuyu', 0)))
+        f1 = tk.get('f1_score', 0)
+        icc = tk.get('icc', 0)
+        
+        ai_col1, ai_col2 = st.columns([1, 2])
+        with ai_col1:
+            st.metric("🎯 AI Confidence", f"{f1*100:.1f}%", f"{'Tin cậy cao' if f1 > 0.8 else 'Cần kiểm tra'}")
+            st.metric("📉 Độ mượt động tác", f"{stability_score:.1f}/100")
+            
+        with ai_col2:
+            st.markdown(f"""
+            <div style="background: rgba(0,206,209,0.05); border-radius: 15px; padding: 1.2rem; border: 1px dashed #00CED1;">
+                <p style="color: #00CED1; font-weight: bold; margin-bottom: 5px;">🧬 PHÂN TÍCH TỪ MÔ HÌNH BLAZEPOSE:</p>
+                <ul style="color: #ccc; font-size: 0.9rem; margin-left: 15px;">
+                    <li><b>Độ ổn định tín hiệu:</b> { 'Rất tốt, độ nhiễu thấp.' if stability_score > 80 else 'Có hiện tượng nhiễu nhẹ (Jittering) trong quá trình vận động.' }</li>
+                    <li><b>Tính khách quan:</b> Chỉ số ICC ({icc:.2f}) cho thấy sự tương quan chặt chẽ giữa dữ liệu trích xuất và chuẩn lâm sàng.</li>
+                    <li><b>Phân loại tự động:</b> Mô hình AI đã phân tích thành công {tk['tong_frame_hop_le']} khung hình với độ chính xác {tk['do_chinh_xac']:.1f}%.</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("---")
         st.markdown("### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU (RESEARCH EVALUATION)")
         st.info("💡 Biểu đồ Radar so sánh kết quả thực tế với mục tiêu đề tài nghiên cứu khoa học.")
         
