@@ -378,7 +378,12 @@ def hien_thi_tab_kien_thuc_phcn():
 
     # 3. KÊNH THÔNG TIN THAM KHẢO
     st.markdown("---")
-    st.info("📚 **Nguồn tham khảo:** Tài liệu hướng dẫn chuyên môn của Bộ Y tế Việt Nam và Tổ chức Y tế Thế giới (WHO).")
+    st.info("""
+    📚 **Nguồn tham khảo chính thống:**
+    *   [Cục Quản lý Khám, chữa bệnh - Bộ Y tế Việt Nam (KCB.VN)](https://kcb.vn/van-ban/huong-dan-quy-trinh-ky-thuat-chuyen-nganh-phuc-hoi-chuc-nang)
+    *   [Tổ chức Y tế Thế giới (WHO) - Rehabilitation Topics](https://www.who.int/news-room/fact-sheets/detail/rehabilitation)
+    *   [Chiến lược Phục hồi chức năng 2030 (WHO)](https://www.who.int/initiatives/rehabilitation-2030)
+    """)
 
 
 # ============================================
