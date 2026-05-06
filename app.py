@@ -474,17 +474,13 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     output_width, output_height = (width, height) if is_portrait else (height, width)
     rotate_needed = not is_portrait
     
-    # ƯU TIÊN MP4 NGAY TỪ ĐẦU ĐỂ TRÁNH LỖI FFMPEG
+    # ƯU TIÊN MP4 VỚI CODEC MP4V (Tương thích cao nhất)
     timestamp = int(time.time())
     out_path = os.path.join(tempfile.gettempdir(), f'processed_video_{timestamp}.mp4')
+    thu_muc_frame = tempfile.mkdtemp()
     
-    # Thử codec 'avc1' (H.264) trước, nếu không được thì dùng 'mp4v'
-    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (output_width, output_height))
-    
-    if not writer.isOpened():
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        writer = cv2.VideoWriter(out_path, fourcc, fps, (output_width, output_height))
     
     model = get_pose_model()
     du_lieu_goc = []
