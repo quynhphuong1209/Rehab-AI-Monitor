@@ -427,6 +427,84 @@ def hien_thi_tab_phan_hoi():
         """, unsafe_allow_html=True)
 
 # ============================================
+# HÀM HIỂN THỊ TAB: PHÂN TÍCH REAL-TIME (MỚI)
+# ============================================
+def hien_thi_tab_realtime(bai_tap):
+    """Xử lý Camera trực tiếp và phân tích tại chỗ"""
+    st.markdown("### 📹 TẬP LUYỆN TRỰC TIẾP VỚI AI (REAL-TIME)")
+    
+    col_c1, col_c2 = st.columns([2, 1])
+    
+    with col_c2:
+        st.markdown(f"""
+        <div class="info-box">
+            <h4>🎯 MỤC TIÊU: {bai_tap['ten']}</h4>
+            <p>🦾 Vai chuẩn: {bai_tap['chuan']['vai']}°</p>
+            <p>💪 Khuỷu chuẩn: {bai_tap['chuan']['khuyu']}°</p>
+            <p style="color: #ffd700;">AI sẽ tự động nhận diện và báo lỗi ngay trên màn hình.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        running = st.toggle("🚀 BẬT / TẮT CAMERA", key="realtime_toggle")
+        
+    with col_c1:
+        placeholder = st.empty()
+        
+        if running:
+            cap = cv2.VideoCapture(0)
+            if not cap.isOpened():
+                st.error("❌ Không tìm thấy Webcam! Vui lòng kiểm tra lại thiết bị.")
+                return
+
+            # Cấu hình Pose
+            with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+                while cap.isOpened() and st.session_state.get("realtime_toggle", False):
+                    success, frame = cap.read()
+                    if not success: break
+
+                    # Xử lý frame
+                    frame = cv2.flip(frame, 1)
+                    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    results = pose.process(image)
+                    
+                    # Vẽ và tính toán
+                    if results.pose_landmarks:
+                        mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+                        
+                        # Tính góc (Lấy ví dụ bên trái)
+                        try:
+                            landmarks = results.pose_landmarks.landmark
+                            h, w, _ = image.shape
+                            
+                            # Tọa độ các khớp
+                            vai = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y * h]
+                            khuyu = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y * h]
+                            co_tay = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y * h]
+                            hong = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y * h]
+                            
+                            goc_vai = tinh_goc(hong, vai, khuyu)
+                            goc_khuyu = tinh_goc(vai, khuyu, co_tay)
+                            
+                            # Hiển thị góc lên hình
+                            cv2.putText(image, f"VAI: {int(goc_vai)}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                            cv2.putText(image, f"KHUYU: {int(goc_khuyu)}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                            
+                            # Kiểm tra lỗi
+                            diff_vai = abs(goc_vai - bai_tap['chuan']['vai'])
+                            diff_khuyu = abs(goc_khuyu - bai_tap['chuan']['khuyu'])
+                            
+                            if diff_vai > bai_tap['chuan']['sai_so'] or diff_khuyu > bai_tap['chuan']['sai_so']:
+                                cv2.putText(image, "⚠️ SAI TU THE!", (w//2-100, h//2), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 4)
+                        except: pass
+                    
+                    placeholder.image(image, channels="RGB")
+                    
+                cap.release()
+        else:
+            placeholder.info("📷 Nhấn nút bên phải để bắt đầu tập luyện trực tiếp.")
+
+
+# ============================================
 # HÀM HIỂN THỊ TAB 8: KIẾN THỨC PHCN
 # ============================================
 def hien_thi_tab_kien_thuc_phcn():
@@ -2759,9 +2837,9 @@ def main():
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
-        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "📈 TIẾN TRIỂN", "🎬 VIDEO & ẢNH",
-        "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", 
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
+        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "📈 TIẾN TRIỂN", "📹 TRỰC TIẾP", 
+        "🎬 VIDEO & ẢNH", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", 
         "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
     ])
     
@@ -2978,12 +3056,16 @@ def main():
     with tab2:
         hien_thi_tab_phan_tich()
     
-    # ==================== TAB 3: TIẾN TRIỂN (MỚI) ====================
+    # ==================== TAB 3: TIẾN TRIỂN ====================
     with tab3:
         hien_thi_tab_tien_trien()
-    
-    # ==================== TAB 4: VIDEO & ẢNH ====================
+        
+    # ==================== TAB 4: TRỰC TIẾP (REAL-TIME) ====================
     with tab4:
+        hien_thi_tab_realtime(bai_tap)
+    
+    # ==================== TAB 5: VIDEO & ẢNH ====================
+    with tab5:
         if st.session_state.has_data and st.session_state.temp_video_file and os.path.exists(st.session_state.temp_video_file):
             st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
             st.video(st.session_state.temp_video_file)
@@ -3004,24 +3086,24 @@ def main():
         else:
             st.info("ℹ️ Chưa có video. Hãy upload và xử lý video ở tab TRANG CHỦ.")
     
-    # ==================== TAB 5: LỊCH NHẮC NHỞ ====================
-    with tab5:
+    # ==================== TAB 6: LỊCH NHẮC NHỞ ====================
+    with tab6:
         hien_thi_lich_nhac_nho()
     
-    # ==================== TAB 6: HƯỚNG DẪN (MỚI) ====================
-    with tab6:
+    # ==================== TAB 7: HƯỚNG DẪN ====================
+    with tab7:
         hien_thi_tab_huong_dan()
         
-    # ==================== TAB 7: KIẾN THỨC PHCN ====================
-    with tab7:
+    # ==================== TAB 8: KIẾN THỨC PHCN ====================
+    with tab8:
         hien_thi_tab_kien_thuc_phcn()
         
-    # ==================== TAB 8: CÔNG NGHỆ ====================
-    with tab8:
+    # ==================== TAB 9: CÔNG NGHỆ ====================
+    with tab9:
         hien_thi_tab_cong_nghe()
         
-    # ==================== TAB 9: ĐỀ TÀI NCKH ====================
-    with tab9:
+    # ==================== TAB 10: ĐỀ TÀI NCKH ====================
+    with tab10:
         st.markdown("""
         <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid #2a5298;">
             <h2 style="color: white; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
@@ -3100,8 +3182,8 @@ def main():
             8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
             """)
 
-    # ==================== TAB 10: THÀNH VIÊN ====================
-    with tab10:
+    # ==================== TAB 11: THÀNH VIÊN ====================
+    with tab11:
         st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
         st.markdown("""
         <div class="lecturer-card">
@@ -3176,8 +3258,8 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-    # ==================== TAB 11: PHẢN HỒI ====================
-    with tab11:
+    # ==================== TAB 12: PHẢN HỒI ====================
+    with tab12:
         hien_thi_tab_phan_hoi()
 
 
