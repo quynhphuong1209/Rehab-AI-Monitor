@@ -257,6 +257,27 @@ def tinh_goc(a, b, c):
     cos = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc) + 1e-10)
     return np.degrees(np.arccos(np.clip(cos, -1.0, 1.0)))
 
+def ve_cung_tron_goc(image, point1, center, point3, angle, color, radius=40):
+    """Vẽ cung tròn hiển thị góc tại khớp"""
+    try:
+        # Tính toán vector
+        v1 = np.array(point1) - np.array(center)
+        v2 = np.array(point3) - np.array(center)
+        
+        # Tính góc bắt đầu và góc kết thúc
+        angle1 = np.degrees(np.arctan2(v1[1], v1[0]))
+        angle2 = np.degrees(np.arctan2(v2[1], v2[0]))
+        
+        # Vẽ cung tròn (overlay để có độ trong suốt)
+        overlay = image.copy()
+        cv2.ellipse(overlay, center, (radius, radius), 0, angle1, angle2, color, -1)
+        cv2.addWeighted(overlay, 0.4, image, 0.6, 0, image)
+        
+        # Vẽ viền cung tròn
+        cv2.ellipse(image, center, (radius, radius), 0, angle1, angle2, color, 2)
+    except:
+        pass
+
 # ============================================
 # MEDIAPIPE VỚI GPU
 # ============================================
@@ -393,10 +414,14 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
         goc_vai, goc_khuyu = goc_vai_t, goc_khuyu_t
         khop_chinh = vai_t
         khop_phu = khuyu_t
+        pts_vai = (hong_t, vai_t, khuyu_t)
+        pts_khuyu = (vai_t, khuyu_t, co_tay_t)
     else:
         goc_vai, goc_khuyu = goc_vai_p, goc_khuyu_p
         khop_chinh = vai_p
         khop_phu = khuyu_p
+        pts_vai = (hong_p, vai_p, khuyu_p)
+        pts_khuyu = (vai_p, khuyu_p, co_tay_p)
 
     chuan_vai = chuan["vai"]
     chuan_khuyu = chuan["khuyu"]
@@ -409,6 +434,10 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     mau_vai = GREEN if vai_dung else RED
     mau_khuyu = GREEN if khuyu_dung else RED
     mau_tong = GREEN if tong_the else RED
+    
+    # VẼ CUNG TRÒN GÓC TẠI KHỚP
+    ve_cung_tron_goc(frame_output, pts_vai[0], pts_vai[1], pts_vai[2], goc_vai, mau_vai, radius=35)
+    ve_cung_tron_goc(frame_output, pts_khuyu[0], pts_khuyu[1], pts_khuyu[2], goc_khuyu, mau_khuyu, radius=30)
     
     warnings_list = get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, ss)
     
@@ -1990,6 +2019,7 @@ def hien_thi_frames_day_du():
         if st.button("◀ Trang trước", width='stretch', key="prev_page"):
             if st.session_state.current_page > 1:
                 st.session_state.current_page -= 1
+                st.session_state.page_input = st.session_state.current_page
                 st.rerun()
     
     with col_page:
@@ -2004,6 +2034,7 @@ def hien_thi_frames_day_du():
         if st.button("Trang sau ▶", width='stretch', key="next_page"):
             if st.session_state.current_page < total_pages:
                 st.session_state.current_page += 1
+                st.session_state.page_input = st.session_state.current_page
                 st.rerun()
     
     with col_info:
