@@ -2058,7 +2058,7 @@ def hien_thi_dang_nhap_dang_ky():
         with tab_google:
             st.markdown("""
             <div style="text-align: center; padding: 20px;">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="50">
+                <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="48">
                 <h4 style="margin-top: 15px;">Đăng nhập với Google</h4>
                 <p style="color: #aaa; font-size: 0.9rem;">Tính năng này yêu cầu cấu hình Google Cloud API</p>
             </div>
