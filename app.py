@@ -314,6 +314,74 @@ if 'reminder_id_counter' not in st.session_state:
     st.session_state.reminder_id_counter = 0
 
 # ============================================
+# HÀM HIỂN THỊ TAB 8: KIẾN THỨC PHCN
+# ============================================
+def hien_thi_tab_kien_thuc_phcn():
+    """Thiết kế Tab 8 về kiến thức y khoa Phục hồi chức năng"""
+    
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+                padding: 2rem; border-radius: 20px; text-align: center; 
+                border: 1px solid #00CED1; box-shadow: 0 10px 30px rgba(0, 206, 209, 0.1);
+                margin-bottom: 2rem;">
+        <h1 style="color: #fff; margin: 0; font-size: 2rem;">🏥 KIẾN THỨC PHỤC HỒI CHỨC NĂNG</h1>
+        <p style="color: #00CED1; font-weight: bold; margin-top: 0.5rem;">
+            Nền tảng y khoa cho sự phục hồi toàn diện
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 1. 4 TRỤ CỘT Y TẾ
+    st.markdown("### 🏛️ 4 TRỤ CỘT CỦA Y TẾ HIỆN ĐẠI")
+    cols = st.columns(4)
+    pillar_data = [
+        ("🛡️", "Phòng bệnh", "Ngăn ngừa nguy cơ"),
+        ("💊", "Điều trị", "Xử lý cấp tính"),
+        ("🦾", "PHCN", "Khôi phục chức năng"),
+        ("🌟", "Nâng cao sức khỏe", "Tối ưu thể chất")
+    ]
+    for i, (icon, title, desc) in enumerate(pillar_data):
+        with cols[i]:
+            st.markdown(f"""
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 15px; text-align: center; border: 1px solid #333;">
+                <div style="font-size: 2.5rem;">{icon}</div>
+                <h5 style="color: #00CED1; margin: 10px 0;">{title}</h5>
+                <p style="color: #888; font-size: 0.8rem;">{desc}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # 2. LỢI ÍCH VÀ QUY TRÌNH
+    col_left, col_right = st.columns(2)
+    
+    with col_left:
+        st.markdown("### 💎 LỢI ÍCH CỦA PHCN")
+        st.markdown("""
+        *   **Hồi phục tối đa:** Khôi phục những chức năng bị suy yếu do chấn thương, đột quỵ.
+        *   **Ngăn ngừa biến chứng:** Tránh teo cơ, cứng khớp và loét tì đè.
+        *   **Hòa nhập xã hội:** Giúp người bệnh tự lập trong ăn uống, vệ sinh và đi lại (ADL).
+        *   **Giảm gánh nặng y tế:** Rút ngắn thời gian nằm viện và giảm chi phí chăm sóc dài hạn.
+        """)
+        st.success("💡 PHCN giúp người bệnh chuyển từ trạng thái 'Được chăm sóc' sang 'Tự lực'.")
+
+    with col_right:
+        st.markdown("### 📑 QUY TRÌNH PHCN CHUẨN")
+        with st.expander("Bước 1: Lượng giá chức năng", expanded=True):
+            st.write("Bác sĩ khám và đánh giá mức độ tổn thương, tầm vận động khớp.")
+        with st.expander("Bước 2: Lập kế hoạch điều trị"):
+            st.write("Thiết lập bài tập chuyên biệt (Vật lý trị liệu, Vận động trị liệu).")
+        with st.expander("Bước 3: Thực hiện & Theo dõi"):
+            st.write("Kỹ thuật viên hướng dẫn tập luyện và điều chỉnh theo tiến độ.")
+        with st.expander("Bước 4: Đánh giá & Duy trì"):
+            st.write("Kiểm tra kết quả và hướng dẫn bệnh nhân tự tập luyện tại nhà.")
+
+    # 3. KÊNH THÔNG TIN THAM KHẢO
+    st.markdown("---")
+    st.info("📚 **Nguồn tham khảo:** Tài liệu hướng dẫn chuyên môn của Bộ Y tế Việt Nam và Tổ chức Y tế Thế giới (WHO).")
+
+
+# ============================================
 # HÀM HIỂN THỊ TAB 7: THÔNG TIN & CÔNG NGHỆ
 # ============================================
 def hien_thi_tab_cong_nghe():
@@ -2574,10 +2642,10 @@ def main():
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
         "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH",
         "⏰ LỊCH NHẮC NHỞ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN",
-        "🌐 CÔNG NGHỆ"
+        "🌐 CÔNG NGHỆ", "🏥 KIẾN THỨC PHCN"
     ])
     
     # ==================== TAB 1: TRANG CHỦ ====================
@@ -2961,6 +3029,10 @@ def main():
     # ==================== TAB 7: CÔNG NGHỆ ====================
     with tab7:
         hien_thi_tab_cong_nghe()
+    
+    # ==================== TAB 8: KIẾN THỨC PHCN ====================
+    with tab8:
+        hien_thi_tab_kien_thuc_phcn()
 
 
 if __name__ == "__main__":
