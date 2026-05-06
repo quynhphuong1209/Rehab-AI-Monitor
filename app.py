@@ -1719,6 +1719,13 @@ def hien_thi_tab_phan_tich():
     tk = st.session_state.stats
     df = st.session_state.angle_df
     
+    # Chuẩn bị dữ liệu thống kê tổng hợp (dùng chung cho các tab)
+    fail_count_total = tk['tong_frame_hop_le'] - tk['frame_dung'] - tk['frame_gan_dung']
+    stats_summary = pd.DataFrame({
+        "Hạng mục": ["Tổng thời gian xử lý", "Tổng số khung hình", "Số lần tập đúng (Pass)", "Số lần tập gần đúng", "Số lần tập sai (Fail)", "Góc vai trung bình", "Góc khuỷu trung bình"],
+        "Giá trị": [f"{tk['thoi_gian']:.1f}s", tk['tong_frame'], tk['frame_dung'], tk['frame_gan_dung'], f"{max(0, fail_count_total)}", f"{tk['tb_goc_vai']:.1f}°", f"{tk['tb_goc_khuyu']:.1f}°"]
+    })
+    
     # 1. HEADER CHỈ SỐ TỔNG QUAN (CỐ ĐỊNH)
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
@@ -1823,32 +1830,68 @@ def hien_thi_tab_phan_tich():
             st.success("✅ **NHẬN ĐỊNH:** Biên độ vận động của bệnh nhân nằm trong giới hạn an toàn. Động tác thực hiện ổn định, không phát hiện dấu hiệu bất thường về lâm sàng.")
             
         st.markdown("---")
-        st.markdown("#### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU")
-        col_r, col_t = st.columns([1, 1.2])
-        with col_r:
-            st.plotly_chart(ve_bieu_do_radar(tk), use_container_width=True)
-        with col_t:
-            st.markdown(f"""
-            <div style="background: rgba(26,26,46,0.6); padding: 1rem; border-radius: 15px; border: 1px solid #2a5298;">
-                <table style="width: 100%; color: white;">
-                    <tr style="border-bottom: 1px solid #333;"><td><b>Chỉ số</b></td><td><b>Giá trị</b></td><td><b>Mục tiêu</b></td></tr>
-                    <tr><td>Accuracy</td><td>{tk['do_chinh_xac']:.1f}%</td><td>≥ 90%</td></tr>
-                    <tr><td>F1-Score</td><td>{tk.get('f1_score', 0):.2f}</td><td>≥ 0.85</td></tr>
-                    <tr><td>MAE</td><td>{tk.get('mae_tong', 0):.1f}°</td><td>< 5°</td></tr>
-                    <tr><td>ICC</td><td>{tk.get('icc', 0):.2f}</td><td>≥ 0.75</td></tr>
-                </table>
-            </div>
-            """, unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU (RESEARCH EVALUATION)")
+        st.info("💡 Biểu đồ Radar so sánh kết quả thực tế với mục tiêu đề tài nghiên cứu khoa học.")
+        
+        # 1. BIỂU ĐỒ RADAR PHÓNG TO (FULL WIDTH)
+        st.plotly_chart(ve_bieu_do_radar(tk), use_container_width=True)
+        
+        # 2. THÔNG TIN CHỈ SỐ VÀ BẢNG (DÒNG TIẾP THEO)
+        st.markdown("#### 📊 BẢNG TỔNG HỢP CHỈ SỐ KHOA HỌC")
+        st.markdown(f"""
+        <div style="background: rgba(26,26,46,0.6); padding: 1.5rem; border-radius: 15px; border: 1px solid #2a5298; margin-bottom: 20px;">
+            <table style="width: 100%; color: white; border-collapse: collapse;">
+                <tr style="border-bottom: 2px solid #2a5298; text-align: left;">
+                    <th style="padding: 10px;">Chỉ số nghiên cứu</th>
+                    <th style="padding: 10px;">Giá trị thực tế</th>
+                    <th style="padding: 10px;">Mục tiêu đề tài</th>
+                    <th style="padding: 10px;">Trạng thái</th>
+                </tr>
+                <tr style="border-bottom: 1px solid #333;">
+                    <td style="padding: 10px;">Độ chính xác (Accuracy)</td>
+                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk['do_chinh_xac']:.1f}%</td>
+                    <td style="padding: 10px;">≥ 90%</td>
+                    <td style="padding: 10px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #333;">
+                    <td style="padding: 10px;">F1-Score (Độ tin cậy)</td>
+                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk.get('f1_score', 0):.2f}</td>
+                    <td style="padding: 10px;">≥ 0.85</td>
+                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('f1_score', 0) >= 0.85 else '⚠️ Cần cải thiện'}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #333;">
+                    <td style="padding: 10px;">Sai số tuyệt đối (MAE)</td>
+                    <td style="padding: 10px; color: #FF6B6B; font-weight: bold;">{tk.get('mae_tong', 0):.1f}°</td>
+                    <td style="padding: 10px;">&lt; 5°</td>
+                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('mae_tong', 0) < 5 else '⚠️ Cần cải thiện'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px;">Tương quan nội lớp (ICC)</td>
+                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk.get('icc', 0):.2f}</td>
+                    <td style="padding: 10px;">≥ 0.75</td>
+                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Cần cải thiện'}</td>
+                </tr>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # 3. NÚT TẢI XUỐNG DƯỚI CÙNG
+        col_dl1, col_dl2 = st.columns(2)
+        with col_dl1:
+            try:
+                radar_img = ve_bieu_do_radar(tk).to_image(format="png", width=1000, height=800)
+                st.download_button("📥 Tải ảnh Biểu đồ Radar", radar_img, "bieu_do_radar.png", "image/png", use_container_width=True)
+            except:
+                st.info("💡 Cài đặt kaleido để tải ảnh biểu đồ")
+        with col_dl2:
+            st.download_button("📥 Tải Bảng chỉ số (CSV)", stats_summary.to_csv(index=False).encode('utf-8'), "chi_so_nghien_cuu.csv", "text/csv", use_container_width=True)
 
     # === TAB 5: XUẤT BÁO CÁO ===
     with tab_export:
         st.markdown("### 📁 QUẢN LÝ DỮ LIỆU VÀ XUẤT BÁO CÁO")
         
-        # Thống kê tổng hợp
-        stats_summary = pd.DataFrame({
-            "Hạng mục": ["Tổng thời gian xử lý", "Tổng số khung hình", "Số lần tập đúng", "Số lần tập sai", "Góc vai trung bình", "Góc khuỷu trung bình"],
-            "Giá trị": [f"{tk['thoi_gian']:.1f}s", tk['tong_frame'], tk['frame_dung'], tk['tong_frame_hop_le'] - tk['frame_dung'], f"{tk['tb_goc_vai']:.1f}°", f"{tk['tb_goc_khuyu']:.1f}°"]
-        })
+        # Thống kê tổng hợp (Đã định nghĩa ở đầu hàm)
         st.table(stats_summary)
         
         col_c, col_z = st.columns(2)
