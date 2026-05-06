@@ -266,11 +266,11 @@ def get_pose_model():
     _mp_pose = mp.solutions.pose
     return _mp_pose.Pose(
         static_image_mode=False,
-        model_complexity=2,        # NÂNG CẤP LÊN MODEL MẠNH NHẤT (HEAVY) ĐỂ CHÍNH XÁC TUYỆT ĐỐI
-        min_detection_confidence=0.7, # TĂNG ĐỘ TIN CẬY NHẬN DIỆN
-        min_tracking_confidence=0.7,   # TĂNG ĐỘ TIN CẬY THEO DÕI
+        model_complexity=1,        # QUAY LẠI CẤP 1 ĐỂ TRÁNH LỖI SERVER
+        min_detection_confidence=0.65, # VẪN GIỮ ĐỘ TIN CẬY CAO
+        min_tracking_confidence=0.65,
         enable_segmentation=False,
-        smooth_landmarks=True      # BẬT LÀM MỊN ĐỂ KHÔNG BỊ RUNG GIẬT
+        smooth_landmarks=True
     )
 
 # ============================================
@@ -309,7 +309,18 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
         h, w = frame.shape[:2]
     
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    ket_qua = model.process(rgb)
+    
+    # TĂNG CƯỜNG ĐỘ TƯƠNG PHẢN ĐỂ AI NHÌN RÕ KHỚP XƯƠNG HƠN (CLAHE)
+    try:
+        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        cl = clahe.apply(l)
+        limg = cv2.merge((cl,a,b))
+        enhanced_frame = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
+        ket_qua = model.process(enhanced_frame)
+    except:
+        ket_qua = model.process(rgb)
     
     frame_output = frame.copy()
     
