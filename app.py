@@ -81,6 +81,8 @@ if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'user_info' not in st.session_state:
     st.session_state.user_info = None
+if 'forgot_password_mode' not in st.session_state:
+    st.session_state.forgot_password_mode = False
 
 # ============================================
 # CẤU HÌNH TRANG
@@ -1966,7 +1968,40 @@ def hien_thi_dang_nhap_dang_ky():
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        tab_login, tab_register = st.tabs(["🔑 ĐĂNG NHẬP", "📝 ĐĂNG KÝ MỚI"])
+        # CHẾ ĐỘ QUÊN MẬT KHẨU
+        if st.session_state.forgot_password_mode:
+            st.markdown("### 🔄 Khôi phục mật khẩu")
+            with st.form("forgot_password_form"):
+                user_reset = st.text_input("Tên đăng nhập")
+                email_reset = st.text_input("Email đã đăng ký")
+                new_pass = st.text_input("Mật khẩu mới", type="password")
+                confirm_new_pass = st.text_input("Xác nhận mật khẩu mới", type="password")
+                
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    submit_reset = st.form_submit_button("Đặt lại mật khẩu", use_container_width=True)
+                with col_btn2:
+                    if st.form_submit_button("Quay lại", use_container_width=True):
+                        st.session_state.forgot_password_mode = False
+                        st.rerun()
+                
+                if submit_reset:
+                    users = load_users()
+                    if user_reset in users and users[user_reset].get('email') == email_reset:
+                        if new_pass == confirm_new_pass and len(new_pass) >= 6:
+                            users[user_reset]['password'] = hash_password(new_pass)
+                            save_users(users)
+                            st.success("✅ Mật khẩu đã được thay đổi! Vui lòng đăng nhập lại.")
+                            st.session_state.forgot_password_mode = False
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("❌ Mật khẩu không khớp hoặc quá ngắn (tối thiểu 6 ký tự)")
+                    else:
+                        st.error("❌ Thông tin Tên đăng nhập hoặc Email không chính xác")
+            return
+
+        tab_login, tab_register, tab_google = st.tabs(["🔑 ĐĂNG NHẬP", "📝 ĐĂNG KÝ MỚI", "🌐 GOOGLE"])
         
         with tab_login:
             with st.form("login_form"):
@@ -1984,18 +2019,25 @@ def hien_thi_dang_nhap_dang_ky():
                         st.rerun()
                     else:
                         st.error("❌ Tên đăng nhập hoặc mật khẩu không chính xác")
+            
+            if st.button("❓ Quên mật khẩu?", key="forgot_btn", use_container_width=True):
+                st.session_state.forgot_password_mode = True
+                st.rerun()
                         
         with tab_register:
             with st.form("register_form"):
                 st.info("💡 Tạo tài khoản để bắt đầu theo dõi tiến trình tập luyện")
                 new_username = st.text_input("Tên đăng nhập mới", placeholder="Chọn tên đăng nhập")
+                new_email = st.text_input("Email của bạn", placeholder="Vd: example@gmail.com")
                 new_password = st.text_input("Mật khẩu mới", type="password", placeholder="Tối thiểu 6 ký tự")
                 confirm_password = st.text_input("Xác nhận mật khẩu", type="password", placeholder="Nhập lại mật khẩu")
                 reg_submitted = st.form_submit_button("ĐĂNG KÝ TÀI KHOẢN", use_container_width=True)
                 
                 if reg_submitted:
-                    if not new_username or not new_password:
-                        st.warning("⚠️ Vui lòng nhập đầy đủ thông tin")
+                    if not new_username or not new_password or not new_email:
+                        st.warning("⚠️ Vui lòng nhập đầy đủ thông tin (bao gồm Email)")
+                    elif "@" not in new_email:
+                        st.warning("⚠️ Vui lòng nhập Email hợp lệ")
                     elif len(new_password) < 6:
                         st.warning("⚠️ Mật khẩu phải có ít nhất 6 ký tự")
                     elif new_password != confirm_password:
@@ -2007,10 +2049,23 @@ def hien_thi_dang_nhap_dang_ky():
                         else:
                             users[new_username] = {
                                 "password": hash_password(new_password),
+                                "email": new_email,
                                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                             }
                             save_users(users)
                             st.success("✅ Đăng ký thành công! Hãy chuyển sang Tab Đăng nhập.")
+                            
+        with tab_google:
+            st.markdown("""
+            <div style="text-align: center; padding: 20px;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="50">
+                <h4 style="margin-top: 15px;">Đăng nhập với Google</h4>
+                <p style="color: #aaa; font-size: 0.9rem;">Tính năng này yêu cầu cấu hình Google Cloud API</p>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🚀 KẾT NỐI TÀI KHOẢN GOOGLE", use_container_width=True):
+                st.info("ℹ️ Chức năng Google OAuth đang được cấu hình. Vui lòng sử dụng Đăng nhập thông thường trong lúc chờ đợi.")
+
 
 # ============================================
 # MAIN - GIỮ NGUYÊN CẤU TRÚC TAB
