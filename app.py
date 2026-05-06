@@ -87,13 +87,17 @@ if 'user_info' not in st.session_state:
 if 'forgot_password_mode' not in st.session_state:
     st.session_state.forgot_password_mode = False
 
-# KIỂM TRA ĐĂNG NHẬP (ĐÃ VÔ HIỆU HÓA ĐỂ DEMO)
-st.session_state.logged_in = True
-st.session_state.user_info = {
-    "username": "Người dùng Demo",
-    "email": "demo@example.com",
-    "auth_type": "local"
-}
+# KIỂM TRA ĐĂNG NHẬP GOOGLE (nếu đang dùng Streamlit auth)
+try:
+    if hasattr(st, 'user') and st.user and getattr(st.user, 'email', None):
+        st.session_state.logged_in = True
+        st.session_state.user_info = {
+            "username": getattr(st.user, 'name', None) or st.user.email.split("@")[0],
+            "email": st.user.email,
+            "auth_type": "google"
+        }
+except Exception:
+    pass
 
 
 # ============================================
