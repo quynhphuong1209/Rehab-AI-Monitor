@@ -143,6 +143,59 @@ st.markdown("""
     span:empty, span:contains("arrow_"), span:contains("upload") {
         display: none !important;
     }
+
+    /* === LOGIN UI CREATIVE DESIGN === */
+    .login-container {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(15px);
+        border-radius: 24px;
+        padding: 3rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background-color: transparent;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        color: white;
+        transition: all 0.3s;
+        border: 1px solid transparent;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
+        border: 1px solid #00c6ff !important;
+        box-shadow: 0 0 15px rgba(0, 198, 255, 0.4);
+    }
+
+    .google-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        color: #444;
+        padding: 12px;
+        border-radius: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: none;
+        width: 100%;
+        margin-top: 10px;
+    }
+    
+    .google-btn:hover {
+        background: #f1f1f1;
+        box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -2204,15 +2257,17 @@ def hien_thi_dang_nhap_dang_ky():
                             
         with tab_google:
             st.markdown("""
-            <div style="text-align: center; padding: 20px;">
+            <div style="text-align: center; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px dashed rgba(255,255,255,0.2);">
                 <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="48">
-                <h4 style="margin-top: 15px;">Đăng nhập Google chính thức</h4>
-                <p style="color: #aaa; font-size: 0.9rem;">Sử dụng tài khoản Gmail cá nhân để đăng nhập nhanh</p>
+                <h3 style="margin-top: 15px; color: white;">Kết nối an toàn</h3>
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Sử dụng tài khoản Google để truy cập ngay lập tức mà không cần mật khẩu</p>
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button("🌐 ĐĂNG NHẬP VỚI GOOGLE", use_container_width=True):
+            if st.button("🌐 TIẾP TỤC VỚI GOOGLE", use_container_width=True, type="primary"):
                 try:
+                    # Ghi nhận trạng thái để sau khi redirect quay lại sẽ check
+                    st.session_state.auth_initiated = True
                     st.login("google")
                 except Exception as e:
                     st.error(f"⚠️ Lỗi cấu hình Google: {e}")
