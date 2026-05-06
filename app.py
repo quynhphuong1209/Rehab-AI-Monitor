@@ -581,8 +581,27 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(danh_sach_frame_data, f, ensure_ascii=False)
     
+    writer.release()
+    
+    # CHUYỂN ĐỔI SANG ĐỊNH DẠNG H.264 ĐỂ TRÌNH DUYỆT XEM ĐƯỢC
+    final_video_path = out_path
+    final_h264_path = out_path.replace('.mp4', '_final.mp4')
+    try:
+        # Dùng lệnh ffmpeg để convert (nhanh và chuẩn)
+        subprocess.run([
+            'ffmpeg', '-y', '-i', out_path, 
+            '-vcodec', 'libx264', '-pix_fmt', 'yuv420p',
+            '-preset', 'ultrafast', '-crf', '28', 
+            final_h264_path
+        ], capture_output=True)
+        
+        if os.path.exists(final_h264_path):
+            final_video_path = final_h264_path
+    except Exception as e:
+        st.warning(f"Lỗi convert video: {e}")
+
     gc.collect()
-    return out_path, None, None, du_lieu_goc, frame_count, len(du_lieu_goc), thu_muc_frame, zip_path, danh_sach_frame_paths, {}, json_path, all_warnings
+    return final_video_path, None, None, du_lieu_goc, frame_count, len(du_lieu_goc), thu_muc_frame, zip_path, danh_sach_frame_paths, {}, json_path, all_warnings
 
 
 # ============================================
