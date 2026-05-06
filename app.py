@@ -493,13 +493,27 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     chuan_khuyu = chuan["khuyu"]
     ss = chuan["sai_so"]
     
-    vai_dung = abs(goc_vai - chuan_vai) <= ss
-    khuyu_dung = abs(goc_khuyu - chuan_khuyu) <= ss
-    tong_the = vai_dung and khuyu_dung
+    vai_diff = abs(goc_vai - chuan_vai)
+    khuyu_diff = abs(goc_khuyu - chuan_khuyu)
     
-    mau_vai = GREEN if vai_dung else RED
-    mau_khuyu = GREEN if khuyu_dung else RED
-    mau_tong = GREEN if tong_the else RED
+    vai_dung = vai_diff <= ss
+    khuyu_dung = khuyu_diff <= ss
+    
+    # Gần đúng: Trong khoảng 1.5 lần sai số
+    vai_gan_dung = vai_diff <= (ss * 1.5)
+    khuyu_gan_dung = khuyu_diff <= (ss * 1.5)
+    
+    # Logic tổng thể: 
+    # - ĐÚNG: Cả hai đều đúng
+    # - GẦN ĐÚNG: Không đạt "đúng" nhưng cả hai đều nằm trong vùng "gần đúng"
+    # - SAI: Vượt quá ngưỡng gần đúng
+    
+    tong_the = vai_dung and khuyu_dung
+    gan_dung_tong_the = vai_gan_dung and khuyu_gan_dung
+    
+    mau_vai = (0, 255, 0) if vai_dung else ((0, 255, 255) if vai_gan_dung else (0, 0, 255)) # Green -> Yellow -> Red
+    mau_khuyu = (0, 255, 0) if khuyu_dung else ((0, 255, 255) if khuyu_gan_dung else (0, 0, 255))
+    mau_tong = (0, 255, 0) if tong_the else ((0, 255, 255) if gan_dung_tong_the else (0, 0, 255))
     
     # VẼ CUNG TRÒN GÓC TẠI KHỚP
     ve_cung_tron_goc(frame_output, pts_vai[0], pts_vai[1], pts_vai[2], goc_vai, mau_vai, radius=35)
@@ -526,8 +540,13 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
                cv2.FONT_HERSHEY_DUPLEX, 0.6, (200, 200, 200), 1)
     
     # Status
-    status_text = "PASS" if tong_the else "FAIL"
-    status_color = mau_tong
+    if tong_the:
+        status_text, status_color = "PASS", (0, 255, 0)
+    elif gan_dung_tong_the:
+        status_text, status_color = "NEARLY PASS", (0, 255, 255)
+    else:
+        status_text, status_color = "FAIL", (0, 0, 255)
+        
     cv2.putText(frame_output, status_text, (150, 40), 
                cv2.FONT_HERSHEY_DUPLEX, 0.9, status_color, 2)
     
@@ -959,7 +978,7 @@ BAI_TAP = {
         "ten": "Bài tập con lắc Codman",
         "icon": "🔄",
         "mo_ta": "Bài tập dao động tay thụ động theo quán tính, giúp thả lỏng khớp vai, giảm đau và chống dính khớp.",
-        "chuan": {"vai": 45, "khuyu": 160, "sai_so": 20},
+        "chuan": {"vai": 45, "khuyu": 160, "sai_so": 30},
         "youtube": "https://youtu.be/a4eCRWuqO40",
         "thoi_gian": 30, 
         "lan": 10,
