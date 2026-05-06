@@ -215,12 +215,12 @@ st.markdown("""
 MAX_FILE_SIZE_MB = 500
 
 # ============================================
-# CẤU HÌNH XỬ LÝ - TỐI ƯU TỐC ĐỘ
+# CẤU HÌNH XỬ LÝ - TỐI ƯU ĐỘ CHÍNH XÁC CAO
 # ============================================
-SKIP_FRAMES = 2    # Xử lý cách 1 frame để tăng tốc gấp đôi (vẫn đủ độ mịn cho PHCN)
-RESIZE_WIDTH = 480 # Giảm thêm một chút để xử lý cực nhanh
-OUTPUT_QUALITY = 45 
-MAX_FRAMES = 2000  # Giới hạn để đảm bảo tốc độ trên server
+SKIP_FRAMES = 0    # Xử lý mọi khung hình để đảm bảo tốc độ khớp video gốc
+RESIZE_WIDTH = 640 # Tăng độ phân giải lên 640px để nhìn rõ hơn
+OUTPUT_QUALITY = 50 
+MAX_FRAMES = 3000  # Nâng hạn mức để bắt trọn vẹn mọi khoảnh khắc
 THUMBNAIL_QUALITY = 90
 THUMBNAIL_WIDTH = 400
 
@@ -2222,42 +2222,31 @@ def hien_thi_dang_nhap_dang_ky():
                 st.rerun()
                         
         with t_register:
-            with st.form("register_form_v3"):
-                st.markdown("<p style='text-align:center; color:#00c6ff; font-weight:bold;'>THÔNG TIN TÀI KHOẢN MỚI</p>", unsafe_allow_html=True)
-                reg_u = st.text_input("Tên đăng nhập *", placeholder="Chọn tên gợi nhớ")
+            with st.form("register_form_v4"):
+                st.markdown("<p style='text-align:center; color:#00c6ff; font-weight:bold;'>TẠO TÀI KHOẢN MỚI</p>", unsafe_allow_html=True)
+                reg_name = st.text_input("Họ và tên của bạn", placeholder="VD: Nguyễn Văn A")
+                reg_u = st.text_input("Tên đăng nhập *", placeholder="Chọn tên tài khoản")
                 reg_e = st.text_input("Email liên hệ *", placeholder="example@gmail.com")
                 reg_p = st.text_input("Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự")
+                reg_cp = st.text_input("Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu")
                 
-                st.markdown("<hr style='margin:10px 0; border:0.5px solid #333;'>", unsafe_allow_html=True)
-                st.markdown("<p style='text-align:center; color:#aaa;'>THÔNG TIN CHI TIẾT BỆNH NHÂN</p>", unsafe_allow_html=True)
-                
-                reg_name = st.text_input("Họ và tên bệnh nhân", placeholder="VD: Nguyễn Văn A")
-                c1, c2 = st.columns(2)
-                with c1: reg_dob = st.date_input("Ngày sinh", min_value=datetime(1930,1,1), max_value=datetime.now())
-                with c2: reg_gender = st.selectbox("Giới tính", ["Nam", "Nữ", "Khác"])
-                
-                reg_phone = st.text_input("Số điện thoại", placeholder="09xxxxxxx")
-                reg_address = st.text_area("Địa chỉ liên lạc", placeholder="Nhập địa chỉ của bạn")
-                
-                if st.form_submit_button("✅ HOÀN TẤT ĐĂNG KÝ", use_container_width=True):
+                if st.form_submit_button("🚀 ĐĂNG KÝ TRUY CẬP", use_container_width=True):
                     if not reg_u or not reg_e or len(reg_p) < 6:
-                        st.warning("⚠️ Vui lòng điền đầy đủ các trường có dấu (*)")
+                        st.warning("⚠️ Vui lòng điền đầy đủ các thông tin bắt buộc (*)")
+                    elif reg_p != reg_cp:
+                        st.error("❌ Mật khẩu xác nhận không khớp")
                     else:
                         users = load_users()
-                        if reg_u in users: st.error("❌ Tên đăng nhập này đã có người sử dụng")
+                        if reg_u in users: st.error("❌ Tên đăng nhập này đã tồn tại")
                         else:
                             users[reg_u] = {
                                 "password": hash_password(reg_p),
                                 "email": reg_e,
                                 "full_name": reg_name,
-                                "dob": reg_dob.strftime("%Y-%m-%d") if reg_dob else "",
-                                "gender": reg_gender,
-                                "phone": reg_phone,
-                                "address": reg_address,
                                 "created_at": datetime.now().isoformat()
                             }
                             save_users(users)
-                            st.success("🎉 Chúc mừng! Đăng ký thành công. Mời bạn quay lại Tab Đăng nhập.")
+                            st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.")
                             
         with t_google:
             st.markdown("""
