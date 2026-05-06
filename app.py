@@ -509,7 +509,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     # - SAI: Vượt quá ngưỡng gần đúng
     
     tong_the = vai_dung and khuyu_dung
-    gan_dung_tong_the = vai_gan_dung and khuyu_gan_dung
+    gan_dung_tong_the = (vai_gan_dung and khuyu_gan_dung) and not tong_the
     
     # MÀU SẮC: Xanh (Đúng), Cam (Gần đúng), Đỏ (Sai)
     ORANGE_BGR = (0, 165, 255)
@@ -1781,13 +1781,14 @@ def hien_thi_tab_phan_tich():
 
     # === TAB 2: PHÂN TÍCH KHỚP ===
     with tab_joint:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.plotly_chart(ve_bieu_do_goc_vai(df, bt), use_container_width=True)
-            st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
-        with col2:
-            st.plotly_chart(ve_bieu_do_goc_khuyu(df, bt), use_container_width=True)
-            st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
+        st.markdown("#### 📈 BIỂU ĐỒ GÓC VAI")
+        st.plotly_chart(ve_bieu_do_goc_vai(df, bt), use_container_width=True)
+        st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
+        
+        st.markdown("---")
+        st.markdown("#### 📊 BIỂU ĐỒ GÓC KHUỶU")
+        st.plotly_chart(ve_bieu_do_goc_khuyu(df, bt), use_container_width=True)
+        st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
         
         st.markdown("---")
         st.plotly_chart(ve_bieu_do_histogram(df, bt), use_container_width=True)
