@@ -317,35 +317,91 @@ if 'reminder_id_counter' not in st.session_state:
 # HÀM HIỂN THỊ TAB: THEO DÕI TIẾN TRIỂN (MỚI)
 # ============================================
 def hien_thi_tab_tien_trien():
-    """Mô phỏng sự cải thiện của bệnh nhân qua thời gian"""
-    st.markdown("### 📈 THEO DÕI TIẾN TRIỂN DÀI HẠN")
-    st.info("💡 Biểu đồ này giúp bác sĩ và bệnh nhân thấy rõ sự cải thiện sau mỗi ngày tập luyện.")
+    """Thiết kế Tab Tiến triển tập trung vào tính chuyên cần (Consistency)"""
+    st.markdown("### 📈 THEO DÕI TẦN SUẤT & TIẾN TRIỂN LÂM SÀNG")
     
-    # Tạo dữ liệu mô phỏng 7 ngày
-    data = {
-        'Ngày': ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'],
-        'Độ chính xác (%)': [45, 52, 48, 65, 78, 82, 91],
-        'Thời gian tập (phút)': [10, 15, 12, 20, 25, 30, 30]
+    # 1. Hàng chỉ số chuyên cần
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left: 5px solid #00CED1;">
+            <div style="font-size: 0.9rem; color: #aaa;">Độ chuyên cần</div>
+            <div style="font-size: 1.8rem; color: #00CED1; font-weight: bold;">92.5%</div>
+            <div style="font-size: 0.8rem; color: #666;">28/30 ngày gần nhất</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left: 5px solid #ffd700;">
+            <div style="font-size: 0.9rem; color: #aaa;">Chuỗi tập luyện (Streak)</div>
+            <div style="font-size: 1.8rem; color: #ffd700; font-weight: bold;">12 Ngày</div>
+            <div style="font-size: 0.8rem; color: #666;">Kỷ lục cá nhân: 15 ngày</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left: 5px solid #FF6B6B;">
+            <div style="font-size: 0.9rem; color: #aaa;">Tổng giờ tập</div>
+            <div style="font-size: 1.8rem; color: #FF6B6B; font-weight: bold;">8.5 Giờ</div>
+            <div style="font-size: 0.8rem; color: #666;">Tháng này (Tháng 5)</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 2. Biểu đồ Heatmap mô phỏng tần suất tập luyện
+    st.markdown("#### 📅 LỊCH TẬP LUYỆN THƯỜNG XUYÊN")
+    
+    # Tạo dữ liệu heatmap mô phỏng 4 tuần
+    weeks = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4']
+    days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+    # 1: tập đủ, 0.5: tập ít, 0: nghỉ
+    z_data = [
+        [1, 1, 0, 1, 1, 1, 1], # Tuần 1
+        [1, 1, 1, 1, 0, 1, 1], # Tuần 2
+        [1, 1, 1, 1, 1, 1, 1], # Tuần 3
+        [1, 1, 1, 0.5, 1, 1, 1] # Tuần 4
+    ]
+    
+    fig_heat = ff.create_annotated_heatmap(
+        z=z_data, x=days, y=weeks, 
+        colorscale=[[0, '#1a1a2e'], [0.5, '#2a5298'], [1, '#00CED1']],
+        showscale=False
+    )
+    fig_heat.update_layout(height=250, margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor='rgba(0,0,0,0)')
+    st.plotly_chart(fig_heat, use_container_width=True)
+    st.caption("💡 Màu xanh lam đậm thể hiện các ngày bệnh nhân thực hiện bài tập đầy đủ.")
+
+    # 3. Biểu đồ hiệu suất
+    st.markdown("#### 📈 CHỈ SỐ CẢI THIỆN ĐỘ CHÍNH XÁC")
+    data_line = {
+        'Ngày': ['01/5', '05/5', '10/5', '15/5', '20/5', '25/5', '30/5'],
+        'Accuracy (%)': [42, 55, 61, 68, 75, 84, 91]
     }
-    df_progress = pd.DataFrame(data)
+    df_line = pd.DataFrame(data_line)
+    fig_line = px.line(df_line, x='Ngày', y='Accuracy (%)', markers=True)
+    fig_line.update_traces(line_color='#ffd700', line_width=3)
+    fig_line.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='white')
+    st.plotly_chart(fig_line, use_container_width=True)
     
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df_progress['Ngày'], y=df_progress['Độ chính xác (%)'], 
-                                 mode='lines+markers', name='Hiệu suất (%)',
-                                 line=dict(color='#00CED1', width=4),
-                                 marker=dict(size=10, color='#ffd700')))
-        fig.update_layout(title="Xu hướng hồi phục (7 ngày qua)",
-                          paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                          font_color='white', margin=dict(l=20, r=20, t=40, b=20))
-        st.plotly_chart(fig, use_container_width=True)
-        
-    with col2:
-        st.markdown("#### 🏆 THÀNH TÍCH TUẦN")
-        st.success(f"🔥 **Cải thiện:** +46% so với ngày đầu")
-        st.info(f"⏱️ **Tổng thời gian:** 142 phút")
-        st.warning(f"🎯 **Trạng thái:** Đạt mục tiêu giai đoạn 1")
+    # 4. Huy hiệu thành tích
+    st.markdown("#### 🏆 HUY HIỆU ĐẠT ĐƯỢC")
+    b1, b2, b3, b4 = st.columns(4)
+    badges = [
+        ("🎖️", "Kiên trì", "Tập 7 ngày liên tiếp"),
+        ("⚡", "Nỗ lực", "Vượt mục tiêu Accuracy"),
+        ("🎯", "Chính xác", "Đạt 90% lần đầu"),
+        ("🔥", "Chiến binh", "Hoàn thành 1 tháng")
+    ]
+    for i, (icon, name, desc) in enumerate(badges):
+        with [b1, b2, b3, b4][i]:
+            st.markdown(f"""
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 15px; text-align: center; border: 1px solid #333;">
+                <div style="font-size: 2rem;">{icon}</div>
+                <div style="font-weight: bold; color: #ffd700;">{name}</div>
+                <div style="font-size: 0.7rem; color: #888;">{desc}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ============================================
 # HÀM HIỂN THỊ TAB: HƯỚNG DẪN SỬ DỤNG (MỚI)
