@@ -110,52 +110,38 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# GIẢI PHÁP TỐI HẬU: Xóa sạch chữ đè (arrow_right, arrow_down, upload...)
+# GIẢI PHÁP TRIỆT ĐỂ: Xóa chữ đè bằng cách nhắm thẳng vào cấu trúc Streamlit
 st.markdown("""
 <style>
-/* 1. CSS Aggressive: Ẩn mọi thứ có thể là icon text */
-span[data-testid="stIcon"], 
-.material-symbols-rounded, 
-span[class*="material"],
-[data-testid="stExpander"] svg + span,
-[data-testid="stFileUploader"] svg + span {
-    display: none !important;
-    visibility: hidden !important;
-    font-size: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-    position: absolute !important;
-}
+    /* 1. Nhắm vào mọi thẻ span chứa văn bản icon trong Expander và File Uploader */
+    [data-testid="stExpander"] summary span > span,
+    [data-testid="stExpander"] summary svg + span,
+    [data-testid="stFileUploader"] section span > span,
+    .st-emotion-cache-1p6n6q3, /* Một số mã cache phổ biến của Streamlit */
+    .st-emotion-cache-16idsys {
+        display: none !important;
+        visibility: hidden !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        color: transparent !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
 
-/* 2. Fix khoảng trống do ẩn icon */
-[data-testid="stExpander"] summary {
-    display: flex !important;
-    align-items: center !important;
-}
-</style>
-
-<script>
-// 3. JavaScript Aggressive: Tự động xóa text lỗi khỏi DOM liên tục
-const observer = new MutationObserver((mutations) => {
-    const iconTexts = ['arrow_right', 'arrow_down', 'upload', 'keyboard_double', 'expand_more'];
+    /* 2. Đảm bảo các tiêu đề chính vẫn hiện rõ */
+    [data-testid="stExpander"] summary p, 
+    [data-testid="stExpander"] summary span p {
+        font-size: 1.1rem !important;
+        color: white !important;
+        visibility: visible !important;
+        display: block !important;
+    }
     
-    // Tìm và xóa trong toàn bộ văn bản
-    document.querySelectorAll('span, div, button').forEach(el => {
-        if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
-            const text = el.textContent.trim();
-            if (iconTexts.includes(text)) {
-                el.style.display = 'none';
-                el.innerHTML = '';
-            }
-        }
-    });
-});
-
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
-</script>
+    /* 3. Force ẩn mọi text có nội dung là arrow_... */
+    span:empty, span:contains("arrow_"), span:contains("upload") {
+        display: none !important;
+    }
+</style>
 """, unsafe_allow_html=True)
 
 MAX_FILE_SIZE_MB = 500
