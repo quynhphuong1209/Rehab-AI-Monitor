@@ -353,9 +353,9 @@ def get_pose_model():
     _mp_pose = mp.solutions.pose
     return _mp_pose.Pose(
         static_image_mode=False,
-        model_complexity=1,        # QUAY LẠI CẤP 1 ĐỂ TRÁNH LỖI SERVER
-        min_detection_confidence=0.65, # VẪN GIỮ ĐỘ TIN CẬY CAO
-        min_tracking_confidence=0.65,
+        model_complexity=2,        # NÂNG CẤP LÊN MỨC 2 (HEAVY) ĐỂ ĐẠT ĐỘ CHÍNH XÁC TỐI ĐA
+        min_detection_confidence=0.75, # TĂNG NGƯỠNG TIN CẬY ĐỂ NHẬN DẠNG CHÍNH XÁC HƠN
+        min_tracking_confidence=0.75,
         enable_segmentation=False,
         smooth_landmarks=True
     )
