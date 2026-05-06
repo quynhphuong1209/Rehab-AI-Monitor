@@ -35,16 +35,25 @@ from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image, ImageDraw, ImageFont
 
-# IMPORT MEDIAPIPE (Sửa lỗi AttributeError: solutions)
+# IMPORT MEDIAPIPE (Kỹ thuật Universal Import để sửa lỗi solutions)
 try:
     import mediapipe.solutions.pose as mp_pose
     import mediapipe.solutions.drawing_utils as mp_drawing
     import mediapipe.solutions.drawing_styles as mp_drawing_styles
-except ImportError:
-    import mediapipe as mp
-    mp_pose = mp.solutions.pose
-    mp_drawing = mp.solutions.drawing_utils
-    mp_drawing_styles = mp.solutions.drawing_styles
+except (AttributeError, ImportError):
+    try:
+        import mediapipe as mp
+        mp_pose = mp.solutions.pose
+        mp_drawing = mp.solutions.drawing_utils
+        mp_drawing_styles = mp.solutions.drawing_styles
+    except (AttributeError, ImportError):
+        try:
+            from mediapipe.python.solutions import pose as mp_pose
+            from mediapipe.python.solutions import drawing_utils as mp_drawing
+            from mediapipe.python.solutions import drawing_styles as mp_drawing_styles
+        except:
+            st.error("🚨 KHÔNG THỂ KHỞI TẠO MEDIAPIPE. Vui lòng Reboot App trong Manage App.")
+            st.stop()
 
 warnings.filterwarnings("ignore")
 
