@@ -353,11 +353,11 @@ def get_pose_model():
     _mp_pose = mp.solutions.pose
     return _mp_pose.Pose(
         static_image_mode=False,
-        model_complexity=1,        # QUAY LẠI MỨC 1 ĐỂ TƯƠNG THÍCH SERVER
-        min_detection_confidence=0.7, 
-        min_tracking_confidence=0.7,
+        model_complexity=1,
+        min_detection_confidence=0.8, # TĂNG ĐỘ KHẮT KHE ĐỂ CHÍNH XÁC 100%
+        min_tracking_confidence=0.8,
         enable_segmentation=False,
-        smooth_landmarks=True      # BẬT LÀM MỊN ĐỂ BÙ ĐẮP ĐỘ CHÍNH XÁC
+        smooth_landmarks=False      # TẮT LÀM MỊN ĐỂ TRÁNH LỖI TRÔI KHUNG XƯƠNG Ở CÁC FRAME ĐẦU
     )
 
 # ============================================
@@ -632,6 +632,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
         if w_orig != RESIZE_WIDTH:
             scale = RESIZE_WIDTH / w_orig
             new_h = int(h_orig * scale)
+            # Đảm bảo chiều cao là số chẵn để tránh lỗi pixel
+            if new_h % 2 != 0: new_h -= 1
             frame = cv2.resize(frame, (RESIZE_WIDTH, new_h), interpolation=cv2.INTER_AREA)
         
         processed_count += 1
