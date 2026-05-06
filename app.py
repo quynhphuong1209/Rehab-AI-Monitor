@@ -1523,6 +1523,52 @@ def hien_thi_tab_phan_tich():
         """, unsafe_allow_html=True)
     
     st.markdown("---")
+    col_chart, col_info = st.columns([1, 1])
+    
+    with col_chart:
+        st.markdown("#### 📊 BIỂU ĐỒ PHÂN PHỐI KẾT QUẢ")
+        # Dữ liệu cho biểu đồ tròn
+        labels = ['ĐÚNG (PASS)', 'GẦN ĐÚNG (NEARLY)', 'SAI (FAIL)']
+        frame_dung = tk['frame_dung']
+        frame_gan_dung = tk.get('frame_gan_dung', 0)
+        frame_sai = tk['tong_frame_hop_le'] - frame_dung - frame_gan_dung
+        values = [frame_dung, frame_gan_dung, max(0, frame_sai)]
+        
+        # Màu sắc: Xanh, Cam, Đỏ
+        colors = ['#00FF00', '#FFA500', '#FF4444']
+        
+        fig_pie = go.Figure(data=[go.Pie(
+            labels=labels, 
+            values=values, 
+            hole=.4,
+            marker_colors=colors,
+            textinfo='percent+label',
+            pull=[0.05, 0.05, 0.05]
+        )])
+        
+        fig_pie.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=400,
+            showlegend=False,
+            margin=dict(t=0, b=0, l=0, r=0)
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+        
+    with col_info:
+        st.markdown("#### 📋 CHI TIẾT SỐ FRAME")
+        st.markdown(f"""
+        <div style="background: rgba(26,26,46,0.6); padding: 1.5rem; border-radius: 15px; border: 1px solid #2a5298;">
+            <p style="font-size: 1.1rem; color: #00FF00;">✅ <strong>Số frame ĐÚNG:</strong> {frame_dung} ({tk['do_chinh_xac']:.1f}%)</p>
+            <p style="font-size: 1.1rem; color: #FFA500;">⚠️ <strong>Số frame GẦN ĐÚNG:</strong> {frame_gan_dung} ({tk.get('ty_le_gan_dung', 0):.1f}%)</p>
+            <p style="font-size: 1.1rem; color: #FF4444;">❌ <strong>Số frame SAI:</strong> {max(0, frame_sai)} ({(max(0, frame_sai)/tk['tong_frame_hop_le']*100):.1f}%)</p>
+            <hr style="border-color: #2a5298;">
+            <p style="font-size: 1.2rem; color: #fff;">📸 <strong>Tổng cộng:</strong> {tk['tong_frame_hop_le']} frame hợp lệ</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    st.markdown("---")
     
     # TẠO CÁC TAB CON TRONG TAB PHÂN TÍCH
     sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs([
@@ -2479,9 +2525,11 @@ def main():
                             st.session_state.angle_df = df
                             st.session_state.stats = {
                                 "do_chinh_xac": metrics["ty_le_tong_the"],
+                                "ty_le_gan_dung": metrics["ty_le_gan_dung"],
                                 "ty_le_vai_dung": metrics["ty_le_vai_dung"],
                                 "ty_le_khuyu_dung": metrics["ty_le_khuyu_dung"],
                                 "frame_dung": metrics["frame_dung"],
+                                "frame_gan_dung": metrics["frame_gan_dung"],
                                 "tong_frame_hop_le": valid_frames,
                                 "tb_goc_vai": metrics["tb_goc_vai"],
                                 "tb_goc_khuyu": metrics["tb_goc_khuyu"],
