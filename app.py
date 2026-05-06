@@ -2015,12 +2015,28 @@ def hien_thi_frames_day_du():
     st.markdown("---")
     col_prev, col_page, col_next, col_info = st.columns([1, 2, 1, 2])
     
+    # LOGIC XỬ LÝ NÚT BẤM TRƯỚC KHI VẼ WIDGET
+    if st.session_state.get('btn_prev'):
+        if st.session_state.current_page > 1:
+            st.session_state.current_page -= 1
+            st.session_state.page_input = st.session_state.current_page
+        st.session_state.btn_prev = False
+        st.rerun()
+
+    if st.session_state.get('btn_next'):
+        if st.session_state.current_page < total_pages:
+            st.session_state.current_page += 1
+            st.session_state.page_input = st.session_state.current_page
+        st.session_state.btn_next = False
+        st.rerun()
+
+    st.markdown("---")
+    col_prev, col_page, col_next, col_info = st.columns([1, 2, 1, 2])
+    
     with col_prev:
-        if st.button("◀ Trang trước", width='stretch', key="prev_page"):
-            if st.session_state.current_page > 1:
-                st.session_state.current_page -= 1
-                st.session_state.page_input = st.session_state.current_page
-                st.rerun()
+        if st.button("◀ Trang trước", width='stretch', key="prev_button"):
+            st.session_state.btn_prev = True
+            st.rerun()
     
     with col_page:
         page = st.number_input("Trang", min_value=1, max_value=total_pages, 
@@ -2031,11 +2047,9 @@ def hien_thi_frames_day_du():
             st.rerun()
     
     with col_next:
-        if st.button("Trang sau ▶", width='stretch', key="next_page"):
-            if st.session_state.current_page < total_pages:
-                st.session_state.current_page += 1
-                st.session_state.page_input = st.session_state.current_page
-                st.rerun()
+        if st.button("Trang sau ▶", width='stretch', key="next_button"):
+            st.session_state.btn_next = True
+            st.rerun()
     
     with col_info:
         st.caption(f"📊 Hiển thị {min(frames_per_page, total_filtered)}/{total_filtered} frame | Trang {st.session_state.current_page}/{total_pages}")
