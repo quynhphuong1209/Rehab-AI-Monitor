@@ -314,6 +314,106 @@ if 'reminder_id_counter' not in st.session_state:
     st.session_state.reminder_id_counter = 0
 
 # ============================================
+# HÀM HIỂN THỊ TAB 7: THÔNG TIN & CÔNG NGHỆ
+# ============================================
+def hien_thi_tab_cong_nghe():
+    """Thiết kế Tab 7 với phong cách công nghệ cao cấp"""
+    
+    # 1. HEADER CHƯƠNG TRÌNH
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%); 
+                padding: 2.5rem; border-radius: 25px; text-align: center; 
+                border: 1px solid #ffd700; box-shadow: 0 15px 35px rgba(255, 215, 0, 0.1);
+                margin-bottom: 2rem;">
+        <h1 style="color: #ffd700; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
+        <p style="color: #00CED1; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
+            Sự kết hợp hoàn hảo giữa Phục hồi chức năng và Trí tuệ nhân tạo (AI)
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 2. PHẦN 1: PHỤC HỒI CHỨC NĂNG 4.0
+    st.markdown("### 🏥 PHỤC HỒI CHỨC NĂNG TỪ XA (TELEREHABILITATION)")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="metric-card" style="height: 250px; border-top: 4px solid #00CED1;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🌍</div>
+            <h4 style="color: #fff;">Tiếp cận toàn cầu</h4>
+            <p style="color: #aaa; font-size: 0.9rem;">
+                Theo tiêu chuẩn WHO 2022, Telerehab giúp bệnh nhân ở vùng sâu tiếp cận y tế chất lượng cao mà không cần di chuyển.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div class="metric-card" style="height: 250px; border-top: 4px solid #ffd700;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">📉</div>
+            <h4 style="color: #fff;">Tối ưu chi phí</h4>
+            <p style="color: #aaa; font-size: 0.9rem;">
+                Giảm 40% chi phí điều trị nội trú nhờ duy trì chương trình tập luyện tại nhà được giám sát tự động qua AI.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown("""
+        <div class="metric-card" style="height: 250px; border-top: 4px solid #FF6B6B;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🎯</div>
+            <h4 style="color: #fff;">Cá nhân hóa</h4>
+            <p style="color: #aaa; font-size: 0.9rem;">
+                Dữ liệu từ cảm biến AI giúp bác sĩ điều chỉnh phác đồ theo từng milimet biên độ vận động của bệnh nhân.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # 3. PHẦN 2: CÔNG NGHỆ MEDIAPIPE
+    col_text, col_img = st.columns([1.2, 1])
+    
+    with col_text:
+        st.markdown("### 🤖 CỐT LÕI AI: GOOGLE MEDIAPIPE")
+        st.markdown("""
+        Hệ thống sử dụng kiến trúc **BlazePose** mạnh mẽ nhất từ Google Research, mang lại khả năng theo dõi cơ thể người với độ chính xác cấp độ nghiên cứu.
+        
+        #### ✨ Các tính năng ưu việt:
+        *   **33 Body Landmarks:** Theo dõi toàn diện từ khuôn mặt, tay chân đến tư thế cột sống.
+        *   **Real-time Inference:** Xử lý hơn 30 khung hình/giây ngay trên trình duyệt, không cần máy chủ mạnh.
+        *   **BlazePose Topology:** Khả năng nhận diện hướng của khớp vai và khuỷu tay trong không gian 3D, vượt xa các thuật toán Pose truyền thống.
+        *   **Robustness:** Hoạt động ổn định trong nhiều điều kiện ánh sáng và trang phục khác nhau.
+        """)
+        
+        st.info("💡 **Bạn có biết?** MediaPipe Pose được sử dụng trong các ứng dụng Fitness hàng đầu thế giới để chấm điểm động tác Yoga và Gym tự động.")
+
+    with col_img:
+        st.markdown("""
+        <div style="background: rgba(0,206,209,0.05); padding: 20px; border-radius: 20px; border: 1px dashed #00CED1; text-align: center;">
+            <h4 style="color: #00CED1;">BLAZEPOSE LANDMARKS MAP</h4>
+            <img src="https://mediapipe.dev/images/mobile/pose_tracking_full_body_landmarks.png" style="width: 100%; border-radius: 10px; margin-top: 10px;">
+            <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">Sơ đồ 33 điểm mốc được AI trích xuất thời gian thực</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # 4. FOOTER THÔNG TIN
+    st.markdown("""
+    <div style="margin-top: 3rem; padding: 1.5rem; background: rgba(255,215,0,0.05); border-radius: 15px; text-align: center;">
+        <p style="color: #aaa; font-style: italic;">
+            "Công nghệ không thay thế bác sĩ, nhưng bác sĩ sử dụng công nghệ sẽ thay thế những bác sĩ không sử dụng."
+        </p>
+        <p style="color: #ffd700; font-weight: bold; margin-top: 0.5rem;">— Rehab AI Monitor Team —</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ============================================
+# HÀM CHÍNH (MAIN)
+# ============================================
+def main():
+# ============================================
 # HÀM TÍNH GÓC
 # ============================================
 def tinh_goc(a, b, c):
@@ -2385,9 +2485,10 @@ def main():
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH",
-        "⏰ LỊCH NHẮC NHỞ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN"
+        "⏰ LỊCH NHẮC NHỞ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN",
+        "🌐 CÔNG NGHỆ"
     ])
     
     # ==================== TAB 1: TRANG CHỦ ====================
@@ -2767,6 +2868,10 @@ def main():
             <p style="color: #aaa; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
         </div>
         """, unsafe_allow_html=True)
+    
+    # ==================== TAB 7: CÔNG NGHỆ ====================
+    with tab7:
+        hien_thi_tab_cong_nghe()
 
 
 if __name__ == "__main__":
