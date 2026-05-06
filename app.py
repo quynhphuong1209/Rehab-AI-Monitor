@@ -1316,7 +1316,21 @@ def hien_thi_tab_phan_tich():
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
+
+    # HIỂN THỊ VIDEO ĐÃ PHÂN TÍCH (VỊ TRÍ ƯU TIÊN CAO NHẤT)
+    if st.session_state.processed_video_path and os.path.exists(st.session_state.processed_video_path):
+        st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH CHI TIẾT")
+        with st.container():
+            st.video(st.session_state.processed_video_path)
+            with open(st.session_state.processed_video_path, "rb") as file:
+                st.download_button(
+                    label="📥 Tải video kết quả (.mp4)",
+                    data=file,
+                    file_name=f"ket_qua_rehab_{int(time.time())}.mp4",
+                    mime="video/mp4"
+                )
+        st.markdown("---")
+
     # Thống kê nhanh - Card design
     st.markdown("### 📈 THỐNG KÊ TỔNG QUAN")
     col1, col2, col3, col4 = st.columns(4)
