@@ -1909,8 +1909,6 @@ def hien_thi_tab_phan_tich():
     # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
     with tab_clinical:
         st.markdown("### 🩺 NHẬN ĐỊNH CHUYÊN MÔN")
-        
-        # Lấy nhận định dựa trên giá trị trung bình
         insights = lay_nhan_dinh_lam_sang(tk['tb_goc_vai'], tk['tb_goc_khuyu'], bt)
         
         if insights:
@@ -1925,7 +1923,6 @@ def hien_thi_tab_phan_tich():
         else:
             st.success("✅ **NHẬN ĐỊNH:** Biên độ vận động của bệnh nhân nằm trong giới hạn an toàn. Động tác thực hiện ổn định, không phát hiện dấu hiệu bất thường về lâm sàng.")
             
-        st.markdown("---")
         st.markdown("---")
         st.markdown("### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU (RESEARCH EVALUATION)")
         st.info("💡 Biểu đồ Radar so sánh kết quả thực tế với mục tiêu đề tài nghiên cứu khoa học.")
