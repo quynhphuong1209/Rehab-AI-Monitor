@@ -85,7 +85,7 @@ if 'forgot_password_mode' not in st.session_state:
     st.session_state.forgot_password_mode = False
 
 # KIỂM TRA ĐĂNG NHẬP GOOGLE NATIVE (Streamlit 1.42+)
-if hasattr(st, "user") and st.user.get("email"):
+if hasattr(st, "user") and st.user and st.user.get("email"):
     st.session_state.logged_in = True
     st.session_state.user_info = {
         "username": st.user.get("name") or st.user.get("email").split("@")[0],
@@ -2076,16 +2076,9 @@ def hien_thi_dang_nhap_dang_ky():
             
             if st.button("🌐 ĐĂNG NHẬP VỚI GOOGLE", use_container_width=True):
                 try:
-                    # Lệnh đăng nhập thật của Streamlit
                     st.login("google")
                 except Exception as e:
                     st.error(f"⚠️ Lỗi cấu hình Google: {e}")
-                    st.info("💡 Kiểm tra lại mục 'Secrets' trên Streamlit Cloud xem đã dán đúng định dạng [auth.google] chưa.")
-
-        if st.session_state.logged_in and st.session_state.user_info.get("auth_type") == "google":
-            st.success(f"✅ Đã kết nối với Google: {st.session_state.user_info['email']}")
-            if st.button("🚀 VÀO ỨNG DỤNG NGAY", use_container_width=True):
-                st.rerun()
 
 
 # ============================================
