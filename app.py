@@ -589,18 +589,22 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     final_video_path = out_path
     final_h264_path = out_path.replace('.mp4', '_final.mp4')
     try:
-        # Dùng lệnh ffmpeg để convert (nhanh và chuẩn)
-        subprocess.run([
+        # Lệnh ffmpeg nâng cao để tối ưu cho web (+faststart)
+        cmd = [
             'ffmpeg', '-y', '-i', out_path, 
-            '-vcodec', 'libx264', '-pix_fmt', 'yuv420p',
-            '-preset', 'ultrafast', '-crf', '28', 
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+            '-preset', 'ultrafast', '-crf', '28',
+            '-movflags', '+faststart', # Quan trọng để xem được trên trình duyệt
             final_h264_path
-        ], capture_output=True)
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
         
-        if os.path.exists(final_h264_path):
+        if os.path.exists(final_h264_path) and os.path.getsize(final_h264_path) > 0:
             final_video_path = final_h264_path
+        else:
+            st.error(f"⚠️ FFmpeg không tạo được file kết quả. Lỗi: {result.stderr}")
     except Exception as e:
-        st.warning(f"Lỗi convert video: {e}")
+        st.warning(f"⚠️ Lỗi hệ thống khi convert video: {e}")
 
     gc.collect()
     return final_video_path, None, None, du_lieu_goc, frame_count, len(du_lieu_goc), thu_muc_frame, zip_path, danh_sach_frame_paths, {}, json_path, all_warnings
