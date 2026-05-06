@@ -84,6 +84,16 @@ if 'user_info' not in st.session_state:
 if 'forgot_password_mode' not in st.session_state:
     st.session_state.forgot_password_mode = False
 
+# KIỂM TRA ĐĂNG NHẬP GOOGLE NATIVE (Streamlit 1.42+)
+if hasattr(st, "user") and st.user.get("email"):
+    st.session_state.logged_in = True
+    st.session_state.user_info = {
+        "username": st.user.get("name") or st.user.get("email").split("@")[0],
+        "email": st.user.get("email"),
+        "auth_type": "google"
+    }
+
+
 # ============================================
 # CẤU HÌNH TRANG
 # ============================================
@@ -2059,20 +2069,22 @@ def hien_thi_dang_nhap_dang_ky():
             st.markdown("""
             <div style="text-align: center; padding: 20px;">
                 <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="48">
-                <h4 style="margin-top: 15px;">Đăng nhập với Google</h4>
-                <p style="color: #aaa; font-size: 0.9rem;">Tính năng này yêu cầu cấu hình Google Cloud API</p>
+                <h4 style="margin-top: 15px;">Đăng nhập Google chính thức</h4>
+                <p style="color: #aaa; font-size: 0.9rem;">Sử dụng tài khoản Gmail cá nhân để đăng nhập nhanh</p>
             </div>
             """, unsafe_allow_html=True)
-            if st.button("🚀 ĐĂNG NHẬP NHANH VỚI GOOGLE", use_container_width=True):
-                # GIẢ LẬP ĐĂNG NHẬP NHANH ĐỂ ĐẠT TỐC ĐỘ TỐI ĐA CHO DEMO NCKH
-                st.session_state.logged_in = True
-                st.session_state.user_info = {
-                    "username": "Google_User_Demo",
-                    "email": "user@google.com",
-                    "auth_type": "google"
-                }
-                st.toast("⚡ Đăng nhập Google thành công (Chế độ Fast-Auth)")
-                time.sleep(0.5)
+            
+            if st.button("🌐 ĐĂNG NHẬP VỚI GOOGLE", use_container_width=True):
+                try:
+                    # Lệnh đăng nhập thật của Streamlit
+                    st.login("google")
+                except Exception as e:
+                    st.error("⚠️ Hệ thống Google chưa được cấu hình Client ID.")
+                    st.info("💡 Bạn cần vào 'Manage app' -> 'Settings' -> 'Secrets' trên Streamlit Cloud để dán mã Google Client ID.")
+
+        if st.session_state.logged_in and st.session_state.user_info.get("auth_type") == "google":
+            st.success(f"✅ Đã kết nối với Google: {st.session_state.user_info['email']}")
+            if st.button("🚀 VÀO ỨNG DỤNG NGAY", use_container_width=True):
                 st.rerun()
 
 
@@ -2095,10 +2107,17 @@ def main():
     
     with st.sidebar:
         st.markdown(f"### 👤 Xin chào, **{st.session_state.user_info['username']}**")
-        if st.button("🚪 Đăng xuất", use_container_width=True):
-            st.session_state.logged_in = False
-            st.session_state.user_info = None
-            st.rerun()
+        if st.session_state.user_info.get("auth_type") == "google":
+            if st.button("🚪 Đăng xuất Google", use_container_width=True):
+                st.session_state.logged_in = False
+                st.session_state.user_info = None
+                st.logout()
+                st.rerun()
+        else:
+            if st.button("🚪 Đăng xuất", use_container_width=True):
+                st.session_state.logged_in = False
+                st.session_state.user_info = None
+                st.rerun()
             
         st.markdown("---")
         st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
