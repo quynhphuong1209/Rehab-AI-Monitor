@@ -2079,8 +2079,8 @@ def hien_thi_dang_nhap_dang_ky():
                     # Lệnh đăng nhập thật của Streamlit
                     st.login("google")
                 except Exception as e:
-                    st.error("⚠️ Hệ thống Google chưa được cấu hình Client ID.")
-                    st.info("💡 Bạn cần vào 'Manage app' -> 'Settings' -> 'Secrets' trên Streamlit Cloud để dán mã Google Client ID.")
+                    st.error(f"⚠️ Lỗi cấu hình Google: {e}")
+                    st.info("💡 Kiểm tra lại mục 'Secrets' trên Streamlit Cloud xem đã dán đúng định dạng [auth.google] chưa.")
 
         if st.session_state.logged_in and st.session_state.user_info.get("auth_type") == "google":
             st.success(f"✅ Đã kết nối với Google: {st.session_state.user_info['email']}")
