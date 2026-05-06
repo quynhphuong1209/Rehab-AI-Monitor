@@ -780,8 +780,12 @@ def tinh_metrics_chi_tiet(df, bt):
     chuan_vai = bt['chuan']['vai']
     chuan_khuyu = bt['chuan']['khuyu']
     
-    dung_count = df['dung'].sum()
-    gan_dung_count = df['gan_dung'].sum()
+    # Đảm bảo tính loại trừ: Gần đúng không bao gồm Đúng
+    df_dung = df['dung']
+    df_gan_dung = df['gan_dung'] & ~df['dung'] 
+    
+    dung_count = df_dung.sum()
+    gan_dung_count = df_gan_dung.sum()
     
     ty_le_tong_the = (dung_count / total) * 100
     ty_le_gan_dung = (gan_dung_count / total) * 100
@@ -2165,9 +2169,14 @@ def hien_thi_frames_day_du():
     st.markdown("---")
     col_stat1, col_stat2, col_stat3, col_stat4, col_stat5 = st.columns(5)
     with col_stat1: st.metric("📊 Tổng số frames", total_frames)
-    with col_stat2: st.metric("✅ Số frame PASS", sum(1 for f in all_frames_data if f.get('dung')))
-    with col_stat3: st.metric("⚠️ Số frame GẦN ĐÚNG", sum(1 for f in all_frames_data if f.get('gan_dung')))
-    with col_stat4: st.metric("❌ Số frame FAIL", total_frames - sum(1 for f in all_frames_data if f.get('dung') or f.get('gan_dung')))
+    # Tính toán chính xác (Đảm bảo không chồng lấn)
+    num_pass = sum(1 for f in all_frames_data if f.get('dung'))
+    num_nearly = sum(1 for f in all_frames_data if f.get('gan_dung') and not f.get('dung'))
+    num_fail = total_frames - num_pass - num_nearly
+    
+    with col_stat2: st.metric("✅ Số frame PASS", num_pass)
+    with col_stat3: st.metric("⚠️ Số frame GẦN ĐÚNG", num_nearly)
+    with col_stat4: st.metric("❌ Số frame FAIL", max(0, num_fail))
     with col_stat5: st.metric("📄 Tổng số trang", total_pages)
 
 
