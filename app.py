@@ -62,19 +62,34 @@ warnings.filterwarnings("ignore")
 # QUẢN LÝ NGƯỜI DÙNG & BẢO MẬT
 # ============================================
 USER_DATA_FILE = "users.json"
+SYMPTOMS_FILE = "patient_symptoms.json"
+EVALUATIONS_FILE = "doctor_evaluations.json"
+REMINDERS_FILE = "schedules.json"
+VIDEOS_FILE = "video_list.json"
 
-def load_users():
-    if os.path.exists(USER_DATA_FILE):
+def load_data(file_path):
+    if os.path.exists(file_path):
         try:
-            with open(USER_DATA_FILE, "r", encoding="utf-8") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except:
-            return {}
-    return {}
+            return [] if "users" not in file_path else {}
+    return [] if "users" not in file_path else {}
+
+def save_data(file_path, data):
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+def load_users():
+    users = load_data(USER_DATA_FILE)
+    # Đảm bảo các user cũ có role mặc định là Bệnh nhân
+    for username in users:
+        if "role" not in users[username]:
+            users[username]["role"] = "Bệnh nhân"
+    return users
 
 def save_users(users):
-    with open(USER_DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, ensure_ascii=False, indent=4)
+    save_data(USER_DATA_FILE, users)
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -112,6 +127,7 @@ if not st.session_state.get('logged_in'):
             st.session_state.user_info = {
                 "username": getattr(user_detected, 'name', None) or user_detected.email.split("@")[0],
                 "email": user_detected.email,
+                "role": "Bệnh nhân", # Mặc định cho login Google là Bệnh nhân
                 "auth_type": "google"
             }
             # Dọn dẹp trạng thái
@@ -2575,12 +2591,240 @@ def hien_thi_tab_phan_tich():
                     st.download_button("✅ Click để tải ZIP", zip_buffer, "bieu_do_lam_sang.zip", "application/zip", use_container_width=True)
                 except Exception as e:
                     st.error(f"❌ Lỗi: {e}. Vui lòng cài đặt: pip install -U kaleido")
-# HÀM HIỂN THỊ LỊCH NHẮC NHỞ
-# ============================================
+def hien_thi_tab_huong_dan():
+    st.markdown("## 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG")
+    st.markdown("""
+    ### 1. Dành cho Bệnh nhân
+    - **Bước 1:** Chọn bài tập ở Sidebar. Xem video hướng dẫn để nắm vững kỹ thuật.
+    - **Bước 2:** Quay video quá trình tập luyện của bạn (đảm bảo thấy rõ khớp vai và khuỷu tay).
+    - **Bước 3:** Tải video lên ở Tab **TRANG CHỦ** và bấm **BẮT ĐẦU PHÂN TÍCH**.
+    - **Bước 4:** Sau khi có kết quả AI, bấm **GỬI CHO BÁC SĨ** để nhận đánh giá chuyên môn.
+    - **Bước 5:** Xem phản hồi của bác sĩ ở Tab **KẾT QUẢ**.
+
+    ### 2. Dành cho Bác sĩ / KTV
+    - **Bước 1:** Kiểm tra danh sách video bệnh nhân gửi đến ở Tab **TRANG CHỦ**.
+    - **Bước 2:** Bấm **ĐÁNH GIÁ** để xem video và phân tích AI.
+    - **Bước 3:** Điền phiếu đánh giá chuyên môn và gửi lại cho bệnh nhân.
+    - **Bước 4:** Thiết lập lịch nhắc nhở tập luyện hoặc hẹn khám ở Tab **LỊCH NHẮC NHỞ**.
+
+    ### 3. Dành cho Nghiên cứu viên
+    - Theo dõi các chỉ số khoa học (Accuracy, F1, ICC) ở Tab **PHÂN TÍCH**.
+    - Xem đối chiếu giữa kết quả AI và đánh giá lâm sàng của bác sĩ để tinh chỉnh mô hình.
+    """)
+
+def hien_thi_tab_nckh():
+    is_light = st.session_state.theme == 'light'
+    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+    text_color = "#000" if is_light else "white"
+    sub_color = "#0072ff" if is_light else "#ffd700"
+    border_color = "#0072ff" if is_light else "#2a5298"
+
+    st.markdown(f"""
+    <div style="background: {bg_gradient}; padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid {border_color};">
+        <h2 style="color: {text_color}; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
+        <p style="color: {sub_color}; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
+        <p style="color: {"#333" if is_light else "#ccc"};">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
+        <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
+        st.markdown("""
+        Trong những năm gần đây, nhu cầu phục hồi chức năng (PHCN) ngày càng tăng cao. Tuy nhiên, năng lực cung cấp dịch vụ vẫn còn hạn chế.
+        Đề tài tập trung vào việc giám sát tập luyện từ xa giúp bệnh nhân tự tập tại nhà hiệu quả hơn dưới sự hỗ trợ của AI.
+        """)
+    
+    with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
+        st.markdown("""
+        **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập PHCN khớp vai.
+        **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá lâm sàng.
+        """)
+
+    with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP NGHIÊN CỨU", expanded=True):
+        st.markdown("""
+        **Đối tượng nghiên cứu:** 05 bệnh nhân viêm quanh khớp vai + nhóm chuyên gia PHCN tại Khoa Phục hồi chức năng, Bệnh viện Đa khoa Phạm Ngọc Thạch.
+        **Thiết kế nghiên cứu:** Nghiên cứu định lượng, phát triển mô hình học máy.
+        **Công nghệ sử dụng:** MediaPipe Pose Estimation, Python, OpenCV, Streamlit, Plotly.
+        """)
+    
+    with st.expander("📊 KẾT QUẢ DỰ KIẾN", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Độ chính xác (Accuracy)", "≥ 90%")
+        with col2:
+            st.metric("Sai số MAE", "< 5°")
+        with col3:
+            st.metric("Hệ số ICC", "≥ 0.75")
+
+def hien_thi_tab_thanh_vien():
+    st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
+    st.markdown("""
+    <div class="lecturer-card">
+        <div class="lecturer-name">TS. Trần Hồng Việt</div>
+        <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
+        <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div class="member-card" style="border-color: #ffd700; border: 2px solid #ffd700;">
+            <div class="member-name">Đinh Lê Quỳnh Phương</div>
+            <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
+            <div class="member-id">MSSV: 2211090031</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
+    thanh_vien = [
+        ("Kim Mạnh Hưng", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
+        ("Nguyễn Hải An", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
+        ("Phan Vân Anh", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
+        ("Nguyễn Thị Thanh Nga", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
+    ]
+    cols = st.columns(4)
+    for i, (ten, vai_tro, lop, mssv) in enumerate(thanh_vien):
+        with cols[i]:
+            st.markdown(f"""
+            <div class="member-card">
+                <div class="member-name">{ten}</div>
+                <div class="member-role">{vai_tro}</div>
+                <div class="member-class">{lop}</div>
+                <div class="member-id">MSSV: {mssv}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### 🩺 CHUYÊN GIA LÂM SÀNG")
+    chuyen_gia = [
+        ("Nguyễn Thị Thơm", "Chuyên gia PHCN", "CNCQ KTPHCN3-1A", "2216030122"),
+        ("Nguyễn Thị Thu Hương", "Chuyên gia PHCN", "CNCQYTCC22-1A", "2317010071"),
+    ]
+    cols = st.columns(2)
+    for i, (ten, vai_tro, lop, mssv) in enumerate(chuyen_gia):
+        with cols[i]:
+            st.markdown(f"""
+            <div class="member-card">
+                <div class="member-name">{ten}</div>
+                <div class="member-role">{vai_tro}</div>
+                <div class="member-class">{lop}</div>
+                <div class="member-id">MSSV: {mssv}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
+    is_light = st.session_state.theme == 'light'
+    partner_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
+    partner_text = "#333" if is_light else "#ccc"
+    partner_title = "#0072ff" if is_light else "#ffd700"
+    
+    st.markdown(f"""
+    <div style="background: {partner_bg}; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #2a5298;">
+        <p style="color: {partner_title}; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
+        <p style="color: {partner_text};">Khoa Phục hồi chức năng</p>
+        <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ==================== CÁC HÀM HỖ TRỢ VAI TRÒ MỚI ====================
+
+def hien_thi_form_danh_gia_bac_si():
+    st.markdown("## 📝 PHIẾU ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC (GROUND TRUTH)")
+    
+    selected_video = st.session_state.get('current_eval_video')
+    if not selected_video:
+        st.warning("⚠️ Vui lòng chọn một video từ danh sách ở TRANG CHỦ để bắt đầu đánh giá.")
+        return
+
+    st.markdown(f"""
+    <div style="background: rgba(0,206,209,0.1); padding: 1rem; border-radius: 10px; border: 1px solid #00CED1; margin-bottom: 1rem;">
+        <strong>🎬 Đang đánh giá video:</strong> {selected_video['full_name']} - {selected_video['exercise']} ({selected_video['time']})
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.form("doctor_eval_form"):
+        st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
+        bt_chosen = st.multiselect("Động tác bệnh nhân thực hiện:", 
+                                  ["1. Bài tập con lắc Codman", "2. Bài tập vận động với gậy", "3. Bài tập với dây kháng lực"],
+                                  default=[f"{i+1}. {selected_video['exercise']}" for i, k in enumerate(BAI_TAP.keys()) if BAI_TAP[k]['ten'] == selected_video['exercise']])
+
+        st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC (GROUND TRUTH)")
+        col1, col2 = st.columns(2)
+        with col1:
+            ket_qua = st.radio("1. Kết quả đánh giá tổng quát:", ["Đúng", "Sai", "Gần đúng"])
+        with col2:
+            loi_sai = st.multiselect("2. Lỗi sai thường gặp (nếu có):", 
+                                    ["Vị trí tay chưa đúng", "Biên độ chưa đạt", "Tốc độ quá nhanh/chậm", "Sai tư thế thân người"])
+
+        st.markdown("### V. NHẬN XÉT CỦA BÁC SĨ/KTV PHCN")
+        nhan_xet = st.text_area("Nhập nhận xét chuyên môn:", height=150)
+
+        st.markdown("### VI. KẾ HOẠCH TIẾP THEO")
+        ke_hoach = st.radio("Chỉ định:", ["Tiếp tục bài tập hiện tại", "Chuyển sang bài tập mới", "Hẹn khám lại trực tiếp"])
+
+        submitted = st.form_submit_button("🚀 GỬI ĐÁNH GIÁ CHO BỆNH NHÂN & NGHIÊN CỨU VIÊN", use_container_width=True)
+        
+        if submitted:
+            evals = load_data(EVALUATIONS_FILE)
+            new_eval = {
+                "patient_username": selected_video['username'],
+                "doctor_username": st.session_state.user_info['username'],
+                "video_name": selected_video['video_name'],
+                "exercise": selected_video['exercise'],
+                "ai_accuracy": selected_video['accuracy'],
+                "doctor_result": ket_qua,
+                "errors": loi_sai,
+                "comments": nhan_xet,
+                "plan": ke_hoach,
+                "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+            }
+            evals.append(new_eval)
+            save_data(EVALUATIONS_FILE, evals)
+            
+            # Cập nhật trạng thái video
+            video_list = load_data(VIDEOS_FILE)
+            for v in video_list:
+                if v['video_path'] == selected_video['video_path']:
+                    v['status'] = "Đã đánh giá"
+            save_data(VIDEOS_FILE, video_list)
+            
+            st.success("✅ Đã gửi đánh giá thành công!")
+            st.balloons()
+
+def hien_thi_ket_qua_cho_benh_nhan():
+    st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỪ BÁC SĨ & AI")
+    
+    evals = load_data(EVALUATIONS_FILE)
+    my_evals = [e for e in evals if e['patient_username'] == st.session_state.user_info['username']]
+    
+    if not my_evals:
+        st.info("📭 Hiện chưa có đánh giá nào từ bác sĩ. Kết quả AI của bạn sẽ hiển thị sau khi bạn upload video ở TRANG CHỦ.")
+        if st.session_state.has_data:
+            hien_thi_tab_phan_tich()
+    else:
+        for e in reversed(my_evals):
+            with st.expander(f"📝 Đánh giá ngày {e['time']} - Bài tập: {e['exercise']}", expanded=True):
+                c1, c2 = st.columns([1, 2])
+                with c1:
+                    st.metric("🤖 AI Accuracy", f"{e['ai_accuracy']}%")
+                    st.metric("👨‍⚕️ Bác sĩ đánh giá", e['doctor_result'])
+                with c2:
+                    st.markdown(f"**Lỗi sai:** {', '.join(e['errors']) if e['errors'] else 'Không có'}")
+                    st.markdown(f"**Nhận xét:** {e['comments']}")
+                    st.markdown(f"**Kế hoạch:** {e['plan']}")
+        
+        st.markdown("---")
+        st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
+        hien_thi_tab_phan_tich()
 def hien_thi_lich_nhac_nho():
     """Hiển thị lịch nhắc nhở chi tiết"""
     st.markdown("## ⏰ LỊCH NHẮC NHỞ CHI TIẾT")
     
+    user_role = st.session_state.user_info.get('role', 'Bệnh nhân')
     current_time = datetime.now()
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -2595,11 +2839,13 @@ def hien_thi_lich_nhac_nho():
     
     st.markdown("---")
     
-    tab_lich1, tab_lich2, tab_lich3, tab_lich4 = st.tabs([
-        "🩺 Lịch hẹn khám", "🏋️ Lịch tập luyện", "💊 Lịch uống thuốc", "➕ Thêm mới"
-    ])
+    tab_list = ["🩺 Lịch hẹn khám", "🏋️ Lịch tập luyện", "💊 Lịch uống thuốc"]
+    if user_role == "Bác sĩ / KTV PHCN":
+        tab_list.append("➕ Thêm mới")
+        
+    all_lich_tabs = st.tabs(tab_list)
     
-    with tab_lich1:
+    with all_lich_tabs[0]:
         st.subheader("🩺 Lịch hẹn với bác sĩ")
         if not st.session_state.appointments:
             st.info("📭 Không có lịch hẹn nào.")
@@ -2619,7 +2865,7 @@ def hien_thi_lich_nhac_nho():
                         st.session_state.appointments.remove(app)
                         st.rerun()
     
-    with tab_lich2:
+    with all_lich_tabs[1]:
         st.subheader("🏋️ Lịch tập luyện")
         if not st.session_state.exercise_reminders:
             st.info("📭 Không có lịch tập nào.")
@@ -2639,7 +2885,7 @@ def hien_thi_lich_nhac_nho():
                         st.session_state.exercise_reminders.remove(ex)
                         st.rerun()
     
-    with tab_lich3:
+    with all_lich_tabs[2]:
         st.subheader("💊 Lịch uống thuốc")
         if not st.session_state.medication_reminders:
             st.info("📭 Không có lịch uống thuốc nào.")
@@ -2659,64 +2905,65 @@ def hien_thi_lich_nhac_nho():
                         st.session_state.medication_reminders.remove(med)
                         st.rerun()
     
-    with tab_lich4:
-        st.subheader("➕ Thêm lịch nhắc nhở mới")
-        loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            date = st.date_input("Ngày", min_value=datetime.now().date())
-        with col2:
-            time_input = st.time_input("Giờ")
-        
-        if loai == "Lịch hẹn khám":
-            title = st.text_input("Tiêu đề")
-            notes = st.text_area("Ghi chú")
-            if st.button("➕ Thêm", key="add_appointment"):
-                if title:
+    if user_role == "Bác sĩ / KTV PHCN":
+        with all_lich_tabs[3]:
+            st.subheader("➕ Thêm lịch nhắc nhở mới")
+            loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                date = st.date_input("Ngày", min_value=datetime.now().date())
+            with col2:
+                time_input = st.time_input("Giờ")
+            
+            if loai == "Lịch hẹn khám":
+                title = st.text_input("Tiêu đề")
+                notes = st.text_area("Ghi chú")
+                if st.button("➕ Thêm", key="add_appointment"):
+                    if title:
+                        new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
+                        st.session_state.appointments.append({
+                            'id': new_id,
+                            'title': title,
+                            'datetime': f"{date} {time_input}",
+                            'notes': notes
+                        })
+                        st.success("✅ Đã thêm!")
+                        st.rerun()
+            
+            elif loai == "Lịch tập luyện":
+                exercise = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: BAI_TAP[x]['ten'])
+                frequency = st.selectbox("Tần suất", ["Một lần", "Hàng ngày", "Thứ 2-4-6", "Thứ 3-5-7"])
+                notes = st.text_area("Ghi chú")
+                if st.button("➕ Thêm", key="add_exercise"):
                     new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
-                    st.session_state.appointments.append({
+                    st.session_state.exercise_reminders.append({
                         'id': new_id,
-                        'title': title,
+                        'exercise_name': BAI_TAP[exercise]['ten'],
                         'datetime': f"{date} {time_input}",
+                        'frequency': frequency,
                         'notes': notes
                     })
                     st.success("✅ Đã thêm!")
                     st.rerun()
-        
-        elif loai == "Lịch tập luyện":
-            exercise = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: BAI_TAP[x]['ten'])
-            frequency = st.selectbox("Tần suất", ["Một lần", "Hàng ngày", "Thứ 2-4-6", "Thứ 3-5-7"])
-            notes = st.text_area("Ghi chú")
-            if st.button("➕ Thêm", key="add_exercise"):
-                new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
-                st.session_state.exercise_reminders.append({
-                    'id': new_id,
-                    'exercise_name': BAI_TAP[exercise]['ten'],
-                    'datetime': f"{date} {time_input}",
-                    'frequency': frequency,
-                    'notes': notes
-                })
-                st.success("✅ Đã thêm!")
-                st.rerun()
-        
-        else:
-            med_name = st.text_input("Tên thuốc")
-            dosage = st.text_input("Liều lượng")
-            notes = st.text_area("Ghi chú")
-            if st.button("➕ Thêm", key="add_medication"):
-                if med_name:
-                    new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
-                    st.session_state.medication_reminders.append({
-                        'id': new_id,
-                        'medication_name': med_name,
-                        'dosage': dosage,
-                        'datetime': f"{date} {time_input}",
-                        'notes': notes,
-                        'taken': False
-                    })
-                    st.success("✅ Đã thêm!")
-                    st.rerun()
+            
+            else:
+                med_name = st.text_input("Tên thuốc")
+                dosage = st.text_input("Liều lượng")
+                notes = st.text_area("Ghi chú")
+                if st.button("➕ Thêm", key="add_medication"):
+                    if med_name:
+                        new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
+                        st.session_state.medication_reminders.append({
+                            'id': new_id,
+                            'medication_name': med_name,
+                            'dosage': dosage,
+                            'datetime': f"{date} {time_input}",
+                            'notes': notes,
+                            'taken': False
+                        })
+                        st.success("✅ Đã thêm!")
+                        st.rerun()
 
 # ============================================
 # HÀM HIỂN THỊ LỊCH FRAMES ĐẦY ĐỦ
@@ -2942,7 +3189,11 @@ def hien_thi_dang_nhap_dang_ky():
                     users = load_users()
                     if u in users and verify_password(p, users[u]['password']):
                         st.session_state.logged_in = True
-                        st.session_state.user_info = {"username": u, "email": users[u].get('email')}
+                        st.session_state.user_info = {
+                            "username": u, 
+                            "email": users[u].get('email'),
+                            "role": users[u].get('role', 'Bệnh nhân')
+                        }
                         st.session_state.show_login_dialog = False
                         st.rerun()
                     else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
@@ -2958,6 +3209,7 @@ def hien_thi_dang_nhap_dang_ky():
                 reg_e = st.text_input("📧 Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
                 reg_p = st.text_input("🔑 Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
                 reg_cp = st.text_input("✅ Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
+                reg_role = st.selectbox("🎭 Vai trò người dùng *", ["Bệnh nhân", "Bác sĩ / KTV PHCN", "Nghiên cứu viên"], key="reg_role")
                 
                 if st.button("🚀 ĐĂNG KÝ TRUY CẬP", use_container_width=True, type="primary"):
                     if not reg_u or not reg_e or len(reg_p) < 6:
@@ -2972,6 +3224,7 @@ def hien_thi_dang_nhap_dang_ky():
                                 "password": hash_password(reg_p),
                                 "email": reg_e,
                                 "full_name": reg_name,
+                                "role": reg_role,
                                 "created_at": datetime.now().isoformat()
                             }
                             save_users(users)
@@ -3049,28 +3302,44 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
+    user_role = st.session_state.user_info.get('role', 'Bệnh nhân')
+    
     with st.sidebar:
-        # --- Đã di chuyển nút gạt theme lên Top Bar ---
+        st.markdown(f"### 🎭 VAI TRÒ: {user_role.upper()}")
         
         # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
-        st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
-        ten_benh_nhan = st.text_input("Họ và tên", placeholder="VD: Nguyễn Văn A")
-        ma_benh_nhan = st.text_input("Mã số bệnh nhân", placeholder="VD: BN0001")
+        st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
+        ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
+        ma_nguoi_dung = st.text_input("Mã số định danh", placeholder="VD: BN0001 / BS0001")
         col1, col2 = st.columns(2)
         with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
         with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
         
-        st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
-        chan_doan = st.selectbox("Chẩn đoán", [
-            "", 
-            "Viêm quanh khớp vai thể giả liệt thể đông cứng", 
-            "Viêm quanh khớp vai thể đơn thuần", 
-            "Viêm quanh khớp cấp"
-        ])
+        if user_role == "Bệnh nhân":
+            st.markdown("### 🩺 TRIỆU CHỨNG & BIỂU HIỆN")
+            trieu_chung = st.text_area("Mô tả cảm giác đau/khó khăn khi vận động", placeholder="VD: Đau nhói khi giơ tay quá đầu...")
+            if st.button("📤 Gửi thông tin cho Bác sĩ/KTV", use_container_width=True):
+                symptoms = load_data(SYMPTOMS_FILE)
+                symptoms.append({
+                    "username": st.session_state.user_info['username'],
+                    "full_name": ten_nguoi_dung,
+                    "age": tuoi,
+                    "gender": gioi_tinh,
+                    "symptoms": trieu_chung,
+                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                })
+                save_data(SYMPTOMS_FILE, symptoms)
+                st.success("✅ Đã gửi thông tin!")
+        else:
+            st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
+            chan_doan = st.selectbox("Chẩn đoán", [
+                "", 
+                "Viêm quanh khớp vai thể giả liệt thể đông cứng", 
+                "Viêm quanh khớp vai thể đơn thuần", 
+                "Viêm quanh khớp cấp"
+            ])
+            muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
 
-        muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
-
-        
         st.markdown("### 🎯 CHỌN BÀI TẬP")
         ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
         bai_tap = BAI_TAP[ma_bai_tap]
@@ -3082,14 +3351,18 @@ def main():
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
-        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", 
-        "🏥 KIẾN THỨC PHCN", "⏰ LỊCH NHẮC NHỞ", "🌐 CÔNG NGHỆ", 
-        "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
-    ])
+    # Định nghĩa các tab dựa trên vai trò
+    if user_role == "Bác sĩ / KTV PHCN":
+        tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN", "⏰ LỊCH NHẮC NHỞ", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+    elif user_role == "Bệnh nhân":
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+    else: # Nghiên cứu viên
+        tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "⏰ LỊCH NHẮC NHỞ", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        
+    all_tabs = st.tabs(tab_titles)
     
     # ==================== TAB 1: TRANG CHỦ ====================
-    with tab1:
+    with all_tabs[0]:
         is_light = st.session_state.theme == 'light'
         info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
         info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
@@ -3243,6 +3516,23 @@ def main():
                         with c_nav2:
                             if st.button("🎬 XEM VIDEO & ẢNH FRAME", use_container_width=True, type="primary"):
                                 chuyen_tab_bang_js("VIDEO & ẢNH")
+                        
+                        # THEO DÕI VIDEO CHO BÁC SĨ (NCKH)
+                        if user_role == "Bệnh nhân":
+                            if st.button("📤 GỬI KẾT QUẢ & VIDEO CHO BÁC SĨ/KTV", use_container_width=True, type="secondary", key="send_to_doc"):
+                                video_list = load_data(VIDEOS_FILE)
+                                video_list.append({
+                                    "username": st.session_state.user_info['username'],
+                                    "full_name": ten_nguoi_dung,
+                                    "video_name": file_upload.name,
+                                    "exercise": bai_tap['ten'],
+                                    "accuracy": round(metrics["ty_le_tong_the"], 1),
+                                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y"),
+                                    "video_path": output_path,
+                                    "status": "Chờ đánh giá"
+                                })
+                                save_data(VIDEOS_FILE, video_list)
+                                st.success("✅ Đã gửi video và kết quả phân tích AI cho Bác sĩ!")
                         st.markdown("---")
                         
                         # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
@@ -3289,15 +3579,32 @@ def main():
         
         elif st.session_state.has_data:
             st.success("✅ Đã có kết quả phân tích! Hãy xem các tab PHÂN TÍCH và VIDEO & ẢNH.")
-            if st.button("🔄 PHÂN TÍCH VIDEO MỚI", width='stretch'):
-                keys_to_clear = ['has_data', 'angle_df', 'stats', 'frames_zip', 'exercise', 
-                                'temp_video_file', 'processed_video_bytes', 
-                                'all_frames_data', 'all_frames_paths']
-                for key in keys_to_clear:
-                    if key in st.session_state:
-                        st.session_state[key] = None if key != 'has_data' else False
-                st.session_state.processing = False
-                st.rerun()
+            st.session_state.processing = False
+            # st.rerun() # Không cần rerun ở đây vì Streamlit sẽ tự update UI
+
+        # HIỂN THỊ DANH SÁCH VIDEO CHO BÁC SĨ (MỚI)
+        if user_role == "Bác sĩ / KTV PHCN":
+            st.markdown("---")
+            st.markdown("### 🎬 DANH SÁCH VIDEO BỆNH NHÂN ĐÃ QUAY")
+            video_list = load_data(VIDEOS_FILE)
+            if not video_list:
+                st.info("📭 Hiện chưa có video nào được gửi đến.")
+            else:
+                for idx, v in enumerate(video_list):
+                    with st.expander(f"🎬 {v['full_name']} - {v['exercise']} ({v['time']}) - {v['status']}"):
+                        col_v1, col_v2 = st.columns([2, 1])
+                        with col_v1:
+                            if os.path.exists(v['video_path']):
+                                st.video(v['video_path'])
+                            else:
+                                st.error("File video không tồn tại trên hệ thống.")
+                        with col_v2:
+                            st.write(f"**Người tập:** {v['full_name']}")
+                            st.write(f"**Độ chính xác AI:** {v['accuracy']}%")
+                            st.write(f"**Trạng thái:** {v['status']}")
+                            if st.button("📝 Đánh giá video này", key=f"eval_btn_{idx}"):
+                                st.session_state.current_eval_video = v
+                                chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
 
         # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
         st.markdown("---")
@@ -3371,187 +3678,47 @@ def main():
         hien_thi_tab_huong_dan()
 
     # ==================== TAB 5: KIẾN THỨC PHCN ====================
-    with tab5:
-        hien_thi_tab_kien_thuc_phcn()
+    # ==================== TAB 2: PHÂN TÍCH / ĐÁNH GIÁ ====================
+    with all_tabs[1]:
+        if user_role == "Bác sĩ / KTV PHCN":
+            hien_thi_form_danh_gia_bac_si()
+        elif user_role == "Bệnh nhân":
+            hien_thi_ket_qua_cho_benh_nhan()
+        else: # Nghiên cứu viên
+            hien_thi_tab_phan_tich()
+            # Hiển thị thêm các đánh giá của bác sĩ cho nghiên cứu viên xem
+            st.markdown("---")
+            st.markdown("### 🩺 NHẬN XÉT LÂM SÀNG TỪ BÁC SĨ (DÀNH CHO NCKH)")
+            evals = load_data(EVALUATIONS_FILE)
+            if evals:
+                st.dataframe(pd.DataFrame(evals))
+            else:
+                st.info("Chưa có dữ liệu đánh giá lâm sàng.")
 
-    # ==================== TAB 6: LỊCH NHẮC NHỞ ====================
-    with tab6:
+    # ==================== TAB 3: LỊCH NHẮC NHỞ ====================
+    with all_tabs[2]:
         hien_thi_lich_nhac_nho()
 
-    # ==================== TAB 7: CÔNG NGHỆ ====================
-    with tab7:
+    # ==================== TAB 4: VIDEO & ẢNH ====================
+    with all_tabs[3]:
+        hien_thi_frames_day_du()
+
+    with all_tabs[4]:
+        hien_thi_tab_huong_dan()
+        
+    with all_tabs[5]:
+        hien_thi_tab_kien_thuc_phcn()
+        
+    with all_tabs[6]:
         hien_thi_tab_cong_nghe()
         
-    # ==================== TAB 8: ĐỀ TÀI NCKH ====================
-    with tab8:
-        # Cấu hình màu sắc theo Theme
-        is_light = st.session_state.theme == 'light'
-        bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
-        text_color = "#000" if is_light else "white"
-        sub_color = "#0072ff" if is_light else "#ffd700"
-        border_color = "#0072ff" if is_light else "#2a5298"
-
-        st.markdown(f"""
-        <div style="background: {bg_gradient}; padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid {border_color};">
-            <h2 style="color: {text_color}; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
-            <p style="color: {sub_color}; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
-            <p style="color: {"#333" if is_light else "#ccc"};">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
-            <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
-        </div>
-        """, unsafe_allow_html=True)
+    with all_tabs[7]:
+        hien_thi_tab_nckh()
         
-        with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
-            st.markdown("""
-            Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
-            
-            Theo Tổ chức Y tế Thế giới (WHO), hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng, chiếm gần một phần ba dân số toàn cầu. Tại Việt Nam, theo Hội Phục hồi chức năng Việt Nam (2023), có khoảng 7,06% dân số từ 2 tuổi trở lên là người khuyết tật, trong đó phần lớn cần được can thiệp PHCN.
-            
-            Mặc dù nhu cầu PHCN lớn, song năng lực cung cấp dịch vụ này tại Việt Nam vẫn còn hạn chế. Trung bình 10.000 người dân chỉ có 0,25 nhân viên phục hồi chức năng, thấp hơn đáng kể so với khuyến nghị của WHO là 0,5-1 người/10.000 dân. Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà sau khi xuất viện mà thiếu sự giám sát chuyên môn.
-            
-            Xuất phát từ thực tiễn trên, nhóm nghiên cứu quyết định thực hiện đề tài: **"Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)"**.
-            """)
+    with all_tabs[8]:
+        hien_thi_tab_thanh_vien()
         
-        with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
-            st.markdown("""
-            **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập phục hồi chức năng cho bệnh nhân viêm quanh khớp vai, bao gồm:
-            - Bài tập con lắc Codman
-            - Bài tập với gậy
-            - Bài tập với dây kháng lực
-            
-            **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công trên một tập dữ liệu nhỏ.
-            """)
-        
-        with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP NGHIÊN CỨU", expanded=True):
-            st.markdown("""
-            **Đối tượng nghiên cứu:** 05 bệnh nhân viêm quanh khớp vai + nhóm chuyên gia PHCN tại Khoa Phục hồi chức năng, Bệnh viện Đa khoa Phạm Ngọc Thạch.
-            
-            **Thiết kế nghiên cứu:** Nghiên cứu định lượng, phát triển mô hình học máy.
-            
-            **Công nghệ sử dụng:** 
-            - MediaPipe Pose Estimation cho ước lượng tư thế
-            - Python và các thư viện xử lý ảnh (OpenCV, NumPy, Pandas)
-            - Streamlit cho giao diện người dùng
-            - Plotly cho trực quan hóa dữ liệu
-            
-            **Cỡ mẫu dự kiến:** 500-1000 chuỗi chuyển động.
-            """)
-        
-        with st.expander("📊 KẾT QUẢ DỰ KIẾN", expanded=True):
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Độ chính xác (Accuracy)", "≥ 90%")
-                st.metric("F1-Score", "≥ 0.85")
-            with col2:
-                st.metric("Sai số MAE", "< 5°")
-                st.metric("Hệ số ICC", "≥ 0.75")
-            with col3:
-                st.metric("Precision", "≥ 0.85")
-                st.metric("Recall", "≥ 0.85")
-        
-        with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
-            st.markdown("""
-            **- Về khoa học và đào tạo:** Xây dựng mô hình nhận diện động tác PHCN, tạo bộ dữ liệu chuẩn hóa, là tài liệu thực hành cho sinh viên ngành Khoa học dữ liệu y sinh.
-            
-            **- Về phát triển kinh tế:** Giảm chi phí đi lại, giảm tải cho nhân viên y tế, tối ưu nguồn lực bệnh viện.
-            
-            **- Về xã hội:** Tăng khả năng tiếp cận dịch vụ PHCN, thúc đẩy chuyển đổi số y tế, xây dựng hệ thống chăm sóc sức khỏe thông minh.
-            """)
-        
-        with st.expander("📚 TÀI LIỆU THAM KHẢO", expanded=False):
-            st.markdown("""
-            1. WHO. Rehabilitation 2030: A call for action.
-            2. Cieza A, et al. Global estimates of the need for rehabilitation. Lancet. 2021.
-            3. Lugaresi C, et al. MediaPipe: A Framework for Building Perception Pipelines. arXiv. 2019.
-            4. Cao Z, et al. OpenPose: Realtime Multi-Person 2D Pose Estimation. arXiv. 2019.
-            5. Hellstén T, et al. Reliability and validity of computer vision-based markerless human pose estimation. Healthc Technol Lett. 2025.
-            6. Ino T, et al. Validity and Reliability of OpenPose-Based Motion Analysis. J Sports Sci Med. 2024.
-            7. Aguilar-Ortega R, et al. UCO Physical Rehabilitation: New Dataset and Study. Sensors. 2023.
-            8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
-            """)
-
-    # ==================== TAB 9: THÀNH VIÊN ====================
-    with tab9:
-        st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
-        st.markdown("""
-        <div class="lecturer-card">
-            <div class="lecturer-name">TS. Trần Hồng Việt</div>
-            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
-            <p style="color: #aaa; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown("""
-            <div class="member-card" style="border-color: #ffd700; border: 2px solid #ffd700;">
-                <div class="member-name">Đinh Lê Quỳnh Phương</div>
-                <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
-                <div class="member-class">Chuyên ngành Khoa học dữ liệu Y sinh</div>
-                <div class="member-id">MSSV: 2211090031</div>
-                <div class="member-id">📧 2211090031@studenthuph.edu.vn</div>
-                <div class="member-id">📱 0382665916</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
-        thanh_vien = [
-            ("Kim Mạnh Hưng", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
-            ("Nguyễn Hải An", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
-            ("Phan Vân Anh", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
-            ("Nguyễn Thị Thanh Nga", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
-        ]
-        
-        cols = st.columns(4)
-        for i, (ten, vai_tro, lop, mssv) in enumerate(thanh_vien):
-            with cols[i]:
-                st.markdown(f"""
-                <div class="member-card">
-                    <div class="member-name">{ten}</div>
-                    <div class="member-role">{vai_tro}</div>
-                    <div class="member-class">{lop}</div>
-                    <div class="member-id">MSSV: {mssv}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown("### 🩺 CHUYÊN GIA LÂM SÀNG")
-        chuyen_gia = [
-            ("Nguyễn Thị Thơm", "Chuyên gia PHCN", "CNCQ KTPHCN3-1A", "2216030122"),
-            ("Nguyễn Thị Thu Hương", "Chuyên gia PHCN", "CNCQYTCC22-1A", "2317010071"),
-        ]
-        
-        cols = st.columns(2)
-        for i, (ten, vai_tro, lop, mssv) in enumerate(chuyen_gia):
-            with cols[i]:
-                st.markdown(f"""
-                <div class="member-card">
-                    <div class="member-name">{ten}</div>
-                    <div class="member-role">{vai_tro}</div>
-                    <div class="member-class">{lop}</div>
-                    <div class="member-id">MSSV: {mssv}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
-        is_light = st.session_state.theme == 'light'
-        partner_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
-        partner_text = "#333" if is_light else "#ccc"
-        partner_title = "#0072ff" if is_light else "#ffd700"
-        
-        st.markdown(f"""
-        <div style="background: {partner_bg}; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #2a5298;">
-            <p style="color: {partner_title}; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
-            <p style="color: {partner_text};">Khoa Phục hồi chức năng</p>
-            <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # ==================== TAB 10: PHẢN HỒI ====================
-    with tab10:
+    with all_tabs[9]:
         hien_thi_tab_phan_hoi()
 
 

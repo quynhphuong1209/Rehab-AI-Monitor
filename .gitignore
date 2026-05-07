@@ -11,3 +11,9 @@ __pycache__/
 *.zip
 *.rar
 *.exe
+*.json
+!BAI_TAP.json
+# Exclude data directories
+temp_frames/
+frames/
+outputs/
