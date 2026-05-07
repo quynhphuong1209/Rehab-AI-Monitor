@@ -156,14 +156,13 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === SỬA LỖI CHỮ ĐÈ ICON (Arrow, Upload, etc.) === */
-    [data-testid="stExpander"] summary span > span,
-    [data-testid="stFileUploader"] section span > span {
+    /* Chỉ nhắm vào chữ đè trong Expander (Mũi tên) */
+    [data-testid="stExpander"] summary span > span {
         display: none !important;
         font-size: 0 !important;
     }
-    
-    /* Nhắm vào nút đóng/mở sidebar để ẩn chữ keyboard_double */
+
+    /* Nhắm vào nút đóng/mở sidebar */
     [data-testid="stSidebarCollapseButton"] span {
         font-size: 0 !important;
         color: transparent !important;
