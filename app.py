@@ -97,28 +97,28 @@ if 'processed_video_path' not in st.session_state:
 if not st.session_state.get('logged_in'):
     try:
         user_detected = None
-        # Kiểm tra chuẩn mới nhất (Streamlit 1.34+)
-        if hasattr(st, 'experimental_user') and st.experimental_user.get("email"):
-            user_detected = st.experimental_user
-        # Kiểm tra chuẩn cũ hơn
-        elif hasattr(st, 'user') and st.user and getattr(st.user, 'email', None):
+        # 1. Kiểm tra chuẩn chính thức mới nhất (st.user)
+        if hasattr(st, 'user') and st.user and getattr(st.user, 'email', None):
             user_detected = st.user
+        # 2. Kiểm tra chuẩn experimental cũ hơn
+        elif hasattr(st, 'experimental_user') and st.experimental_user and getattr(st.experimental_user, 'email', None):
+            user_detected = st.experimental_user
             
-        if user_detected and user_detected.get("email"):
+        if user_detected and user_detected.email:
             st.session_state.logged_in = True
             st.session_state.user_info = {
-                "username": user_detected.get("name") or user_detected.get("email", "").split("@")[0],
-                "email": user_detected.get("email"),
+                "username": getattr(user_detected, 'name', None) or user_detected.email.split("@")[0],
+                "email": user_detected.email,
                 "auth_type": "google"
             }
-            # Xóa các trạng thái thừa
+            # Dọn dẹp trạng thái
+            st.session_state.show_login_dialog = False
             if 'auth_initiated' in st.session_state:
                 del st.session_state['auth_initiated']
-            if 'show_login_dialog' in st.session_state:
-                st.session_state.show_login_dialog = False
             
             st.rerun() 
     except Exception as e:
+        # st.error(f"Lỗi nhận diện Google: {e}") # Debug nếu cần
         pass
 
 
