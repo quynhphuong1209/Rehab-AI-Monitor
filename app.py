@@ -2977,7 +2977,47 @@ def main():
             key="video_uploader_v2"
         )
         
-        # --- ĐÃ DI CHUYỂN LÊN ĐÂY: THÔNG BÁO VÀ NÚT BẮT ĐẦU ---
+        # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
+        st.markdown("---")
+        st.markdown("<h3 style='color: #00c6ff;'>🧬 QUY TRÌNH THU THẬP DỮ LIỆU DATA FRAMES (NCKH)</h3>", unsafe_allow_html=True)
+        
+        # Khôi phục lại các tab mini như cũ
+        tab_step1, tab_step2, tab_step3, tab_step4 = st.tabs([
+            "📸 BƯỚC 1: GHI HÌNH", 
+            "⚙️ BƯỚC 2: TRÍCH XUẤT", 
+            "🔍 BƯỚC 3: PHÂN TÍCH", 
+            "💾 BƯỚC 4: LƯU TRỮ"
+        ])
+        
+        with tab_step1:
+            st.markdown("""
+            **Mục tiêu:** Thu thập dữ liệu thô (Raw Data).
+            - **Yêu cầu:** Camera đặt ngang tầm khớp vai (góc 90 độ).
+            - **Tốc độ:** Tối thiểu 30 frames/giây (FPS) để đảm bảo độ mịn.
+            - **Ánh sáng:** Đảm bảo độ tương phản cao giữa bệnh nhân và nền.
+            """)
+            
+        with tab_step2:
+            st.markdown("""
+            **Mục tiêu:** Chuyển đổi Video sang chuỗi ảnh (Image Sequence).
+            - **Xử lý:** Video được chia nhỏ thành hàng trăm/ngàn Frames đơn lẻ.
+            - **Mã hóa:** Mỗi frame được gán một Timestamp và ID duy nhất.
+            """)
+            
+        with tab_step3:
+            st.markdown("""
+            **Mục tiêu:** Trích xuất đặc trưng hình học.
+            - **Công nghệ:** Sử dụng **MediaPipe Pose** để định vị 33 điểm mốc xương.
+            - **Tính toán:** Thuật toán Vector tính góc vai và khuỷu tay.
+            """)
+            
+        with tab_step4:
+            st.markdown("""
+            **Mục tiêu:** Số hóa dữ liệu (Data Digitization).
+            - **Định dạng:** Toàn bộ góc độ được lưu vào file JSON/CSV.
+            - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
+            """)
+        
         if file_upload is not None and not st.session_state.processing:
             file_size_mb = file_upload.size / (1024 * 1024)
             st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.2f} MB)")
@@ -3000,6 +3040,7 @@ def main():
                 try:
                     status_text.info("📤 Đang đọc file video...")
                     try:
+                        # CÁCH CŨ ỔN ĐỊNH: Đọc toàn bộ file
                         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
                             tmp_file.write(file_upload.getvalue())
                             video_path = tmp_file.name
@@ -3074,7 +3115,9 @@ def main():
                         st.success(f"✅ Xử lý hoàn tất trong {process_time:.1f} giây!")
                         st.info(f"📊 Tổng số frame: {total_frames} | Hợp lệ: {valid_frames} frames | Độ chính xác: {metrics['ty_le_tong_the']:.1f}%")
                         
+                        # === NÚT ĐIỀU HƯỚNG NHANH (SMART NAVIGATION) ===
                         st.markdown("### 🎯 KẾT QUẢ ĐÃ SẴN SÀNG")
+                        st.write("Bạn có muốn xem kết quả chi tiết ngay không?")
                         c_nav1, c_nav2 = st.columns(2)
                         with c_nav1:
                             if st.button("📊 XEM BÁO CÁO PHÂN TÍCH", use_container_width=True, type="primary"):
@@ -3084,6 +3127,7 @@ def main():
                                 chuyen_tab_bang_js("VIDEO & ẢNH")
                         st.markdown("---")
                         
+                        # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
                         history_file = "lich_su_tap_luyen.json"
                         new_entry = {
                             "ngay": datetime.now().strftime("%d/%m/%Y %H:%M"),
@@ -3099,6 +3143,7 @@ def main():
                                     history_data = json.load(f)
                             else:
                                 history_data = []
+                            
                             history_data.append(new_entry)
                             with open(history_file, 'w', encoding='utf-8') as f:
                                 json.dump(history_data, f, ensure_ascii=False, indent=4)
@@ -3116,47 +3161,6 @@ def main():
                     st.session_state.processing = False
                     progress_bar.empty()
                     status_text.empty()
-
-        # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
-        st.markdown("---")
-        st.markdown("<h3 style='color: #00c6ff;'>🧬 QUY TRÌNH THU THẬP DỮ LIỆU DATA FRAMES (NCKH)</h3>", unsafe_allow_html=True)
-        
-        # Khôi phục lại các tab mini như cũ
-        tab_step1, tab_step2, tab_step3, tab_step4 = st.tabs([
-            "📸 BƯỚC 1: GHI HÌNH", 
-            "⚙️ BƯỚC 2: TRÍCH XUẤT", 
-            "🔍 BƯỚC 3: PHÂN TÍCH", 
-            "💾 BƯỚC 4: LƯU TRỮ"
-        ])
-        
-        with tab_step1:
-            st.markdown("""
-            **Mục tiêu:** Thu thập dữ liệu thô (Raw Data).
-            - **Yêu cầu:** Camera đặt ngang tầm khớp vai (góc 90 độ).
-            - **Tốc độ:** Tối thiểu 30 frames/giây (FPS) để đảm bảo độ mịn.
-            - **Ánh sáng:** Đảm bảo độ tương phản cao giữa bệnh nhân và nền.
-            """)
-            
-        with tab_step2:
-            st.markdown("""
-            **Mục tiêu:** Chuyển đổi Video sang chuỗi ảnh (Image Sequence).
-            - **Xử lý:** Video được chia nhỏ thành hàng trăm/ngàn Frames đơn lẻ.
-            - **Mã hóa:** Mỗi frame được gán một Timestamp và ID duy nhất.
-            """)
-            
-        with tab_step3:
-            st.markdown("""
-            **Mục tiêu:** Trích xuất đặc trưng hình học.
-            - **Công nghệ:** Sử dụng **MediaPipe Pose** để định vị 33 điểm mốc xương.
-            - **Tính toán:** Thuật toán Vector tính góc vai và khuỷu tay.
-            """)
-            
-        with tab_step4:
-            st.markdown("""
-            **Mục tiêu:** Số hóa dữ liệu (Data Digitization).
-            - **Định dạng:** Toàn bộ góc độ được lưu vào file JSON/CSV.
-            - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
-            """)
         
         elif st.session_state.processing:
             st.warning("⏳ Đang xử lý video, vui lòng chờ...")
