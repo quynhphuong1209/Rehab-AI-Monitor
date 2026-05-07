@@ -2908,14 +2908,50 @@ def hien_thi_tab_NCKH():
     
     with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
         st.markdown("""
-        Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
-        ... (Nội dung nghiên cứu) ...
+        Trong những năm gần đây, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
+        Theo WHO, hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức PHCN. Tại Việt Nam, khoảng 7,06% dân số là người khuyết tật cần can thiệp PHCN.
+        Mặc dù nhu cầu lớn, năng lực cung cấp dịch vụ vẫn còn hạn chế. Nhiều bệnh nhân phải tự tập luyện tại nhà mà thiếu sự giám sát chuyên môn.
+        Đề tài này nhằm xây dựng mô hình giám sát thông minh để hỗ trợ bệnh nhân và bác sĩ trong quá trình phục hồi.
         """)
-    # ... (Các mục expander khác giữ nguyên nội dung như cũ)
+    
+    with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
+        st.markdown("""
+        - **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập PHCN cho bệnh nhân viêm quanh khớp vai (Codman, Gậy, Dây kháng lực).
+        - **Mục tiêu 2:** So sánh độ chính xác của mô hình AI với đánh giá thủ công của chuyên gia (Ground Truth).
+        """)
+
+    with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP", expanded=True):
+        st.markdown("""
+        - **Đối tượng:** Bệnh nhân viêm quanh khớp vai tại BVĐK Phạm Ngọc Thạch.
+        - **Công nghệ:** MediaPipe Pose, Python, Computer Vision.
+        - **Thiết kế:** Nghiên cứu định lượng, phát triển mô hình học máy.
+        """)
 
 def hien_thi_tab_thanh_vien():
     st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
-    # ... (Nội dung thành viên như cũ)
+    st.markdown("""
+    <div class="lecturer-card" style="background: rgba(0,114,255,0.1); padding: 1.5rem; border-radius: 15px; border-left: 5px solid #0072ff;">
+        <h4 style="margin:0;">TS. Trần Hồng Việt</h4>
+        <p style="margin:5px 0 0 0;">Giảng viên - Trường Đại học Y tế Công cộng</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
+    st.markdown("""
+    <div class="member-card" style="border: 2px solid #ffd700; padding: 1.5rem; border-radius: 15px;">
+        <h4 style="margin:0; color:#ffd700;">Đinh Lê Quỳnh Phương</h4>
+        <p style="margin:5px 0 0 0;">MSSV: 2211090031 | Chuyên ngành: Khoa học dữ liệu Y sinh</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
+    cols = st.columns(2)
+    with cols[0]:
+        st.markdown("- Kim Mạnh Hưng (Thành viên)")
+        st.markdown("- Nguyễn Hải An (Thành viên)")
+    with cols[1]:
+        st.markdown("- Phan Vân Anh (Thành viên)")
+        st.markdown("- Nguyễn Thị Thanh Nga (Thành viên)")
 
 # ============================================
 # GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
@@ -3127,14 +3163,22 @@ def hien_thi_giao_dien_benh_nhan():
     with tabs[7]: hien_thi_tab_NCKH()
     with tabs[8]: hien_thi_tab_thanh_vien()
     with tabs[9]: hien_thi_tab_phan_hoi()
+    
+    hien_thi_footer()
 
 # ============================================
 # GIAO DIỆN BÁC SĨ
 # ============================================
 def hien_thi_giao_dien_bac_si():
     with st.sidebar:
-        st.markdown(f"### 👨‍⚕️ BÁC SĨ: {st.session_state.user_info['full_name']}")
-        st.info("Chế độ chuyên gia: Đánh giá Ground Truth")
+        st.markdown(f"### 👨‍⚕️ BÁC SĨ/KTV: {st.session_state.user_info['full_name']}")
+        st.markdown("---")
+        st.markdown("#### 🏥 THÔNG TIN CHUYÊN MÔN")
+        st.text_input("Số CCHN", placeholder="VD: 012345/BYT-CCHN", key="dr_license")
+        st.selectbox("Chuyên khoa", ["Phục hồi chức năng", "Chấn thương chỉnh hình", "Nội khoa"], key="dr_specialty")
+        st.text_input("Đơn vị công tác", value="BVĐK Phạm Ngọc Thạch", key="dr_unit")
+        st.markdown("---")
+        st.info("💡 Chế độ chuyên gia: Đánh giá Ground Truth và Kê đơn điều trị.")
 
     tabs = st.tabs([
         "📋 DANH SÁCH", "✍️ ĐÁNH GIÁ", "📝 KÊ ĐƠN", "📖 HƯỚNG DẪN", 
@@ -3143,9 +3187,8 @@ def hien_thi_giao_dien_bac_si():
     ])
     
     with tabs[0]: st.subheader("📂 Danh sách bệnh nhân gửi video")
-    with tabs[1]: hien_thi_form_danh_gia_bac_si() # Form Ground Truth
+    with tabs[1]: hien_thi_form_danh_gia_bac_si()
     with tabs[2]: st.subheader("📝 Kê đơn & Lịch tập luyện")
-    # Các tab chung
     with tabs[3]: hien_thi_tab_huong_dan()
     with tabs[4]: hien_thi_tab_kien_thuc_phcn()
     with tabs[5]: hien_thi_lich_nhac_nho()
@@ -3153,6 +3196,8 @@ def hien_thi_giao_dien_bac_si():
     with tabs[7]: hien_thi_tab_NCKH()
     with tabs[8]: hien_thi_tab_thanh_vien()
     with tabs[9]: hien_thi_tab_phan_hoi()
+    
+    hien_thi_footer()
 
 def hien_thi_form_danh_gia_bac_si():
     st.markdown("## 📋 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN (GROUND TRUTH)")
@@ -3782,9 +3827,21 @@ def hien_thi_footer():
     except:
         logo_src = "https://upload.wikimedia.org/wikipedia/vi/f/f6/Logo_HUPH.png"
 
-    # (Toàn bộ HTML/CSS Footer cũ)
-    import streamlit.components.v1 as components
-    # components.html(footer_html, height=350)
+    is_light = st.session_state.get('theme') == 'light'
+    f_bg = "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+    f_text = "#444" if is_light else "#ccc"
+    f_border = "#0072ff" if is_light else "#00c6ff"
+    f_title = "#0072ff" if is_light else "#00c6ff"
+    
+    footer_html = f"""
+    <div style="background: {f_bg}; padding: 30px; color: {f_text}; text-align: center; border-top: 3px solid {f_border}; margin-top: 50px; font-family: 'Times New Roman';">
+        <img src="{logo_src}" width="100">
+        <h3 style="color: {f_title};">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
+        <p><b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+        <p>© 2025 REHAB-AI-MONITOR | Đinh Lê Quỳnh Phương</p>
+    </div>
+    """
+    st.components.v1.html(footer_html, height=250)
 
 
 if __name__ == "__main__":
