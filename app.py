@@ -2838,34 +2838,27 @@ def hien_thi_dang_nhap_dang_ky():
 # MAIN - GIỮ NGUYÊN CẤU TRÚC TAB
 # ============================================
 def main():
-    # ==================== TOP BAR (LOGIN/LOGOUT) ====================
+    # Kiểm tra trạng thái đăng nhập ngay đầu hàm main
+    if not st.session_state.logged_in:
+        # Nếu chưa đăng nhập, hiển thị trang đăng nhập toàn màn hình và dừng lại
+        hien_thi_dang_nhap_dang_ky()
+        return
+
+    # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
+    # TOP BAR (LOGOUT) - Đẩy sang bên phải
     t_col1, t_col2 = st.columns([3, 1])
     
     with t_col2:
-        if st.session_state.logged_in:
-            # Hiển thị thông tin user và nút đăng xuất trên cùng một hàng ngang
-            inner_c1, inner_c2 = st.columns([3, 2])
-            with inner_c1:
-                st.markdown(f"<p style='margin-top: 10px; color: #ffd700;'>👤 <b>{st.session_state.user_info['username']}</b></p>", unsafe_allow_html=True)
-            with inner_c2:
-                if st.button("🚪 Đăng xuất", use_container_width=True):
-                    if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
-                        st.logout()
-                    st.session_state.logged_in = False
-                    st.session_state.user_info = None
-                    st.rerun()
-        else:
-            # Hiển thị nút Đăng nhập / Đăng ký khi chưa vào hệ thống
-            if st.button("🔐 Đăng nhập / Đăng ký", use_container_width=True, type="primary"):
-                st.session_state.show_login_dialog = True
-                st.rerun()
-    
-    # Dialog Đăng nhập (nếu được kích hoạt)
-    if st.session_state.get('show_login_dialog', False):
-        with st.expander("🔐 HỆ THỐNG ĐĂNG NHẬP & ĐĂNG KÝ", expanded=True):
-            hien_thi_dang_nhap_dang_ky()
-            if st.button("❌ Đóng"):
-                st.session_state.show_login_dialog = False
+        # Hiển thị thông tin user và nút đăng xuất trên cùng một hàng ngang ở góc phải
+        inner_c1, inner_c2 = st.columns([3, 2])
+        with inner_c1:
+            st.markdown(f"<p style='margin-top: 10px; color: #ffd700;'>👤 <b>{st.session_state.user_info['username']}</b></p>", unsafe_allow_html=True)
+        with inner_c2:
+            if st.button("🚪 Đăng xuất", use_container_width=True):
+                if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
+                    st.logout()
+                st.session_state.logged_in = False
+                st.session_state.user_info = None
                 st.rerun()
 
     st.markdown("""
@@ -3124,24 +3117,11 @@ def main():
     
     # ==================== TAB 2: TRỰC TIẾP (REAL-TIME) ====================
     with tab2:
-        if st.session_state.logged_in:
-            hien_thi_tab_realtime(bai_tap)
-        else:
-            st.info("🔐 Vui lòng Đăng nhập để sử dụng tính năng Giám sát tập luyện trực tiếp qua Camera.")
-            if st.button("👉 Đăng nhập ngay", key="btn_login_tab2"):
-                st.session_state.show_login_dialog = True
-                st.rerun()
+        hien_thi_tab_realtime(bai_tap)
 
     # ==================== TAB 3: PHÂN TÍCH ====================
     with tab3:
-        if st.session_state.logged_in:
-            hien_thi_tab_phan_tich()
-        else:
-            st.info("🔐 Vui lòng Đăng nhập để xem báo cáo phân tích chi tiết và các thông số y khoa.")
-            if st.button("👉 Đăng nhập ngay", key="btn_login_tab3"):
-                st.session_state.show_login_dialog = True
-                st.rerun()
-            hien_thi_tab_phan_tich() # Vẫn hiện khung nhưng có thể dữ liệu sẽ trống
+        hien_thi_tab_phan_tich()
     
     # ==================== TAB 4: VIDEO & ẢNH ====================
     with tab4:
@@ -3167,23 +3147,11 @@ def main():
 
     # ==================== TAB 5: LỊCH NHẮC NHỞ ====================
     with tab5:
-        if st.session_state.logged_in:
-            hien_thi_lich_nhac_nho()
-        else:
-            st.info("🔐 Vui lòng Đăng nhập để thiết lập và xem lịch nhắc nhở tập luyện cá nhân.")
-            if st.button("👉 Đăng nhập ngay", key="btn_login_tab5"):
-                st.session_state.show_login_dialog = True
-                st.rerun()
+        hien_thi_lich_nhac_nho()
 
     # ==================== TAB 6: TIẾN TRIỂN ====================
     with tab6:
-        if st.session_state.logged_in:
-            hien_thi_tab_tien_trien()
-        else:
-            st.info("🔐 Vui lòng Đăng nhập để theo dõi biểu đồ tiến triển hồi phục của bạn.")
-            if st.button("👉 Đăng nhập ngay", key="btn_login_tab6"):
-                st.session_state.show_login_dialog = True
-                st.rerun()
+        hien_thi_tab_tien_trien()
 
     # ==================== TAB 7: HƯỚNG DẪN ====================
     with tab7:
@@ -3355,8 +3323,6 @@ def main():
 
     # ==================== TAB 12: PHẢN HỒI ====================
     with tab12:
-        if not st.session_state.logged_in:
-            st.info("ℹ️ Bạn đang xem bảng tin với tư cách Khách. Vui lòng Đăng nhập để gửi phản hồi của riêng bạn.")
         hien_thi_tab_phan_hoi()
 
 
