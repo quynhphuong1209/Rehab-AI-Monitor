@@ -156,20 +156,14 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === QUÉT SẠCH CHỮ ĐÈ TRÊN TOÀN HỆ THỐNG (SIÊU AN TOÀN) === */
-    /* Nhắm vào mọi thẻ span chứa text icon của Streamlit */
+    /* === SỬA LỖI CHỮ ĐÈ (AN TOÀN) === */
+    /* Ẩn chữ arrow trong Expander và chữ upload trong bộ tải file */
     [data-testid="stExpander"] summary span > span,
-    [data-testid="stFileUploader"] section span > span,
-    [data-testid="stSidebarNav"] span,
-    [data-testid="stSidebarCollapseButton"] span,
-    .st-emotion-cache-1p6n6q3, 
-    .st-emotion-cache-16idsys {
-        opacity: 0 !important;
-        height: 0 !important;
-        width: 0 !important;
-        display: block !important; /* Giữ layout nhưng ẩn nội dung */
-        overflow: hidden !important;
-        pointer-events: none !important;
+    [data-testid="stFileUploader"] section span > span {
+        color: transparent !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        visibility: hidden !important;
         position: absolute !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] {
@@ -795,6 +789,7 @@ def ve_cung_tron_goc(image, point1, center, point3, angle, color, radius=40):
 @st.cache_resource
 def get_pose_model():
     """Khởi tạo MediaPipe Pose với cấu hình chính xác nhất"""
+    # pyrefly: ignore [missing-import]
     import mediapipe as mp
     mp_pose = mp.solutions.pose
     return mp_pose.Pose(
@@ -864,6 +859,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
         return frame_output, None, None, None, None, []
     
     # Import cục bộ để tránh phụ thuộc vào biến global
+    # pyrefly: ignore [missing-import]
     import mediapipe as _mp
     _mp_drawing = _mp.solutions.drawing_utils
     _mp_drawing_styles = _mp.solutions.drawing_styles
@@ -2983,47 +2979,7 @@ def main():
             key="video_uploader_v2"
         )
         
-        # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
-        st.markdown("---")
-        st.markdown("<h3 style='color: #00c6ff;'>🧬 QUY TRÌNH THU THẬP DỮ LIỆU DATA FRAMES (NCKH)</h3>", unsafe_allow_html=True)
-        
-        # Khôi phục lại các tab mini như cũ
-        tab_step1, tab_step2, tab_step3, tab_step4 = st.tabs([
-            "📸 BƯỚC 1: GHI HÌNH", 
-            "⚙️ BƯỚC 2: TRÍCH XUẤT", 
-            "🔍 BƯỚC 3: PHÂN TÍCH", 
-            "💾 BƯỚC 4: LƯU TRỮ"
-        ])
-        
-        with tab_step1:
-            st.markdown("""
-            **Mục tiêu:** Thu thập dữ liệu thô (Raw Data).
-            - **Yêu cầu:** Camera đặt ngang tầm khớp vai (góc 90 độ).
-            - **Tốc độ:** Tối thiểu 30 frames/giây (FPS) để đảm bảo độ mịn.
-            - **Ánh sáng:** Đảm bảo độ tương phản cao giữa bệnh nhân và nền.
-            """)
-            
-        with tab_step2:
-            st.markdown("""
-            **Mục tiêu:** Chuyển đổi Video sang chuỗi ảnh (Image Sequence).
-            - **Xử lý:** Video được chia nhỏ thành hàng trăm/ngàn Frames đơn lẻ.
-            - **Mã hóa:** Mỗi frame được gán một Timestamp và ID duy nhất.
-            """)
-            
-        with tab_step3:
-            st.markdown("""
-            **Mục tiêu:** Trích xuất đặc trưng hình học.
-            - **Công nghệ:** Sử dụng **MediaPipe Pose** để định vị 33 điểm mốc xương.
-            - **Tính toán:** Thuật toán Vector tính góc vai và khuỷu tay.
-            """)
-            
-        with tab_step4:
-            st.markdown("""
-            **Mục tiêu:** Số hóa dữ liệu (Data Digitization).
-            - **Định dạng:** Toàn bộ góc độ được lưu vào file JSON/CSV.
-            - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
-            """)
-        
+        # === HIỆN KẾT QUẢ VÀ NÚT PHÂN TÍCH NGAY DƯỚI Ô TẢI FILE ===
         if file_upload is not None and not st.session_state.processing:
             file_size_mb = file_upload.size / (1024 * 1024)
             st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.2f} MB)")
@@ -3167,6 +3123,47 @@ def main():
                     st.session_state.processing = False
                     progress_bar.empty()
                     status_text.empty()
+
+        # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
+        st.markdown("---")
+        st.markdown("<h3 style='color: #00c6ff;'>🧬 QUY TRÌNH THU THẬP DỮ LIỆU DATA FRAMES (NCKH)</h3>", unsafe_allow_html=True)
+        
+        tab_step1, tab_step2, tab_step3, tab_step4 = st.tabs([
+            "📸 BƯỚC 1: GHI HÌNH", 
+            "⚙️ BƯỚC 2: TRÍCH XUẤT", 
+            "🔍 BƯỚC 3: PHÂN TÍCH", 
+            "💾 BƯỚC 4: LƯU TRỮ"
+        ])
+        
+        with tab_step1:
+            st.markdown("""
+            **Mục tiêu:** Thu thập dữ liệu thô (Raw Data).
+            - **Yêu cầu:** Camera đặt ngang tầm khớp vai (góc 90 độ).
+            - **Tốc độ:** Tối thiểu 30 frames/giây (FPS) để đảm bảo độ mịn.
+            - **Ánh sáng:** Đảm bảo độ tương phản cao giữa bệnh nhân và nền.
+            """)
+            
+        with tab_step2:
+            st.markdown("""
+            **Mục tiêu:** Tiền xử lý dữ liệu (Pre-processing).
+            - **Cắt tỉa:** Loại bỏ các phần video không có người hoặc bị nhiễu.
+            - **Chuẩn hóa:** Chuyển đổi về định dạng MP4/H.264 tiêu chuẩn.
+            - **Đồng bộ:** Đảm bảo thời gian thực giữa video và nhãn dữ liệu.
+            """)
+            
+        with tab_step3:
+            st.markdown("""
+            **Mục tiêu:** Trích xuất đặc trưng hình học.
+            - **Công nghệ:** Sử dụng **MediaPipe Pose** để định vị 33 điểm mốc xương.
+            - **Tính toán:** Thuật toán Vector tính góc vai và khuỷu tay.
+            """)
+            
+        with tab_step4:
+            st.markdown("""
+            **Mục tiêu:** Số hóa dữ liệu (Data Digitization).
+            - **Định dạng:** Toàn bộ góc độ được lưu vào file JSON/CSV.
+            - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
+            """)
         
         elif st.session_state.processing:
             st.warning("⏳ Đang xử lý video, vui lòng chờ...")
