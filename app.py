@@ -160,9 +160,16 @@ st.set_page_config(
 st.markdown("""
 <style>
     /* === SỬA LỖI CHỮ RÁC ICON (TRIỆT ĐỂ) === */
-    button[data-testid="stSidebarCollapseButton"] span,
-    button[data-testid="stSidebarCollapseButton"]::before,
-    button[data-testid="stSidebarCollapseButton"]::after,
+    [data-testid="stSidebarCollapseButton"] {
+        color: transparent !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        width: 40px !important;
+        height: 40px !important;
+    }
+    [data-testid="stSidebarCollapseButton"] * {
+        display: none !important;
+    }
     [data-testid="stExpander"] summary span > span,
     [data-testid="stFileUploader"] section span > span,
     .stIconMaterial, .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
@@ -312,10 +319,27 @@ if st.session_state.get('theme') == 'light':
         [data-testid="stTable"] th { background-color: #f1f3f5 !important; color: #000 !important; }
         [data-testid="stMetric"] { background: #ffffff !important; border: 1px solid #eee !important; padding: 10px !important; border-radius: 12px !important; }
         /* Fix Form elements */
-        textarea { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #ccc !important; }
+        textarea, input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #ccc !important; }
         [data-testid="stForm"] { background-color: #ffffff !important; border: 1px solid #eee !important; border-radius: 15px !important; }
         .stButton button { background-color: #f1f3f5 !important; color: #000 !important; border: 1px solid #ccc !important; }
         .stButton button:hover { background-color: #e9ecef !important; color: #0072ff !important; }
+        /* Fix Sidebar Inputs */
+        [data-testid="stSidebar"] .stTextInput input, 
+        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"],
+        [data-testid="stSidebar"] .stNumberInput input {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #ddd !important;
+        }
+        /* Fix File Uploader */
+        [data-testid="stFileUploader"] section {
+            background-color: #f8f9fa !important;
+            border: 1px dashed #ccc !important;
+            color: #333 !important;
+        }
+        [data-testid="stFileUploader"] section div { color: #333 !important; }
+        /* Fix Dropdown menus */
+        div[data-baseweb="popover"] div { background-color: #ffffff !important; color: #000000 !important; }
     </style>
     """, unsafe_allow_html=True)
 
