@@ -82,10 +82,40 @@ def save_data(file_path, data):
 
 def load_users():
     users = load_data(USER_DATA_FILE)
+    
+    # DANH SÁCH TÀI KHOẢN CỐ ĐỊNH (NCKH)
+    predefined = {
+        "admin": {
+            "password": hash_password("bong0912@"),
+            "full_name": "Đinh Lê Quỳnh Phương",
+            "role": "Quản trị viên",
+            "email": "quynhphuong@studenthuph.edu.vn"
+        },
+        "doctor1": {
+            "password": hash_password("bs123@"),
+            "full_name": "Trần Hồng Việt",
+            "role": "Bác sĩ / KTV PHCN",
+            "email": "viet.th@huph.edu.vn"
+        },
+        "Kim Mạnh Hưng": {"password": hash_password("ncv123@"), "full_name": "Kim Mạnh Hưng", "role": "Nghiên cứu viên", "email": "hung.km@huph.edu.vn"},
+        "Nguyễn Hải An": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Hải An", "role": "Nghiên cứu viên", "email": "an.nh@huph.edu.vn"},
+        "Nguyễn Thị Thanh Nga": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thanh Nga", "role": "Nghiên cứu viên", "email": "nga.ntt@huph.edu.vn"},
+        "Phan Vân Anh": {"password": hash_password("ncv123@"), "full_name": "Phan Vân Anh", "role": "Nghiên cứu viên", "email": "anh.pv@huph.edu.vn"},
+        "Nguyễn Thị Thơm": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thơm", "role": "Nghiên cứu viên", "email": "thom.nt@huph.edu.vn"},
+        "Nguyễn Thị Thu Hương": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thu Hương", "role": "Nghiên cứu viên", "email": "huong.ntt@huph.edu.vn"},
+        "Đinh Lê Quỳnh Phương": {"password": hash_password("ncv123@"), "full_name": "Đinh Lê Quỳnh Phương", "role": "Nghiên cứu viên", "email": "phuong.dlq@huph.edu.vn"}
+    }
+    
+    # Cập nhật hoặc thêm mới các tài khoản cố định
+    for u, data in predefined.items():
+        if u not in users:
+            users[u] = data
+            
     # Đảm bảo các user cũ có role mặc định là Bệnh nhân
     for username in users:
         if "role" not in users[username]:
             users[username]["role"] = "Bệnh nhân"
+            
     return users
 
 def save_users(users):
@@ -2112,179 +2142,172 @@ BAI_TAP = {
 # ============================================
 # CSS KẾT HỢP ĐẦY ĐỦ
 # ============================================
-st.markdown("""
+# Cấu hình màu sắc bổ sung theo Theme cho các class custom
+is_light = st.session_state.get('theme') == 'light'
+header_bg = "linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%)"
+header_text = "#000000" if is_light else "#ffffff"
+sub_text = "#333333" if is_light else "#aaaaaa"
+card_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(26,26,46,0.8)"
+card_border = "#dee2e6" if is_light else "#2a5298"
+app_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%)" if is_light else "linear-gradient(135deg, #0a0a0a 0%, #0f0f1a 50%, #1a1a2e 100%)"
+metric_bg = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, rgba(26,26,46,0.95) 0%, rgba(22,33,62,0.95) 100%)"
+
+st.markdown(f"""
 <style>
-    * { font-family: 'Times New Roman', Times, serif !important; }
-    .stApp { background: linear-gradient(135deg, #0a0a0a 0%, #0f0f1a 50%, #1a1a2e 100%); }
+    * {{ font-family: 'Times New Roman', Times, serif !important; }}
+    .stApp {{ background: {app_bg}; }}
     
     /* HEADER */
-    .main-header {
-        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%);
+    .main-header {{
+        background: {header_bg};
         padding: 2rem;
         border-radius: 20px;
         text-align: center;
         margin-bottom: 2rem;
-        border: 1px solid #2a5298;
-    }
-    .main-header h1 { color: #ffffff !important; font-size: 1.8rem; margin: 0; }
-    .main-header p { color: #aaa !important; margin: 0.5rem 0 0 0; }
+        border: 1px solid {card_border};
+        box-shadow: 0 4px 15px rgba(0,0,0,{"0.05" if is_light else "0.3"});
+    }}
+    .main-header h1 {{ color: {header_text} !important; font-size: 1.8rem; margin: 0; }}
+    .main-header p {{ color: {sub_text} !important; margin: 0.5rem 0 0 0; }}
     
     /* RESEARCH BADGE */
-    .research-badge {
+    .research-badge {{
         background: linear-gradient(135deg, #2a5298, #1a73e8);
         padding: 0.3rem 1rem;
         border-radius: 50px;
         display: inline-block;
         margin-top: 0.5rem;
-    }
-    .research-badge span { color: white; font-size: 0.8rem; font-weight: bold; }
+    }}
+    .research-badge span {{ color: white; font-size: 0.8rem; font-weight: bold; }}
     
     /* INFO BOX */
-    .info-box {
-        background: rgba(26,26,46,0.8);
+    .info-box {{
+        background: {card_bg};
         padding: 1.2rem;
         border-radius: 16px;
         border-left: 4px solid #2a5298;
         margin-bottom: 1rem;
-    }
+        border-top: 1px solid {card_border};
+        border-right: 1px solid {card_border};
+        border-bottom: 1px solid {card_border};
+        color: {header_text};
+    }}
     
     /* BUTTON - CÓ HOVER EFFECT */
-    .stButton > button {
+    .stButton > button {{
         background: linear-gradient(135deg, #2a5298 0%, #1a73e8 100%) !important;
         color: white !important;
         border-radius: 30px !important;
         font-weight: bold !important;
         transition: all 0.3s ease;
         cursor: pointer;
-    }
-    .stButton > button:hover {
+    }}
+    .stButton > button:hover {{
         transform: scale(1.02);
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
+    }}
     
     /* MEMBER CARD */
-    .member-card {
-        background: linear-gradient(135deg, rgba(26,26,46,0.9) 0%, rgba(22,33,62,0.9) 100%);
+    .member-card {{
+        background: {metric_bg};
         padding: 1.2rem;
         border-radius: 16px;
         text-align: center;
         margin-bottom: 1rem;
-    }
-    .member-name { color: #fff; font-size: 1.1rem; font-weight: bold; }
-    .member-role { color: #ffd700; font-size: 0.85rem; }
+        border: 1px solid {card_border};
+    }}
+    .member-name {{ color: {header_text}; font-size: 1.1rem; font-weight: bold; }}
+    .member-role {{ color: #0072ff; font-size: 0.85rem; }}
     
     /* LECTURER CARD */
-    .lecturer-card {
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    .lecturer-card {{
+        background: {header_bg};
         padding: 1.5rem;
         border-radius: 20px;
         text-align: center;
         margin-bottom: 2rem;
         border: 2px solid #ffd700;
-    }
-    .lecturer-name { color: #ffd700; font-size: 1.3rem; font-weight: bold; }
+    }}
+    .lecturer-name {{ color: {"#b8860b" if is_light else "#ffd700"}; font-size: 1.3rem; font-weight: bold; }}
     
     /* FRAME THUMBNAIL */
-    .frame-thumbnail {
+    .frame-thumbnail {{
         transition: transform 0.3s;
         cursor: pointer;
         width: 100%;
         border-radius: 12px;
-    }
-    .frame-thumbnail:hover {
+    }}
+    .frame-thumbnail:hover {{
         transform: scale(1.02);
-    }
+    }}
     
     /* VIDEO */
-    video {
+    video {{
         width: 100%;
         border-radius: 16px;
         background: black;
         max-height: 70vh;
-    }
+    }}
     
     /* WARNING BOX */
-    .warning-box {
-        background: rgba(255,100,0,0.2);
+    .warning-box {{
+        background: rgba(255,100,0,0.1);
         border-left: 4px solid #FFA500;
         padding: 10px;
         border-radius: 8px;
         margin: 10px 0;
-    }
+        color: {header_text};
+    }}
     
-    /* TABS STYLE - Đã được tối ưu ở đầu file */
-    .stTabs [data-baseweb="tab-list"] {
+    /* TABS STYLE */
+    .stTabs [data-baseweb="tab-list"] {{
         gap: 8px;
-    }
+    }}
     
-    /* METRIC CARD - MỚI THÊM */
-    .metric-card {
-        background: linear-gradient(135deg, rgba(26,26,46,0.95) 0%, rgba(22,33,62,0.95) 100%);
+    /* METRIC CARD */
+    .metric-card {{
+        background: {metric_bg};
         border-radius: 16px;
         padding: 1rem;
         text-align: center;
-        border: 1px solid #2a5298;
+        border: 1px solid {card_border};
         transition: all 0.3s ease;
-    }
-    .metric-card:hover {
+    }}
+    .metric-card:hover {{
         transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        box-shadow: 0 10px 25px rgba(0,0,0,{"0.1" if is_light else "0.2"});
         border-color: #ffd700;
-    }
-    .metric-value {
+    }}
+    .metric-value {{
         font-size: 2rem;
         font-weight: bold;
-        color: #00CED1;
-    }
-    .metric-label {
+        color: #0072ff;
+    }}
+    .metric-label {{
         font-size: 0.85rem;
-        color: #aaa;
+        color: {sub_text};
         margin-top: 0.5rem;
-    }
+    }}
     
-    /* CUSTOM SCROLLBAR (TÙY CHỌN THÊM) */
-    ::-webkit-scrollbar {
+    /* CUSTOM SCROLLBAR */
+    ::-webkit-scrollbar {{
         width: 8px;
         height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-        background: #1a1a2e;
+    }}
+    ::-webkit-scrollbar-track {{
+        background: {"#f1f3f5" if is_light else "#1a1a2e"};
         border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb {
+    }}
+    ::-webkit-scrollbar-thumb {{
         background: #2a5298;
         border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
+    }}
+    ::-webkit-scrollbar-thumb:hover {{
         background: #1a73e8;
-    }
-    
-    /* DATA FRAME STYLE */
-    .stDataFrame {
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    .stDataFrame div[data-testid="stDataFrame"] {
-        border-radius: 12px;
-    }
-    
-    /* EXPANDER STYLE */
-    .streamlit-expanderHeader {
-        background: rgba(26,26,46,0.8);
-        border-radius: 12px;
-        font-weight: bold;
-    }
-    
-    /* SUCCESS/WARNING/INFO MESSAGES */
-    .stAlert {
-        border-radius: 12px;
-        border-left: 4px solid;
-    }
-    .stAlert[data-baseweb="notification"] {
-        border-radius: 12px;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
+
 
 # ============================================
 # HÀM HIỂN THỊ TAB 2 - THIẾT KẾ LẠI
@@ -3745,7 +3768,7 @@ def hien_thi_dang_nhap_dang_ky():
             
             with t_login:
                 st.markdown("<br>", unsafe_allow_html=True)
-                login_role = st.selectbox("🎭 Đăng nhập với vai trò:", ["Bệnh nhân", "Bác sĩ / KTV PHCN", "Nghiên cứu viên"], key="login_role")
+                login_role = st.selectbox("🎭 Đăng nhập với vai trò:", ["Bệnh nhân", "Bác sĩ / KTV PHCN", "Nghiên cứu viên", "Quản trị viên"], key="login_role")
                 u = st.text_input("👤 Tên đăng nhập", placeholder="Nhập tên tài khoản", key="login_u")
                 p = st.text_input("🔑 Mật khẩu", type="password", placeholder="Nhập mật khẩu", key="login_p")
                 
@@ -3776,7 +3799,8 @@ def hien_thi_dang_nhap_dang_ky():
                 reg_e = st.text_input("📧 Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
                 reg_p = st.text_input("🔑 Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
                 reg_cp = st.text_input("✅ Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
-                reg_role = st.selectbox("🎭 Vai trò người dùng *", ["Bệnh nhân", "Bác sĩ / KTV PHCN", "Nghiên cứu viên"], key="reg_role")
+                st.info("💡 Hiện tại hệ thống chỉ hỗ trợ đăng ký tự động cho Bệnh nhân. Bác sĩ và Nghiên cứu viên vui lòng liên hệ Quản trị viên để nhận tài khoản.")
+                reg_role = st.selectbox("🎭 Vai trò người dùng *", ["Bệnh nhân"], key="reg_role", disabled=True)
                 
                 if st.button("🚀 ĐĂNG KÝ TRUY CẬP", use_container_width=True, type="primary"):
                     if not reg_u or not reg_e or len(reg_p) < 6:
@@ -3812,6 +3836,163 @@ def hien_thi_dang_nhap_dang_ky():
                         st.login("google")
                     except Exception as e:
                         st.error(f"⚠️ Lỗi Google: {e}")
+
+# ============================================
+# HÀM HIỂN TRỊ TAB QUẢN TRỊ VIÊN
+# ============================================
+def hien_thi_tab_quan_tri_vien():
+    st.markdown("## 🛠️ QUẢN TRỊ VIÊN: QUẢN LÝ HỆ THỐNG")
+    
+    users = load_users()
+    
+    # THỐNG KÊ NHANH
+    total_users = len(users)
+    doctors = len([u for u in users.values() if u.get('role') == "Bác sĩ / KTV PHCN"])
+    researchers = len([u for u in users.values() if u.get('role') == "Nghiên cứu viên"])
+    patients = len([u for u in users.values() if u.get('role') == "Bệnh nhân"])
+    
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    with col_m1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{total_users}</div>
+            <div class="metric-label">Tổng người dùng</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_m2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color: #FFD700;">{doctors}</div>
+            <div class="metric-label">Bác sĩ / KTV</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_m3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color: #00c6ff;">{researchers}</div>
+            <div class="metric-label">Nghiên cứu viên</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_m4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color: #2ecc71;">{patients}</div>
+            <div class="metric-label">Bệnh nhân</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    tab_u1, tab_u2 = st.tabs(["👥 DANH SÁCH NGƯỜI DÙNG", "➕ TẠO TÀI KHOẢN MỚI"])
+    
+    with tab_u1:
+        st.markdown("### 👥 Quản lý tài khoản")
+        df_users = []
+        for u, data in users.items():
+            df_users.append({
+                "Tên đăng nhập": u,
+                "Họ tên": data.get("full_name", "N/A"),
+                "Vai trò": data.get("role", "N/A"),
+                "Email": data.get("email", "N/A"),
+                "Ngày tạo": data.get("created_at", "N/A")[:10] if data.get("created_at") else "N/A"
+            })
+        
+        # Hiển thị bảng với tìm kiếm
+        df_display = pd.DataFrame(df_users)
+        search_q = st.text_input("🔍 Tìm kiếm người dùng:", placeholder="Nhập tên hoặc username...")
+        if search_q:
+            df_display = df_display[df_display.apply(lambda row: search_q.lower() in str(row).lower(), axis=1)]
+            
+        st.dataframe(df_display, use_container_width=True, height=400)
+        
+        st.markdown("---")
+        st.markdown("### 🗑️ Xóa tài khoản")
+        cols_del = st.columns([3, 1])
+        with cols_del[0]:
+            u_to_del = st.selectbox("Chọn tài khoản muốn xóa (Lưu ý: Không thể hoàn tác):", [u for u in users if u != "admin"], key="del_user_sel")
+        with cols_del[1]:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("🗑️ XÓA NGAY", type="secondary", use_container_width=True):
+                if u_to_del in users:
+                    del users[u_to_del]
+                    save_users(users)
+                    st.success(f"✅ Đã xóa tài khoản '{u_to_del}'")
+                    st.rerun()
+
+    with tab_u2:
+        st.markdown("### ➕ Cấp tài khoản mới")
+        st.info("💡 Chỉ Admin mới có quyền tạo tài khoản cho Bác sĩ và Nghiên cứu viên.")
+        
+        col_f1, col_f2 = st.columns([1, 1])
+        with col_f1:
+            with st.form("admin_create_user"):
+                new_u = st.text_input("👤 Tên đăng nhập *")
+                new_n = st.text_input("📛 Họ và tên")
+                new_e = st.text_input("📧 Email")
+                new_p = st.text_input("🔑 Mật khẩu *", type="password")
+                new_r = st.selectbox("🎭 Vai trò", ["Bác sĩ / KTV PHCN", "Nghiên cứu viên", "Quản trị viên"])
+                
+                if st.form_submit_button("🚀 TẠO TÀI KHOẢN", use_container_width=True):
+                    if new_u and new_p:
+                        if new_u in users:
+                            st.error("❌ Tên đăng nhập này đã được sử dụng!")
+                        else:
+                            users[new_u] = {
+                                "password": hash_password(new_p),
+                                "full_name": new_n,
+                                "role": new_r,
+                                "email": new_e,
+                                "created_at": datetime.now().isoformat()
+                            }
+                            save_users(users)
+                            st.success(f"✅ Đã tạo thành công tài khoản cho {new_n}!")
+                            st.rerun()
+                    else:
+                        st.warning("⚠️ Vui lòng không bỏ trống Tên đăng nhập và Mật khẩu.")
+        
+        with col_f2:
+            st.markdown("""
+            <div class="info-box">
+                <h4>📌 HƯỚNG DẪN ADMIN</h4>
+                <p>1. <b>Tên đăng nhập:</b> Nên viết liền không dấu (VD: bacsi_an).</p>
+                <p>2. <b>Mật khẩu:</b> Cung cấp mật khẩu tạm thời cho người dùng, sau đó yêu cầu họ đổi mật khẩu ở Tab "Đổi mật khẩu".</p>
+                <p>3. <b>Vai trò:</b>
+                    <ul>
+                        <li><b>Bác sĩ:</b> Có quyền xem video BN, đánh giá lâm sàng.</li>
+                        <li><b>Nghiên cứu viên:</b> Có quyền chạy AI phân tích xương.</li>
+                    </ul>
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+# ============================================
+# HÀM HIỂN THỊ TAB ĐỔI MẬT KHẨU
+# ============================================
+def hien_thi_tab_doi_mat_khau():
+    st.markdown("## 🔑 THAY ĐỔI MẬT KHẨU")
+    st.info("💡 Bạn nên đặt mật khẩu mạnh (bao gồm chữ, số và ký tự đặc biệt) để bảo vệ tài khoản.")
+    
+    with st.form("change_password_form"):
+        old_p = st.text_input("🔒 Mật khẩu hiện tại", type="password")
+        new_p = st.text_input("🆕 Mật khẩu mới", type="password")
+        conf_p = st.text_input("✅ Xác nhận mật khẩu mới", type="password")
+        
+        if st.form_submit_button("💾 CẬP NHẬT MẬT KHẨU"):
+            users = load_users()
+            u = st.session_state.user_info['username']
+            
+            if verify_password(old_p, users[u]['password']):
+                if new_p == conf_p:
+                    if len(new_p) >= 6:
+                        users[u]['password'] = hash_password(new_p)
+                        save_users(users)
+                        st.success("✅ Đã thay đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn.")
+                    else:
+                        st.error("❌ Mật khẩu mới phải có ít nhất 6 ký tự.")
+                else:
+                    st.error("❌ Mật khẩu mới và mật khẩu xác nhận không khớp.")
+            else:
+                st.error("❌ Mật khẩu hiện tại không chính xác. Vui lòng thử lại.")
 
 
 # ============================================
@@ -3928,7 +4109,9 @@ def main():
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
     # Định nghĩa các tab dựa trên vai trò
-    if user_role == "Bác sĩ / KTV PHCN":
+    if user_role == "Quản trị viên":
+        tab_titles = ["🏠 TRANG CHỦ", "🛠️ QUẢN TRỊ VIÊN", "🔑 ĐỔI MẬT KHẨU", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+    elif user_role == "Bác sĩ / KTV PHCN":
         # Kiểm tra BN được chọn có kết quả AI chưa để hiện Tab Kết quả AI
         selected_video_main = st.session_state.get('current_eval_video')
         has_ai_main = False
@@ -3939,11 +4122,11 @@ def main():
         tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN"]
         if has_ai_main:
             tab_titles.append("📊 KẾT QUẢ AI")
-        tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles += ["⏰ LỊCH NHẮC NHỞ", "🔑 ĐỔI MẬT KHẨU", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = ["🏠 TRANG CHỦ", "🩺 KHAI BÁO TRIỆU CHỨNG", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "🩺 KHAI BÁO TRIỆU CHỨNG", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "🔑 ĐỔI MẬT KHẨU", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "🔑 ĐỔI MẬT KHẨU", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     # Tạo mapping để truy cập tab theo tên, tránh lỗi index khi số lượng tab thay đổi theo vai trò
@@ -4412,6 +4595,14 @@ def main():
     if "🏥 KIẾN THỨC PHCN" in tab_map:
         with tab_map["🏥 KIẾN THỨC PHCN"]:
             hien_thi_tab_kien_thuc_phcn()
+
+    if "🛠️ QUẢN TRỊ VIÊN" in tab_map:
+        with tab_map["🛠️ QUẢN TRỊ VIÊN"]:
+            hien_thi_tab_quan_tri_vien()
+            
+    if "🔑 ĐỔI MẬT KHẨU" in tab_map:
+        with tab_map["🔑 ĐỔI MẬT KHẨU"]:
+            hien_thi_tab_doi_mat_khau()
         
     if "🌐 CÔNG NGHỆ" in tab_map:
         with tab_map["🌐 CÔNG NGHỆ"]:
