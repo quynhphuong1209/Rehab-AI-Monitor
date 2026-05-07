@@ -2819,7 +2819,51 @@ def hien_thi_ket_qua_cho_benh_nhan():
         
         st.markdown("---")
         st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
+        st.markdown("---")
+        st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
         hien_thi_tab_phan_tich()
+
+def hien_thi_tab_khai_bao_trieu_chung():
+    st.markdown("## 🩺 KHAI BÁO TRIỆU CHỨNG & CẢM NHẬN")
+    st.info("💡 Thông tin này sẽ được gửi trực tiếp cho Bác sĩ/KTV để hỗ trợ quá trình đánh giá và điều trị.")
+    
+    with st.form("patient_symptoms_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            full_name = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''))
+            age = st.number_input("Tuổi", 0, 120, 22)
+        with col2:
+            gender = st.selectbox("Giới tính", ["Nam", "Nữ", "Khác"])
+            date = st.date_input("Ngày khai báo", datetime.now())
+            
+        symptoms = st.text_area("Mô tả cảm giác đau hoặc khó khăn khi vận động:", 
+                              placeholder="VD: Đau nhói ở khớp vai khi giơ tay quá đầu, cứng khớp vào buổi sáng...",
+                              height=150)
+        
+        muc_do_dau = st.select_slider("Mức độ đau hiện tại (VAS):", 
+                                     options=list(range(11)), 
+                                     value=3)
+        
+        submitted = st.form_submit_button("📤 GỬI THÔNG TIN CHO BÁC SĨ", use_container_width=True, type="primary")
+        
+        if submitted:
+            if symptoms:
+                data = load_data(SYMPTOMS_FILE)
+                data.append({
+                    "username": st.session_state.user_info['username'],
+                    "full_name": full_name,
+                    "age": age,
+                    "gender": gender,
+                    "symptoms": symptoms,
+                    "vas": muc_do_dau,
+                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                })
+                save_data(SYMPTOMS_FILE, data)
+                st.success("✅ Đã gửi thông tin cho Bác sĩ thành công!")
+                st.balloons()
+            else:
+                st.warning("⚠️ Vui lòng nhập mô tả triệu chứng.")
+
 def hien_thi_lich_nhac_nho():
     """Hiển thị lịch nhắc nhở chi tiết"""
     st.markdown("## ⏰ LỊCH NHẮC NHỞ CHI TIẾT")
@@ -3321,20 +3365,7 @@ def main():
         with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
         
         if user_role == "Bệnh nhân":
-            st.markdown("### 🩺 TRIỆU CHỨNG & BIỂU HIỆN")
-            trieu_chung = st.text_area("Mô tả cảm giác đau/khó khăn khi vận động", placeholder="VD: Đau nhói khi giơ tay quá đầu...")
-            if st.button("📤 Gửi thông tin cho Bác sĩ/KTV", use_container_width=True):
-                symptoms = load_data(SYMPTOMS_FILE)
-                symptoms.append({
-                    "username": st.session_state.user_info['username'],
-                    "full_name": ten_nguoi_dung,
-                    "age": tuoi,
-                    "gender": gioi_tinh,
-                    "symptoms": trieu_chung,
-                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
-                })
-                save_data(SYMPTOMS_FILE, symptoms)
-                st.success("✅ Đã gửi thông tin!")
+            st.info("ℹ️ Vui lòng sang tab **🩺 KHAI BÁO TRIỆU CHỨNG** để gửi thông tin cảm nhận và mức độ đau cho Bác sĩ.")
         else:
             st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
             chan_doan = st.selectbox("Chẩn đoán", [
@@ -3374,7 +3405,7 @@ def main():
     if user_role == "Bác sĩ / KTV PHCN":
         tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "🩺 KHAI BÁO TRIỆU CHỨNG", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
         tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "⏰ LỊCH NHẮC NHỞ", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
@@ -3776,6 +3807,11 @@ def main():
                     st.dataframe(pd.DataFrame(evals))
                 else:
                     st.info("Chưa có dữ liệu đánh giá lâm sàng.")
+
+    # ==================== TAB: KHAI BÁO TRIỆU CHỨNG ====================
+    if "🩺 KHAI BÁO TRIỆU CHỨNG" in tab_map:
+        with tab_map["🩺 KHAI BÁO TRIỆU CHỨNG"]:
+            hien_thi_tab_khai_bao_trieu_chung()
 
     # ==================== TAB: LỊCH NHẮC NHỞ ====================
     if "⏰ LỊCH NHẮC NHỞ" in tab_map:
