@@ -2993,19 +2993,25 @@ def main():
     # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
     # TOP BAR (LOGOUT) - Quay lại góc trên bên phải
     st.markdown('<div class="top-auth-container" style="margin-top: -50px; margin-bottom: 20px;">', unsafe_allow_html=True)
-    t_col1, t_col2 = st.columns([3.5, 1])
+    t_col1, t_col2 = st.columns([1.5, 3.5])
     
     with t_col2:
-        inner_c1, inner_c2 = st.columns([1.8, 1], vertical_alignment="center")
+        inner_c1, inner_c2, inner_c3 = st.columns([1.1, 1.5, 0.7], vertical_alignment="center")
         with inner_c1:
+            # === CHẾ ĐỘ SÁNG/TỐI (THEME TOGGLE) - MỚI ===
+            is_dark = st.toggle("🌙 Tối", value=(st.session_state.theme == 'dark'), key="theme_toggle_top")
+            st.session_state.theme = 'dark' if is_dark else 'light'
+            
+        with inner_c2:
             st.markdown(f"""
             <div style="text-align: right; line-height: 1.1;">
                 <span style="color: #888; font-size: 0.8rem;">Xin chào,</span><br>
                 <span style="color: #ffd700; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
             </div>
             """, unsafe_allow_html=True)
-        with inner_c2:
-            if st.button("🚪 Thoát", use_container_width=True):
+            
+        with inner_c3:
+            if st.button("🚪 Thoát", use_container_width=True, key="logout_top"):
                 if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
                     st.logout()
                 st.session_state.logged_in = False
@@ -3023,21 +3029,7 @@ def main():
     """, unsafe_allow_html=True)
     
     with st.sidebar:
-        # === CHẾ ĐỘ SÁNG/TỐI (THEME TOGGLE) ===
-        t_col1, t_col2 = st.columns([1.5, 1], vertical_alignment="center")
-        with t_col1:
-            theme_label = "🌙 Tối" if st.session_state.theme == 'dark' else "☀️ Sáng"
-            st.markdown(f"**Chế độ: {theme_label}**")
-        with t_col2:
-            # Dùng checkbox giả lập toggle nếu bản Streamlit cũ, hoặc st.toggle nếu bản mới
-            try:
-                is_light = st.toggle("Sáng", value=(st.session_state.theme == 'light'), label_visibility="collapsed")
-                st.session_state.theme = 'light' if is_light else 'dark'
-            except:
-                is_light = st.checkbox("Sáng", value=(st.session_state.theme == 'light'))
-                st.session_state.theme = 'light' if is_light else 'dark'
-        
-        st.markdown("---")
+        # --- Đã di chuyển nút gạt theme lên Top Bar ---
         
         # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
         st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
