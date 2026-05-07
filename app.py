@@ -156,6 +156,13 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
+    /* === SỬA LỖI CHỮ ĐÈ ICON (Arrow, Upload, etc.) === */
+    [data-testid="stExpander"] summary span > span,
+    [data-testid="stFileUploader"] section span > span {
+        display: none !important;
+        font-size: 0 !important;
+    }
+    
     /* Nhắm vào nút đóng/mở sidebar để ẩn chữ keyboard_double */
     [data-testid="stSidebarCollapseButton"] span {
         font-size: 0 !important;
@@ -2935,16 +2942,6 @@ def main():
     
     # ==================== TAB 1: TRANG CHỦ ====================
     with tab1:
-        # DI CHUYỂN FILE UPLOADER LÊN ĐẦU ĐỂ TRÁNH XUNG ĐỘT STATE
-        st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
-        file_upload = st.file_uploader(
-            "📤 Tải lên video tập luyện của bệnh nhân", 
-            type=None, # Chấp nhận mọi video để tăng tính tương thích
-            help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB"
-        )
-        
-        st.markdown("---")
-        
         col1, col2 = st.columns([2,1])
         with col1:
             st.markdown(f"""
@@ -2973,6 +2970,15 @@ def main():
                 <p style="color:#aaa; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
             </div>
             """, unsafe_allow_html=True)
+            
+        st.markdown("---")
+        # PHẦN UPLOAD QUAY LẠI VỊ TRÍ CŨ
+        st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
+        file_upload = st.file_uploader(
+            "📤 Tải lên video tập luyện của bệnh nhân", 
+            type=None,
+            help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB"
+        )
         
         # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
         st.markdown("---")
@@ -3021,12 +3027,7 @@ def main():
             if file_size_mb > MAX_FILE_SIZE_MB:
                 st.error(f"❌ File quá lớn! {file_size_mb:.1f}MB > {MAX_FILE_SIZE_MB}MB")
             else:
-                # Hiển thị KB nếu file quá nhỏ để hiện MB
-                if file_size_mb < 0.1:
-                    size_text = f"{file_upload.size/1024:.2f} KB"
-                else:
-                    size_text = f"{file_size_mb:.2f} MB"
-                st.success(f"✅ Đã chọn file: {file_upload.name} ({size_text})")
+                st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.1f} MB)")
                 
                 if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", width='stretch'):
                     st.session_state.processing = True
@@ -3043,17 +3044,10 @@ def main():
                     try:
                         status_text.info("📤 Đang đọc file video...")
                         try:
-                            # TỐI ƯU RAM: Đọc file theo chunk thay vì getvalue() (tránh tải toàn bộ file vào RAM)
                             is_mov = file_upload.name.lower().endswith('.mov')
                             suffix = '.mp4' if not is_mov else '.mov'
-                            
                             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-                                file_upload.seek(0)
-                                while True:
-                                    chunk = file_upload.read(1024 * 1024) # Đọc từng chunk 1MB
-                                    if not chunk:
-                                        break
-                                    tmp_file.write(chunk)
+                                tmp_file.write(file_upload.getvalue())
                                 video_path = tmp_file.name
                         except Exception as e:
                             st.warning(f"⚠️ Lỗi đọc file: {e}. Vui lòng thử lại!")
