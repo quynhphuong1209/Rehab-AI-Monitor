@@ -3074,10 +3074,10 @@ def main():
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
-        "🏠 TRANG CHỦ", "📹 TRỰC TIẾP", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH",
-        "⏰ LỊCH NHẮC NHỞ", "📈 TIẾN TRIỂN", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", 
-        "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
+        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", 
+        "🏥 KIẾN THỨC PHCN", "⏰ LỊCH NHẮC NHỞ", "🌐 CÔNG NGHỆ", 
+        "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
     ])
     
     # ==================== TAB 1: TRANG CHỦ ====================
@@ -3332,16 +3332,12 @@ def main():
             - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
             """)
     
-    # ==================== TAB 2: TRỰC TIẾP (REAL-TIME) ====================
+    # ==================== TAB 2: PHÂN TÍCH ====================
     with tab2:
-        hien_thi_tab_realtime(bai_tap)
-
-    # ==================== TAB 3: PHÂN TÍCH ====================
-    with tab3:
         hien_thi_tab_phan_tich()
-    
-    # ==================== TAB 4: VIDEO & ẢNH ====================
-    with tab4:
+
+    # ==================== TAB 3: VIDEO & ẢNH ====================
+    with tab3:
         if st.session_state.has_data and st.session_state.temp_video_file and os.path.exists(st.session_state.temp_video_file):
             st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
             st.video(st.session_state.temp_video_file)
@@ -3362,28 +3358,24 @@ def main():
         else:
             st.info("ℹ️ Chưa có video. Hãy upload và xử lý video ở tab TRANG CHỦ.")
 
-    # ==================== TAB 5: LỊCH NHẮC NHỞ ====================
+    # ==================== TAB 4: HƯỚNG DẪN ====================
+    with tab4:
+        hien_thi_tab_huong_dan()
+
+    # ==================== TAB 5: KIẾN THỨC PHCN ====================
     with tab5:
+        hien_thi_tab_kien_thuc_phcn()
+
+    # ==================== TAB 6: LỊCH NHẮC NHỞ ====================
+    with tab6:
         hien_thi_lich_nhac_nho()
 
-    # ==================== TAB 6: TIẾN TRIỂN ====================
-    with tab6:
-        hien_thi_tab_tien_trien()
-
-    # ==================== TAB 7: HƯỚNG DẪN ====================
+    # ==================== TAB 7: CÔNG NGHỆ ====================
     with tab7:
-        hien_thi_tab_huong_dan()
-        
-    # ==================== TAB 8: KIẾN THỨC PHCN ====================
-    with tab8:
-        hien_thi_tab_kien_thuc_phcn()
-        
-    # ==================== TAB 9: CÔNG NGHỆ ====================
-    with tab9:
         hien_thi_tab_cong_nghe()
         
-    # ==================== TAB 10: ĐỀ TÀI NCKH ====================
-    with tab10:
+    # ==================== TAB 8: ĐỀ TÀI NCKH ====================
+    with tab8:
         # Cấu hình màu sắc theo Theme
         is_light = st.session_state.theme == 'light'
         bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
@@ -3469,8 +3461,8 @@ def main():
             8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
             """)
 
-    # ==================== TAB 11: THÀNH VIÊN ====================
-    with tab11:
+    # ==================== TAB 9: THÀNH VIÊN ====================
+    with tab9:
         st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
         st.markdown("""
         <div class="lecturer-card">
@@ -3550,8 +3542,8 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-    # ==================== TAB 12: PHẢN HỒI ====================
-    with tab12:
+    # ==================== TAB 10: PHẢN HỒI ====================
+    with tab10:
         hien_thi_tab_phan_hoi()
 
 
