@@ -43,6 +43,7 @@ streamlit run app.py
 ## 👩‍⚕️ Nhóm nghiên cứu
 - **Giảng viên hướng dẫn:** TS. Trần Hồng Việt
 - **Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương
+- **Thành viên nhóm NCKH:** Kim Mạnh Hưng, Nguyễn Hải An, Nguyễn Thị Thanh Nga, Phan Vân Anh, Nguyễn Thị Thơm, Nguyễn Thị Thu Hương
 - **Đơn vị:** Đại học Y tế Công cộng - Bệnh viện Đa khoa Phạm Ngọc Thạch.
 
 ---
