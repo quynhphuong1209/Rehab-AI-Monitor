@@ -2289,6 +2289,29 @@ st.markdown("""
 # ============================================
 # HÀM HIỂN THỊ TAB 2 - THIẾT KẾ LẠI
 # ============================================
+def gui_ket_qua_tu_ncv(v, tk, ncv_name):
+    """Hàm dùng chung để NCV gửi kết quả AI cho BN và Bác sĩ"""
+    try:
+        evals = load_data(EVALUATIONS_FILE)
+        evals.append({
+            "patient_username": v.get('username', 'unknown'),
+            "doctor_username": "AI_Researcher",
+            "video_name": v.get('video_name', 'Video'),
+            "exercise": v.get('exercise', 'N/A'),
+            "ai_accuracy": round(tk.get('do_chinh_xac', 0), 1),
+            "doctor_result": "AI Auto Analysis",
+            "errors": tk.get('warnings', []),
+            "comments": f"Kết quả phân tích tự động từ Nghiên cứu viên: {ncv_name}.",
+            "plan": "Chờ bác sĩ đánh giá lâm sàng thêm",
+            "doctor_name": f"NCV: {ncv_name}",
+            "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+        })
+        save_data(EVALUATIONS_FILE, evals)
+        return True
+    except Exception as e:
+        st.error(f"Lỗi gửi kết quả: {e}")
+        return False
+
 def hien_thi_tab_phan_tich():
     """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
     
@@ -2635,12 +2658,15 @@ def hien_thi_tab_phan_tich():
                 st.download_button("📥 Tải ảnh biểu đồ Khuỷu", fig_khuyu.to_image(format="png"), "bieu_do_khuyu.png", "image/png", use_container_width=True)
             except: pass
         
-        st.markdown("---")
-        fig_hist = ve_bieu_do_histogram(df, bt)
-        st.plotly_chart(fig_hist, use_container_width=True)
         try:
             st.download_button("📥 Tải ảnh biểu đồ Histogram", fig_hist.to_image(format="png"), "histogram_goc.png", "image/png")
         except: pass
+
+        st.markdown("---")
+        if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="send_joint_btn", use_container_width=True, type="primary"):
+            if gui_ket_qua_tu_ncv(st.session_state.current_eval_video, tk, ten_nguoi_dung):
+                st.success("✅ Đã gửi kết quả phân tích khớp cho Bệnh nhân và Bác sĩ!")
+                st.balloons()
 
     # === TAB 3: NÂNG CAO (BOXPLOT) ===
     with tab_advanced:
@@ -2651,6 +2677,12 @@ def hien_thi_tab_phan_tich():
         try:
             st.download_button("📥 Tải ảnh biểu đồ Boxplot", fig_box.to_image(format="png"), "boxplot_rom.png", "image/png")
         except: pass
+
+        st.markdown("---")
+        if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="send_box_btn", use_container_width=True, type="primary"):
+            if gui_ket_qua_tu_ncv(st.session_state.current_eval_video, tk, ten_nguoi_dung):
+                st.success("✅ Đã gửi kết quả phân tích nâng cao cho Bệnh nhân và Bác sĩ!")
+                st.balloons()
 
     # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
     with tab_clinical:
@@ -2962,6 +2994,20 @@ def hien_thi_form_danh_gia_bac_si():
         with st.expander("🩺 TRIỆU CHỨNG BN KHAI BÁO", expanded=True):
             st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
             st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
+
+    # Hiển thị các đánh giá từ NCV nếu có để bác sĩ tham khảo
+    evals_history = load_data(EVALUATIONS_FILE)
+    ncv_evals = [e for e in evals_history if e['patient_username'] == selected_video['username'] and "NCV:" in e.get('doctor_name', '')]
+    if ncv_evals:
+        with st.expander("📊 PHÂN TÍCH TỪ NGHIÊN CỨU VIÊN (AI AUTO)", expanded=False):
+            for ne in reversed(ncv_evals):
+                st.markdown(f"""
+                <div style="border-left: 3px solid #00CED1; padding-left: 10px; margin-bottom: 10px;">
+                    <small style="color: #888;">{ne['time']} - {ne['doctor_name']}</small><br>
+                    <b>Độ chính xác AI:</b> {ne['ai_accuracy']}%<br>
+                    <b>Nhận xét:</b> {ne['comments']}
+                </div>
+                """, unsafe_allow_html=True)
 
     with st.form("doctor_eval_form"):
         st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
