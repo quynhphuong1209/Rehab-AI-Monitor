@@ -2935,24 +2935,70 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                     st.balloons()
 def hien_thi_tab_huong_dan():
     st.markdown("## 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG")
-    st.markdown("""
-    ### 1. Dành cho Bệnh nhân
-    - **Bước 1:** Chọn bài tập ở Sidebar. Xem video hướng dẫn để nắm vững kỹ thuật.
-    - **Bước 2:** Quay video quá trình tập luyện của bạn (đảm bảo thấy rõ khớp vai và khuỷu tay).
-    - **Bước 3:** Tải video lên ở Tab **TRANG CHỦ** và bấm **BẮT ĐẦU PHÂN TÍCH**.
-    - **Bước 4:** Sau khi có kết quả AI, bấm **GỬI CHO BÁC SĨ** để nhận đánh giá chuyên môn.
-    - **Bước 5:** Xem phản hồi của bác sĩ ở Tab **KẾT QUẢ**.
+    
+    is_light = st.session_state.theme == 'light'
+    card_bg = "#f8f9fa" if is_light else "rgba(255, 255, 255, 0.05)"
+    text_color = "#333" if is_light else "#ccc"
+    
+    tab_h1, tab_h2, tab_h3 = st.tabs(["👤 DÀNH CHO BỆNH NHÂN", "🩺 DÀNH CHO BÁC SĨ / KTV", "🔬 DÀNH CHO NGHIÊN CỨU VIÊN"])
+    
+    with tab_h1:
+        st.markdown("### 🛠️ Quy trình tập luyện 5 bước")
+        
+        col_st1, col_st2 = st.columns([1, 1])
+        with col_st1:
+            st.markdown(f"""
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 1: Chọn bài tập</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Chọn động tác cần tập ở Sidebar trái và xem video hướng dẫn mẫu.</p>
+            </div>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 2: Chuẩn bị & Quay phim</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Đặt điện thoại cố định, đứng cách 2-3m sao cho thấy rõ khớp vai và khuỷu tay.</p>
+            </div>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 3: Tải video lên</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Tại tab <b>TRANG CHỦ</b>, tải file video của bạn lên hệ thống.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col_st2:
+            st.markdown(f"""
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 4: Gửi cho chuyên gia</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Bấm nút <b>GỬI CHO BÁC SĨ</b> để video được chuyển đến bộ phận chuyên môn.</p>
+            </div>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 5: Xem kết quả</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Khi bác sĩ đánh giá xong, bạn sẽ nhận được thông báo tại tab <b>KẾT QUẢ</b>.</p>
+            </div>
+            <div style="padding: 15px; background: rgba(0, 198, 255, 0.1); border-radius: 10px; border: 1px dashed #00c6ff;">
+                <p style="margin:0; color:#00c6ff; font-size:0.85rem;">💡 <b>Mẹo:</b> Mặc quần áo gọn gàng, màu tương phản với nền để AI nhận diện tốt nhất.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-    ### 2. Dành cho Bác sĩ / KTV
-    - **Bước 1:** Kiểm tra danh sách video bệnh nhân gửi đến ở Tab **TRANG CHỦ**.
-    - **Bước 2:** Bấm **ĐÁNH GIÁ** để xem video và phân tích AI.
-    - **Bước 3:** Điền phiếu đánh giá chuyên môn và gửi lại cho bệnh nhân.
-    - **Bước 4:** Thiết lập lịch nhắc nhở tập luyện hoặc hẹn khám ở Tab **LỊCH NHẮC NHỞ**.
+    with tab_h2:
+        st.markdown("### 🩺 Quy trình dành cho chuyên gia Y tế")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.info("**1. Tiếp nhận video**\n\nXem danh sách video bệnh nhân gửi đến ngay tại Trang chủ.")
+            st.info("**2. Đánh giá AI**\n\nBấm nút 'Phân tích' để hệ thống tự động tính toán góc độ.")
+        with c2:
+            st.info("**3. Đưa ra chỉ định**\n\nĐiền phiếu đánh giá lâm sàng và gửi lời khuyên cho bệnh nhân.")
+            st.info("**4. Theo dõi tiến trình**\n\nXem biểu đồ phục hồi của bệnh nhân qua các tuần.")
 
-    ### 3. Dành cho Nghiên cứu viên
-    - Theo dõi các chỉ số khoa học (Accuracy, F1, ICC) ở Tab **PHÂN TÍCH**.
-    - Xem đối chiếu giữa kết quả AI và đánh giá lâm sàng của bác sĩ để tinh chỉnh mô hình.
-    """)
+    with tab_h3:
+        st.markdown("### 🔬 Dành cho Nghiên cứu viên AI")
+        st.markdown(f"""
+        <div style="background: {card_bg}; padding: 20px; border-radius: 15px; border: 1px solid #00c6ff;">
+            <p style="color: {text_color};">Hệ thống cung cấp các bộ công cụ chuyên sâu để tinh chỉnh mô hình:</p>
+            <ul style="color: {text_color};">
+                <li><b>Phân tích vĩ mô:</b> Theo dõi các chỉ số <b>Accuracy, F1-Score, ICC</b>.</li>
+                <li><b>Kiểm định chéo:</b> Đối chiếu kết quả AI với 'Golden Standard' từ bác sĩ.</li>
+                <li><b>Quản lý dữ liệu:</b> Xuất dữ liệu tọa độ khớp (Keypoints) dưới dạng CSV để huấn luyện thêm.</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
 
 def hien_thi_tab_nckh():
     is_light = st.session_state.theme == 'light'
