@@ -156,22 +156,18 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === SỬA LỖI CHỮ ĐÈ & CHỮ RÁC ICON (TRIỆT ĐỂ) === */
+    /* === SỬA LỖI CHỮ RÁC ICON (TRIỆT ĐỂ) === */
+    button[data-testid="stSidebarCollapseButton"] span,
     [data-testid="stExpander"] summary span > span,
     [data-testid="stFileUploader"] section span > span,
-    [data-testid="stSidebarNav"] span,
-    .stIconMaterial,
-    span:contains("keyboard_"),
-    span:contains("arrow_") {
+    .stIconMaterial {
+        display: none !important;
         color: transparent !important;
         font-size: 0 !important;
-        line-height: 0 !important;
-        visibility: hidden !important;
-        display: none !important;
     }
     
     /* Ẩn text rác hiện ra khi lỗi font Material */
-    .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b {
+    .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
         display: none !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] {
@@ -2877,6 +2873,27 @@ def main():
         return
 
     # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
+    # TOP BAR (LOGOUT) - Quay lại góc trên bên phải
+    st.markdown('<div class="top-auth-container" style="margin-top: -50px; margin-bottom: 20px;">', unsafe_allow_html=True)
+    t_col1, t_col2 = st.columns([3.5, 1])
+    
+    with t_col2:
+        inner_c1, inner_c2 = st.columns([1.8, 1], vertical_alignment="center")
+        with inner_c1:
+            st.markdown(f"""
+            <div style="text-align: right; line-height: 1.1;">
+                <span style="color: #888; font-size: 0.8rem;">Xin chào,</span><br>
+                <span style="color: #ffd700; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
+            </div>
+            """, unsafe_allow_html=True)
+        with inner_c2:
+            if st.button("🚪 Thoát", use_container_width=True):
+                if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
+                    st.logout()
+                st.session_state.logged_in = False
+                st.session_state.user_info = None
+                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="main-header">
@@ -2888,24 +2905,6 @@ def main():
     """, unsafe_allow_html=True)
     
     with st.sidebar:
-        # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ĐƯỢC ĐẨY LÊN ĐẦU ===
-        auth_c1, auth_c2 = st.columns([2, 1], vertical_alignment="center")
-        with auth_c1:
-            st.markdown(f"""
-            <div style="line-height: 1.2;">
-                <span style="color: #888; font-size: 0.85rem;">Xin chào,</span><br>
-                <span style="color: #ffd700; font-weight: bold; font-size: 1.1rem;">👤 {st.session_state.user_info['username']}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        with auth_c2:
-            if st.button("🚪 Thoát", use_container_width=True, help="Đăng xuất khỏi hệ thống"):
-                if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
-                    st.logout()
-                st.session_state.logged_in = False
-                st.session_state.user_info = None
-                st.rerun()
-        
-        st.markdown("---")
         st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
         ten_benh_nhan = st.text_input("Họ và tên", placeholder="VD: Nguyễn Văn A")
         ma_benh_nhan = st.text_input("Mã số bệnh nhân", placeholder="VD: BN0001")
