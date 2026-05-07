@@ -4384,6 +4384,15 @@ def main():
             bai_tap = BAI_TAP[ma_bai_tap]
             
         else:
+            # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
+            st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
+            ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
+            ma_nguoi_dung = st.text_input("Mã số định danh", placeholder="VD: BN0001 / BS0001")
+            col1, col2 = st.columns(2)
+            with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
+            with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
+            
+            st.markdown("---")
             st.markdown("### 🎯 CHỌN BÀI TẬP")
             ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
             bai_tap = BAI_TAP[ma_bai_tap]
@@ -4392,13 +4401,6 @@ def main():
             st.video(bai_tap["youtube"])
             
             st.markdown("---")
-            # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
-            st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
-            ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
-            ma_nguoi_dung = st.text_input("Mã số định danh", placeholder="VD: BN0001 / BS0001")
-            col1, col2 = st.columns(2)
-            with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
-            with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
             
             if user_role == "Bệnh nhân":
                 with st.expander("🩺 KHAI BÁO TRIỆU CHỨNG", expanded=False):
