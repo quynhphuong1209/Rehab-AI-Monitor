@@ -2766,26 +2766,23 @@ def hien_thi_dang_nhap_dang_ky():
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    # Sử dụng cột để tạo khung hình vuông ở giữa màn hình
+    _, col_mid, _ = st.columns([1, 1.8, 1])
+    
+    with col_mid:
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        
         # CHẾ ĐỘ QUÊN MẬT KHẨU
-        if st.session_state.get('forgot_password_mode'):
-            st.markdown("<h3 style='text-align:center;'>🔄 Khôi phục mật khẩu</h3>", unsafe_allow_html=True)
-            with st.form("forgot_password_form_v3"):
-                u_reset = st.text_input("Tên đăng nhập")
-                e_reset = st.text_input("Email đã đăng ký")
-                n_pass = st.text_input("Mật khẩu mới", type="password")
-                c_pass = st.text_input("Xác nhận mật khẩu", type="password")
-                
-                c1, c2 = st.columns(2)
-                with c1:
-                    sub = st.form_submit_button("Đặt lại mật khẩu", use_container_width=True)
-                with c2:
-                    if st.form_submit_button("Hủy bỏ", use_container_width=True):
-                        st.session_state.forgot_password_mode = False
-                        st.rerun()
-                
-                if sub:
+        if st.session_state.get('forgot_password_mode', False):
+            st.markdown("### 🔄 KHÔI PHỤC MẬT KHẨU")
+            u_reset = st.text_input("👤 Tên đăng nhập đã đăng ký", placeholder="Nhập tên tài khoản", key="f_u")
+            e_reset = st.text_input("📧 Email đã đăng ký", placeholder="example@gmail.com", key="f_e")
+            n_pass = st.text_input("🆕 Mật khẩu mới", type="password", placeholder="Tối thiểu 6 ký tự", key="f_p1")
+            c_pass = st.text_input("✅ Xác nhận mật khẩu mới", type="password", placeholder="Nhập lại mật khẩu", key="f_p2")
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Đặt lại mật khẩu", use_container_width=True, type="primary"):
                     users = load_users()
                     if u_reset in users and users[u_reset].get('email') == e_reset:
                         if n_pass == c_pass and len(n_pass) >= 6:
@@ -2796,15 +2793,20 @@ def hien_thi_dang_nhap_dang_ky():
                             st.rerun()
                         else: st.error("❌ Mật khẩu không khớp hoặc quá ngắn")
                     else: st.error("❌ Thông tin không chính xác")
+            with c2:
+                if st.button("Hủy bỏ", use_container_width=True):
+                    st.session_state.forgot_password_mode = False
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
             return
 
         # GIAO DIỆN CHÍNH
-        t_login, t_register, t_google = st.tabs(["🔐 ĐĂNG NHẬP", "📋 ĐĂNG KÝ THÀNH VIÊN", "🚀 GOOGLE ID"])
+        t_login, t_register, t_google = st.tabs(["🔐 ĐĂNG NHẬP", "📋 ĐĂNG KÝ", "🚀 GOOGLE ID"])
         
         with t_login:
-            st.markdown("<p style='text-align:center; color:#888;'>Vui lòng nhập tài khoản hệ thống</p>", unsafe_allow_html=True)
-            u = st.text_input("Tên đăng nhập", placeholder="Tên tài khoản của bạn", key="login_u")
-            p = st.text_input("Mật khẩu", type="password", placeholder="Mật khẩu bảo mật", key="login_p")
+            st.markdown("<br>", unsafe_allow_html=True)
+            u = st.text_input("👤 Tên đăng nhập", placeholder="Nhập tên tài khoản của bạn", key="login_u")
+            p = st.text_input("🔑 Mật khẩu", type="password", placeholder="Nhập mật khẩu bảo mật", key="login_p")
             if st.button("🚀 ĐĂNG NHẬP NGAY", use_container_width=True, type="primary"):
                 users = load_users()
                 if u in users and verify_password(p, users[u]['password']):
@@ -2814,17 +2816,17 @@ def hien_thi_dang_nhap_dang_ky():
                     st.rerun()
                 else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
             
-            if st.button("❓ Bạn quên mật khẩu?", use_container_width=True):
+            if st.button("❓ Bạn quên mật khẩu?", use_container_width=True, type="secondary"):
                 st.session_state.forgot_password_mode = True
                 st.rerun()
                         
         with t_register:
-            st.markdown("<p style='text-align:center; color:#00c6ff; font-weight:bold;'>TẠO TÀI KHOẢN MỚI</p>", unsafe_allow_html=True)
-            reg_name = st.text_input("Họ và tên của bạn", placeholder="VD: Nguyễn Văn A", key="reg_n")
-            reg_u = st.text_input("Tên đăng nhập *", placeholder="Chọn tên tài khoản", key="reg_u")
-            reg_e = st.text_input("Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
-            reg_p = st.text_input("Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
-            reg_cp = st.text_input("Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
+            st.markdown("<br>", unsafe_allow_html=True)
+            reg_name = st.text_input("📛 Họ và tên", placeholder="VD: Nguyễn Văn A", key="reg_n")
+            reg_u = st.text_input("👤 Tên đăng nhập *", placeholder="Chọn tên tài khoản", key="reg_u")
+            reg_e = st.text_input("📧 Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
+            reg_p = st.text_input("🔑 Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
+            reg_cp = st.text_input("✅ Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
             
             if st.button("🚀 ĐĂNG KÝ TRUY CẬP", use_container_width=True, type="primary"):
                 if not reg_u or not reg_e or len(reg_p) < 6:
@@ -2842,23 +2844,25 @@ def hien_thi_dang_nhap_dang_ky():
                             "created_at": datetime.now().isoformat()
                         }
                         save_users(users)
-                        st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.")
+                        st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay.")
                             
         with t_google:
             st.markdown("""
-            <div style="text-align: center; padding: 25px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
-                <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="60" style="margin-bottom: 15px;">
-                <h3 style="color: white; margin-bottom: 10px;">Kết nối một chạm</h3>
-                <p style="color: #888; font-size: 0.95rem; line-height: 1.5;">Sử dụng tài khoản Google để truy cập hệ thống Rehab AI an toàn và nhanh chóng mà không cần nhớ mật khẩu.</p>
+            <div style="text-align: center; padding: 20px;">
+                <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="50" style="margin-bottom: 10px;">
+                <h4 style="color: white;">Đăng nhập nhanh</h4>
+                <p style="color: #888; font-size: 0.9rem;">Truy cập an toàn qua Google ID</p>
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button("🌐 TIẾP TỤC ĐĂNG NHẬP VỚI GOOGLE", use_container_width=True, type="primary"):
+            if st.button("🌐 TIẾP TỤC VỚI GOOGLE", use_container_width=True, type="primary"):
                 try:
                     st.session_state.auth_initiated = True
                     st.login("google")
                 except Exception as e:
-                    st.error(f"⚠️ Dịch vụ Google tạm thời gián đoạn: {e}")
+                    st.error(f"⚠️ Lỗi Google: {e}")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ============================================
