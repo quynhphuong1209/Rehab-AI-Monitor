@@ -2976,48 +2976,20 @@ def main():
         file_upload = st.file_uploader(
             "📤 Tải lên video tập luyện của bệnh nhân", 
             type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
-            help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB"
+            help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB",
+            key="video_uploader_v1"
         )
         
         # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
         st.markdown("---")
         st.markdown("<h3 style='color: #00c6ff;'>🧬 QUY TRÌNH THU THẬP DỮ LIỆU DATA FRAMES (NCKH)</h3>", unsafe_allow_html=True)
         
-        # Tạo thanh tab mini cho các bước
-        st_col1, st_col2, st_col3, st_col4 = st.tabs([
-            "📸 BƯỚC 1: GHI HÌNH", 
-            "⚙️ BƯỚC 2: TRÍCH XUẤT", 
-            "🔍 BƯỚC 3: PHÂN TÍCH", 
-            "💾 BƯỚC 4: LƯU TRỮ"
-        ])
-        
-        with st_col1:
+        with st.expander("📸 XEM CHI TIẾT CÁC BƯỚC THU THẬP DỮ LIỆU", expanded=False):
             st.markdown("""
-            **Mục tiêu:** Thu thập dữ liệu thô (Raw Data).
-            - **Yêu cầu:** Camera đặt ngang tầm khớp vai (góc 90 độ).
-            - **Tốc độ:** Tối thiểu 30 frames/giây (FPS) để đảm bảo độ mịn.
-            - **Ánh sáng:** Đảm bảo độ tương phản cao giữa bệnh nhân và nền.
-            """)
-            
-        with st_col2:
-            st.markdown("""
-            **Mục tiêu:** Chuyển đổi Video sang chuỗi ảnh (Image Sequence).
-            - **Xử lý:** Video được chia nhỏ thành hàng trăm/ngàn Frames đơn lẻ.
-            - **Mã hóa:** Mỗi frame được gán một Timestamp và ID duy nhất để phục vụ đối chiếu lâm sàng.
-            """)
-            
-        with st_col3:
-            st.markdown("""
-            **Mục tiêu:** Trích xuất đặc trưng hình học (Feature Extraction).
-            - **Công nghệ:** Sử dụng **MediaPipe Pose** để định vị 33 điểm mốc xương.
-            - **Tính toán:** Thuật toán Vector được áp dụng để tính góc khớp vai và khuỷu tay theo thời gian thực.
-            """)
-            
-        with st_col4:
-            st.markdown("""
-            **Mục tiêu:** Số hóa dữ liệu (Data Digitization).
-            - **Định dạng:** Toàn bộ góc độ được lưu vào file JSON/CSV.
-            - **Ứng dụng:** Dữ liệu này là cơ sở để vẽ biểu đồ tiến triển và phục vụ báo cáo nghiên cứu khoa học.
+            **BƯỚC 1: GHI HÌNH** - Camera đặt ngang tầm khớp vai, tốc độ 30 FPS.
+            **BƯỚC 2: TRÍCH XUẤT** - Sử dụng MediaPipe Pose trích xuất 33 điểm mốc xương.
+            **BƯỚC 3: PHÂN TÍCH** - Tính toán góc khớp và đối chiếu chuẩn PHCN.
+            **BƯỚC 4: LƯU TRỮ** - Số hóa dữ liệu vào JSON/CSV để theo dõi tiến triển.
             """)
         
         if file_upload is not None and not st.session_state.processing:
