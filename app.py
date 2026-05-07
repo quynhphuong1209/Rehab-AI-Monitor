@@ -175,6 +175,7 @@ if is_dark:
     input_bg = "rgba(255, 255, 255, 0.05)"
     input_text = "white"
     shadow = "0 10px 30px rgba(0, 0, 0, 0.5)"
+    header_grad = "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
 else:
     bg_color = "#f8fafc"
     text_color = "#1e293b"
@@ -187,9 +188,11 @@ else:
     input_bg = "#ffffff"
     input_text = "#1e293b"
     shadow = "0 10px 30px rgba(0, 0, 0, 0.05)"
+    header_grad = "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)"
 
 st.markdown(f"""
 <style>
+    * {{ font-family: 'Times New Roman', Times, serif !important; }}
     /* === CẤU HÌNH NỀN TOÀN BỘ === */
     .stApp {{
         background-color: {bg_color} !important;
@@ -249,6 +252,7 @@ st.markdown(f"""
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        text-align: center !important;
         background-color: {tab_bg};
         border-radius: 12px;
         color: {text_color} !important;
@@ -685,7 +689,7 @@ class PoseProcessor(VideoProcessorBase):
 
 def hien_thi_tab_realtime(bai_tap):
     """Xử lý Camera trực tiếp qua Trình duyệt (WebRTC)"""
-    st.markdown("### 📹 TẬP LUYỆN TRỰC TIẾP VỚI AI (REAL-TIME)")
+    st.markdown("<h3 style='text-align: center;'>📹 TẬP LUYỆN TRỰC TIẾP VỚI AI (REAL-TIME)</h3>", unsafe_allow_html=True)
     st.info("💡 Trình duyệt sẽ yêu cầu quyền Camera. Hãy nhấn 'Allow' để bắt đầu.")
     
     RTC_CONFIGURATION = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
@@ -694,7 +698,9 @@ def hien_thi_tab_realtime(bai_tap):
     
     with col2:
         st.markdown(f"""
-        <div class="info-box">
+        <div style="background: {header_grad}; 
+                    border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
+                    border: 1px solid {glass_border}; box-shadow: {shadow}; font-family: 'Times New Roman';">
             <h4>🎯 BÀI TẬP: {bai_tap['ten']}</h4>
             <p>🦾 Mục tiêu Vai: {bai_tap['chuan']['vai']}°</p>
             <p>💪 Mục tiêu Khuỷu: {bai_tap['chuan']['khuyu']}°</p>
@@ -794,13 +800,13 @@ def hien_thi_tab_cong_nghe():
     """Thiết kế Tab 7 với phong cách công nghệ cao cấp"""
     
     # 1. HEADER CHƯƠNG TRÌNH
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%); 
+    st.markdown(f"""
+    <div style="background: {card_bg}; 
                 padding: 2.5rem; border-radius: 25px; text-align: center; 
-                border: 1px solid #ffd700; box-shadow: 0 15px 35px rgba(255, 215, 0, 0.1);
+                border: 1px solid {glass_border}; box-shadow: {shadow};
                 margin-bottom: 2rem;">
-        <h1 style="color: #ffd700; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
-        <p style="color: #00CED1; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
+        <h1 style="color: {'#ffd700' if is_dark else '#0072ff'}; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
+        <p style="color: {'#00CED1' if is_dark else '#1e293b'}; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
             Sự kết hợp hoàn hảo giữa Phục hồi chức năng và Trí tuệ nhân tạo (AI)
         </p>
     </div>
@@ -2137,21 +2143,19 @@ def hien_thi_tab_phan_tich():
     })
     
     # 1. HEADER CHỈ SỐ TỔNG QUAN (CỐ ĐỊNH)
+    # 1. HEADER CHƯƠNG TRÌNH (DYNAMIC)
     st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-                border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
-                border: 1px solid #2a5298; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h2 style="color: #ffd700; margin: 0; font-size: 1.8rem;">📊 DASHBOARD PHÂN TÍCH LÂM SÀNG</h2>
-                <p style="color: #aaa; margin: 0.5rem 0 0 0;">
-                    🏥 Bài tập: {bt['ten']} | 🛡️ Độ tin cậy (ICC): {tk.get('icc', 0):.2f}
-                </p>
-            </div>
-            <div style="text-align: right;">
-                <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
-                    <span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
-                </div>
+    <div style="background: {card_bg}; 
+                padding: 2rem; border-radius: 20px; text-align: center; 
+                border: 1px solid {glass_border}; box-shadow: {shadow};
+                margin-bottom: 2rem;">
+        <h1 style="color: {'#ffd700' if is_dark else '#0072ff'}; margin: 0; font-size: 1.8rem;">📊 DASHBOARD PHÂN TÍCH LÂM SÀNG</h1>
+        <p style="color: {'#aaa' if is_dark else '#475569'}; margin: 0.5rem 0 0 0;">
+            🏥 Bài tập: {bt['ten']} | 🛡️ Độ tin cậy (ICC): {tk.get('icc', 0):.2f}
+        </p>
+        <div style="display: flex; justify-content: center; margin-top: 15px;">
+            <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
+                <span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
             </div>
         </div>
     </div>
@@ -2217,53 +2221,41 @@ def hien_thi_tab_phan_tich():
             st.plotly_chart(fig_pie, use_container_width=True)
             try:
                 img_pie = fig_pie.to_image(format="png")
-                st.download_button("📥 Tải ảnh biểu đồ tròn", img_pie, "phan_bo_ket_qua.png", "image/png", use_container_width=True)
-            except: pass
-            
-        with col_metrics:
-            st.markdown("#### 📑 CHỈ SỐ HIỆU SUẤT")
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-value">{tk['frame_dung']}</div>
-                    <div class="metric-label">✅ Frames Đúng (Pass)</div>
-                </div>
-                <div class="metric-card" style="margin-top: 15px;">
-                    <div class="metric-value" style="color: #FFA500;">{tk['frame_gan_dung']}</div>
-                    <div class="metric-label">⚠️ Frames Gần Đúng</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with c2:
-                fail_frames = tk['tong_frame_hop_le'] - tk['frame_dung'] - tk['frame_gan_dung']
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-value" style="color: #FF4444;">{max(0, fail_frames)}</div>
-                    <div class="metric-label">❌ Frames Sai (Fail)</div>
-                </div>
-                <div class="metric-card" style="margin-top: 15px;">
-                    <div class="metric-value" style="color: #ffd700;">{tk['do_chinh_xac']:.1f}%</div>
-                    <div class="metric-label">🎯 Hiệu suất tổng thể</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-    # === TAB 2: PHÂN TÍCH KHỚP ===
-    with tab_joint:
-        st.markdown("#### 📈 BIỂU ĐỒ GÓC VAI")
-        fig_vai = ve_bieu_do_goc_vai(df, bt)
-        st.plotly_chart(fig_vai, use_container_width=True)
-        col_m1, col_dl1 = st.columns([2, 1])
-        with col_m1:
-            st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
-        with col_dl1:
-            try:
-                st.download_button("📥 Tải ảnh biểu đồ Vai", fig_vai.to_image(format="png"), "bieu_do_vai.png", "image/png", use_container_width=True)
-            except: pass
-        
-        st.markdown("---")
-        st.markdown("#### 📊 BIỂU ĐỒ GÓC KHUỶU")
-        fig_khuyu = ve_bieu_do_goc_khuyu(df, bt)
-        st.plotly_chart(fig_khuyu, use_container_width=True)
+                st.download_bu        <div style="background: {glass_bg}; padding: 1.5rem; border-radius: 15px; border: 1px solid {glass_border}; margin-bottom: 20px; box-shadow: {shadow};">
+            <table style="width: 100%; color: {text_color}; border-collapse: collapse;">
+                <tr style="border-bottom: 2px solid {glass_border}; text-align: left;">
+                    <th style="padding: 12px;">Chỉ số nghiên cứu</th>
+                    <th style="padding: 12px;">Giá trị thực tế</th>
+                    <th style="padding: 12px;">Mục tiêu đề tài</th>
+                    <th style="padding: 12px;">Trạng thái</th>
+                </tr>
+                <tr style="border-bottom: 1px solid {glass_border};">
+                    <td style="padding: 12px;">Độ chính xác (Accuracy)</td>
+                    <td style="padding: 12px; color: #00CED1; font-weight: bold;">{tk['do_chinh_xac']:.1f}%</td>
+                    <td style="padding: 12px;">≥ 90%</td>
+                    <td style="padding: 12px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid {glass_border};">
+                    <td style="padding: 12px;">F1-Score (Độ tin cậy)</td>
+                    <td style="padding: 12px; color: #00CED1; font-weight: bold;">{tk.get('f1_score', 0):.2f}</td>
+                    <td style="padding: 12px;">≥ 0.85</td>
+                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('f1_score', 0) >= 0.85 else '⚠️ Cần cải thiện'}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid {glass_border};">
+                    <td style="padding: 12px;">Sai số tuyệt đối (MAE)</td>
+                    <td style="padding: 12px; color: #FF6B6B; font-weight: bold;">{tk.get('mae_tong', 0):.1f}°</td>
+                    <td style="padding: 12px;">&lt; 5°</td>
+                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('mae_tong', 0) < 5 else '⚠️ Cần cải thiện'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px;">Tương quan nội lớp (ICC)</td>
+                    <td style="padding: 12px; color: #00CED1; font-weight: bold;">{tk.get('icc', 0):.2f}</td>
+                    <td style="padding: 12px;">≥ 0.75</td>
+                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Cần cải thiện'}</td>
+                </tr>
+            </table>
+        </div>
+iner_width=True)
         col_m2, col_dl2 = st.columns([2, 1])
         with col_m2:
             st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
@@ -2323,9 +2315,9 @@ def hien_thi_tab_phan_tich():
             
         with ai_col2:
             st.markdown(f"""
-            <div style="background: rgba(0,206,209,0.05); border-radius: 15px; padding: 1.2rem; border: 1px dashed #00CED1;">
-                <p style="color: #00CED1; font-weight: bold; margin-bottom: 5px;">🧬 PHÂN TÍCH TỪ MÔ HÌNH BLAZEPOSE:</p>
-                <ul style="color: #ccc; font-size: 0.9rem; margin-left: 15px;">
+            <div style="background: {glass_bg}; border-radius: 15px; padding: 1.2rem; border: 1px dashed {glass_border};">
+                <p style="color: {'#00CED1' if is_dark else '#0072ff'}; font-weight: bold; margin-bottom: 5px;">🧬 PHÂN TÍCH TỪ MÔ HÌNH BLAZEPOSE:</p>
+                <ul style="margin-left: 15px; font-size: 0.95rem;">
                     <li><b>Độ ổn định tín hiệu:</b> { 'Rất tốt, độ nhiễu thấp.' if stability_score > 80 else 'Có hiện tượng nhiễu nhẹ (Jittering) trong quá trình vận động.' }</li>
                     <li><b>Tính khách quan:</b> Chỉ số ICC ({icc:.2f}) cho thấy sự tương quan chặt chẽ giữa dữ liệu trích xuất và chuẩn lâm sàng.</li>
                     <li><b>Phân loại tự động:</b> Mô hình AI đã phân tích thành công {tk['tong_frame_hop_le']} khung hình với độ chính xác {tk['do_chinh_xac']:.1f}%.</li>
@@ -2453,8 +2445,8 @@ def hien_thi_lich_nhac_nho():
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     st.markdown(f"""
-                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem;">
-                        <strong style="color: #ffd700;">📌 {app['title']}</strong><br>
+                    <div style="background: {card_bg}; border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border: 1px solid {glass_border}; box-shadow: {shadow};">
+                        <strong style="color: {'#ffd700' if is_dark else '#0072ff'};">📌 {app['title']}</strong><br>
                         🕒 {app['datetime']}<br>
                         📝 {app.get('notes', '')}
                     </div>
@@ -2817,11 +2809,11 @@ def hien_thi_dang_nhap_dang_ky():
                             st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay.")
                                 
             with t_google:
-                st.markdown("""
+                st.markdown(f"""
                 <div style="text-align: center; padding: 10px;">
                     <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="40" style="margin-bottom: 5px;">
-                    <h5 style="color: white;">Đăng nhập nhanh</h5>
-                    <p style="color: #888; font-size: 0.85rem;">Truy cập an toàn qua Google ID</p>
+                    <h5 style="color: {text_color};">Đăng nhập nhanh</h5>
+                    <p style="color: {'#888' if is_dark else '#64748b'}; font-size: 0.85rem;">Truy cập an toàn qua Google ID</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -2945,13 +2937,13 @@ def main():
         with col2:
             chuan = bai_tap['chuan']
             st.markdown(f"""
-            <div style="background:rgba(26,26,46,0.8); padding:1.2rem; border-radius:16px; text-align:center; border:1px solid #2a5298;">
-                <h4 style="color:#fff;">🎯 THÔNG SỐ CHUẨN</h4>
-                <p style="color:#00CED1;">🦾 Góc vai: <strong>{chuan['vai']}°</strong> ±{chuan['sai_so']}°</p>
-                <p style="color:#FF6B6B;">💪 Góc khuỷu: <strong>{chuan['khuyu']}°</strong> ±{chuan['sai_so']}°</p>
-                <hr style="margin:10px 0;">
-                <p style="color:#aaa; font-size:0.8rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
-                <p style="color:#aaa; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
+            <div style="background: {card_bg}; padding: 1.5rem; border-radius: 20px; text-align: center; border: 1px solid {glass_border}; box-shadow: {shadow};">
+                <h4 style="color: {'#ffffff' if is_dark else '#0f172a'}; margin-bottom: 1rem;">🎯 THÔNG SỐ CHUẨN</h4>
+                <p style="color: #00CED1; font-size: 1.1rem;">🦾 Góc vai: <strong>{chuan['vai']}°</strong> ±{chuan['sai_so']}°</p>
+                <p style="color: #FF6B6B; font-size: 1.1rem;">💪 Góc khuỷu: <strong>{chuan['khuyu']}°</strong> ±{chuan['sai_so']}°</p>
+                <hr style="margin: 15px 0; border: 0.5px solid {glass_border};">
+                <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.85rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
+                <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.85rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -3223,11 +3215,11 @@ def main():
     # ==================== TAB 10: ĐỀ TÀI NCKH ====================
     with tab10:
         st.markdown("""
-        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid #2a5298;">
-            <h2 style="color: white; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
-            <p style="color: #ffd700; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
-            <p style="color: #ccc;">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
+        <div style="background: {card_bg}; padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid {glass_border}; box-shadow: {shadow};">
+            <h2 style="color: {'#ffffff' if is_dark else '#0f172a'}; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
+            <p style="color: {'#ffd700' if is_dark else '#0072ff'}; font-size: 1.1rem; margin-top: 0.5rem; font-weight: bold;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
+            <p>Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
+            <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -3306,23 +3298,23 @@ def main():
         st.markdown("""
         <div class="lecturer-card">
             <div class="lecturer-name">TS. Trần Hồng Việt</div>
-            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
-            <p style="color: #aaa; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
+            <p style="color: {'#ccc' if is_dark else '#475569'}; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
+            <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+            <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.markdown("""
-            <div class="member-card" style="border-color: #ffd700; border: 2px solid #ffd700;">
+            st.markdown(f"""
+            <div class="member-card" style="border: 2px solid #ffd700;">
                 <div class="member-name">Đinh Lê Quỳnh Phương</div>
-                <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
-                <div class="member-class">Chuyên ngành Khoa học dữ liệu Y sinh</div>
-                <div class="member-id">MSSV: 2211090031</div>
-                <div class="member-id">📧 2211090031@studenthuph.edu.vn</div>
-                <div class="member-id">📱 0382665916</div>
+                <div class="member-role" style="color: #ffd700;">⭐ Chủ nhiệm đề tài ⭐</div>
+                <div class="member-class" style="color: {text_color};">Chuyên ngành Khoa học dữ liệu Y sinh</div>
+                <div class="member-id" style="color: {'#aaa' if is_dark else '#475569'};">MSSV: 2211090031</div>
+                <div class="member-id" style="color: {'#00CED1' if is_dark else '#0072ff'};">📧 2211090031@studenthuph.edu.vn</div>
+                <div class="member-id" style="color: {'#888' if is_dark else '#64748b'};">📱 0382665916</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -3341,9 +3333,9 @@ def main():
                 st.markdown(f"""
                 <div class="member-card">
                     <div class="member-name">{ten}</div>
-                    <div class="member-role">{vai_tro}</div>
-                    <div class="member-class">{lop}</div>
-                    <div class="member-id">MSSV: {mssv}</div>
+                    <div class="member-role" style="color: {'#ffd700' if is_dark else '#0072ff'};">{vai_tro}</div>
+                    <div class="member-class" style="color: {'#aaa' if is_dark else '#475569'};">{lop}</div>
+                    <div class="member-id" style="color: {'#888' if is_dark else '#64748b'};">MSSV: {mssv}</div>
                 </div>
                 """, unsafe_allow_html=True)
         
@@ -3360,19 +3352,19 @@ def main():
                 st.markdown(f"""
                 <div class="member-card">
                     <div class="member-name">{ten}</div>
-                    <div class="member-role">{vai_tro}</div>
-                    <div class="member-class">{lop}</div>
-                    <div class="member-id">MSSV: {mssv}</div>
+                    <div class="member-role" style="color: {'#ffd700' if is_dark else '#0072ff'};">{vai_tro}</div>
+                    <div class="member-class" style="color: {'#aaa' if is_dark else '#475569'};">{lop}</div>
+                    <div class="member-id" style="color: {'#888' if is_dark else '#64748b'};">MSSV: {mssv}</div>
                 </div>
                 """, unsafe_allow_html=True)
         
         st.markdown("---")
         st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
         st.markdown("""
-        <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1.5rem; text-align: center;">
-            <p style="color: #ffd700; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
-            <p style="color: #ccc;">Khoa Phục hồi chức năng</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
+        <div style="background: {card_bg}; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid {glass_border}; box-shadow: {shadow};">
+            <p style="color: {'#ffd700' if is_dark else '#0072ff'}; font-weight: bold; font-size: 1.2rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
+            <p style="font-weight: bold; font-size: 1.1rem;">Khoa Phục hồi chức năng</p>
+            <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.95rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -3395,13 +3387,13 @@ def main():
     footer_html = f"""
     <style>
         .main-footer {{
-            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+            background: {sidebar_bg};
             padding: 40px 20px;
-            color: #ccc;
+            color: {text_color};
             font-family: 'Times New Roman', Times, serif;
             text-align: center;
             border-top: 4px solid #00c6ff;
-            box-shadow: 0 -10px 20px rgba(0, 198, 255, 0.2);
+            box-shadow: {shadow};
             margin-top: 60px;
         }}
         .footer-container {{
