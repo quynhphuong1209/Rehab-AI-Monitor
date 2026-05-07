@@ -3948,50 +3948,52 @@ def hien_thi_dang_nhap_dang_ky():
                                 else: st.error(f"❌ Tài khoản không khớp với vai trò {login_role}.")
                             else: st.error("❌ Thông tin đăng nhập không chính xác.")
                             
-            with t_register:
-                st.markdown("<br>", unsafe_allow_html=True)
-                reg_name = st.text_input("📛 Họ và tên", placeholder="VD: Nguyễn Văn A", key="reg_n")
-                reg_u = st.text_input("👤 Tên đăng nhập *", placeholder="Chọn tên tài khoản", key="reg_u")
-                reg_e = st.text_input("📧 Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
-                reg_p = st.text_input("🔑 Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
-                reg_cp = st.text_input("✅ Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
-                st.info("💡 Các tài khoản Bác sĩ và Nghiên cứu viên đã được khởi tạo theo danh sách. Để cấp thêm tài khoản mới, vui lòng liên hệ Quản trị viên.")
-                reg_role = st.selectbox("🎭 Vai trò người dùng *", ["Bệnh nhân"], key="reg_role", disabled=True)
-                
-                if st.button("🚀 ĐĂNG KÝ TRUY CẬP", use_container_width=True, type="primary"):
-                    if not reg_u or not reg_e or len(reg_p) < 6:
-                        st.warning("⚠️ Vui lòng điền đầy đủ các thông tin bắt buộc (*)")
-                    elif reg_p != reg_cp:
-                        st.error("❌ Mật khẩu xác nhận không khớp")
-                    else:
-                        users = load_users()
-                        if reg_u in users: st.error("❌ Tên đăng nhập này đã tồn tại")
+            if "📋 ĐĂNG KÝ" in t_map:
+                with t_map["📋 ĐĂNG KÝ"]:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    reg_name = st.text_input("📛 Họ và tên", placeholder="VD: Nguyễn Văn A", key="reg_n")
+                    reg_u = st.text_input("👤 Tên đăng nhập *", placeholder="Chọn tên tài khoản", key="reg_u")
+                    reg_e = st.text_input("📧 Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
+                    reg_p = st.text_input("🔑 Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
+                    reg_cp = st.text_input("✅ Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
+                    st.info("💡 Các tài khoản Bác sĩ và Nghiên cứu viên đã được khởi tạo theo danh sách. Để cấp thêm tài khoản mới, vui lòng liên hệ Quản trị viên.")
+                    reg_role = st.selectbox("🎭 Vai trò người dùng *", ["Bệnh nhân"], key="reg_role", disabled=True)
+                    
+                    if st.button("🚀 ĐĂNG KÝ TRUY CẬP", use_container_width=True, type="primary"):
+                        if not reg_u or not reg_e or len(reg_p) < 6:
+                            st.warning("⚠️ Vui lòng điền đầy đủ các thông tin bắt buộc (*)")
+                        elif reg_p != reg_cp:
+                            st.error("❌ Mật khẩu xác nhận không khớp")
                         else:
-                            users[reg_u] = {
-                                "password": hash_password(reg_p),
-                                "email": reg_e,
-                                "full_name": reg_name,
-                                "role": reg_role,
-                                "created_at": datetime.now().isoformat()
-                            }
-                            save_users(users)
-                            st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay.")
+                            users = load_users()
+                            if reg_u in users: st.error("❌ Tên đăng nhập này đã tồn tại")
+                            else:
+                                users[reg_u] = {
+                                    "password": hash_password(reg_p),
+                                    "email": reg_e,
+                                    "full_name": reg_name,
+                                    "role": reg_role,
+                                    "created_at": datetime.now().isoformat()
+                                }
+                                save_users(users)
+                                st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay.")
                                 
-            with t_google:
-                st.markdown("""
-                <div style="text-align: center; padding: 10px;">
-                    <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="40" style="margin-bottom: 5px;">
-                    <h5 style="color: white;">Đăng nhập nhanh</h5>
-                    <p style="color: #888; font-size: 0.85rem;">Truy cập an toàn qua Google ID</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button("🌐 TIẾP TỤC ĐĂNG NHẬP VỚI GOOGLE", use_container_width=True, type="primary"):
-                    try:
-                        st.session_state.auth_initiated = True
-                        st.login("google")
-                    except Exception as e:
-                        st.error(f"⚠️ Lỗi Google: {e}")
+            if "🚀 GOOGLE ID" in t_map:
+                with t_map["🚀 GOOGLE ID"]:
+                    st.markdown("""
+                    <div style="text-align: center; padding: 10px;">
+                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="40" style="margin-bottom: 5px;">
+                        <h5 style="color: white;">Đăng nhập nhanh</h5>
+                        <p style="color: #888; font-size: 0.85rem;">Truy cập an toàn qua Google ID</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button("🌐 TIẾP TỤC ĐĂNG NHẬP VỚI GOOGLE", use_container_width=True, type="primary"):
+                        try:
+                            st.session_state.auth_initiated = True
+                            st.login("google")
+                        except Exception as e:
+                            st.error(f"⚠️ Lỗi Google: {e}")
 
 # ============================================
 # HÀM HIỂN TRỊ TAB QUẢN TRỊ VIÊN
