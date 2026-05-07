@@ -316,6 +316,14 @@ if st.session_state.get('theme') == 'light':
         .stExpander summary:hover { background: #eee !important; }
         [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #eee !important; }
         [data-testid="stSidebar"] * { color: #333 !important; }
+        
+        /* Làm cho nút gạt (toggle) hiện rõ màu xám khi ở chế độ Sáng */
+        div[role="switch"][aria-checked="false"] {
+            background-color: #bdc3c7 !important;
+        }
+        div[role="switch"][aria-checked="false"] > div {
+            background-color: #ffffff !important;
+        }
         [data-testid="stTable"] th { background-color: #f1f3f5 !important; color: #000 !important; }
         [data-testid="stMetric"] { background: #ffffff !important; border: 1px solid #eee !important; padding: 10px !important; border-radius: 12px !important; }
         /* Fix Form elements */
