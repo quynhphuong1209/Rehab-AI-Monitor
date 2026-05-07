@@ -10,23 +10,20 @@
 
 Hệ thống giúp tự động hóa việc giám sát và đánh giá các bài tập phục hồi chức năng (PHCN) cho bệnh nhân viêm quanh khớp vai, đảm bảo bệnh nhân tập luyện đúng kỹ thuật ngay cả khi ở nhà.
 
-## ✨ Tính năng nổi bật (New Updates)
-- 📹 **Tập luyện Real-time (WebRTC):** Phân tích trực tiếp qua Webcam với phản hồi lỗi tức thì (⚠️ SAI TƯ THẾ).
-- 📈 **Theo dõi tiến triển (Long-term Tracking):** Lưu trữ lịch sử tập luyện thực tế và vẽ biểu đồ xu hướng hồi phục.
-- 🦾 **Phân tích khung xương AI:** Sử dụng MediaPipe Pose (Model Full) cho độ chính xác cao.
-- 📐 **Đo góc sinh học:** Tự động tính toán góc vai và góc khuỷu tay theo thời gian thực.
-- 📊 **Báo cáo chuyên sâu:** Xuất dữ liệu dưới dạng biểu đồ Plotly và file CSV cho nghiên cứu khoa học.
-- ⏰ **Lịch nhắc nhở:** Quản lý lịch tập, lịch uống thuốc và hẹn khám cho bệnh nhân.
+## ✨ Tính năng nổi bật (v2.5 Modernized)
+- 💎 **Giao diện Cao cấp:** Thiết kế card-based hiện đại, bố cục hàng ngang chuyên nghiệp với hiệu ứng hover và Glassmorphism.
+- 🩺 **Luồng liên lạc trực tiếp:** Bệnh nhân gửi video và triệu chứng (VAS) trực tiếp từ Sidebar đến Bác sĩ, KTV và NCV.
+- 📄 **Thông tin Nghiên cứu:** Trang thông tin chi tiết dành riêng cho bệnh nhân tham gia NCKH (Quy trình, đạo đức, bảo mật).
+- 🚀 **Điều hướng thông minh:** Tự động chuyển Tab khi chọn video để đánh giá (Auto-Tab Switching).
+- 🦾 **Phân tích khung xương AI:** Sử dụng MediaPipe Pose Estimation cho độ chính xác cao nhất.
+- ⏰ **Lịch nhắc nhở & Hướng dẫn:** Hệ thống quản lý lịch trình và tài liệu hướng dẫn bài tập đa phương tiện.
 
-## 🗺️ Cấu trúc 12 Tab Điều hướng
-Hệ thống được tổ chức theo quy trình lâm sàng chuẩn:
-1. **Trang chủ:** Tiếp nhận thông tin & Hướng dẫn bài tập.
-2. **📹 Trực tiếp:** Tập luyện thực tế với phản hồi AI ngay lập tức.
-3. **📊 Phân tích:** Dashboard chỉ số chuyên sâu sau khi tập.
-4. **🎬 Video & Ảnh:** Xem lại video đã vẽ khung xương và Gallery lỗi.
-5. **⏰ Lịch nhắc nhở:** Quản lý thời gian biểu tập luyện.
-6. **📈 Tiến triển:** Biểu đồ lịch sử tập luyện thực tế qua các ngày.
-7. **Hướng dẫn, Kiến thức PHCN, Công nghệ, Đề tài NCKH, Thành viên, Phản hồi.**
+## 🗺️ Cấu trúc Tab Điều hướng (Role-based)
+Hệ thống tự động thay đổi cấu trúc dựa trên vai trò người dùng:
+- **Bệnh nhân:** Tập trung vào tập luyện, xem kết quả, khai báo triệu chứng và thông tin nghiên cứu.
+- **Bác sĩ / KTV:** Chuyên sâu vào danh sách video BN, đánh giá chuyên môn lâm sàng và theo dõi triệu chứng.
+- **Nghiên cứu viên:** Phân tích tọa độ AI, xuất dữ liệu CSV, quản lý video thô và thông số kỹ thuật mô hình.
+- **Quản trị viên:** Quản lý tài khoản, cấu hình hệ thống và cơ sở dữ liệu.
 
 ## 🛠️ Công nghệ sử dụng
 - **AI Core:** MediaPipe, OpenCV, WebRTC (Streamlit-webrtc)

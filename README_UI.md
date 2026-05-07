@@ -12,41 +12,29 @@ Tài liệu này mô tả chi tiết về cấu trúc mã nguồn, thiết kế 
 
 ---
 
-## 2. Cấu trúc 12 Tabs (Tiến trình người dùng)
-Ứng dụng được tổ chức theo quy trình lâm sàng logic:
+## 2. Cấu trúc Giao diện & Trải nghiệm (v2.5)
+Ứng dụng được thiết kế tối ưu cho từng vai trò người dùng (Role-based UI):
 
-### 🏠 Tab 1: Trang Chủ
-- Nhập thông tin bệnh nhân và lựa chọn bài tập PHCN.
-- Hiển thị hướng dẫn video và hình ảnh bài tập chuẩn.
+### 🏠 Trang Chủ (Dashboard Tổng quan)
+- **Thiết kế:** Bố cục card-based hàng ngang với các thẻ thông tin bài tập (Thời gian, Số lần, Thông số chuẩn).
+- **Trải nghiệm:** Tải lên video và gửi trực tiếp cho đội ngũ chuyên môn. Hệ thống tự động ẩn các tính năng kỹ thuật phức tạp đối với Bệnh nhân để tối ưu hóa sự đơn giản.
 
-### 📹 Tab 2: Trực Tiếp (Real-time Analysis)
-- **Công nghệ:** WebRTC Streamer.
-- **Trải nghiệm:** Bệnh nhân bật Camera và tập luyện. Hệ thống vẽ khung xương và tính góc trực tiếp.
-- **Phản hồi:** Cảnh báo "SAI TƯ THẾ" hiện ngay trên khung hình nếu độ lệch vượt ngưỡng cho phép.
+### 📄 Trang Thông Tin Nghiên Cứu (Dành cho Bệnh nhân)
+- **Nội dung:** Hiển thị chi tiết về đề tài NCKH (Quy trình, nguy cơ, bảo mật, thông tin liên hệ).
+- **Trình bày:** Sử dụng các khối `Expander` và `Custom Cards` để tạo cảm giác chuyên nghiệp, minh bạch.
 
-### 📊 Tab 3: Phân Tích (Dashboard)
-- Dashboard chỉ số chi tiết sau khi phân tích video.
-- **Metric Cards:** 4 thẻ chỉ số cao cấp (Accuracy, F1-Score, ICC, Stability).
-- **AI Insights:** Nhận định chuyên môn tự động từ mô hình học máy.
+### 🩺 Đánh Giá Chuyên Môn (Dành cho Bác sĩ/KTV)
+- **Workflow:** Bác sĩ chọn video BN -> Tự động chuyển Tab -> Nhập đánh giá lâm sàng.
+- **Tập trung:** Loại bỏ các tab biểu đồ AI kỹ thuật để Bác sĩ tập trung hoàn toàn vào việc nhận xét chuyên môn và chỉ định kế hoạch điều trị.
 
-### 🎬 Tab 4: Video & Ảnh (Gallery)
-- Phát lại video đã xử lý với đầy đủ skeleton và angle arcs.
-- Thư viện ảnh (Gallery) phân trang để xem lại các lỗi sai cụ thể.
+### 📊 Phân Tích & Video (Dành cho Nghiên cứu viên)
+- **NCV Dashboard:** Truy cập toàn bộ dữ liệu AI, biểu đồ tọa độ, và video trích xuất khung xương để kiểm định mô hình.
+- **Export:** Công cụ xuất CSV và ZIP frame để phục vụ báo cáo khoa học.
 
-### ⏰ Tab 5: Lịch Nhắc Nhở
-- Quản lý lịch trình tập luyện, nhắc uống thuốc và hẹn tái khám.
-
-### 📈 Tab 6: Tiến Triển (Long-term Progress)
-- **Dữ liệu thật:** Tự động lấy dữ liệu từ các buổi tập đã thực hiện.
-- **Trực quan:** Biểu đồ đường xu hướng hồi phục và bảng nhật ký chi tiết.
-
-### 📖 Tab 7-12: Tài nguyên & Thông tin
-- **Hướng dẫn:** 5 bước cơ bản để làm quen với hệ thống.
-- **Kiến thức PHCN:** 4 trụ cột y khoa hiện đại và tài liệu Bộ Y tế/WHO.
-- **Công nghệ:** Giải thích về MediaPipe và thuật toán AI.
-- **Đề tài NCKH:** Toàn văn báo cáo nghiên cứu và kết quả dự kiến.
-- **Thành viên:** Thông tin đội ngũ thực hiện và chuyên gia lâm sàng.
-- **Phản hồi:** Kênh hỗ trợ kỹ thuật và đóng góp ý kiến.
+### 🛠️ Sidebar & Form (Hợp nhất)
+- **Thông tin BN:** Hiển thị trên cùng (Họ tên, Tuổi, Giới tính).
+- **Khai báo Triệu chứng:** Form phẳng ngay trong Sidebar giúp BN báo cáo mức độ đau (VAS) nhanh chóng.
+- **Chế độ Sáng/Tối:** Chuyển đổi Theme linh hoạt hỗ trợ tương phản tốt.
 
 ---
 

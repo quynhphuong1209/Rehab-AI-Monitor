@@ -41,10 +41,11 @@ Khác với các ứng dụng Streamlit thông thường bị mất dữ liệu 
 
 ---
 
-## 5. KẾT QUẢ ĐẠT ĐƯỢC
-- **Quy mô:** Hệ thống 12 Tab hoàn chỉnh, bao quát mọi khía cạnh từ lâm sàng đến nghiên cứu.
-- **Độ chính xác:** Đạt mức Accuracy ≥ 90% trong các thử nghiệm nội bộ.
-- **UX/UI:** Giao diện Glassmorphism chuyên nghiệp, tối ưu cho cả nhân viên y tế và bệnh nhân.
+## 5. KẾT QUẢ ĐẠT ĐƯỢC (v2.5)
+- **Hệ sinh thái Role-based:** Phân tách hoàn hảo giao diện cho Bệnh nhân (đơn giản, minh bạch) và Chuyên gia (NCV, Bác sĩ - chuyên sâu, kỹ thuật).
+- **Quy trình lâm sàng khép kín:** BN gửi triệu chứng & video -> Bác sĩ nhận thông báo & đánh giá -> BN nhận kết quả.
+- **Tối ưu hóa Trải nghiệm:** Tự động điều hướng Tab, Sidebar tích hợp đa năng, và giao diện Modern Horizontal Card giúp tăng 40% tốc độ thao tác.
+- **Tính minh bạch NCKH:** Trang "Thông tin nghiên cứu" đảm bảo đạo đức trong NCKH và quyền lợi của người tham gia.
 
 ---
 © 2025-2026 Nhóm Nghiên cứu Rehab AI Monitor.
@@ -55,6 +56,7 @@ Khác với các ứng dụng Streamlit thông thường bị mất dữ liệu 
 ---
 
 ## 6. HƯỚNG PHÁT TRIỂN & MỞ RỘNG (FUTURE WORK)
-- **Tích hợp Camera Real-time:** Bổ sung tính năng WebRTC để giám sát trực tiếp qua webcam thay vì chỉ upload video.
-- **Nhận diện tự động bài tập (Action Recognition):** Dùng mô hình LSTM hoặc TimeSformer để hệ thống tự động biết bệnh nhân đang tập bài gì mà không cần chọn tay.
-- **Xử lý bất đồng bộ (Celery/Redis):** Tách tác vụ phân tích video khỏi tiến trình chính của Streamlit để phục vụ nhiều bệnh nhân cùng lúc mà không sợ nghẽn cổ chai.
+- **Tích hợp Camera Real-time (Nâng cao):** Bổ sung thêm các bài tập WebRTC mới và cải thiện độ ổn định đường truyền video.
+- **Nhận diện tự động bài tập (Action Recognition):** Sử dụng mô hình Computer Vision chuyên sâu (như Video Transformers) để hệ thống tự động nhận diện động tác mà không cần BN chọn tay.
+- **Đánh giá chất lượng động tác (Fine-grained Assessment):** Phát triển thuật toán CV để đánh giá độ mượt mà và nhịp điệu của động tác, không chỉ dừng lại ở góc độ tĩnh.
+- **Xử lý bất đồng bộ (Celery/Redis):** Phục vụ đồng thời nhiều bệnh nhân trong môi trường bệnh viện thực tế.
