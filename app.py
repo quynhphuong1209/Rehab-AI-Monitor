@@ -3927,7 +3927,7 @@ def main():
     
     # Định nghĩa các tab dựa trên vai trò
     if user_role == "Bác sĩ / KTV PHCN":
-        tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN", "📊 KẾT QUẢ AI", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "🩺 KHAI BÁO TRIỆU CHỨNG", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
@@ -4345,16 +4345,38 @@ def main():
                 """)
     
     # ==================== TAB: PHÂN TÍCH / ĐÁNH GIÁ ====================
-    # Tìm tab phù hợp (Đánh giá, Kết quả, hoặc Phân tích)
-    auth_tab_key = next((k for k in tab_map.keys() if any(x in k for x in ["ĐÁNH GIÁ", "KẾT QUẢ", "PHÂN TÍCH"])), None)
-    if auth_tab_key:
-        with tab_map[auth_tab_key]:
-            if user_role == "Bác sĩ / KTV PHCN":
-                hien_thi_form_danh_gia_bac_si()
-            elif user_role == "Bệnh nhân":
-                hien_thi_ket_qua_cho_benh_nhan()
-            else: # Nghiên cứu viên
-                hien_thi_tab_phan_tich()
+    if "📝 ĐÁNH GIÁ PHCN" in tab_map:
+        with tab_map["📝 ĐÁNH GIÁ PHCN"]:
+            hien_thi_form_danh_gia_bac_si()
+            
+    if "📊 KẾT QUẢ AI" in tab_map:
+        with tab_map["📊 KẾT QUẢ AI"]:
+            # Hiển thị kết quả AI cho Bác sĩ (tương tự Bệnh nhân nhưng cho BN được chọn)
+            st.markdown("## 📊 KẾT QUẢ PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
+            selected_video = st.session_state.get('current_eval_video')
+            if not selected_video:
+                st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
+            else:
+                evals = load_data(EVALUATIONS_FILE)
+                p_evals = [e for e in evals if e['patient_username'] == selected_video['username']]
+                has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in p_evals)
+                
+                if not has_ai_sent:
+                    st.warning("🕒 Nghiên cứu viên chưa gửi kết quả phân tích AI cho bệnh nhân này.")
+                else:
+                    tab_ai_1, tab_ai_2 = st.tabs(["📊 BIỂU ĐỒ CHI TIẾT", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"])
+                    with tab_ai_1:
+                        hien_thi_tab_phan_tich()
+                    with tab_ai_2:
+                        hien_thi_frames_day_du()
+
+    if "📊 PHÂN TÍCH" in tab_map:
+        with tab_map["📊 PHÂN TÍCH"]:
+            hien_thi_tab_phan_tich()
+
+    if "📊 KẾT QUẢ" in tab_map:
+        with tab_map["📊 KẾT QUẢ"]:
+            hien_thi_ket_qua_cho_benh_nhan()
 
     # ==================== TAB: KHAI BÁO TRIỆU CHỨNG ====================
     if "🩺 KHAI BÁO TRIỆU CHỨNG" in tab_map:
