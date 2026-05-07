@@ -2291,6 +2291,7 @@ st.markdown("""
 # ============================================
 def hien_thi_tab_phan_tich():
     """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
+    user_role = st.session_state.user_info.get('role')
     
     # TỰ ĐỘNG CHỌN VIDEO MỚI NHẤT NẾU CHƯA CHỌN (Dành cho Nghiên cứu viên)
     if not st.session_state.get('has_data') and not st.session_state.get('current_eval_video'):
@@ -3447,6 +3448,7 @@ def hien_thi_lich_nhac_nho():
 @st.fragment
 def hien_thi_frames_day_du():
     """Hiển thị frames với Streamlit Fragment (Chỉ load lại vùng này, cực nhanh)"""
+    user_role = st.session_state.user_info.get('role')
     
     if not st.session_state.get('all_frames_data_path') or not os.path.exists(st.session_state.all_frames_data_path):
         st.info("📭 Không có dữ liệu khung hình để hiển thị.")
