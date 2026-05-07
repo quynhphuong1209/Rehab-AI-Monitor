@@ -3360,7 +3360,7 @@ def hien_thi_form_danh_gia_bac_si():
     has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in patient_evals)
 
     tab_titles_eval = ["📝 ĐÁNH GIÁ CHUYÊN MÔN"]
-    if has_ai_sent:
+    if has_ai_sent and st.session_state.user_info.get('role') == "Nghiên cứu viên":
         tab_titles_eval += ["📊 CHI TIẾT AI PHÂN TÍCH", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"]
     
     tabs_eval = st.tabs(tab_titles_eval)
@@ -3439,7 +3439,7 @@ def hien_thi_form_danh_gia_bac_si():
             st.success("✅ Đã gửi đánh giá thành công!")
             st.balloons()
 
-    if has_ai_sent:
+    if has_ai_sent and st.session_state.user_info.get('role') == "Nghiên cứu viên":
         tab_ai_charts = tabs_eval[1]
         tab_ai_media = tabs_eval[2]
         
