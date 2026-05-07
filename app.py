@@ -2932,8 +2932,8 @@ def hien_thi_lich_nhac_nho():
                         <strong style="color: #ffd700; font-size: 1.1rem;">📌 {app['title']}</strong><br>
                         🕒 <b>Thời gian:</b> {app['datetime']}<br>
                         👨‍⚕️ <b>Bác sĩ:</b> {app.get('doctor_name', 'Hệ thống')}<br>
-                        {"👤 <b>Bệnh nhân:</b> " + app.get('patient_name', app.get('patient_username', 'Chưa rõ')) + "<br>" if user_role != "Bệnh nhân" else ""}
-                        📝 <b>Ghi chú:</b> {app.get('notes', 'Không có')}<br>
+                        {f"👤 <b>Bệnh nhân:</b> {app.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
+                        {f"📝 <b>Ghi chú:</b> {app['notes']}<br>" if app.get('notes') else ""}
                         <span style="color: #ffd700; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
                     </div>
                     """, unsafe_allow_html=True)
@@ -2958,7 +2958,8 @@ def hien_thi_lich_nhac_nho():
                         🕒 <b>Thời gian:</b> {ex['datetime']}<br>
                         🔁 <b>Tần suất:</b> {ex.get('frequency', 'Một lần')}<br>
                         👨‍⚕️ <b>Chỉ định bởi:</b> {ex.get('doctor_name', 'Hệ thống')}<br>
-                        {"👤 <b>Bệnh nhân:</b> " + ex.get('patient_name', ex.get('patient_username', 'Chưa rõ')) + "<br>" if user_role != "Bệnh nhân" else ""}
+                        {f"👤 <b>Bệnh nhân:</b> {ex.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
+                        {f"📝 <b>Ghi chú:</b> {ex['notes']}<br>" if ex.get('notes') else ""}
                         <span style="color: #00CED1; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
                     </div>
                     """, unsafe_allow_html=True)
@@ -2983,7 +2984,8 @@ def hien_thi_lich_nhac_nho():
                         🕒 <b>Thời gian:</b> {med['datetime']}<br>
                         💊 <b>Liều:</b> {med.get('dosage', 'Theo chỉ định')}<br>
                         👨‍⚕️ <b>Bác sĩ kê đơn:</b> {med.get('doctor_name', 'Hệ thống')}<br>
-                        {"👤 <b>Bệnh nhân:</b> " + med.get('patient_name', med.get('patient_username', 'Chưa rõ')) + "<br>" if user_role != "Bệnh nhân" else ""}
+                        {f"👤 <b>Bệnh nhân:</b> {med.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
+                        {f"📝 <b>Ghi chú:</b> {med['notes']}<br>" if med.get('notes') else ""}
                         <span style="color: #FF6B6B; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
                     </div>
                     """, unsafe_allow_html=True)
