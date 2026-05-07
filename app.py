@@ -140,6 +140,7 @@ st.markdown("""
         display: none !important;
         visibility: hidden !important;
         font-size: 0 !important;
+        line-height: 0 !important;
     }
 
     /* 2. Đảm bảo các tiêu đề chính vẫn hiện rõ */
@@ -169,30 +170,33 @@ st.markdown("""
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: transparent;
-        overflow-x: auto; /* Cho phép cuộn ngang nếu quá nhiều tab */
+        overflow-x: auto;
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        height: 48px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         background-color: rgba(255, 255, 255, 0.05);
         border-radius: 12px;
         color: white;
         transition: all 0.3s;
         border: 1px solid transparent;
-        min-width: 120px; /* Độ rộng tối thiểu hợp lý */
+        min-width: 130px !important; /* Tăng thêm độ rộng tối thiểu */
+        width: auto !important; /* Cho phép tự giãn */
         padding: 0 20px !important;
         white-space: nowrap !important;
     }
 
+    .stTabs [data-baseweb="tab"] div,
     .stTabs [data-baseweb="tab"] p {
         font-size: 0.9rem !important;
         margin: 0 !important;
-        display: flex;
-        align-items: center;
-        gap: 8px; /* Khoảng cách giữa Icon và Chữ */
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
     }
 
     .stTabs [aria-selected="true"] {
