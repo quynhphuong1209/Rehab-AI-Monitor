@@ -3799,7 +3799,7 @@ def hien_thi_dang_nhap_dang_ky():
                 reg_e = st.text_input("📧 Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
                 reg_p = st.text_input("🔑 Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
                 reg_cp = st.text_input("✅ Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
-                st.info("💡 Hiện tại hệ thống chỉ hỗ trợ đăng ký tự động cho Bệnh nhân. Bác sĩ và Nghiên cứu viên vui lòng liên hệ Quản trị viên để nhận tài khoản.")
+                st.info("💡 Các tài khoản Bác sĩ và Nghiên cứu viên đã được khởi tạo theo danh sách. Để cấp thêm tài khoản mới, vui lòng liên hệ Quản trị viên.")
                 reg_role = st.selectbox("🎭 Vai trò người dùng *", ["Bệnh nhân"], key="reg_role", disabled=True)
                 
                 if st.button("🚀 ĐĂNG KÝ TRUY CẬP", use_container_width=True, type="primary"):
