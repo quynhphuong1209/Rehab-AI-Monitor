@@ -123,6 +123,25 @@ if not st.session_state.get('logged_in'):
 
 
 # ============================================
+# HÀM HỖ TRỢ ĐIỀU HƯỚNG TAB BẰNG JS
+# ============================================
+def chuyen_tab_bang_js(ten_tab):
+    """Sử dụng JavaScript để tự động click chuyển Tab trên giao diện Streamlit"""
+    js_code = f"""
+    <script>
+        var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+        for (var i = 0; i < tabs.length; i++) {{
+            if (tabs[i].innerText.includes("{ten_tab}")) {{
+                tabs[i].click();
+                break;
+            }}
+        }}
+    </script>
+    """
+    import streamlit.components.v1 as components
+    components.html(js_code, height=0, width=0)
+
+# ============================================
 # CẤU HÌNH TRANG
 # ============================================
 st.set_page_config(
@@ -3133,6 +3152,18 @@ def main():
                             st.balloons()
                             st.success(f"✅ Xử lý hoàn tất trong {process_time:.1f} giây!")
                             st.info(f"📊 Tổng số frame: {total_frames} | Hợp lệ: {valid_frames} frames | Độ chính xác: {metrics['ty_le_tong_the']:.1f}%")
+                            
+                            # === NÚT ĐIỀU HƯỚNG NHANH (SMART NAVIGATION) ===
+                            st.markdown("### 🎯 KẾT QUẢ ĐÃ SẴN SÀNG")
+                            st.write("Bạn có muốn xem kết quả chi tiết ngay không?")
+                            c_nav1, c_nav2 = st.columns(2)
+                            with c_nav1:
+                                if st.button("📊 XEM BÁO CÁO PHÂN TÍCH", use_container_width=True, type="primary"):
+                                    chuyen_tab_bang_js("PHÂN TÍCH")
+                            with c_nav2:
+                                if st.button("🎬 XEM VIDEO & ẢNH FRAME", use_container_width=True, type="primary"):
+                                    chuyen_tab_bang_js("VIDEO & ẢNH")
+                            st.markdown("---")
                             
                             # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
                             history_file = "lich_su_tap_luyen.json"
