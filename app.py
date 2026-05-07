@@ -2849,10 +2849,16 @@ def main():
     t_col1, t_col2 = st.columns([3, 1])
     
     with t_col2:
-        # Hiển thị thông tin user và nút đăng xuất trên cùng một hàng ngang ở góc phải
-        inner_c1, inner_c2 = st.columns([3, 2])
+        # Sử dụng tỷ lệ cột hẹp hơn và căn giữa theo chiều dọc
+        inner_c1, inner_c2 = st.columns([2, 1], vertical_alignment="center")
         with inner_c1:
-            st.markdown(f"<p style='margin-top: 10px; color: #ffd700;'>👤 <b>{st.session_state.user_info['username']}</b></p>", unsafe_allow_html=True)
+            # Thêm "Xin chào," và căn lề phải để sát nút Đăng xuất hơn
+            st.markdown(f"""
+            <div style="text-align: right; line-height: 1.2;">
+                <span style="color: #888; font-size: 0.85rem;">Xin chào,</span><br>
+                <span style="color: #ffd700; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
+            </div>
+            """, unsafe_allow_html=True)
         with inner_c2:
             if st.button("🚪 Đăng xuất", use_container_width=True):
                 if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
