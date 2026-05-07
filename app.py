@@ -289,37 +289,30 @@ THUMBNAIL_QUALITY = 90
 THUMBNAIL_WIDTH = 400
 
 # ============================================
-# HÀM CHUYỂN ĐỔI MOV SANG MP4 (NÂNG CẤP)
+# HÀM CHUYỂN ĐỔI MOV SANG MP4
 # ============================================
 def convert_mov_to_mp4(input_path):
-    output_path = input_path.rsplit('.', 1)[0] + '_converted.mp4'
+    output_path = input_path.replace('.mov', '.mp4').replace('.MOV', '.mp4')
     try:
-        # Kiểm tra ffmpeg có sẵn không
         result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
         if result.returncode != 0:
-            st.error("🚨 Lỗi: Hệ thống thiếu thư viện ffmpeg để xử lý video iPhone.")
             return input_path
         
-        # Chuyển đổi sang chuẩn H.264 ổn định nhất
-        cmd = [
-            'ffmpeg', '-y', '-i', input_path,
-            '-c:v', 'libx264',
-            '-c:a', 'aac',
-            '-pix_fmt', 'yuv420p',
-            '-preset', 'ultrafast',
-            '-crf', '28',
+        subprocess.run([
+            'ffmpeg', '-i', input_path,
+            '-vcodec', 'libx264',
+            '-acodec', 'aac',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-y',
             output_path
-        ]
+        ], check=True, capture_output=True, text=True, timeout=300)
         
-        process = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-        
-        if process.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+        if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
             return output_path
-        else:
-            st.warning(f"⚠️ Chuyển đổi video gặp sự cố nhỏ, đang thử dùng bản gốc...")
-            return input_path
+        return input_path
     except Exception as e:
-        st.error(f"❌ Lỗi kỹ thuật khi xử lý video: {e}")
+        print(f"Lỗi chuyển đổi MOV: {e}")
         return input_path
 
 # ============================================
@@ -3052,7 +3045,12 @@ def main():
             if file_size_mb > MAX_FILE_SIZE_MB:
                 st.error(f"❌ File quá lớn! {file_size_mb:.1f}MB > {MAX_FILE_SIZE_MB}MB")
             else:
-                st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.1f} MB)")
+                # Hiển thị KB nếu file quá nhỏ để hiện MB
+                if file_size_mb < 0.1:
+                    size_text = f"{file_upload.size/1024:.2f} KB"
+                else:
+                    size_text = f"{file_size_mb:.2f} MB"
+                st.success(f"✅ Đã chọn file: {file_upload.name} ({size_text})")
                 
                 if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", width='stretch'):
                     st.session_state.processing = True
@@ -3089,22 +3087,11 @@ def main():
                         progress_bar.progress(0.1)
                         
                         if is_mov:
-                            with st.spinner("🔄 Đang chuẩn hóa video iPhone (.mov) sang .mp4..."):
-                                converted_path = convert_mov_to_mp4(video_path)
-                                if converted_path != video_path:
-                                    # Xóa file .mov cũ để tiết kiệm dung lượng
-                                    try: os.unlink(video_path)
-                                    except: pass
-                                    video_path = converted_path
+                            status_text.info("🔄 Đang chuyển đổi MOV sang MP4...")
+                            converted_path = convert_mov_to_mp4(video_path)
+                            if converted_path != video_path:
+                                video_path = converted_path
                         
-                        # Kiểm tra OpenCV có đọc được file không trước khi bắt đầu
-                        test_cap = cv2.VideoCapture(video_path)
-                        if not test_cap.isOpened():
-                            st.error(f"❌ Lỗi: Hệ thống không thể đọc được file video này. Vui lòng thử quay video ngắn hơn hoặc dùng định dạng .mp4 chuẩn.")
-                            st.session_state.processing = False
-                            st.stop()
-                        test_cap.release()
-
                         progress_bar.progress(0.2)
                         status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
                         
