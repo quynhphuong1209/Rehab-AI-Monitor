@@ -2990,17 +2990,24 @@ def main():
         hien_thi_dang_nhap_dang_ky()
         return
 
+    # Callback xử lý đổi theme nhanh
+    def update_theme_callback():
+        st.session_state.theme = 'dark' if st.session_state.theme_toggle_top else 'light'
+
     # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
     # TOP BAR (LOGOUT) - Quay lại góc trên bên phải
     st.markdown('<div class="top-auth-container" style="margin-top: -50px; margin-bottom: 20px;">', unsafe_allow_html=True)
-    t_col1, t_col2 = st.columns([1.5, 3.5])
+    t_col1, t_col2 = st.columns([1.2, 3.8])
     
     with t_col2:
-        inner_c1, inner_c2, inner_c3 = st.columns([1.1, 1.5, 0.7], vertical_alignment="center")
+        inner_c1, inner_c2, inner_c3 = st.columns([1.2, 1.4, 0.8], vertical_alignment="center")
         with inner_c1:
-            # === CHẾ ĐỘ SÁNG/TỐI (THEME TOGGLE) - MỚI ===
-            is_dark = st.toggle("🌙 Tối", value=(st.session_state.theme == 'dark'), key="theme_toggle_top")
-            st.session_state.theme = 'dark' if is_dark else 'light'
+            # === CHẾ ĐỘ SÁNG/TỐI (THEME TOGGLE) - TỐI ƯU TỐC ĐỘ ===
+            current_theme = st.session_state.get('theme', 'dark')
+            label = "🌙 Tối" if current_theme == 'dark' else "☀️ Sáng"
+            st.toggle(label, value=(current_theme == 'dark'), 
+                      key="theme_toggle_top", 
+                      on_change=update_theme_callback)
             
         with inner_c2:
             st.markdown(f"""
