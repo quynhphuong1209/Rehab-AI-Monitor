@@ -3981,11 +3981,13 @@ def hien_thi_footer():
             font-size: 1.1rem;
         }}
         .footer-bottom {{
-            padding-top: 20px;
-            margin-top: 20px;
-            border-top: 1px solid {"rgba(0, 0, 0, 0.05)" if is_light else "rgba(255, 255, 255, 0.05)"};
-            font-size: 0.9rem;
-            color: {"#666" if is_light else "#888"};
+            padding-top: 25px;
+            margin-top: 25px;
+            border-top: 1px solid {"rgba(0, 0, 0, 0.1)" if is_light else "rgba(255, 255, 255, 0.1)"};
+            font-size: 1rem;
+            color: {"#000000" if is_light else "#ffffff"};
+            font-weight: bold;
+            letter-spacing: 0.5px;
         }}
         a {{ color: {f_title}; text-decoration: none; }}
         .school-name {{
@@ -4019,11 +4021,11 @@ def hien_thi_footer():
             </div>
         </div>
         <div class="footer-bottom">
-            Đơn vị phát triển: <b>CÔNG TY CỔ PHẦN GIẢI PHÁP NAM VIỆT</b> | © 2025 REHAB-AI-MONITOR
+            Đơn vị phát triển: <b>NHÓM NGHIÊN CỨU KHOA HỌC DỮ LIỆU, PHỤC HỒI CHỨC NĂNG VÀ Y TẾ CÔNG CỘNG</b> | © 2025 REHAB-AI-MONITOR
         </div>
     </div>
     """
-    st.components.v1.html(footer_html, height=500)
+    st.components.v1.html(footer_html, height=600)
 
 
 if __name__ == "__main__":
