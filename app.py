@@ -2610,6 +2610,30 @@ def hien_thi_tab_phan_tich():
                 </div>
                 """, unsafe_allow_html=True)
 
+        # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
+        if user_role == "Nghiên cứu viên":
+            st.markdown("---")
+            if st.button("📤 GỬI KẾT QUẢ TỔNG QUAN CHO BN & BÁC SĨ", key="btn_send_ai_overview", use_container_width=True, type="primary"):
+                v_meta = st.session_state.get('current_eval_video')
+                if v_meta:
+                    evals = load_data(EVALUATIONS_FILE)
+                    evals.append({
+                        "patient_username": v_meta['username'],
+                        "doctor_username": "AI_Researcher",
+                        "video_name": v_meta.get('video_name', 'N/A'),
+                        "exercise": v_meta['exercise'],
+                        "ai_accuracy": tk['do_chinh_xac'],
+                        "doctor_result": "AI Auto (Overview)",
+                        "errors": tk.get('warnings', []),
+                        "comments": f"NCV gửi báo cáo tổng quan. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
+                        "plan": "Bác sĩ vui lòng xem chi tiết tại tab PHÂN TÍCH.",
+                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
+                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                    })
+                    save_data(EVALUATIONS_FILE, evals)
+                    st.success(f"✅ Đã gửi báo cáo tổng quan của BN {v_meta['full_name']}!")
+                    st.balloons()
+
     # === TAB 2: PHÂN TÍCH KHỚP ===
     with tab_joint:
         st.markdown("#### 📈 BIỂU ĐỒ GÓC VAI")
@@ -2640,27 +2664,28 @@ def hien_thi_tab_phan_tich():
         except: pass
 
         # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
-        st.markdown("---")
-        if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="btn_send_ai_joint", use_container_width=True, type="primary"):
-            v_meta = st.session_state.get('current_eval_video')
-            if v_meta:
-                evals = load_data(EVALUATIONS_FILE)
-                evals.append({
-                    "patient_username": v_meta['username'],
-                    "doctor_username": "AI_Researcher",
-                    "video_name": v_meta.get('video_name', 'N/A'),
-                    "exercise": v_meta['exercise'],
-                    "ai_accuracy": tk['do_chinh_xac'],
-                    "doctor_result": "AI Auto (NCV)",
-                    "errors": tk.get('warnings', []),
-                    "comments": f"NCV đã phân tích và gửi kết quả AI. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
-                    "plan": "Chờ Bác sĩ/KTV đánh giá lâm sàng chi tiết.",
-                    "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
-                })
-                save_data(EVALUATIONS_FILE, evals)
-                st.success(f"✅ Đã gửi kết quả AI cho BN {v_meta['full_name']} & Bác sĩ!")
-                st.balloons()
+        if user_role == "Nghiên cứu viên":
+            st.markdown("---")
+            if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="btn_send_ai_joint", use_container_width=True, type="primary"):
+                v_meta = st.session_state.get('current_eval_video')
+                if v_meta:
+                    evals = load_data(EVALUATIONS_FILE)
+                    evals.append({
+                        "patient_username": v_meta['username'],
+                        "doctor_username": "AI_Researcher",
+                        "video_name": v_meta.get('video_name', 'N/A'),
+                        "exercise": v_meta['exercise'],
+                        "ai_accuracy": tk['do_chinh_xac'],
+                        "doctor_result": "AI Auto (NCV)",
+                        "errors": tk.get('warnings', []),
+                        "comments": f"NCV đã phân tích và gửi kết quả AI. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
+                        "plan": "Chờ Bác sĩ/KTV đánh giá lâm sàng chi tiết.",
+                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
+                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                    })
+                    save_data(EVALUATIONS_FILE, evals)
+                    st.success(f"✅ Đã gửi kết quả AI cho BN {v_meta['full_name']} & Bác sĩ!")
+                    st.balloons()
 
     # === TAB 3: NÂNG CAO (BOXPLOT) ===
     with tab_advanced:
@@ -2673,27 +2698,28 @@ def hien_thi_tab_phan_tich():
         except: pass
 
         # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
-        st.markdown("---")
-        if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="btn_send_ai_boxplot", use_container_width=True, type="primary"):
-            v_meta = st.session_state.get('current_eval_video')
-            if v_meta:
-                evals = load_data(EVALUATIONS_FILE)
-                evals.append({
-                    "patient_username": v_meta['username'],
-                    "doctor_username": "AI_Researcher",
-                    "video_name": v_meta.get('video_name', 'N/A'),
-                    "exercise": v_meta['exercise'],
-                    "ai_accuracy": tk['do_chinh_xac'],
-                    "doctor_result": "AI Auto (NCV)",
-                    "errors": tk.get('warnings', []),
-                    "comments": f"NCV gửi kết quả trích xuất ROM & Boxplot. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
-                    "plan": "Bác sĩ vui lòng xem biểu đồ ROM để đánh giá độ ổn định.",
-                    "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
-                })
-                save_data(EVALUATIONS_FILE, evals)
-                st.success(f"✅ Đã gửi báo cáo AI cho BN {v_meta['full_name']} & Bác sĩ!")
-                st.balloons()
+        if user_role == "Nghiên cứu viên":
+            st.markdown("---")
+            if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="btn_send_ai_boxplot", use_container_width=True, type="primary"):
+                v_meta = st.session_state.get('current_eval_video')
+                if v_meta:
+                    evals = load_data(EVALUATIONS_FILE)
+                    evals.append({
+                        "patient_username": v_meta['username'],
+                        "doctor_username": "AI_Researcher",
+                        "video_name": v_meta.get('video_name', 'N/A'),
+                        "exercise": v_meta['exercise'],
+                        "ai_accuracy": tk['do_chinh_xac'],
+                        "doctor_result": "AI Auto (NCV)",
+                        "errors": tk.get('warnings', []),
+                        "comments": f"NCV gửi kết quả trích xuất ROM & Boxplot. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
+                        "plan": "Bác sĩ vui lòng xem biểu đồ ROM để đánh giá độ ổn định.",
+                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
+                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                    })
+                    save_data(EVALUATIONS_FILE, evals)
+                    st.success(f"✅ Đã gửi báo cáo AI cho BN {v_meta['full_name']} & Bác sĩ!")
+                    st.balloons()
 
     # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
     with tab_clinical:
@@ -2748,6 +2774,30 @@ def hien_thi_tab_phan_tich():
             st.dataframe(pd.DataFrame(evals), use_container_width=True)
         else:
             st.info("Chưa có dữ liệu đánh giá lâm sàng.")
+
+        # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
+        if user_role == "Nghiên cứu viên":
+            st.markdown("---")
+            if st.button("📤 XÁC NHẬN NHẬN ĐỊNH LÂM SÀNG & GỬI", key="btn_send_ai_clinical", use_container_width=True, type="primary"):
+                v_meta = st.session_state.get('current_eval_video')
+                if v_meta:
+                    evals = load_data(EVALUATIONS_FILE)
+                    evals.append({
+                        "patient_username": v_meta['username'],
+                        "doctor_username": "AI_Researcher",
+                        "video_name": v_meta.get('video_name', 'N/A'),
+                        "exercise": v_meta['exercise'],
+                        "ai_accuracy": tk['do_chinh_xac'],
+                        "doctor_result": "AI Auto (Clinical)",
+                        "errors": tk.get('warnings', []),
+                        "comments": f"NCV xác nhận nhận định lâm sàng từ AI. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
+                        "plan": "Tiếp tục theo dõi quá trình phục hồi dựa trên các chỉ số AI.",
+                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
+                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                    })
+                    save_data(EVALUATIONS_FILE, evals)
+                    st.success(f"✅ Đã gửi nhận định lâm sàng của BN {v_meta['full_name']}!")
+                    st.balloons()
 
         st.markdown("---")
         st.markdown("### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU (RESEARCH EVALUATION)")
@@ -2836,6 +2886,30 @@ def hien_thi_tab_phan_tich():
                     st.download_button("✅ Click để tải ZIP", zip_buffer, "bieu_do_lam_sang.zip", "application/zip", use_container_width=True)
                 except Exception as e:
                     st.error(f"❌ Lỗi: {e}. Vui lòng cài đặt: pip install -U kaleido")
+        
+        # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
+        if user_role == "Nghiên cứu viên":
+            st.markdown("---")
+            if st.button("📤 GỬI BÁO CÁO TỔNG HỢP CHO BN & BÁC SĨ", key="btn_send_ai_export", use_container_width=True, type="primary"):
+                v_meta = st.session_state.get('current_eval_video')
+                if v_meta:
+                    evals = load_data(EVALUATIONS_FILE)
+                    evals.append({
+                        "patient_username": v_meta['username'],
+                        "doctor_username": "AI_Researcher",
+                        "video_name": v_meta.get('video_name', 'N/A'),
+                        "exercise": v_meta['exercise'],
+                        "ai_accuracy": tk['do_chinh_xac'],
+                        "doctor_result": "AI Auto (Full)",
+                        "errors": tk.get('warnings', []),
+                        "comments": f"NCV đã hoàn tất toàn bộ phân tích và xuất báo cáo. Độ chính xác cuối cùng: {tk['do_chinh_xac']:.1f}%",
+                        "plan": "Đề nghị Bác sĩ xem xét kết quả tổng hợp để kết luận quá trình tập luyện.",
+                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
+                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                    })
+                    save_data(EVALUATIONS_FILE, evals)
+                    st.success(f"✅ Đã gửi báo cáo tổng hợp của BN {v_meta['full_name']}!")
+                    st.balloons()
 def hien_thi_tab_huong_dan():
     st.markdown("## 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG")
     st.markdown("""
@@ -3112,6 +3186,10 @@ def hien_thi_ket_qua_cho_benh_nhan():
         st.markdown("---")
         st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
         hien_thi_tab_phan_tich()
+        
+        st.markdown("---")
+        st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
+        hien_thi_frames_day_du()
 
 def hien_thi_tab_khai_bao_trieu_chung():
     st.markdown("## 🩺 KHAI BÁO TRIỆU CHỨNG & CẢM NHẬN")
@@ -3410,6 +3488,29 @@ def hien_thi_frames_day_du():
         if st.session_state.get('processed_video_path'):
             with open(st.session_state.processed_video_path, "rb") as f:
                 st.download_button("📥 Tải video xuống", f, "processed_video.mp4", "video/mp4", use_container_width=True)
+        
+        # NÚT GỬI TRONG TAB VIDEO (DÀNH CHO NCV)
+        if user_role == "Nghiên cứu viên":
+            if st.button("📤 GỬI VIDEO TRÍCH XUẤT CHO BN & BÁC SĨ", key="btn_send_ai_video", use_container_width=True, type="primary"):
+                v_meta = st.session_state.get('current_eval_video')
+                if v_meta:
+                    evals = load_data(EVALUATIONS_FILE)
+                    evals.append({
+                        "patient_username": v_meta['username'],
+                        "doctor_username": "AI_Researcher",
+                        "video_name": v_meta.get('video_name', 'N/A'),
+                        "exercise": v_meta['exercise'],
+                        "ai_accuracy": st.session_state.get('stats', {}).get('do_chinh_xac', 0),
+                        "doctor_result": "AI Video Sent",
+                        "errors": [],
+                        "comments": f"NCV gửi video đã trích xuất khung xương để BN & Bác sĩ đối chiếu.",
+                        "plan": "Vui lòng xem video trích xuất tại tab KẾT QUẢ.",
+                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
+                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                    })
+                    save_data(EVALUATIONS_FILE, evals)
+                    st.success(f"✅ Đã gửi video trích xuất của BN {v_meta['full_name']}!")
+                    st.balloons()
 
     st.markdown("---")
     
