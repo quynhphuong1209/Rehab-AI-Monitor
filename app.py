@@ -3396,6 +3396,10 @@ def main():
                             st.write(f"**Tuổi:** {s['age']} | **GT:** {s['gender']}")
                             st.info(f"**Triệu chứng:** {s['symptoms']}")
                             st.warning(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
+                            if st.button("🗑️ Xóa tin này", key=f"del_symp_{idx}"):
+                                symptoms_data.pop(len(symptoms_data)-1-idx) # pop đúng index do đang dùng reversed
+                                save_data(SYMPTOMS_FILE, symptoms_data)
+                                st.rerun()
                 else:
                     st.info("Chưa có BN gửi thông tin.")
 
@@ -3755,6 +3759,17 @@ def main():
                                 if st.button("📝 Đánh giá video này", key=f"eval_btn_{idx}", use_container_width=True):
                                     st.session_state.current_eval_video = v
                                     chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
+                                
+                                if st.button("🗑️ Xóa video này", key=f"del_video_{idx}", use_container_width=True):
+                                    # Xóa file thực tế
+                                    if os.path.exists(v['video_path']):
+                                        try: os.remove(v['video_path'])
+                                        except: pass
+                                    
+                                    video_list.pop(idx)
+                                    save_data(VIDEOS_FILE, video_list)
+                                    st.success("✅ Đã xóa thành công!")
+                                    st.rerun()
 
             # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
             st.markdown("---")
