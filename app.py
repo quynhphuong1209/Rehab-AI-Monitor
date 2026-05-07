@@ -3416,6 +3416,9 @@ def main():
             color: #ccc;
             font-family: 'Times New Roman', Times, serif;
             text-align: center;
+            border-top: 4px solid #00c6ff;
+            box-shadow: 0 -10px 20px rgba(0, 198, 255, 0.2);
+            margin-top: 60px;
         }}
         .footer-container {{
             display: flex;
