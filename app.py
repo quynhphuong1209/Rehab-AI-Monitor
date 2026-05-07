@@ -3183,19 +3183,24 @@ def hien_thi_dang_nhap_dang_ky():
             
             with t_login:
                 st.markdown("<br>", unsafe_allow_html=True)
+                login_role = st.selectbox("🎭 Đăng nhập với vai trò:", ["Bệnh nhân", "Bác sĩ / KTV PHCN", "Nghiên cứu viên"], key="login_role")
                 u = st.text_input("👤 Tên đăng nhập", placeholder="Nhập tên tài khoản", key="login_u")
                 p = st.text_input("🔑 Mật khẩu", type="password", placeholder="Nhập mật khẩu", key="login_p")
+                
                 if st.button("🚀 ĐĂNG NHẬP NGAY", use_container_width=True, type="primary"):
                     users = load_users()
                     if u in users and verify_password(p, users[u]['password']):
-                        st.session_state.logged_in = True
-                        st.session_state.user_info = {
-                            "username": u, 
-                            "email": users[u].get('email'),
-                            "role": users[u].get('role', 'Bệnh nhân')
-                        }
-                        st.session_state.show_login_dialog = False
-                        st.rerun()
+                        if users[u].get('role', 'Bệnh nhân') == login_role:
+                            st.session_state.logged_in = True
+                            st.session_state.user_info = {
+                                "username": u, 
+                                "email": users[u].get('email'),
+                                "role": users[u].get('role', 'Bệnh nhân')
+                            }
+                            st.session_state.show_login_dialog = False
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Tài khoản này không có quyền truy cập với vai trò {login_role}")
                     else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
                 
                 if st.button("❓ Bạn quên mật khẩu?", use_container_width=True, type="secondary"):
