@@ -2701,7 +2701,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
         if user_role == "Nghiên cứu viên":
             st.markdown("---")
-            if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="btn_send_ai_boxplot", use_container_width=True, type="primary"):
+            if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key=f"btn_send_ai_boxplot_{key_suffix}", use_container_width=True, type="primary"):
                 v_meta = st.session_state.get('current_eval_video')
                 if v_meta:
                     evals = load_data(EVALUATIONS_FILE)
@@ -2872,7 +2872,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         
         with col_z:
             st.markdown("#### 🖼️ Hình ảnh & Biểu đồ")
-            if st.button("📸 Tải xuống tất cả Biểu đồ (ZIP)", use_container_width=True):
+            if st.button("📸 Tải xuống tất cả Biểu đồ (ZIP)", use_container_width=True, key=f"btn_zip_prep_{key_suffix}"):
                 try:
                     import zipfile
                     from io import BytesIO
@@ -3564,7 +3564,7 @@ def hien_thi_frames_day_du(key_suffix=""):
     with col4:
         st.write("")
         st.write("")
-        if st.button("🔄 Làm mới", width='stretch', key="refresh_thumbnails"):
+        if st.button("🔄 Làm mới", width='stretch', key=f"refresh_thumbnails_{key_suffix}"):
             st.cache_data.clear()
             st.rerun()
     
@@ -3620,7 +3620,7 @@ def hien_thi_frames_day_du(key_suffix=""):
     col_prev, col_page, col_next, col_info = st.columns([1, 2, 1, 2])
     
     with col_prev:
-        if st.button("◀ Trang trước", width='stretch', key="prev_button"):
+        if st.button("◀ Trang trước", width='stretch', key=f"prev_button_{key_suffix}"):
             st.session_state.btn_prev = True
             st.rerun()
     
@@ -3633,7 +3633,7 @@ def hien_thi_frames_day_du(key_suffix=""):
             st.rerun()
     
     with col_next:
-        if st.button("Trang sau ▶", width='stretch', key="next_button"):
+        if st.button("Trang sau ▶", width='stretch', key=f"next_button_{key_suffix}"):
             st.session_state.btn_next = True
             st.rerun()
     
