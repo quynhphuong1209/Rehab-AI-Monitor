@@ -552,7 +552,7 @@ def hien_thi_tab_huong_dan():
 # ============================================
 # HÀM HIỂN THỊ TAB: PHẢN HỒI (MỚI)
 # ============================================
-def hien_thi_tab_phan_hoi():
+def hien_thi_tab_phan_hoi(suffix="default"):
     """Giao diện cộng đồng: Góp ý và hiển thị bình luận công khai"""
     st.markdown("### 💬 CỘNG ĐỒNG REHAB-AI: GÓP Ý & THẢO LUẬN")
     
@@ -570,7 +570,7 @@ def hien_thi_tab_phan_hoi():
     
     with col_f1:
         st.markdown("#### 📮 Để lại ý kiến của bạn")
-        with st.form("feedback_form", clear_on_submit=True):
+        with st.form(f"feedback_form_{suffix}", clear_on_submit=True):
             default_name = st.session_state.user_info.get('username', '') if st.session_state.user_info else ''
             user_name = st.text_input("Tên của bạn", value=default_name)
             user_msg = st.text_area("Nội dung góp ý/thảo luận")
@@ -3249,7 +3249,7 @@ def hien_thi_giao_dien_benh_nhan():
     with tabs[6]: hien_thi_tab_cong_nghe()
     with tabs[7]: hien_thi_tab_NCKH()
     with tabs[8]: hien_thi_tab_thanh_vien()
-    with tabs[9]: hien_thi_tab_phan_hoi()
+    with tabs[9]: hien_thi_tab_phan_hoi(suffix="p")
     
     hien_thi_footer()
 
@@ -3282,7 +3282,7 @@ def hien_thi_giao_dien_bac_si():
     with tabs[6]: hien_thi_tab_cong_nghe()
     with tabs[7]: hien_thi_tab_NCKH()
     with tabs[8]: hien_thi_tab_thanh_vien()
-    with tabs[9]: hien_thi_tab_phan_hoi()
+    with tabs[9]: hien_thi_tab_phan_hoi(suffix="d")
     
     hien_thi_footer()
 
@@ -3320,23 +3320,11 @@ def hien_thi_form_danh_gia_bac_si():
 
 def hien_thi_giao_dien_nghien_cuu_vien():
     with st.sidebar:
-        st.markdown("### 📋 THÔNG TIN NGHIÊN CỨU")
-        st.text_input("Họ và tên bệnh nhân", key="ncv_p_name")
-        st.text_input("Mã số bệnh nhân", key="ncv_p_id")
-        col1, col2 = st.columns(2)
-        with col1: st.number_input("Tuổi", 0, 120, 22, key="ncv_p_age")
-        with col2: st.selectbox("Giới tính", ["Nam", "Nữ"], key="ncv_p_gender")
-        
-        st.markdown("### 🎯 CHỌN BÀI TẬP")
-        ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), 
-                                 format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
-                                 key="ncv_exercise")
-        bai_tap = BAI_TAP[ma_bai_tap]
-        st.video(bai_tap["youtube"])
-        
-        st.markdown("---")
+        st.markdown("### 📋 THÔNG TIN ĐỀ TÀI")
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
+        st.markdown("---")
+        st.info("💡 Chế độ Nghiên cứu viên cho phép truy cập đầy đủ các công cụ phân tích và dữ liệu thô.")
 
     tabs = st.tabs([
         "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", 
@@ -3344,7 +3332,27 @@ def hien_thi_giao_dien_nghien_cuu_vien():
         "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
     ])
     
-    with tabs[0]: hien_thi_tab_trang_chu_benh_nhan(bai_tap)
+    with tabs[0]: 
+        with st.expander("🎯 THIẾT LẬP BÀI TẬP NGHIÊN CỨU", expanded=False):
+            ma_bai_tap = st.selectbox("Chọn bài tập nghiên cứu", list(BAI_TAP.keys()), 
+                                     format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
+                                     key="ncv_exercise_main")
+            bai_tap = BAI_TAP[ma_bai_tap]
+            
+            col_v1, col_v2 = st.columns([2, 1])
+            with col_v1:
+                st.video(bai_tap["youtube"])
+            with col_v2:
+                st.markdown(f"""
+                <div style="background: rgba(255,215,0,0.1); padding: 1rem; border-radius: 10px; border: 1px solid #ffd700;">
+                    <h4 style="margin:0; color: #ffd700;">{bai_tap['icon']} {bai_tap['ten']}</h4>
+                    <p style="font-size: 0.8rem; margin-top: 5px;">{bai_tap['mo_ta']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        hien_thi_tab_trang_chu_benh_nhan(bai_tap)
+    
     with tabs[1]: hien_thi_tab_phan_tich()
     with tabs[2]: hien_thi_tab_video_anh()
     with tabs[3]: hien_thi_tab_huong_dan()
@@ -3353,7 +3361,7 @@ def hien_thi_giao_dien_nghien_cuu_vien():
     with tabs[6]: hien_thi_tab_cong_nghe()
     with tabs[7]: hien_thi_tab_NCKH()
     with tabs[8]: hien_thi_tab_thanh_vien()
-    with tabs[9]: hien_thi_tab_phan_hoi()
+    with tabs[9]: hien_thi_tab_phan_hoi(suffix="r")
     
     hien_thi_footer()
 
