@@ -154,25 +154,15 @@ st.markdown("""
         display: block !important;
     }
     
-    /* 3. Force ẩn mọi text icon hệ thống bị rò rỉ (keyboard_double, arrow_forward, etc.) */
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] button div,
-    [data-testid="stExpander"] span,
-    .st-emotion-cache-1p6n6q3,
-    .st-emotion-cache-16idsys {
-        color: transparent !important;
-        font-size: 0 !important;
-        line-height: 0 !important;
-        visibility: hidden !important;
+    /* 3. Cách an toàn: Chỉ ẩn các icon lỗi mà không ẩn tiêu đề */
+    .st-emotion-cache-1p6n6q3, .st-emotion-cache-16idsys {
         display: none !important;
     }
-
-    /* 4. Đảm bảo các Icon trong Tab vẫn hiện (vì chúng ta dùng tab-list riêng) */
-    .stTabs [data-baseweb="tab"] * {
-        color: white !important;
-        font-size: 0.9rem !important;
-        visibility: visible !important;
-        display: flex !important;
+    
+    /* Nhắm vào nút đóng/mở sidebar để ẩn chữ keyboard_double */
+    [data-testid="stSidebarCollapseButton"] span {
+        font-size: 0 !important;
+        color: transparent !important;
     }
 
     /* === LOGIN UI CREATIVE DESIGN === */
