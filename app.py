@@ -3390,7 +3390,7 @@ def main():
                 if symptoms_data:
                     # Sắp xếp theo thời gian mới nhất (cần chuyển string time thành datetime nếu muốn chuẩn, 
                     # nhưng hiện tại format "H:M - d/m/Y" có thể sort đảo ngược string hoặc dùng index)
-                    for s in reversed(symptoms_data[-5:]): # Lấy 5 người mới nhất
+                    for idx, s in enumerate(reversed(symptoms_data[-5:])): # Lấy 5 người mới nhất
                         with st.expander(f"👤 {s['full_name']}"):
                             st.caption(f"🕒 {s['time']}")
                             st.write(f"**Tuổi:** {s['age']} | **GT:** {s['gender']}")
