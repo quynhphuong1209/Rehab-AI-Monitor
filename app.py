@@ -156,7 +156,16 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === LOGIN CARD STYLING === */
+    /* === SỬA LỖI CHỮ ĐÈ (AN TOÀN) === */
+    /* Ẩn chữ arrow trong Expander và chữ upload trong bộ tải file */
+    [data-testid="stExpander"] summary span > span,
+    [data-testid="stFileUploader"] section span > span {
+        color: transparent !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        visibility: hidden !important;
+        position: absolute !important;
+    }
     [data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.04) !important;
         border-radius: 20px !important;
