@@ -2661,7 +2661,7 @@ def hien_thi_lich_nhac_nho():
     
     with tab_lich4:
         st.subheader("➕ Thêm lịch nhắc nhở mới")
-        loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True)
+        loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True, key=f"reminder_type_{st.session_state.user_info.get('role', 'NCV')}")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -3072,6 +3072,21 @@ def render_top_bar():
     </div>
     """, unsafe_allow_html=True)
 
+def hien_thi_tab_trang_chu_benh_nhan(bai_tap):
+    is_light = st.session_state.theme == 'light'
+    info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
+    info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
+    info_text = "#000" if is_light else "#fff"
+
+    col1, col2 = st.columns([2,1])
+    with col1:
+        st.markdown(f"""
+        <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
+            <h3>{bai_tap['icon']} {bai_tap['ten']}</h3>
+            <p>{bai_tap['mo_ta']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
 def main():
     if not st.session_state.logged_in:
         hien_thi_dang_nhap_dang_ky()
@@ -3079,7 +3094,6 @@ def main():
 
     render_top_bar()
 
-    # Router dựa trên vai trò người dùng
     role = st.session_state.user_info.get('role', 'Nghiên cứu viên')
     
     if role == "Bệnh nhân":
@@ -3089,9 +3103,6 @@ def main():
     else:
         hien_thi_giao_dien_nghien_cuu_vien()
 
-# ============================================
-# GIAO DIỆN BỆNH NHÂN
-# ============================================
 def hien_thi_giao_dien_benh_nhan():
     with st.sidebar:
         st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
