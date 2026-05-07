@@ -133,14 +133,13 @@ st.markdown("""
     /* 1. Nhắm vào mọi thẻ span chứa văn bản icon trong Expander và File Uploader */
     [data-testid="stExpander"] summary span > span,
     [data-testid="stExpander"] summary svg + span,
-    [data-testid="stFileUploader"] section span > span {
+    [data-testid="stFileUploader"] section span > span,
+    /* Ẩn các class cache nhưng trừ phần Tab ra */
+    div:not([data-baseweb="tab"]) > .st-emotion-cache-1p6n6q3,
+    div:not([data-baseweb="tab"]) > .st-emotion-cache-16idsys {
         display: none !important;
         visibility: hidden !important;
         font-size: 0 !important;
-        line-height: 0 !important;
-        color: transparent !important;
-        width: 0 !important;
-        height: 0 !important;
     }
 
     /* 2. Đảm bảo các tiêu đề chính vẫn hiện rõ */
@@ -152,8 +151,8 @@ st.markdown("""
         display: block !important;
     }
     
-    /* 3. Force ẩn mọi text có nội dung là arrow_... */
-    span:empty, span:contains("arrow_"), span:contains("upload") {
+    /* 3. Force ẩn mọi text có nội dung là arrow_... hoặc keyboard_... */
+    span:empty, span:contains("arrow_"), span:contains("upload"), span:contains("keyboard_") {
         display: none !important;
     }
 
@@ -170,12 +169,12 @@ st.markdown("""
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: transparent;
+        overflow-x: auto; /* Cho phép cuộn ngang nếu quá nhiều tab */
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 75px; /* Tăng chiều cao để hiện cả Icon và Chữ */
+        height: 50px;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
         background-color: rgba(255, 255, 255, 0.05);
@@ -183,14 +182,17 @@ st.markdown("""
         color: white;
         transition: all 0.3s;
         border: 1px solid transparent;
-        min-width: 90px; /* Đảm bảo không bị quá hẹp */
-        padding: 5px !important;
+        min-width: 120px; /* Độ rộng tối thiểu hợp lý */
+        padding: 0 20px !important;
+        white-space: nowrap !important;
     }
 
     .stTabs [data-baseweb="tab"] p {
-        font-size: 0.85rem !important;
-        margin-top: 5px !important;
-        white-space: nowrap;
+        font-size: 0.9rem !important;
+        margin: 0 !important;
+        display: flex;
+        align-items: center;
+        gap: 8px; /* Khoảng cách giữa Icon và Chữ */
     }
 
     .stTabs [aria-selected="true"] {
