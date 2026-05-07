@@ -2827,8 +2827,6 @@ def hien_thi_ket_qua_cho_benh_nhan():
         
         st.markdown("---")
         st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
-        st.markdown("---")
-        st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
         hien_thi_tab_phan_tich()
 
 def hien_thi_tab_khai_bao_trieu_chung():
@@ -3803,7 +3801,17 @@ def main():
                                                     # Lưu vào session state để hiển thị ngay
                                                     st.session_state.has_data = True
                                                     st.session_state.angle_df = df
-                                                    st.session_state.stats = { "do_chinh_xac": metrics["ty_le_tong_the"], "thoi_gian": 0, "tong_frame": total_frames, "tong_frame_hop_le": valid_frames } # Rút gọn
+                                                    st.session_state.stats = { 
+                                                        "do_chinh_xac": metrics["ty_le_tong_the"], 
+                                                        "thoi_gian": 0, 
+                                                        "tong_frame": total_frames, 
+                                                        "tong_frame_hop_le": valid_frames,
+                                                        "frame_dung": metrics["frame_dung"],
+                                                        "frame_gan_dung": metrics["frame_gan_dung"],
+                                                        "tb_goc_vai": metrics.get("tb_goc_vai", 0),
+                                                        "tb_goc_khuyu": metrics.get("tb_goc_khuyu", 0),
+                                                        "icc": metrics.get("icc", 0)
+                                                    }
                                                     st.session_state.all_frames_data_path = all_frames_data
                                                     
                                                     st.success("✅ Phân tích hoàn tất!")
