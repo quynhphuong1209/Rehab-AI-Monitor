@@ -82,11 +82,13 @@ def hash_password(password):
 def verify_password(password, hashed):
     return hash_password(password) == hashed
 
-# Khởi tạo trạng thái đăng nhập
+# Khởi tạo trạng thái đăng nhập và giao diện
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'user_info' not in st.session_state:
     st.session_state.user_info = None
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'dark' # Mặc định là giao diện tối cao cấp
 if 'forgot_password_mode' not in st.session_state:
     st.session_state.forgot_password_mode = False
 if 'show_login_dialog' not in st.session_state:
@@ -155,87 +157,89 @@ st.set_page_config(
 # ============================================
 # CSS CUSTOM - GIAO DIỆN HIỆN ĐẠI
 # ============================================
-st.markdown("""
-<style>
-    /* === SỬA LỖI CHỮ RÁC ICON (TRIỆT ĐỂ) === */
-    button[data-testid="stSidebarCollapseButton"] span,
-    [data-testid="stExpander"] summary span > span,
-    [data-testid="stFileUploader"] section span > span,
-    .stIconMaterial {
-        display: none !important;
-        color: transparent !important;
-        font-size: 0 !important;
-    }
+# ============================================
+# CSS CUSTOM - GIAO DIỆN HIỆN ĐẠI (DYNAMIC THEME)
+# ============================================
+is_dark = st.session_state.theme == 'dark'
+
+# Định nghĩa các biến màu sắc theo chế độ
+if is_dark:
+    bg_color = "#0d0d1a"
+    text_color = "#ffffff"
+    glass_bg = "rgba(255, 255, 255, 0.04)"
+    glass_border = "rgba(255, 255, 255, 0.1)"
+    card_bg = "rgba(26, 26, 46, 0.8)"
+    sidebar_bg = "#0d0d1a"
+    tab_bg = "rgba(255, 255, 255, 0.05)"
+    metric_card_bg = "rgba(255, 255, 255, 0.05)"
+    input_bg = "rgba(255, 255, 255, 0.05)"
+    input_text = "white"
+    shadow = "0 10px 30px rgba(0, 0, 0, 0.5)"
+else:
+    bg_color = "#f8fafc"
+    text_color = "#1e293b"
+    glass_bg = "rgba(255, 255, 255, 0.8)"
+    glass_border = "rgba(0, 0, 0, 0.1)"
+    card_bg = "#ffffff"
+    sidebar_bg = "#ffffff"
+    tab_bg = "#f1f5f9"
+    metric_card_bg = "#ffffff"
+    input_bg = "#ffffff"
+    input_text = "#1e293b"
+    shadow = "0 10px 30px rgba(0, 0, 0, 0.05)"
+
+    /* === CÁC THÀNH PHẦN KHÁC === */
+    .info-box, .metric-card, .lecturer-card, .member-card, .warning-box {{
+        background: {card_bg} !important;
+        border: 1px solid {glass_border} !important;
+        color: {text_color} !important;
+        padding: 1.5rem !important;
+        border-radius: 16px !important;
+        box-shadow: {shadow} !important;
+        margin-bottom: 1rem !important;
+    }}
     
-    /* Ẩn text rác hiện ra khi lỗi font Material */
-    .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
-        display: none !important;
-    }
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(255, 255, 255, 0.04) !important;
+    .info-box h3, .metric-card h4, .lecturer-name, .member-name {{
+        color: {'#ffd700' if is_dark else '#0072ff'} !important;
+    }}
+
+    .main-header {{
+        background: {card_bg} !important;
+        padding: 2rem !important;
         border-radius: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
-        padding: 25px !important;
-    }
+        text-align: center !important;
+        margin-bottom: 2rem !important;
+        border: 1px solid {glass_border} !important;
+        box-shadow: {shadow} !important;
+    }}
     
-    .stTextInput input {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 10px !important;
-        color: white !important;
-    }
-    
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: transparent;
-        overflow-x: auto;
-    }
+    .main-header h1 {{ color: {'#ffffff' if is_dark else '#0f172a'} !important; font-size: 1.8rem !important; margin: 0 !important; }}
+    .main-header p {{ color: {'#aaa' if is_dark else '#475569'} !important; margin: 0.5rem 0 0 0 !important; }}
 
-    .stTabs [data-baseweb="tab"] {
-        height: 48px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        background-color: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        color: white;
-        transition: all 0.3s;
-        border: 1px solid transparent;
-        min-width: 130px !important; /* Tăng thêm độ rộng tối thiểu */
-        width: auto !important; /* Cho phép tự giãn */
-        padding: 0 20px !important;
-        white-space: nowrap !important;
-    }
-
-    .stTabs [data-baseweb="tab"] div,
-    .stTabs [data-baseweb="tab"] p {
-        font-size: 0.9rem !important;
-        margin: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 8px !important;
-    }
-
-    .stTabs [aria-selected="true"] {
+    .stButton > button {{
         background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
-        border: 1px solid #00c6ff !important;
-        box-shadow: 0 0 15px rgba(0, 198, 255, 0.4);
-    }
-
-    /* ĐẨY GIAO DIỆN LÊN CAO TỐI ĐA */
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 0rem !important;
-    }
+        color: white !important;
+        border-radius: 30px !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease !important;
+        border: none !important;
+        padding: 0.5rem 2rem !important;
+    }}
     
-    .top-auth-container {
-        margin-top: -30px;
-        margin-bottom: 10px;
-    }
+    .stButton > button:hover {{
+        transform: scale(1.05) !important;
+        box-shadow: 0 5px 15px rgba(0, 198, 255, 0.4) !important;
+    }}
 
-    .google-btn {
+    /* ĐỐI VỚI LIGHT MODE - ĐẢM BẢO KHÔNG CÒN MÀU ĐEN */
+    {'/* Light Mode Specific */' if not is_dark else ''}
+    {'h1, h2, h3, h4, h5, h6, p, span, li, label, div { color: #1e293b !important; }' if not is_dark else ''}
+    
+    /* ẨN ICON LỖI */
+    .stIconMaterial {{ display: none !important; }}
+</style>
+
+    .google-btn {{
         display: flex;
         align-items: center;
         justify-content: center;
@@ -249,13 +253,30 @@ st.markdown("""
         border: none;
         width: 100%;
         margin-top: 10px;
-    }
+    }}
     
-    .google-btn:hover {
+    .google-btn:hover {{
         background: #f1f1f1;
         box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
         transform: translateY(-2px);
-    }
+    }}
+    
+    /* Đảm bảo text luôn hiển thị đúng trên nền sáng */
+    h1, h2, h3, h4, h5, h6, p, li, span {{
+        color: {text_color} !important;
+    }}
+    
+    /* Override cho các badge nghiên cứu */
+    .research-badge {{
+        background: {'rgba(255, 215, 0, 0.1)' if is_dark else 'rgba(0, 114, 255, 0.1)'} !important;
+        border: 1px solid {'#ffd700' if is_dark else '#0072ff'} !important;
+        color: {'#ffd700' if is_dark else '#0072ff'} !important;
+        padding: 5px 15px !important;
+        border-radius: 30px !important;
+        display: inline-block !important;
+        margin: 10px 0 !important;
+        font-weight: bold !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -385,7 +406,12 @@ def hien_thi_tab_tien_trien():
         z_data = [[1, 1, 0, 1, 1, 1, 1], [1, 1, 1, 1, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0.5, 1, 1, 1]]
         fig_heat = ff.create_annotated_heatmap(z=z_data, x=['T2','T3','T4','T5','T6','T7','CN'], y=['W1','W2','W3','W4'], 
                                               colorscale='Viridis', showscale=False)
-        fig_heat.update_layout(height=200, margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor='rgba(0,0,0,0)')
+        fig_heat.update_layout(
+            height=200, 
+            margin=dict(l=20, r=20, t=30, b=20), 
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color=text_color
+        )
         st.plotly_chart(fig_heat, use_container_width=True)
     else:
         # CHẾ ĐỘ DỮ LIỆU THẬT
@@ -410,7 +436,13 @@ def hien_thi_tab_tien_trien():
         st.markdown("#### 📉 BIỂU ĐỒ TĂNG TRƯỞNG HIỆU SUẤT")
         fig_real = px.line(df_hist, x='ngay', y='accuracy', color='bai_tap', markers=True,
                           title="Sự thay đổi độ chính xác qua các lần tập")
-        fig_real.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='white')
+        fig_real.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)', 
+            font_color=text_color,
+            xaxis=dict(gridcolor=glass_border),
+            yaxis=dict(gridcolor=glass_border)
+        )
         st.plotly_chart(fig_real, use_container_width=True)
         
         # 3. Bảng lịch sử chi tiết
@@ -1330,13 +1362,14 @@ def ve_bieu_do_goc_vai(df, bt):
         yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)',
                    range=[0, 180]),
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(26,26,46,0.9)',
+        paper_bgcolor=card_bg,
+        font_color=text_color,
         hovermode='x unified',
         legend=dict(
             bgcolor='rgba(0,0,0,0.5)',
-            bordercolor='white',
+            bordercolor=text_color,
             borderwidth=1,
-            font=dict(color='white', size=12)
+            font=dict(color=text_color, size=12)
         ),
         margin=dict(l=50, r=50, t=70, b=50)
     )
@@ -1381,13 +1414,14 @@ def ve_bieu_do_goc_khuyu(df, bt):
         yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)',
                    range=[0, 180]),
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(26,26,46,0.9)',
+        paper_bgcolor=card_bg,
+        font_color=text_color,
         hovermode='x unified',
         legend=dict(
             bgcolor='rgba(0,0,0,0.5)',
-            bordercolor='white',
+            bordercolor=text_color,
             borderwidth=1,
-            font=dict(color='white', size=12)
+            font=dict(color=text_color, size=12)
         ),
         margin=dict(l=50, r=50, t=70, b=50)
     )
@@ -1426,7 +1460,8 @@ def ve_bieu_do_histogram(df, bt):
             x=0.5
         ),
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(26,26,46,0.9)',
+        paper_bgcolor=card_bg,
+        font_color=text_color,
         showlegend=False,
         height=500,
         bargap=0.05
@@ -1464,13 +1499,20 @@ def ve_bieu_do_tron_thong_ke(tk):
     fig.update_layout(
         title=dict(
             text="<b>📊 PHÂN BỔ KẾT QUẢ TẬP LUYỆN</b>",
-            font=dict(size=18, color='white'),
+            font=dict(size=18, color=text_color),
             x=0.5
         ),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='white'),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5),
+        font=dict(color=text_color),
+        legend=dict(
+            orientation="h", 
+            yanchor="bottom", 
+            y=-0.1, 
+            xanchor="center", 
+            x=0.5,
+            font=dict(color=text_color)
+        ),
         height=450,
         margin=dict(t=80, b=50, l=20, r=20)
     )
@@ -1517,18 +1559,25 @@ def ve_bieu_do_boxplot_phan_loai(df):
     fig.update_layout(
         title=dict(
             text="<b>📦 PHÂN TÍCH BIÊN ĐỘ THEO NHÓM KẾT QUẢ</b>",
-            font=dict(size=18, color='white'),
+            font=dict(size=18, color=text_color),
             x=0.5
         ),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='white'),
+        font=dict(color=text_color),
         height=500,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+        legend=dict(
+            orientation="h", 
+            yanchor="bottom", 
+            y=-0.2, 
+            xanchor="center", 
+            x=0.5,
+            font=dict(color=text_color)
+        ),
         margin=dict(t=80, b=100)
     )
     
-    fig.update_yaxes(title_text="Góc (độ)", gridcolor='rgba(255,255,255,0.1)')
+    fig.update_yaxes(title_text="Góc (độ)", gridcolor=glass_border)
     
     return fig
 
@@ -1622,18 +1671,18 @@ def ve_bieu_do_radar(tk):
             radialaxis=dict(
                 visible=True,
                 range=[0, 1],
-                gridcolor='rgba(255,255,255,0.1)',
-                linecolor='rgba(255,255,255,0.1)',
-                tickfont=dict(color='white', size=10)
+                gridcolor=glass_border,
+                linecolor=glass_border,
+                tickfont=dict(color=text_color, size=10)
             ),
             angularaxis=dict(
-                gridcolor='rgba(255,255,255,0.1)',
-                linecolor='rgba(255,255,255,0.1)',
-                tickfont=dict(color='white', size=12)
+                gridcolor=glass_border,
+                linecolor=glass_border,
+                tickfont=dict(color=text_color, size=12)
             ),
             bgcolor='rgba(0,0,0,0)'
         ),
-        paper_bgcolor='rgba(26,26,46,0.9)',
+        paper_bgcolor=card_bg,
         showlegend=True,
         legend=dict(
             orientation="h",
@@ -1641,11 +1690,11 @@ def ve_bieu_do_radar(tk):
             y=1.1,
             xanchor="center",
             x=0.5,
-            font=dict(color='white')
+            font=dict(color=text_color)
         ),
         title=dict(
             text="<b>🔬 ĐÁNH GIÁ CHỈ SỐ KHOA HỌC (RADAR CHART)</b>",
-            font=dict(size=18, color='white', family='Arial Black'),
+            font=dict(size=18, color=text_color, family='Arial Black'),
             x=0.5,
             y=0.05
         ),
@@ -1971,178 +2020,7 @@ BAI_TAP = {
 # ============================================
 # CSS KẾT HỢP ĐẦY ĐỦ
 # ============================================
-st.markdown("""
-<style>
-    * { font-family: 'Times New Roman', Times, serif !important; }
-    .stApp { background: linear-gradient(135deg, #0a0a0a 0%, #0f0f1a 50%, #1a1a2e 100%); }
-    
-    /* HEADER */
-    .main-header {
-        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%);
-        padding: 2rem;
-        border-radius: 20px;
-        text-align: center;
-        margin-bottom: 2rem;
-        border: 1px solid #2a5298;
-    }
-    .main-header h1 { color: #ffffff !important; font-size: 1.8rem; margin: 0; }
-    .main-header p { color: #aaa !important; margin: 0.5rem 0 0 0; }
-    
-    /* RESEARCH BADGE */
-    .research-badge {
-        background: linear-gradient(135deg, #2a5298, #1a73e8);
-        padding: 0.3rem 1rem;
-        border-radius: 50px;
-        display: inline-block;
-        margin-top: 0.5rem;
-    }
-    .research-badge span { color: white; font-size: 0.8rem; font-weight: bold; }
-    
-    /* INFO BOX */
-    .info-box {
-        background: rgba(26,26,46,0.8);
-        padding: 1.2rem;
-        border-radius: 16px;
-        border-left: 4px solid #2a5298;
-        margin-bottom: 1rem;
-    }
-    
-    /* BUTTON - CÓ HOVER EFFECT */
-    .stButton > button {
-        background: linear-gradient(135deg, #2a5298 0%, #1a73e8 100%) !important;
-        color: white !important;
-        border-radius: 30px !important;
-        font-weight: bold !important;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-    .stButton > button:hover {
-        transform: scale(1.02);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-    
-    /* MEMBER CARD */
-    .member-card {
-        background: linear-gradient(135deg, rgba(26,26,46,0.9) 0%, rgba(22,33,62,0.9) 100%);
-        padding: 1.2rem;
-        border-radius: 16px;
-        text-align: center;
-        margin-bottom: 1rem;
-    }
-    .member-name { color: #fff; font-size: 1.1rem; font-weight: bold; }
-    .member-role { color: #ffd700; font-size: 0.85rem; }
-    
-    /* LECTURER CARD */
-    .lecturer-card {
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-        padding: 1.5rem;
-        border-radius: 20px;
-        text-align: center;
-        margin-bottom: 2rem;
-        border: 2px solid #ffd700;
-    }
-    .lecturer-name { color: #ffd700; font-size: 1.3rem; font-weight: bold; }
-    
-    /* FRAME THUMBNAIL */
-    .frame-thumbnail {
-        transition: transform 0.3s;
-        cursor: pointer;
-        width: 100%;
-        border-radius: 12px;
-    }
-    .frame-thumbnail:hover {
-        transform: scale(1.02);
-    }
-    
-    /* VIDEO */
-    video {
-        width: 100%;
-        border-radius: 16px;
-        background: black;
-        max-height: 70vh;
-    }
-    
-    /* WARNING BOX */
-    .warning-box {
-        background: rgba(255,100,0,0.2);
-        border-left: 4px solid #FFA500;
-        padding: 10px;
-        border-radius: 8px;
-        margin: 10px 0;
-    }
-    
-    /* TABS STYLE - Đã được tối ưu ở đầu file */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    
-    /* METRIC CARD - MỚI THÊM */
-    .metric-card {
-        background: linear-gradient(135deg, rgba(26,26,46,0.95) 0%, rgba(22,33,62,0.95) 100%);
-        border-radius: 16px;
-        padding: 1rem;
-        text-align: center;
-        border: 1px solid #2a5298;
-        transition: all 0.3s ease;
-    }
-    .metric-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        border-color: #ffd700;
-    }
-    .metric-value {
-        font-size: 2rem;
-        font-weight: bold;
-        color: #00CED1;
-    }
-    .metric-label {
-        font-size: 0.85rem;
-        color: #aaa;
-        margin-top: 0.5rem;
-    }
-    
-    /* CUSTOM SCROLLBAR (TÙY CHỌN THÊM) */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-        background: #1a1a2e;
-        border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #2a5298;
-        border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-        background: #1a73e8;
-    }
-    
-    /* DATA FRAME STYLE */
-    .stDataFrame {
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    .stDataFrame div[data-testid="stDataFrame"] {
-        border-radius: 12px;
-    }
-    
-    /* EXPANDER STYLE */
-    .streamlit-expanderHeader {
-        background: rgba(26,26,46,0.8);
-        border-radius: 12px;
-        font-weight: bold;
-    }
-    
-    /* SUCCESS/WARNING/INFO MESSAGES */
-    .stAlert {
-        border-radius: 12px;
-        border-left: 4px solid;
-    }
-    .stAlert[data-baseweb="notification"] {
-        border-radius: 12px;
-    }
-</style>
+# Xóa CSS trùng lặp - Đã gộp vào phần CSS động ở trên
 """, unsafe_allow_html=True)
 
 # ============================================
@@ -2873,22 +2751,35 @@ def main():
         hien_thi_dang_nhap_dang_ky()
         return
 
-    # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
-    # TOP BAR (LOGOUT) - Quay lại góc trên bên phải
+    # TOP BAR (THEME TOGGLE & LOGOUT)
     st.markdown('<div class="top-auth-container" style="margin-top: -50px; margin-bottom: 20px;">', unsafe_allow_html=True)
-    t_col1, t_col2 = st.columns([3.5, 1])
+    t_col1, t_col2 = st.columns([2.5, 2])
     
     with t_col2:
-        inner_c1, inner_c2 = st.columns([1.8, 1], vertical_alignment="center")
+        inner_c1, inner_c2, inner_c3 = st.columns([1.5, 1.2, 0.8], vertical_alignment="center")
         with inner_c1:
             st.markdown(f"""
             <div style="text-align: right; line-height: 1.1;">
-                <span style="color: #888; font-size: 0.8rem;">Xin chào,</span><br>
-                <span style="color: #ffd700; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
+                <span style="color: {'#888' if is_dark else '#475569'}; font-size: 0.8rem;">Xin chào,</span><br>
+                <span style="color: {'#ffd700' if is_dark else '#0072ff'}; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
             </div>
             """, unsafe_allow_html=True)
         with inner_c2:
-            if st.button("🚪 Thoát", use_container_width=True):
+            # TOGGLE GIAO DIỆN SÁNG/TỐI (Nằm ngay bên cạnh Xin chào)
+            theme_toggle = st.toggle(
+                "🌙 Giao diện tối", 
+                value=(st.session_state.theme == 'dark'),
+                key="theme_toggle",
+                help="Bật để dùng giao diện tối, tắt để dùng giao diện sáng trắng"
+            )
+            # Cập nhật theme nếu thay đổi
+            new_theme = 'dark' if theme_toggle else 'light'
+            if new_theme != st.session_state.theme:
+                st.session_state.theme = new_theme
+                st.rerun()
+                
+        with inner_c3:
+            if st.button("🚪", use_container_width=True, help="Đăng xuất"):
                 if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
                     st.logout()
                 st.session_state.logged_in = False
