@@ -4384,6 +4384,14 @@ def main():
             bai_tap = BAI_TAP[ma_bai_tap]
             
         else:
+            st.markdown("### 🎯 CHỌN BÀI TẬP")
+            ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+            bai_tap = BAI_TAP[ma_bai_tap]
+            
+            st.markdown("### 📺 VIDEO HƯỚNG DẪN")
+            st.video(bai_tap["youtube"])
+            
+            st.markdown("---")
             # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
             st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
             ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
@@ -4395,10 +4403,6 @@ def main():
             if user_role == "Bệnh nhân":
                 with st.expander("🩺 KHAI BÁO TRIỆU CHỨNG", expanded=False):
                     with st.form("patient_symptoms_sidebar"):
-                        s_full_name = st.text_input("Họ tên", value=st.session_state.user_info.get('full_name', ''), key="s_sb_name")
-                        s_age = st.number_input("Tuổi", 0, 120, 22, key="s_sb_age")
-                        s_gender = st.selectbox("Giới tính", ["Nam", "Nữ", "Khác"], key="s_sb_gender")
-                        
                         s_desc = st.text_area("Mô tả cảm giác đau:", 
                                               placeholder="VD: Đau nhói ở khớp vai...",
                                               height=100, key="s_sb_desc")
@@ -4407,16 +4411,17 @@ def main():
                                                  options=list(range(11)), 
                                                  value=3, key="s_sb_vas")
                         
-                        s_submitted = st.form_submit_button("📤 GỬI CHO BÁC SĨ", use_container_width=True, type="primary")
+                        s_submitted = st.form_submit_button("📤 GỬI CHO BÁC SĨ, KTV & NCV", use_container_width=True, type="primary")
                         
                         if s_submitted:
                             if s_desc:
                                 s_data = load_data(SYMPTOMS_FILE)
                                 s_data.append({
                                     "username": st.session_state.user_info['username'],
-                                    "full_name": s_full_name,
-                                    "age": s_age,
-                                    "gender": s_gender,
+                                    "full_name": ten_nguoi_dung if ten_nguoi_dung else st.session_state.user_info.get('full_name', ''),
+                                    "age": tuoi,
+                                    "gender": gioi_tinh,
+                                    "exercise": BAI_TAP[ma_bai_tap]['ten'],
                                     "symptoms": s_desc,
                                     "vas": s_vas,
                                     "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
@@ -4456,12 +4461,6 @@ def main():
                     else:
                         st.info("Chưa có BN gửi thông tin.")
 
-            st.markdown("### 🎯 CHỌN BÀI TẬP")
-            ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
-            bai_tap = BAI_TAP[ma_bai_tap]
-            
-            st.markdown("### 📺 VIDEO HƯỚNG DẪN")
-            st.video(bai_tap["youtube"])
         
         st.markdown("---")
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
