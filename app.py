@@ -3526,7 +3526,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         """)
         if st.session_state.get('processed_video_path'):
             with open(st.session_state.processed_video_path, "rb") as f:
-                st.download_button("📥 Tải video xuống", f, "processed_video.mp4", "video/mp4", use_container_width=True)
+                st.download_button("📥 Tải video xuống", f, "processed_video.mp4", "video/mp4", use_container_width=True, key=f"dl_video_{key_suffix}")
         
         # NÚT GỬI TRONG TAB VIDEO (DÀNH CHO NCV)
         if user_role == "Nghiên cứu viên":
