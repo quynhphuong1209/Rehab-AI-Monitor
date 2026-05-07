@@ -3165,7 +3165,7 @@ def main():
             - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
             """)
         
-        elif st.session_state.processing:
+        if st.session_state.processing:
             st.warning("⏳ Đang xử lý video, vui lòng chờ...")
             
             if st.button("❌ Hủy xử lý", width='stretch'):
