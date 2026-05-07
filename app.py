@@ -3010,7 +3010,7 @@ def hien_thi_dang_nhap_dang_ky():
                                 "password": hash_password(reg_p),
                                 "email": reg_e,
                                 "full_name": reg_name,
-                                "role": reg_role_new,
+                                "role": reg_role,
                                 "created_at": datetime.now().isoformat()
                             }
                             save_users(users)
