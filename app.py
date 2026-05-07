@@ -4489,6 +4489,11 @@ def main():
         tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
+    
+    # === HỖ TRỢ CHUYỂN TAB TỰ ĐỘNG QUA SESSION STATE ===
+    if st.session_state.get('trigger_tab_switch'):
+        chuyen_tab_bang_js(st.session_state.trigger_tab_switch)
+        st.session_state.trigger_tab_switch = None
     # Tạo mapping để truy cập tab theo tên, tránh lỗi index khi số lượng tab thay đổi theo vai trò
     tab_map = {title: all_tabs[i] for i, title in enumerate(tab_titles)}
     
@@ -4841,9 +4846,9 @@ def main():
                                             st.session_state.auto_start_analysis = True
                                         
                                         if user_role == "Bác sĩ / KTV PHCN":
-                                            chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
+                                            st.session_state.trigger_tab_switch = "ĐÁNH GIÁ PHCN"
                                         else: # Nghiên cứu viên
-                                            chuyen_tab_bang_js("PHÂN TÍCH")
+                                            st.session_state.trigger_tab_switch = "PHÂN TÍCH"
                                         st.rerun()
                                     
                                     if st.button("🗑️ Xóa video này", key=f"del_video_{idx}", use_container_width=True):
