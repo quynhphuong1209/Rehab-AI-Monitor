@@ -2292,28 +2292,127 @@ st.markdown("""
 def hien_thi_tab_phan_tich():
     """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
     
+    # TỰ ĐỘNG CHỌN VIDEO MỚI NHẤT NẾU CHƯA CHỌN (Dành cho Nghiên cứu viên)
+    if not st.session_state.get('has_data') and not st.session_state.get('current_eval_video'):
+        video_list = load_data(VIDEOS_FILE)
+        if video_list:
+            # Ưu tiên video chưa phân tích
+            pending = [v for v in video_list if v.get('accuracy', 0) == 0]
+            if pending:
+                st.session_state.current_eval_video = pending[-1]
+            else:
+                st.session_state.current_eval_video = video_list[-1]
+
     # TỰ ĐỘNG LOAD DỮ LIỆU NẾU ĐANG CHỌN VIDEO TỪ DANH SÁCH
     if not st.session_state.get('has_data') or not st.session_state.get('stats'):
         if st.session_state.get('current_eval_video'):
             v = st.session_state.current_eval_video
-            if 'metrics' in v:
+            
+            # Nếu video ĐÃ CÓ metrics -> Load ngay
+            if 'metrics' in v and v['metrics']:
                 st.session_state.stats = v['metrics']
                 st.session_state.processed_video_path = v['video_path']
                 st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
                 st.session_state.all_frames_data_path = v.get('all_frames_data_path')
+                st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP['codman'])
                 st.session_state.has_data = True
                 # Load DF nếu có
                 if 'df_path' in v and os.path.exists(v['df_path']):
                     try:
                         st.session_state.angle_df = pd.read_csv(v['df_path'])
                     except: pass
+                st.rerun()
+            
+            # Nếu video CHƯA CÓ metrics -> Cho phép phân tích ngay tại đây
             else:
-                st.info("ℹ️ Video này chưa có dữ liệu phân tích chi tiết. Vui lòng thực hiện phân tích lại ở tab TRANG CHỦ.")
-                if v.get('video_path') and os.path.exists(v['video_path']):
-                    st.video(v['video_path'])
+                st.warning(f"⚠️ Video '{v.get('video_name')}' của BN {v.get('full_name')} chưa được phân tích.")
+                col_v1, col_v2 = st.columns([2, 1])
+                with col_v1:
+                    if os.path.exists(v['video_path']):
+                        st.video(v['video_path'])
+                    else:
+                        st.error("❌ Không tìm thấy file video.")
+                with col_v2:
+                    st.info("💡 Bạn có thể thực hiện phân tích ngay bây giờ để xem kết quả khung xương và chỉ số lâm sàng.")
+                    if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", use_container_width=True, type="primary"):
+                        st.session_state.processing = True
+                        
+                        # Mock progress
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        
+                        try:
+                            # Lấy thông tin bài tập
+                            ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), 'codman')
+                            bt = BAI_TAP[ex_key]
+                            
+                            def update_progress(p):
+                                progress_bar.progress(p)
+                                status_text.info(f"🔄 Đang xử lý... {p*100:.0f}%")
+                            
+                            output_path, _, _, angle_data, total_frames, valid_frames, _, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
+                                v['video_path'], bt['chuan'], update_progress
+                            )
+                            
+                            if valid_frames > 0:
+                                df = pd.DataFrame(angle_data)
+                                metrics = tinh_metrics_chi_tiet(df, bt)
+                                
+                                # Cập nhật session state
+                                st.session_state.stats = {
+                                    "do_chinh_xac": metrics["ty_le_tong_the"],
+                                    "ty_le_gan_dung": metrics["ty_le_gan_dung"],
+                                    "ty_le_vai_dung": metrics["ty_le_vai_dung"],
+                                    "ty_le_khuyu_dung": metrics["ty_le_khuyu_dung"],
+                                    "frame_dung": metrics["frame_dung"],
+                                    "frame_gan_dung": metrics["frame_gan_dung"],
+                                    "tong_frame_hop_le": valid_frames,
+                                    "tb_goc_vai": metrics["tb_goc_vai"],
+                                    "tb_goc_khuyu": metrics["tb_goc_khuyu"],
+                                    "min_goc_vai": metrics["min_goc_vai"],
+                                    "max_goc_vai": metrics["max_goc_vai"],
+                                    "min_goc_khuyu": metrics["min_goc_khuyu"],
+                                    "max_goc_khuyu": metrics["max_goc_khuyu"],
+                                    "std_goc_vai": metrics["std_goc_vai"],
+                                    "std_goc_khuyu": metrics["std_goc_khuyu"],
+                                    "mae_tong": metrics["mae_tong"],
+                                    "precision": metrics["precision"],
+                                    "recall": metrics["recall"],
+                                    "f1_score": metrics["f1_score"],
+                                    "icc": metrics["icc"],
+                                    "thoi_gian": 0, # Tạm tính
+                                    "tong_frame": total_frames,
+                                    "warnings": all_warnings
+                                }
+                                st.session_state.has_data = True
+                                st.session_state.angle_df = df
+                                st.session_state.processed_video_path = output_path
+                                st.session_state.all_frames_data_path = all_frames_data
+                                st.session_state.exercise = bt
+                                
+                                # Cập nhật ngược lại vào video_list
+                                video_list = load_data(VIDEOS_FILE)
+                                for vid in video_list:
+                                    if vid['video_path'] == v['video_path']:
+                                        vid['accuracy'] = round(metrics["ty_le_tong_the"], 1)
+                                        vid['metrics'] = st.session_state.stats
+                                        vid['all_frames_data_path'] = all_frames_data
+                                        vid['df_path'] = output_path.replace('.mp4', '_data.csv')
+                                        vid['video_path'] = output_path
+                                        vid['status'] = "Đã phân tích"
+                                        # Lưu CSV
+                                        df.to_csv(vid['df_path'], index=False)
+                                save_data(VIDEOS_FILE, video_list)
+                                
+                                st.success("✅ Phân tích hoàn tất!")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Lỗi: {e}")
+                        finally:
+                            st.session_state.processing = False
                 return
         else:
-            st.info("ℹ️ Chưa có kết quả. Vui lòng upload video ở tab TRANG CHỦ hoặc chọn video từ danh sách.")
+            st.info("ℹ️ Chưa có video nào để phân tích. Vui lòng upload video ở tab TRANG CHỦ hoặc chờ bệnh nhân gửi video.")
             return
     
     bt = st.session_state.exercise
@@ -3872,10 +3971,15 @@ def main():
                                     
                                     if st.button("📝 Phân tích và kết quả trích xuất khung xương video", key=f"eval_btn_{idx}", use_container_width=True):
                                         st.session_state.current_eval_video = v
+                                        # Reset analysis state để load video mới
+                                        st.session_state.has_data = False
+                                        st.session_state.stats = None
+                                        
                                         if user_role == "Bác sĩ / KTV PHCN":
                                             chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
                                         else: # Nghiên cứu viên
                                             chuyen_tab_bang_js("PHÂN TÍCH")
+                                        st.rerun()
                                     
                                     if st.button("🗑️ Xóa video này", key=f"del_video_{idx}", use_container_width=True):
                                         # Xóa file thực tế
