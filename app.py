@@ -4168,26 +4168,18 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # PHẦN UPLOAD (Bỏ cho Bệnh nhân theo yêu cầu)
-                if user_role != "Bệnh nhân":
-                    # Lấy danh sách bệnh nhân để gán video
-                    users_db = load_users()
-                    patients_list = [u for u in users_db if users_db[u].get('role') == "Bệnh nhân"]
-                    target_patient = st.selectbox("🎯 Chọn bệnh nhân mục tiêu:", patients_list, 
-                                                format_func=lambda x: f"👤 {users_db[x].get('full_name', x)} ({x})",
-                                                key="target_patient_upload")
-                    st.session_state.last_uploaded_patient_username = target_patient
-                    
+                # PHẦN UPLOAD (Hiện cho Bệnh nhân, ẩn cho Bác sĩ/NCV/Admin theo yêu cầu)
+                if user_role == "Bệnh nhân":
                     st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
                     file_upload = st.file_uploader(
-                        "📤 Tải lên video tập luyện của bệnh nhân", 
+                        "📤 Tải lên video tập luyện của bạn để gửi cho Bác sĩ/NCV", 
                         type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
                         help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB",
                         key="video_uploader_v2"
                     )
                 else:
                     file_upload = None
-                    st.info("👋 Chào mừng bạn đến với hệ thống giám sát tập luyện. Hãy xem lịch hẹn và kết quả từ bác sĩ.")
+                    st.info("👋 Chào mừng bạn đến với hệ thống quản lý. Hãy chọn bệnh nhân trong danh sách dưới đây để xem video và đánh giá.")
             
             # === HIỆN KẾT QUẢ VÀ NÚT PHÂN TÍCH NGAY DƯỚI Ô TẢI FILE ===
             if file_upload is not None and not st.session_state.processing:
