@@ -2887,7 +2887,9 @@ def hien_thi_lich_nhac_nho():
     
     # FILTER DATA
     if user_role == "Bệnh nhân":
-        display_schedules = [s for s in schedules if s.get('patient_username') == username]
+        # Lọc theo username (không phân biệt hoa thường, xóa khoảng trắng)
+        target_uname = username.strip().lower()
+        display_schedules = [s for s in schedules if s.get('patient_username', '').strip().lower() == target_uname]
     else:
         display_schedules = schedules
 
@@ -2902,6 +2904,7 @@ def hien_thi_lich_nhac_nho():
     
     tab_list = ["🩺 Lịch hẹn khám", "🏋️ Lịch tập luyện", "💊 Lịch uống thuốc"]
     if user_role == "Bác sĩ / KTV PHCN":
+        st.caption(f"🔍 Hệ thống hiện có tổng cộng {len(schedules)} bản ghi lịch hẹn/nhắc nhở.")
         tab_list.append("➕ Thêm mới")
         
     all_lich_tabs = st.tabs(tab_list)
