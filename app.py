@@ -2793,49 +2793,47 @@ def hien_thi_dang_nhap_dang_ky():
         t_login, t_register, t_google = st.tabs(["🔐 ĐĂNG NHẬP", "📋 ĐĂNG KÝ THÀNH VIÊN", "🚀 GOOGLE ID"])
         
         with t_login:
-            with st.form("login_form_v3"):
-                st.markdown("<p style='text-align:center; color:#888;'>Vui lòng nhập tài khoản hệ thống</p>", unsafe_allow_html=True)
-                u = st.text_input("Tên đăng nhập", placeholder="Tên tài khoản của bạn")
-                p = st.text_input("Mật khẩu", type="password", placeholder="Mật khẩu bảo mật")
-                if st.form_submit_button("🚀 ĐĂNG NHẬP NGAY", use_container_width=True):
-                    users = load_users()
-                    if u in users and verify_password(p, users[u]['password']):
-                        st.session_state.logged_in = True
-                        st.session_state.user_info = {"username": u, "email": users[u].get('email')}
-                        st.session_state.show_login_dialog = False
-                        st.rerun()
-                    else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
+            st.markdown("<p style='text-align:center; color:#888;'>Vui lòng nhập tài khoản hệ thống</p>", unsafe_allow_html=True)
+            u = st.text_input("Tên đăng nhập", placeholder="Tên tài khoản của bạn", key="login_u")
+            p = st.text_input("Mật khẩu", type="password", placeholder="Mật khẩu bảo mật", key="login_p")
+            if st.button("🚀 ĐĂNG NHẬP NGAY", use_container_width=True, type="primary"):
+                users = load_users()
+                if u in users and verify_password(p, users[u]['password']):
+                    st.session_state.logged_in = True
+                    st.session_state.user_info = {"username": u, "email": users[u].get('email')}
+                    st.session_state.show_login_dialog = False
+                    st.rerun()
+                else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
             
             if st.button("❓ Bạn quên mật khẩu?", use_container_width=True):
                 st.session_state.forgot_password_mode = True
                 st.rerun()
                         
         with t_register:
-            with st.form("register_form_v4"):
-                st.markdown("<p style='text-align:center; color:#00c6ff; font-weight:bold;'>TẠO TÀI KHOẢN MỚI</p>", unsafe_allow_html=True)
-                reg_name = st.text_input("Họ và tên của bạn", placeholder="VD: Nguyễn Văn A")
-                reg_u = st.text_input("Tên đăng nhập *", placeholder="Chọn tên tài khoản")
-                reg_e = st.text_input("Email liên hệ *", placeholder="example@gmail.com")
-                reg_p = st.text_input("Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự")
-                reg_cp = st.text_input("Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu")
-                
-                if st.form_submit_button("🚀 ĐĂNG KÝ TRUY CẬP", use_container_width=True):
-                    if not reg_u or not reg_e or len(reg_p) < 6:
-                        st.warning("⚠️ Vui lòng điền đầy đủ các thông tin bắt buộc (*)")
-                    elif reg_p != reg_cp:
-                        st.error("❌ Mật khẩu xác nhận không khớp")
+            st.markdown("<p style='text-align:center; color:#00c6ff; font-weight:bold;'>TẠO TÀI KHOẢN MỚI</p>", unsafe_allow_html=True)
+            reg_name = st.text_input("Họ và tên của bạn", placeholder="VD: Nguyễn Văn A", key="reg_n")
+            reg_u = st.text_input("Tên đăng nhập *", placeholder="Chọn tên tài khoản", key="reg_u")
+            reg_e = st.text_input("Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
+            reg_p = st.text_input("Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
+            reg_cp = st.text_input("Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
+            
+            if st.button("🚀 ĐĂNG KÝ TRUY CẬP", use_container_width=True, type="primary"):
+                if not reg_u or not reg_e or len(reg_p) < 6:
+                    st.warning("⚠️ Vui lòng điền đầy đủ các thông tin bắt buộc (*)")
+                elif reg_p != reg_cp:
+                    st.error("❌ Mật khẩu xác nhận không khớp")
+                else:
+                    users = load_users()
+                    if reg_u in users: st.error("❌ Tên đăng nhập này đã tồn tại")
                     else:
-                        users = load_users()
-                        if reg_u in users: st.error("❌ Tên đăng nhập này đã tồn tại")
-                        else:
-                            users[reg_u] = {
-                                "password": hash_password(reg_p),
-                                "email": reg_e,
-                                "full_name": reg_name,
-                                "created_at": datetime.now().isoformat()
-                            }
-                            save_users(users)
-                            st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.")
+                        users[reg_u] = {
+                            "password": hash_password(reg_p),
+                            "email": reg_e,
+                            "full_name": reg_name,
+                            "created_at": datetime.now().isoformat()
+                        }
+                        save_users(users)
+                        st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.")
                             
         with t_google:
             st.markdown("""
