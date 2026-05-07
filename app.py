@@ -2581,7 +2581,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             st.plotly_chart(fig_pie, use_container_width=True, key=f"pie_chart_{key_suffix}")
             try:
                 img_pie = fig_pie.to_image(format="png")
-                st.download_button("📥 Tải ảnh biểu đồ tròn", img_pie, "phan_bo_ket_qua.png", "image/png", use_container_width=True)
+                st.download_button("📥 Tải ảnh biểu đồ tròn", img_pie, "phan_bo_ket_qua.png", "image/png", use_container_width=True, key=f"dl_pie_{key_suffix}")
             except: pass
             
         with col_metrics:
@@ -2614,7 +2614,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
         if user_role == "Nghiên cứu viên":
             st.markdown("---")
-            if st.button("📤 GỬI KẾT QUẢ TỔNG QUAN CHO BN & BÁC SĨ", key="btn_send_ai_overview", use_container_width=True, type="primary"):
+            if st.button("📤 GỬI KẾT QUẢ TỔNG QUAN CHO BN & BÁC SĨ", key=f"btn_send_ai_overview_{key_suffix}", use_container_width=True, type="primary"):
                 v_meta = st.session_state.get('current_eval_video')
                 if v_meta:
                     evals = load_data(EVALUATIONS_FILE)
@@ -2645,7 +2645,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
         with col_dl1:
             try:
-                st.download_button("📥 Tải ảnh biểu đồ Vai", fig_vai.to_image(format="png"), "bieu_do_vai.png", "image/png", use_container_width=True)
+                st.download_button("📥 Tải ảnh biểu đồ Vai", fig_vai.to_image(format="png"), "bieu_do_vai.png", "image/png", use_container_width=True, key=f"dl_vai_{key_suffix}")
             except: pass
         
         st.markdown("---")
@@ -2657,7 +2657,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
         with col_dl2:
             try:
-                st.download_button("📥 Tải ảnh biểu đồ Khuỷu", fig_khuyu.to_image(format="png"), "bieu_do_khuyu.png", "image/png", use_container_width=True)
+                st.download_button("📥 Tải ảnh biểu đồ Khuỷu", fig_khuyu.to_image(format="png"), "bieu_do_khuyu.png", "image/png", use_container_width=True, key=f"dl_khuyu_{key_suffix}")
             except: pass
         
         try:
@@ -2695,7 +2695,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         fig_box = ve_bieu_do_boxplot_phan_loai(df)
         st.plotly_chart(fig_box, use_container_width=True, key=f"box_chart_{key_suffix}")
         try:
-            st.download_button("📥 Tải ảnh biểu đồ Boxplot", fig_box.to_image(format="png"), "boxplot_rom.png", "image/png")
+            st.download_button("📥 Tải ảnh biểu đồ Boxplot", fig_box.to_image(format="png"), "boxplot_rom.png", "image/png", key=f"dl_box_{key_suffix}")
         except: pass
 
         # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
@@ -2779,7 +2779,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
         if user_role == "Nghiên cứu viên":
             st.markdown("---")
-            if st.button("📤 XÁC NHẬN NHẬN ĐỊNH LÂM SÀNG & GỬI", key="btn_send_ai_clinical", use_container_width=True, type="primary"):
+            if st.button("📤 XÁC NHẬN NHẬN ĐỊNH LÂM SÀNG & GỬI", key=f"btn_send_ai_clinical_{key_suffix}", use_container_width=True, type="primary"):
                 v_meta = st.session_state.get('current_eval_video')
                 if v_meta:
                     evals = load_data(EVALUATIONS_FILE)
@@ -2851,11 +2851,11 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         with col_dl1:
             try:
                 radar_img = ve_bieu_do_radar(tk).to_image(format="png", width=1000, height=800)
-                st.download_button("📥 Tải ảnh Biểu đồ Radar", radar_img, "bieu_do_radar.png", "image/png", use_container_width=True)
+                st.download_button("📥 Tải ảnh Biểu đồ Radar", radar_img, "bieu_do_radar.png", "image/png", use_container_width=True, key=f"dl_radar_{key_suffix}")
             except:
                 st.info("💡 Cài đặt kaleido để tải ảnh biểu đồ")
         with col_dl2:
-            st.download_button("📥 Tải Bảng chỉ số (CSV)", stats_summary.to_csv(index=False).encode('utf-8'), "chi_so_nghien_cuu.csv", "text/csv", use_container_width=True)
+            st.download_button("📥 Tải Bảng chỉ số (CSV)", stats_summary.to_csv(index=False).encode('utf-8'), "chi_so_nghien_cuu.csv", "text/csv", use_container_width=True, key=f"dl_stats_{key_suffix}")
 
     # === TAB 5: XUẤT BÁO CÁO ===
     with tab_export:
@@ -2868,7 +2868,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         with col_c:
             st.markdown("#### 📊 Dữ liệu thô (Raw Data)")
             csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Tải file CSV kết quả", csv, f"rehab_data_{int(time.time())}.csv", "text/csv", use_container_width=True)
+            st.download_button("📥 Tải file CSV kết quả", csv, f"rehab_data_{int(time.time())}.csv", "text/csv", use_container_width=True, key=f"dl_raw_{key_suffix}")
         
         with col_z:
             st.markdown("#### 🖼️ Hình ảnh & Biểu đồ")
@@ -2884,14 +2884,14 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                             zip_file.writestr(f"chart_{name}.png", img_bytes)
                     
                     zip_buffer.seek(0)
-                    st.download_button("✅ Click để tải ZIP", zip_buffer, "bieu_do_lam_sang.zip", "application/zip", use_container_width=True)
+                    st.download_button("✅ Click để tải ZIP", zip_buffer, "bieu_do_lam_sang.zip", "application/zip", use_container_width=True, key=f"dl_zip_{key_suffix}")
                 except Exception as e:
                     st.error(f"❌ Lỗi: {e}. Vui lòng cài đặt: pip install -U kaleido")
         
         # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
         if user_role == "Nghiên cứu viên":
             st.markdown("---")
-            if st.button("📤 GỬI BÁO CÁO TỔNG HỢP CHO BN & BÁC SĨ", key="btn_send_ai_export", use_container_width=True, type="primary"):
+            if st.button("📤 GỬI BÁO CÁO TỔNG HỢP CHO BN & BÁC SĨ", key=f"btn_send_ai_export_{key_suffix}", use_container_width=True, type="primary"):
                 v_meta = st.session_state.get('current_eval_video')
                 if v_meta:
                     evals = load_data(EVALUATIONS_FILE)
@@ -3172,7 +3172,7 @@ def hien_thi_form_danh_gia_bac_si():
     with tab_ai_media:
         st.markdown("### 🎬 VIDEO & HÌNH ẢNH TRÍCH XUẤT KHUNG XƯƠNG")
         if has_ai_sent:
-            hien_thi_frames_day_du()
+            hien_thi_frames_day_du(key_suffix="doc_eval")
         else:
             st.info("🕒 Video và hình ảnh khung xương sẽ hiển thị sau khi Nghiên cứu viên chia sẻ.")
 
@@ -3225,7 +3225,7 @@ def hien_thi_ket_qua_cho_benh_nhan():
             st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
             # CHỈ HIỂN THỊ NẾU NCV ĐÃ GỬI KẾT QUẢ
             if has_ai_sent:
-                hien_thi_frames_day_du()
+                hien_thi_frames_day_du(key_suffix="pat_results")
             else:
                 st.info("🕒 Video trích xuất khung xương sẽ hiển thị tại đây sau khi Nghiên cứu viên chia sẻ kết quả.")
 
@@ -3483,7 +3483,7 @@ def hien_thi_lich_nhac_nho():
 # HÀM HIỂN THỊ LỊCH FRAMES ĐẦY ĐỦ
 # ============================================
 @st.fragment
-def hien_thi_frames_day_du():
+def hien_thi_frames_day_du(key_suffix=""):
     """Hiển thị frames với Streamlit Fragment (Chỉ load lại vùng này, cực nhanh)"""
     user_role = st.session_state.user_info.get('role')
     
@@ -3530,7 +3530,7 @@ def hien_thi_frames_day_du():
         
         # NÚT GỬI TRONG TAB VIDEO (DÀNH CHO NCV)
         if user_role == "Nghiên cứu viên":
-            if st.button("📤 GỬI VIDEO TRÍCH XUẤT CHO BN & BÁC SĨ", key="btn_send_ai_video", use_container_width=True, type="primary"):
+            if st.button("📤 GỬI VIDEO TRÍCH XUẤT CHO BN & BÁC SĨ", key=f"btn_send_ai_video_{key_suffix}", use_container_width=True, type="primary"):
                 v_meta = st.session_state.get('current_eval_video')
                 if v_meta:
                     evals = load_data(EVALUATIONS_FILE)
@@ -4368,7 +4368,7 @@ def main():
                     with tab_ai_1:
                         hien_thi_tab_phan_tich(key_suffix="doc_ai_tab")
                     with tab_ai_2:
-                        hien_thi_frames_day_du()
+                        hien_thi_frames_day_du(key_suffix="doc_ai_tab")
 
     if "📊 PHÂN TÍCH" in tab_map:
         with tab_map["📊 PHÂN TÍCH"]:
@@ -4391,7 +4391,7 @@ def main():
     # ==================== TAB: VIDEO & ẢNH ====================
     if "🎬 VIDEO & ẢNH" in tab_map:
         with tab_map["🎬 VIDEO & ẢNH"]:
-            hien_thi_frames_day_du()
+            hien_thi_frames_day_du(key_suffix="ncv_video_tab")
 
     if "📖 HƯỚNG DẪN" in tab_map:
         with tab_map["📖 HƯỚNG DẪN"]:
