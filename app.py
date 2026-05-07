@@ -3556,11 +3556,11 @@ def hien_thi_frames_day_du(key_suffix=""):
     # Bộ lọc
     col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
     with col1:
-        loc_frame = st.selectbox("🔍 Lọc theo kết quả", ["Tất cả", "PASS (Đúng)", "FAIL (Sai)"], key="filter_select")
+        loc_frame = st.selectbox("🔍 Lọc theo kết quả", ["Tất cả", "PASS (Đúng)", "FAIL (Sai)"], key=f"filter_select_{key_suffix}")
     with col2:
-        quality_mode = st.selectbox("⚡ Chất lượng ảnh", ["Nhanh", "Trung bình", "Chất lượng cao"], index=0, key="quality_select")
+        quality_mode = st.selectbox("⚡ Chất lượng ảnh", ["Nhanh", "Trung bình", "Chất lượng cao"], index=0, key=f"quality_select_{key_suffix}")
     with col3:
-        frames_per_page = st.selectbox("📄 Số frame/trang", [12, 24, 36, 48], index=1, key="per_page_select")
+        frames_per_page = st.selectbox("📄 Số frame/trang", [12, 24, 36, 48], index=1, key=f"per_page_select_{key_suffix}")
     with col4:
         st.write("")
         st.write("")
@@ -3627,7 +3627,7 @@ def hien_thi_frames_day_du(key_suffix=""):
     with col_page:
         page = st.number_input("Trang", min_value=1, max_value=total_pages, 
                               value=st.session_state.current_page, 
-                              step=1, label_visibility="collapsed", key="page_input")
+                              step=1, label_visibility="collapsed", key=f"page_input_{key_suffix}")
         if page != st.session_state.current_page:
             st.session_state.current_page = page
             st.rerun()
