@@ -253,7 +253,6 @@ st.markdown("""
     
     /* CUSTOM CARD ĐỂ DÙNG CHUNG */
     .custom-card {
-        background: rgba(26,26,46,0.8);
         padding: 1.2rem;
         border-radius: 16px;
         text-align: center;
@@ -310,10 +309,13 @@ if st.session_state.get('theme') == 'light':
         .stExpander summary:hover { background: #eee !important; }
         [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #eee !important; }
         [data-testid="stSidebar"] * { color: #333 !important; }
-        .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b { color: #333 !important; }
-        /* Fix Table headers */
         [data-testid="stTable"] th { background-color: #f1f3f5 !important; color: #000 !important; }
         [data-testid="stMetric"] { background: #ffffff !important; border: 1px solid #eee !important; padding: 10px !important; border-radius: 12px !important; }
+        /* Fix Form elements */
+        textarea { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #ccc !important; }
+        [data-testid="stForm"] { background-color: #ffffff !important; border: 1px solid #eee !important; border-radius: 15px !important; }
+        .stButton button { background-color: #f1f3f5 !important; color: #000 !important; border: 1px solid #ccc !important; }
+        .stButton button:hover { background-color: #e9ecef !important; color: #0072ff !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -546,8 +548,10 @@ def hien_thi_tab_phan_hoi():
                     st.warning("⚠️ Vui lòng nhập đầy đủ tên và nội dung.")
 
         st.markdown("#### 📞 Thông tin hỗ trợ kỹ thuật")
-        st.markdown("""
-        <div style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 15px; border: 1px solid #2a5298;">
+        is_light = st.session_state.theme == 'light'
+        box_bg = "rgba(0,114,255,0.05)" if is_light else "rgba(255,255,255,0.05)"
+        st.markdown(f"""
+        <div style="background: {box_bg}; padding: 1.2rem; border-radius: 15px; border: 1px solid #2a5298;">
             <p>📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</p>
             <p>🏫 <b>Đơn vị:</b> Khoa KHDL Y sinh - HUPH</p>
             <p>📍 <b>Vị trí:</b> 1A Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
@@ -560,15 +564,18 @@ def hien_thi_tab_phan_hoi():
         if not comments:
             st.info("Chưa có bình luận nào. Hãy là người đầu tiên để lại ý kiến!")
         else:
+            is_light = st.session_state.theme == 'light'
+            item_bg = "rgba(0,0,0,0.03)" if is_light else "rgba(255,255,255,0.08)"
+            item_text = "#333" if is_light else "#ccc"
             # Hiển thị danh sách bình luận dưới dạng thẻ
             for c in comments[:20]: # Hiển thị 20 bình luận mới nhất
                 st.markdown(f"""
-                <div style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #00CED1;">
+                <div style="background: {item_bg}; padding: 1rem; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #00CED1;">
                     <div style="display: flex; justify-content: space-between;">
-                        <b style="color: #ffd700;">👤 {c['name']}</b>
+                        <b style="color: {"#0072ff" if is_light else "#ffd700"};">👤 {c['name']}</b>
                         <span style="color: #666; font-size: 0.8rem;">{c['time']}</span>
                     </div>
-                    <p style="color: #ccc; margin-top: 5px; font-size: 0.95rem;">{c['message']}</p>
+                    <p style="color: {item_text}; margin-top: 5px; font-size: 0.95rem;">{c['message']}</p>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -3033,10 +3040,15 @@ def main():
     
     # ==================== TAB 1: TRANG CHỦ ====================
     with tab1:
+        is_light = st.session_state.theme == 'light'
+        info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
+        info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
+        info_text = "#000" if is_light else "#fff"
+
         col1, col2 = st.columns([2,1])
         with col1:
             st.markdown(f"""
-            <div class="info-box">
+            <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
                 <h3>{bai_tap['icon']} {bai_tap['ten']}</h3>
                 <p>{bai_tap['mo_ta']}</p>
                 <p><strong>⏱️ Thời gian:</strong> {bai_tap['thoi_gian']} giây/lần</p>
@@ -3051,14 +3063,15 @@ def main():
         
         with col2:
             chuan = bai_tap['chuan']
+            card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
             st.markdown(f"""
-            <div class="custom-card">
-                <h4 style="color:{"#0072ff" if st.session_state.theme == 'light' else "#fff"};">🎯 THÔNG SỐ CHUẨN</h4>
+            <div class="custom-card" style="background: {card_bg};">
+                <h4 style="color:{"#0072ff" if is_light else "#fff"};">🎯 THÔNG SỐ CHUẨN</h4>
                 <p style="color:#00CED1;">🦾 Góc vai: <strong>{chuan['vai']}°</strong> ±{chuan['sai_so']}°</p>
                 <p style="color:#FF6B6B;">💪 Góc khuỷu: <strong>{chuan['khuyu']}°</strong> ±{chuan['sai_so']}°</p>
                 <hr style="margin:10px 0;">
-                <p style="color:{"#666" if st.session_state.theme == 'light' else "#aaa"}; font-size:0.8rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
-                <p style="color:{"#666" if st.session_state.theme == 'light' else "#aaa"}; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
+                <p style="color:{"#666" if is_light else "#aaa"}; font-size:0.8rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
+                <p style="color:{"#666" if is_light else "#aaa"}; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
             </div>
             """, unsafe_allow_html=True)
             
