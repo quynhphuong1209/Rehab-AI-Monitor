@@ -97,10 +97,10 @@ if 'processed_video_path' not in st.session_state:
 if not st.session_state.get('logged_in'):
     try:
         user_detected = None
-        # Kiểm tra chuẩn mới
+        # Kiểm tra chuẩn mới nhất (Streamlit 1.34+)
         if hasattr(st, 'experimental_user') and st.experimental_user.get("email"):
             user_detected = st.experimental_user
-        # Kiểm tra chuẩn cũ
+        # Kiểm tra chuẩn cũ hơn
         elif hasattr(st, 'user') and st.user and getattr(st.user, 'email', None):
             user_detected = st.user
             
@@ -111,9 +111,12 @@ if not st.session_state.get('logged_in'):
                 "email": user_detected.get("email"),
                 "auth_type": "google"
             }
-            # Xóa trạng thái đang chờ auth
+            # Xóa các trạng thái thừa
             if 'auth_initiated' in st.session_state:
                 del st.session_state['auth_initiated']
+            if 'show_login_dialog' in st.session_state:
+                st.session_state.show_login_dialog = False
+            
             st.rerun() 
     except Exception as e:
         pass
