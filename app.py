@@ -3907,6 +3907,17 @@ def hien_thi_tab_trang_chu_benh_nhan(bai_tap):
 
 
 def hien_thi_footer():
+    # --- 1. PHẦN TRÍCH DẪN (QUOTE) ---
+    st.markdown("""
+    <div style="margin-top: 3rem; padding: 1.5rem; background: rgba(255,215,0,0.05); border-radius: 15px; text-align: center;">
+        <p style="color: #aaa; font-style: italic;">
+            "Công nghệ không thay thế bác sĩ, nhưng bác sĩ sử dụng công nghệ sẽ thay thế những bác sĩ không sử dụng."
+        </p>
+        <p style="color: #ffd700; font-weight: bold; margin-top: 0.5rem;">— Rehab AI Monitor Team —</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # --- 2. PHẦN CHÂN TRANG CHÍNH ---
     try:
         if os.path.exists("abc1.png"):
             with open("abc1.png", "rb") as img_file:
@@ -3917,39 +3928,102 @@ def hien_thi_footer():
     except:
         logo_src = "https://upload.wikimedia.org/wikipedia/vi/f/f6/Logo_HUPH.png"
 
+    # Cấu hình màu sắc Footer theo Theme
     is_light = st.session_state.get('theme') == 'light'
     f_bg = "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
     f_text = "#444" if is_light else "#ccc"
     f_border = "#0072ff" if is_light else "#00c6ff"
     f_title = "#0072ff" if is_light else "#00c6ff"
-    
+    f_shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(0, 198, 255, 0.2)"
+
     footer_html = f"""
-    <div style="background: {f_bg}; padding: 40px 20px; color: {f_text}; text-align: center; border-top: 4px solid {f_border}; margin-top: 60px; font-family: 'Times New Roman';">
-        <div style="display: flex; flex-wrap: wrap; justify-content: space-around; max-width: 1100px; margin: 0 auto; gap: 30px;">
-            <div style="flex: 1; min-width: 280px;">
-                <img src="{logo_src}" width="120" style="margin-bottom: 10px;">
-                <h3 style="color: {f_title}; margin: 5px 0;">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
-                <p style="font-weight: bold; margin: 0;">HANOI UNIVERSITY OF PUBLIC HEALTH</p>
+    <style>
+        .main-footer {{
+            background: {f_bg};
+            padding: 40px 20px;
+            color: {f_text};
+            font-family: 'Times New Roman', Times, serif;
+            text-align: center;
+            border-top: 4px solid {f_border};
+            box-shadow: 0 -10px 20px {f_shadow};
+            margin-top: 60px;
+        }}
+        .footer-container {{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            max-width: 1100px;
+            margin: 0 auto;
+            gap: 30px;
+            align-items: center;
+        }}
+        .footer-col {{
+            flex: 1;
+            min-width: 320px;
+        }}
+        .footer-logo-img {{
+            width: 120px;
+            filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.4));
+        }}
+        .footer-title {{
+            color: {f_title};
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            text-transform: uppercase;
+        }}
+        .footer-info-item {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }}
+        .footer-bottom {{
+            padding-top: 20px;
+            margin-top: 20px;
+            border-top: 1px solid {"rgba(0, 0, 0, 0.05)" if is_light else "rgba(255, 255, 255, 0.05)"};
+            font-size: 0.9rem;
+            color: {"#666" if is_light else "#888"};
+        }}
+        a {{ color: {f_title}; text-decoration: none; }}
+        .school-name {{
+            margin-top: 15px; 
+            font-weight: bold; 
+            color: {"#1a1a2e" if is_light else "#fff"}; 
+            font-size: 1.2rem;
+            line-height: 1.4;
+        }}
+        .school-subname {{
+            font-size: 1rem; 
+            color: #00c6ff;
+            display: block;
+            margin-top: 5px;
+        }}
+    </style>
+    <div class="main-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
+                <p class="school-name">
+                    TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG<br>
+                    <span class="school-subname">HANOI UNIVERSITY OF PUBLIC HEALTH</span>
+                </p>
             </div>
-            <div style="flex: 1; min-width: 280px; text-align: left;">
-                <h4 style="color: {f_title}; border-bottom: 1px solid {f_border}; padding-bottom: 5px;">📍 THÔNG TIN LIÊN HỆ</h4>
-                <p><b>🏠 Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-                <p><b>📞 Điện thoại:</b> 024.62662299</p>
-                <p><b>📧 Email:</b> 2211090031@studenthuph.edu.vn</p>
-            </div>
-            <div style="flex: 1; min-width: 280px; text-align: left;">
-                <h4 style="color: {f_title}; border-bottom: 1px solid {f_border}; padding-bottom: 5px;">🔗 LIÊN KẾT NHANH</h4>
-                <p>• <a href="https://huph.edu.vn" style="color: {f_text}; text-decoration: none;">Website Nhà trường</a></p>
-                <p>• <a href="#" style="color: {f_text}; text-decoration: none;">Cổng thông tin sinh viên</a></p>
-                <p>• <a href="#" style="color: {f_text}; text-decoration: none;">Thư viện điện tử</a></p>
+            <div class="footer-col">
+                <div class="footer-title">📍 THÔNG TIN LIÊN HỆ</div>
+                <div class="footer-info-item">🌐 <b>Website:</b> <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></div>
+                <div class="footer-info-item">🏠 <b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
+                <div class="footer-info-item">📞 <b>ĐT:</b> 024.62662299 | 📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</div>
             </div>
         </div>
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem;">
-            © 2025 REHAB-AI-MONITOR | Phát triển bởi <b>Đinh Lê Quỳnh Phương</b> & Nhóm nghiên cứu
+        <div class="footer-bottom">
+            Đơn vị phát triển: <b>CÔNG TY CỔ PHẦN GIẢI PHÁP NAM VIỆT</b> | © 2025 REHAB-AI-MONITOR
         </div>
     </div>
     """
-    st.components.v1.html(footer_html, height=450)
+    st.components.v1.html(footer_html, height=500)
 
 
 if __name__ == "__main__":
