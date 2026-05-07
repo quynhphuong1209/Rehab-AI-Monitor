@@ -2873,6 +2873,12 @@ def hien_thi_frames_day_du():
     with col_stat5: st.metric("📄 Tổng số trang", total_pages)
 
 
+# Callback xử lý đổi theme nhanh (Để ngoài hàm main để tránh lỗi WebSocket Cache)
+def update_theme_callback():
+    if "theme_toggle_top" in st.session_state:
+        st.session_state.theme = 'dark' if st.session_state.theme_toggle_top else 'light'
+
+
 # ============================================
 # GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
 # ============================================
