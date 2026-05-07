@@ -195,29 +195,29 @@ st.markdown("""
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 48px !important;
+        height: 42px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         background-color: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
+        border-radius: 10px;
         color: white;
         transition: all 0.3s;
         border: 1px solid transparent;
-        min-width: 130px !important; /* Tăng thêm độ rộng tối thiểu */
-        width: auto !important; /* Cho phép tự giãn */
-        padding: 0 20px !important;
+        min-width: 90px !important; 
+        width: auto !important;
+        padding: 0 12px !important;
         white-space: nowrap !important;
     }
 
     .stTabs [data-baseweb="tab"] div,
     .stTabs [data-baseweb="tab"] p {
-        font-size: 0.9rem !important;
+        font-size: 0.82rem !important;
         margin: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 8px !important;
+        gap: 4px !important;
     }
 
     .stTabs [aria-selected="true"] {
@@ -253,6 +253,15 @@ st.markdown("""
         margin-top: 10px;
     }
     
+    /* CUSTOM CARD ĐỂ DÙNG CHUNG */
+    .custom-card {
+        background: rgba(26,26,46,0.8);
+        padding: 1.2rem;
+        border-radius: 16px;
+        text-align: center;
+        border: 1px solid #2a5298;
+    }
+    
     .google-btn:hover {
         background: #f1f1f1;
         box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
@@ -267,25 +276,25 @@ if st.session_state.get('theme') == 'light':
     <style>
         .stApp { background: #f8f9fa !important; color: #333 !important; }
         .main-header { background: #ffffff !important; border: 1px solid #ddd !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important; }
-        .main-header h1 { color: #1a1a2e !important; }
-        .main-header p { color: #555 !important; }
-        .info-box, .metric-card, .member-card, .lecturer-card { 
+        .main-header h1 { color: #000000 !important; }
+        .main-header p { color: #333333 !important; }
+        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card { 
             background: #ffffff !important; 
             border: 1px solid #e0e0e0 !important; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important; 
-            color: #333 !important; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; 
+            color: #000000 !important; 
         }
         .metric-value { color: #0072ff !important; }
-        .metric-label { color: #666 !important; }
-        .stMarkdown, p, span, label, h1, h2, h3, h4 { color: #333 !important; }
+        .metric-label { color: #444444 !important; }
+        .stMarkdown, p, span, label, h1, h2, h3, h4, li { color: #000000 !important; }
         .stTextInput input, .stSelectbox div, .stNumberInput input { 
             background-color: #fff !important; 
-            color: #333 !important; 
+            color: #000000 !important; 
             border: 1px solid #ccc !important; 
         }
         .stTabs [data-baseweb="tab"] { 
             background-color: #f1f3f5 !important; 
-            color: #555 !important; 
+            color: #666666 !important; 
             border: 1px solid #dee2e6 !important;
         }
         .stTabs [aria-selected="true"] { 
@@ -3025,13 +3034,13 @@ def main():
         with col2:
             chuan = bai_tap['chuan']
             st.markdown(f"""
-            <div style="background:rgba(26,26,46,0.8); padding:1.2rem; border-radius:16px; text-align:center; border:1px solid #2a5298;">
-                <h4 style="color:#fff;">🎯 THÔNG SỐ CHUẨN</h4>
+            <div class="custom-card">
+                <h4 style="color:{"#0072ff" if st.session_state.theme == 'light' else "#fff"};">🎯 THÔNG SỐ CHUẨN</h4>
                 <p style="color:#00CED1;">🦾 Góc vai: <strong>{chuan['vai']}°</strong> ±{chuan['sai_so']}°</p>
                 <p style="color:#FF6B6B;">💪 Góc khuỷu: <strong>{chuan['khuyu']}°</strong> ±{chuan['sai_so']}°</p>
                 <hr style="margin:10px 0;">
-                <p style="color:#aaa; font-size:0.8rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
-                <p style="color:#aaa; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
+                <p style="color:{"#666" if st.session_state.theme == 'light' else "#aaa"}; font-size:0.8rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
+                <p style="color:{"#666" if st.session_state.theme == 'light' else "#aaa"}; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
             </div>
             """, unsafe_allow_html=True)
             
