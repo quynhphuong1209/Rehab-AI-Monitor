@@ -2289,29 +2289,6 @@ st.markdown("""
 # ============================================
 # HÀM HIỂN THỊ TAB 2 - THIẾT KẾ LẠI
 # ============================================
-def gui_ket_qua_tu_ncv(v, tk, ncv_name):
-    """Hàm dùng chung để NCV gửi kết quả AI cho BN và Bác sĩ"""
-    try:
-        evals = load_data(EVALUATIONS_FILE)
-        evals.append({
-            "patient_username": v.get('username', 'unknown'),
-            "doctor_username": "AI_Researcher",
-            "video_name": v.get('video_name', 'Video'),
-            "exercise": v.get('exercise', 'N/A'),
-            "ai_accuracy": round(tk.get('do_chinh_xac', 0), 1),
-            "doctor_result": "AI Auto Analysis",
-            "errors": tk.get('warnings', []),
-            "comments": f"Kết quả phân tích tự động từ Nghiên cứu viên: {ncv_name}.",
-            "plan": "Chờ bác sĩ đánh giá lâm sàng thêm",
-            "doctor_name": f"NCV: {ncv_name}",
-            "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
-        })
-        save_data(EVALUATIONS_FILE, evals)
-        return True
-    except Exception as e:
-        st.error(f"Lỗi gửi kết quả: {e}")
-        return False
-
 def hien_thi_tab_phan_tich():
     """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
     
@@ -2662,10 +2639,27 @@ def hien_thi_tab_phan_tich():
             st.download_button("📥 Tải ảnh biểu đồ Histogram", fig_hist.to_image(format="png"), "histogram_goc.png", "image/png")
         except: pass
 
+        # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
         st.markdown("---")
-        if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="send_joint_btn", use_container_width=True, type="primary"):
-            if gui_ket_qua_tu_ncv(st.session_state.current_eval_video, tk, ten_nguoi_dung):
-                st.success("✅ Đã gửi kết quả phân tích khớp cho Bệnh nhân và Bác sĩ!")
+        if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="btn_send_ai_joint", use_container_width=True, type="primary"):
+            v_meta = st.session_state.get('current_eval_video')
+            if v_meta:
+                evals = load_data(EVALUATIONS_FILE)
+                evals.append({
+                    "patient_username": v_meta['username'],
+                    "doctor_username": "AI_Researcher",
+                    "video_name": v_meta.get('video_name', 'N/A'),
+                    "exercise": v_meta['exercise'],
+                    "ai_accuracy": tk['do_chinh_xac'],
+                    "doctor_result": "AI Auto (NCV)",
+                    "errors": tk.get('warnings', []),
+                    "comments": f"NCV đã phân tích và gửi kết quả AI. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
+                    "plan": "Chờ Bác sĩ/KTV đánh giá lâm sàng chi tiết.",
+                    "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
+                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                })
+                save_data(EVALUATIONS_FILE, evals)
+                st.success(f"✅ Đã gửi kết quả AI cho BN {v_meta['full_name']} & Bác sĩ!")
                 st.balloons()
 
     # === TAB 3: NÂNG CAO (BOXPLOT) ===
@@ -2678,10 +2672,27 @@ def hien_thi_tab_phan_tich():
             st.download_button("📥 Tải ảnh biểu đồ Boxplot", fig_box.to_image(format="png"), "boxplot_rom.png", "image/png")
         except: pass
 
+        # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
         st.markdown("---")
-        if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="send_box_btn", use_container_width=True, type="primary"):
-            if gui_ket_qua_tu_ncv(st.session_state.current_eval_video, tk, ten_nguoi_dung):
-                st.success("✅ Đã gửi kết quả phân tích nâng cao cho Bệnh nhân và Bác sĩ!")
+        if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="btn_send_ai_boxplot", use_container_width=True, type="primary"):
+            v_meta = st.session_state.get('current_eval_video')
+            if v_meta:
+                evals = load_data(EVALUATIONS_FILE)
+                evals.append({
+                    "patient_username": v_meta['username'],
+                    "doctor_username": "AI_Researcher",
+                    "video_name": v_meta.get('video_name', 'N/A'),
+                    "exercise": v_meta['exercise'],
+                    "ai_accuracy": tk['do_chinh_xac'],
+                    "doctor_result": "AI Auto (NCV)",
+                    "errors": tk.get('warnings', []),
+                    "comments": f"NCV gửi kết quả trích xuất ROM & Boxplot. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
+                    "plan": "Bác sĩ vui lòng xem biểu đồ ROM để đánh giá độ ổn định.",
+                    "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
+                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                })
+                save_data(EVALUATIONS_FILE, evals)
+                st.success(f"✅ Đã gửi báo cáo AI cho BN {v_meta['full_name']} & Bác sĩ!")
                 st.balloons()
 
     # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
@@ -2995,17 +3006,25 @@ def hien_thi_form_danh_gia_bac_si():
             st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
             st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
 
-    # Hiển thị các đánh giá từ NCV nếu có để bác sĩ tham khảo
-    evals_history = load_data(EVALUATIONS_FILE)
-    ncv_evals = [e for e in evals_history if e['patient_username'] == selected_video['username'] and "NCV:" in e.get('doctor_name', '')]
-    if ncv_evals:
-        with st.expander("📊 PHÂN TÍCH TỪ NGHIÊN CỨU VIÊN (AI AUTO)", expanded=False):
-            for ne in reversed(ncv_evals):
+    # === HIỂN THỊ KẾT QUẢ AI TỪ NGHIÊN CỨU VIÊN (MỚI THÊM) ===
+    evals_data = load_data(EVALUATIONS_FILE)
+    patient_evals = [e for e in evals_data if e['patient_username'] == selected_video['username']]
+    if patient_evals:
+        with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ AI & CHUYÊN MÔN", expanded=True):
+            for e in reversed(patient_evals):
+                is_ai = e.get('doctor_username') == "AI_Researcher"
+                bg_color = "rgba(0,206,209,0.05)" if is_ai else "rgba(255,215,0,0.05)"
+                border_color = "#00CED1" if is_ai else "#ffd700"
+                label = "🤖 KẾT QUẢ AI" if is_ai else "👨‍⚕️ BÁC SĨ ĐÁNH GIÁ"
+                
                 st.markdown(f"""
-                <div style="border-left: 3px solid #00CED1; padding-left: 10px; margin-bottom: 10px;">
-                    <small style="color: #888;">{ne['time']} - {ne['doctor_name']}</small><br>
-                    <b>Độ chính xác AI:</b> {ne['ai_accuracy']}%<br>
-                    <b>Nhận xét:</b> {ne['comments']}
+                <div style="background: {bg_color}; border: 1px solid {border_color}; padding: 1rem; border-radius: 10px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong style="color: {border_color};">{label}</strong>
+                        <span style="color: #888; font-size: 0.8rem;">{e['time']}</span>
+                    </div>
+                    <p style="margin: 5px 0;"><b>Độ chính xác:</b> {e['ai_accuracy']}% | <b>Kết quả:</b> {e['doctor_result']}</p>
+                    <p style="margin: 5px 0; font-size: 0.9rem;"><b>Nhận xét:</b> {e['comments']}</p>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -3073,17 +3092,22 @@ def hien_thi_ket_qua_cho_benh_nhan():
             hien_thi_tab_phan_tich()
     else:
         for e in reversed(my_evals):
-            with st.expander(f"📝 Đánh giá ngày {e['time']} - Bài tập: {e['exercise']}", expanded=True):
+            is_ai = e.get('doctor_username') == "AI_Researcher"
+            title_color = "#00CED1" if is_ai else "#ffd700"
+            icon = "🤖" if is_ai else "👨‍⚕️"
+            
+            with st.expander(f"{icon} Đánh giá ngày {e['time']} - Bài tập: {e['exercise']}", expanded=True):
                 c1, c2 = st.columns([1, 2])
                 with c1:
-                    st.metric("🤖 AI Accuracy", f"{e['ai_accuracy']}%")
-                    st.metric("👨‍⚕️ Bác sĩ đánh giá", e['doctor_result'])
+                    st.metric("📊 AI Accuracy", f"{e['ai_accuracy']}%")
+                    st.markdown(f"<h4 style='color: {title_color}; text-align: center;'>{e['doctor_result']}</h4>", unsafe_allow_html=True)
                 with c2:
-                    st.markdown(f"**Bác sĩ thực hiện:** {e.get('doctor_name', 'Bác sĩ chuyên khoa')}")
-                    st.markdown(f"**Lỗi sai:** {', '.join(e['errors']) if e['errors'] else 'Không có'}")
+                    st.markdown(f"**Nguồn đánh giá:** <span style='color: {title_color}; font-weight: bold;'>{e.get('doctor_name', 'Hệ thống AI')}</span>", unsafe_allow_html=True)
+                    st.markdown(f"**Lỗi sai:** {', '.join(e['errors']) if e['errors'] else 'Không phát hiện'}")
                     st.markdown(f"**Nhận xét:** {e['comments']}")
                     st.markdown(f"**Kế hoạch:** {e['plan']}")
-                    st.markdown(f'<p style="color: #00ff00; font-size: 0.8rem;">📩 Đã nhận từ bác sĩ</p>', unsafe_allow_html=True)
+                    status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã xem"
+                    st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic;">📩 {status_text}</p>', unsafe_allow_html=True)
         
         st.markdown("---")
         st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
