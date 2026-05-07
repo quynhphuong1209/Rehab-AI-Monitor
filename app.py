@@ -323,13 +323,15 @@ if st.session_state.get('theme') == 'light':
         [data-testid="stForm"] { background-color: #ffffff !important; border: 1px solid #eee !important; border-radius: 15px !important; }
         
         /* FIX ALL BUTTONS */
-        .stButton button, .stDownloadButton button, [data-testid="stFormSubmitButton"] button { 
+        .stButton button, .stDownloadButton button, [data-testid="stFormSubmitButton"] button,
+        .stNumberInput button, [data-testid="stFileUploader"] button { 
             background-color: #f1f3f5 !important; 
             color: #000000 !important; 
             border: 1px solid #ccc !important;
             font-weight: bold !important;
         }
-        .stButton button:hover, .stDownloadButton button:hover, [data-testid="stFormSubmitButton"] button:hover { 
+        .stButton button:hover, .stDownloadButton button:hover, [data-testid="stFormSubmitButton"] button:hover,
+        .stNumberInput button:hover, [data-testid="stFileUploader"] button:hover { 
             background-color: #e9ecef !important; 
             color: #0072ff !important; 
             border: 1px solid #0072ff !important;
