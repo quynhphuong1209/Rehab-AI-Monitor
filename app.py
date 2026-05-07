@@ -2976,7 +2976,7 @@ def main():
         st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
         file_upload = st.file_uploader(
             "📤 Tải lên video tập luyện của bệnh nhân", 
-            type=None,
+            type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
             help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB"
         )
         
@@ -3044,23 +3044,14 @@ def main():
                     try:
                         status_text.info("📤 Đang đọc file video...")
                         try:
-                            is_mov = file_upload.name.lower().endswith('.mov')
-                            suffix = '.mp4' if not is_mov else '.mov'
-                            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+                            # CÁCH CŨ ỔN ĐỊNH: Đọc toàn bộ file
+                            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
                                 tmp_file.write(file_upload.getvalue())
                                 video_path = tmp_file.name
                         except Exception as e:
                             st.warning(f"⚠️ Lỗi đọc file: {e}. Vui lòng thử lại!")
                             st.session_state.processing = False
                             st.stop()
-                        
-                        progress_bar.progress(0.1)
-                        
-                        if is_mov:
-                            status_text.info("🔄 Đang chuyển đổi MOV sang MP4...")
-                            converted_path = convert_mov_to_mp4(video_path)
-                            if converted_path != video_path:
-                                video_path = converted_path
                         
                         progress_bar.progress(0.2)
                         status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
