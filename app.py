@@ -3000,9 +3000,19 @@ def hien_thi_lich_nhac_nho():
             users = load_users()
             patients = [u for u in users if users[u].get('role') == "Bệnh nhân"]
             
-            selected_patient = st.selectbox("Chọn bệnh nhân:", patients, format_func=lambda x: f"👤 {users[x].get('full_name', x)} ({x})")
-            
-            loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True)
+            if not patients:
+                st.warning("⚠️ Hiện chưa có bệnh nhân nào trong hệ thống.")
+            else:
+                # Tự động chọn bệnh nhân vừa tương tác (nếu có)
+                default_patient = st.session_state.get('selected_patient_for_schedule', patients[0])
+                try:
+                    def_idx = patients.index(default_patient)
+                except:
+                    def_idx = 0
+                
+                selected_patient = st.selectbox("Chọn bệnh nhân:", patients, index=def_idx, format_func=lambda x: f"👤 {users[x].get('full_name', x)} ({x})")
+                
+                loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True)
             
             col1, col2 = st.columns(2)
             with col1:
@@ -3780,6 +3790,7 @@ def main():
                                     
                                     if v['status'] == "Chờ bác sĩ phân tích":
                                         if st.button("🚀 Phân tích video này", key=f"analyze_btn_{idx}", type="primary", use_container_width=True):
+                                            st.session_state.selected_patient_for_schedule = v['username']
                                             st.session_state.processing = True
                                             st.session_state.has_data = False
                                             
@@ -3833,6 +3844,7 @@ def main():
                                                 st.session_state.processing = False
                                     
                                     if st.button("📝 Đánh giá video này", key=f"eval_btn_{idx}", use_container_width=True):
+                                        st.session_state.selected_patient_for_schedule = v['username']
                                         st.session_state.current_eval_video = v
                                         chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
                                     
