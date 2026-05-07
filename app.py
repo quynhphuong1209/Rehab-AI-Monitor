@@ -438,7 +438,8 @@ def hien_thi_tab_phan_hoi():
     with col_f1:
         st.markdown("#### 📮 Để lại ý kiến của bạn")
         with st.form("feedback_form", clear_on_submit=True):
-            user_name = st.text_input("Tên của bạn", value=st.session_state.user_info.get('username', ''))
+            default_name = st.session_state.user_info.get('username', '') if st.session_state.user_info else ''
+            user_name = st.text_input("Tên của bạn", value=default_name)
             user_msg = st.text_area("Nội dung góp ý/thảo luận")
             submitted = st.form_submit_button("Gửi bình luận", use_container_width=True)
             
@@ -2848,10 +2849,10 @@ def main():
                 st.markdown(f"<p style='margin-top: 10px; color: #ffd700;'>👤 <b>{st.session_state.user_info['username']}</b></p>", unsafe_allow_html=True)
             with inner_c2:
                 if st.button("🚪 Đăng xuất", use_container_width=True):
+                    if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
+                        st.logout()
                     st.session_state.logged_in = False
                     st.session_state.user_info = None
-                    if st.session_state.get('user_info') and st.session_state.user_info.get("auth_type") == "google":
-                        st.logout()
                     st.rerun()
         else:
             # Hiển thị nút Đăng nhập / Đăng ký khi chưa vào hệ thống
