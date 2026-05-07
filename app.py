@@ -3124,6 +3124,25 @@ def main():
                     progress_bar.empty()
                     status_text.empty()
 
+        # === HIỆN TRẠNG THÁI ĐANG XỬ LÝ HOẶC ĐÃ CÓ KẾT QUẢ ===
+        if st.session_state.processing:
+            st.warning("⏳ Đang xử lý video, vui lòng chờ...")
+            if st.button("❌ Hủy xử lý", width='stretch'):
+                st.session_state.processing = False
+                st.rerun()
+        
+        elif st.session_state.has_data:
+            st.success("✅ Đã có kết quả phân tích! Hãy xem các tab PHÂN TÍCH và VIDEO & ẢNH.")
+            if st.button("🔄 PHÂN TÍCH VIDEO MỚI", width='stretch'):
+                keys_to_clear = ['has_data', 'angle_df', 'stats', 'frames_zip', 'exercise', 
+                                'temp_video_file', 'processed_video_bytes', 
+                                'all_frames_data', 'all_frames_paths']
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        st.session_state[key] = None if key != 'has_data' else False
+                st.session_state.processing = False
+                st.rerun()
+
         # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
         st.markdown("---")
         st.markdown("<h3 style='color: #00c6ff;'>🧬 QUY TRÌNH THU THẬP DỮ LIỆU DATA FRAMES (NCKH)</h3>", unsafe_allow_html=True)
@@ -3164,26 +3183,6 @@ def main():
             - **Định dạng:** Toàn bộ góc độ được lưu vào file JSON/CSV.
             - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
             """)
-        
-        if st.session_state.processing:
-            st.warning("⏳ Đang xử lý video, vui lòng chờ...")
-            
-            if st.button("❌ Hủy xử lý", width='stretch'):
-                st.session_state.processing = False
-                st.rerun()
-        
-        elif st.session_state.has_data:
-            st.success("✅ Đã có kết quả phân tích! Hãy xem các tab PHÂN TÍCH và VIDEO & ẢNH.")
-            
-            if st.button("🔄 PHÂN TÍCH VIDEO MỚI", width='stretch'):
-                keys_to_clear = ['has_data', 'angle_df', 'stats', 'frames_zip', 'exercise', 
-                                'temp_video_file', 'processed_video_bytes', 
-                                'all_frames_data', 'all_frames_paths']
-                for key in keys_to_clear:
-                    if key in st.session_state:
-                        st.session_state[key] = None if key != 'has_data' else False
-                st.session_state.processing = False
-                st.rerun()
     
     # ==================== TAB 2: TRỰC TIẾP (REAL-TIME) ====================
     with tab2:
