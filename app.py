@@ -156,14 +156,20 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === SỬA LỖI CHỮ ĐÈ (AN TOÀN) === */
-    /* Ẩn chữ arrow trong Expander và chữ upload trong bộ tải file */
+    /* === QUÉT SẠCH CHỮ ĐÈ TRÊN TOÀN HỆ THỐNG (SIÊU AN TOÀN) === */
+    /* Nhắm vào mọi thẻ span chứa text icon của Streamlit */
     [data-testid="stExpander"] summary span > span,
-    [data-testid="stFileUploader"] section span > span {
-        color: transparent !important;
-        font-size: 0 !important;
-        line-height: 0 !important;
-        visibility: hidden !important;
+    [data-testid="stFileUploader"] section span > span,
+    [data-testid="stSidebarNav"] span,
+    [data-testid="stSidebarCollapseButton"] span,
+    .st-emotion-cache-1p6n6q3, 
+    .st-emotion-cache-16idsys {
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        display: block !important; /* Giữ layout nhưng ẩn nội dung */
+        overflow: hidden !important;
+        pointer-events: none !important;
         position: absolute !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] {
