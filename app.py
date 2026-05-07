@@ -3025,142 +3025,142 @@ def main():
             file_size_mb = file_upload.size / (1024 * 1024)
             st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.2f} MB)")
                 
-                if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", width='stretch'):
-                    st.session_state.processing = True
-                    st.session_state.has_data = False
-                    st.session_state.all_frames_data = []
-                    st.session_state.angle_df = None
-                    st.session_state.stats = None
-                    st.session_state.frames_zip = None
-                    st.session_state.temp_video_file = None
-                    
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
-                    
+            if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", width='stretch'):
+                st.session_state.processing = True
+                st.session_state.has_data = False
+                st.session_state.all_frames_data = []
+                st.session_state.angle_df = None
+                st.session_state.stats = None
+                st.session_state.frames_zip = None
+                st.session_state.temp_video_file = None
+                
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                try:
+                    status_text.info("📤 Đang đọc file video...")
                     try:
-                        status_text.info("📤 Đang đọc file video...")
-                        try:
-                            # CÁCH CŨ ỔN ĐỊNH: Đọc toàn bộ file
-                            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
-                                tmp_file.write(file_upload.getvalue())
-                                video_path = tmp_file.name
-                        except Exception as e:
-                            st.warning(f"⚠️ Lỗi đọc file: {e}. Vui lòng thử lại!")
-                            st.session_state.processing = False
-                            st.stop()
-                        
-                        progress_bar.progress(0.2)
-                        status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
-                        
-                        start_time = time.time()
-                        
-                        def update_progress(p):
-                            progress_bar.progress(0.2 + p * 0.7)
-                            status_text.info(f"🔄 Đang xử lý frame... {p*100:.0f}%")
-                        
-                        output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
-                            video_path, bai_tap['chuan'], update_progress
-                        )
-                        
-                        progress_bar.progress(0.95)
-                        status_text.info("📦 Đang hoàn tất...")
-                        
-                        process_time = time.time() - start_time
-                        
-                        if valid_frames > 0 and len(angle_data) > 0:
-                            df = pd.DataFrame(angle_data)
-                            metrics = tinh_metrics_chi_tiet(df, bai_tap)
-                            
-                            st.session_state.has_data = True
-                            st.session_state.angle_df = df
-                            st.session_state.stats = {
-                                "do_chinh_xac": metrics["ty_le_tong_the"],
-                                "ty_le_gan_dung": metrics["ty_le_gan_dung"],
-                                "ty_le_vai_dung": metrics["ty_le_vai_dung"],
-                                "ty_le_khuyu_dung": metrics["ty_le_khuyu_dung"],
-                                "frame_dung": metrics["frame_dung"],
-                                "frame_gan_dung": metrics["frame_gan_dung"],
-                                "tong_frame_hop_le": valid_frames,
-                                "tb_goc_vai": metrics["tb_goc_vai"],
-                                "tb_goc_khuyu": metrics["tb_goc_khuyu"],
-                                "min_goc_vai": metrics["min_goc_vai"],
-                                "max_goc_vai": metrics["max_goc_vai"],
-                                "min_goc_khuyu": metrics["min_goc_khuyu"],
-                                "max_goc_khuyu": metrics["max_goc_khuyu"],
-                                "std_goc_vai": metrics["std_goc_vai"],
-                                "std_goc_khuyu": metrics["std_goc_khuyu"],
-                                "mae_tong": metrics["mae_tong"],
-                                "precision": metrics["precision"],
-                                "recall": metrics["recall"],
-                                "f1_score": metrics["f1_score"],
-                                "icc": metrics["icc"],
-                                "thoi_gian": process_time,
-                                "tong_frame": total_frames,
-                                "warnings": all_warnings
-                            }
-                            st.session_state.frames_zip = zip_data
-                            st.session_state.exercise = bai_tap
-                            st.session_state.all_frames_paths = frame_paths
-                            st.session_state.temp_video_file = output_path
-                            st.session_state.all_frames_data_path = all_frames_data
-                            
-                            try:
-                                os.unlink(video_path)
-                            except:
-                                pass
-                            
-                            status_text.empty()
-                            progress_bar.empty()
-                            st.balloons()
-                            st.success(f"✅ Xử lý hoàn tất trong {process_time:.1f} giây!")
-                            st.info(f"📊 Tổng số frame: {total_frames} | Hợp lệ: {valid_frames} frames | Độ chính xác: {metrics['ty_le_tong_the']:.1f}%")
-                            
-                            # === NÚT ĐIỀU HƯỚNG NHANH (SMART NAVIGATION) ===
-                            st.markdown("### 🎯 KẾT QUẢ ĐÃ SẴN SÀNG")
-                            st.write("Bạn có muốn xem kết quả chi tiết ngay không?")
-                            c_nav1, c_nav2 = st.columns(2)
-                            with c_nav1:
-                                if st.button("📊 XEM BÁO CÁO PHÂN TÍCH", use_container_width=True, type="primary"):
-                                    chuyen_tab_bang_js("PHÂN TÍCH")
-                            with c_nav2:
-                                if st.button("🎬 XEM VIDEO & ẢNH FRAME", use_container_width=True, type="primary"):
-                                    chuyen_tab_bang_js("VIDEO & ẢNH")
-                            st.markdown("---")
-                            
-                            # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
-                            history_file = "lich_su_tap_luyen.json"
-                            new_entry = {
-                                "ngay": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                                "bai_tap": bai_tap['ten'],
-                                "accuracy": round(metrics["ty_le_tong_the"], 1),
-                                "f1": round(metrics["f1_score"], 2),
-                                "thoi_gian_tap": round(process_time, 1)
-                            }
-                            
-                            try:
-                                if os.path.exists(history_file):
-                                    with open(history_file, 'r', encoding='utf-8') as f:
-                                        history_data = json.load(f)
-                                else:
-                                    history_data = []
-                                
-                                history_data.append(new_entry)
-                                with open(history_file, 'w', encoding='utf-8') as f:
-                                    json.dump(history_data, f, ensure_ascii=False, indent=4)
-                            except: pass
-
-                            st.session_state.processing = False
-                            time.sleep(0.5)
-                            st.rerun()
-                        else:
-                            st.error("❌ Không phát hiện khung xương! Vui lòng quay video rõ người tập hơn.")
-                            st.session_state.processing = False
-                            
+                        # CÁCH CŨ ỔN ĐỊNH: Đọc toàn bộ file
+                        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
+                            tmp_file.write(file_upload.getvalue())
+                            video_path = tmp_file.name
                     except Exception as e:
-                        st.error(f"❌ Lỗi xử lý: {str(e)}")
+                        st.warning(f"⚠️ Lỗi đọc file: {e}. Vui lòng thử lại!")
                         st.session_state.processing = False
-                        progress_bar.empty()
+                        st.stop()
+                    
+                    progress_bar.progress(0.2)
+                    status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
+                    
+                    start_time = time.time()
+                    
+                    def update_progress(p):
+                        progress_bar.progress(0.2 + p * 0.7)
+                        status_text.info(f"🔄 Đang xử lý frame... {p*100:.0f}%")
+                    
+                    output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
+                        video_path, bai_tap['chuan'], update_progress
+                    )
+                    
+                    progress_bar.progress(0.95)
+                    status_text.info("📦 Đang hoàn tất...")
+                    
+                    process_time = time.time() - start_time
+                    
+                    if valid_frames > 0 and len(angle_data) > 0:
+                        df = pd.DataFrame(angle_data)
+                        metrics = tinh_metrics_chi_tiet(df, bai_tap)
+                        
+                        st.session_state.has_data = True
+                        st.session_state.angle_df = df
+                        st.session_state.stats = {
+                            "do_chinh_xac": metrics["ty_le_tong_the"],
+                            "ty_le_gan_dung": metrics["ty_le_gan_dung"],
+                            "ty_le_vai_dung": metrics["ty_le_vai_dung"],
+                            "ty_le_khuyu_dung": metrics["ty_le_khuyu_dung"],
+                            "frame_dung": metrics["frame_dung"],
+                            "frame_gan_dung": metrics["frame_gan_dung"],
+                            "tong_frame_hop_le": valid_frames,
+                            "tb_goc_vai": metrics["tb_goc_vai"],
+                            "tb_goc_khuyu": metrics["tb_goc_khuyu"],
+                            "min_goc_vai": metrics["min_goc_vai"],
+                            "max_goc_vai": metrics["max_goc_vai"],
+                            "min_goc_khuyu": metrics["min_goc_khuyu"],
+                            "max_goc_khuyu": metrics["max_goc_khuyu"],
+                            "std_goc_vai": metrics["std_goc_vai"],
+                            "std_goc_khuyu": metrics["std_goc_khuyu"],
+                            "mae_tong": metrics["mae_tong"],
+                            "precision": metrics["precision"],
+                            "recall": metrics["recall"],
+                            "f1_score": metrics["f1_score"],
+                            "icc": metrics["icc"],
+                            "thoi_gian": process_time,
+                            "tong_frame": total_frames,
+                            "warnings": all_warnings
+                        }
+                        st.session_state.frames_zip = zip_data
+                        st.session_state.exercise = bai_tap
+                        st.session_state.all_frames_paths = frame_paths
+                        st.session_state.temp_video_file = output_path
+                        st.session_state.all_frames_data_path = all_frames_data
+                        
+                        try:
+                            os.unlink(video_path)
+                        except:
+                            pass
+                        
                         status_text.empty()
+                        progress_bar.empty()
+                        st.balloons()
+                        st.success(f"✅ Xử lý hoàn tất trong {process_time:.1f} giây!")
+                        st.info(f"📊 Tổng số frame: {total_frames} | Hợp lệ: {valid_frames} frames | Độ chính xác: {metrics['ty_le_tong_the']:.1f}%")
+                        
+                        # === NÚT ĐIỀU HƯỚNG NHANH (SMART NAVIGATION) ===
+                        st.markdown("### 🎯 KẾT QUẢ ĐÃ SẴN SÀNG")
+                        st.write("Bạn có muốn xem kết quả chi tiết ngay không?")
+                        c_nav1, c_nav2 = st.columns(2)
+                        with c_nav1:
+                            if st.button("📊 XEM BÁO CÁO PHÂN TÍCH", use_container_width=True, type="primary"):
+                                chuyen_tab_bang_js("PHÂN TÍCH")
+                        with c_nav2:
+                            if st.button("🎬 XEM VIDEO & ẢNH FRAME", use_container_width=True, type="primary"):
+                                chuyen_tab_bang_js("VIDEO & ẢNH")
+                        st.markdown("---")
+                        
+                        # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
+                        history_file = "lich_su_tap_luyen.json"
+                        new_entry = {
+                            "ngay": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                            "bai_tap": bai_tap['ten'],
+                            "accuracy": round(metrics["ty_le_tong_the"], 1),
+                            "f1": round(metrics["f1_score"], 2),
+                            "thoi_gian_tap": round(process_time, 1)
+                        }
+                        
+                        try:
+                            if os.path.exists(history_file):
+                                with open(history_file, 'r', encoding='utf-8') as f:
+                                    history_data = json.load(f)
+                            else:
+                                history_data = []
+                            
+                            history_data.append(new_entry)
+                            with open(history_file, 'w', encoding='utf-8') as f:
+                                json.dump(history_data, f, ensure_ascii=False, indent=4)
+                        except: pass
+
+                        st.session_state.processing = False
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error("❌ Không phát hiện khung xương! Vui lòng quay video rõ người tập hơn.")
+                        st.session_state.processing = False
+                        
+                except Exception as e:
+                    st.error(f"❌ Lỗi xử lý: {str(e)}")
+                    st.session_state.processing = False
+                    progress_bar.empty()
+                    status_text.empty()
         
         elif st.session_state.processing:
             st.warning("⏳ Đang xử lý video, vui lòng chờ...")
