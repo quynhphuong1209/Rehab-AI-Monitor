@@ -2988,10 +2988,12 @@ def hien_thi_dang_nhap_dang_ky():
                             
             with t_register:
                 st.markdown("<br>", unsafe_allow_html=True)
+                reg_role = st.selectbox("🎭 BẠN LÀ: (Chọn vai trò để có giao diện phù hợp) *", 
+                                       ["Bệnh nhân", "Bác sĩ/KTV PHCN", "Nghiên cứu viên"], 
+                                       key="reg_role_new")
                 reg_name = st.text_input("📛 Họ và tên", placeholder="VD: Nguyễn Văn A", key="reg_n")
                 reg_u = st.text_input("👤 Tên đăng nhập *", placeholder="Chọn tên tài khoản", key="reg_u")
                 reg_e = st.text_input("📧 Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
-                reg_role = st.selectbox("🎭 Vai trò người dùng *", ["Bệnh nhân", "Bác sĩ/KTV PHCN", "Nghiên cứu viên"], key="reg_role")
                 reg_p = st.text_input("🔑 Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
                 reg_cp = st.text_input("✅ Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
                 
@@ -3008,7 +3010,7 @@ def hien_thi_dang_nhap_dang_ky():
                                 "password": hash_password(reg_p),
                                 "email": reg_e,
                                 "full_name": reg_name,
-                                "role": reg_role,
+                                "role": reg_role_new,
                                 "created_at": datetime.now().isoformat()
                             }
                             save_users(users)
