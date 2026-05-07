@@ -3148,6 +3148,83 @@ def hien_thi_tab_nckh():
         with col3:
             st.metric("Precision", "≥ 0.85")
             st.metric("Recall", "≥ 0.85")
+
+def hien_thi_tab_thong_tin_nghien_cuu():
+    is_light = st.session_state.theme == 'light'
+    card_bg = "#f8f9fa" if is_light else "rgba(255, 255, 255, 0.05)"
+    text_color = "#333" if is_light else "#ccc"
+    accent_color = "#00c6ff"
+    
+    st.markdown(f"""
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="color: {accent_color}; text-transform: uppercase; margin-bottom: 0.5rem;">Trang thông tin nghiên cứu</h2>
+        <h4 style="color: {text_color}; line-height: 1.4;">PHÁT TRIỂN MÔ HÌNH THỬ NGHIỆM GIÁM SÁT TẬP LUYỆN PHỤC HỒI CHỨC NĂNG TỪ XA DỰA TRÊN TRÍ TUỆ NHÂN TẠO VÀ THỊ GIÁC MÁY TÍNH TẠI BỆNH VIỆN ĐA KHOA PHẠM NGỌC THẠCH - TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG (2025–2026)</h4>
+        <p style="color: {accent_color}; font-weight: bold; font-size: 1.1rem; margin-top: 1rem;">🎯 Dành cho đối tượng: Người bệnh viêm quanh khớp vai điều trị tại Khoa Phục hồi chức năng</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Sử dụng các expander để trình bày nội dung chuyên nghiệp
+    with st.expander("1. GIỚI THIỆU VỀ NGHIÊN CỨU", expanded=True):
+        st.markdown(f"""
+        <div style="padding: 10px; border-left: 4px solid {accent_color};">
+            <p>Nghiên cứu này nhằm thử nghiệm một hệ thống giúp theo dõi việc tập luyện phục hồi chức năng khớp vai bằng camera và máy tính. Hệ thống sẽ giúp ghi nhận và phân tích các động tác tập luyện của người bệnh.</p>
+            <p>Đối tượng tham gia là người bệnh được chẩn đoán viêm quanh khớp vai đang điều trị tại Khoa Phục hồi chức năng – Bệnh viện Đa khoa Phạm Ngọc Thạch. Mục tiêu của nghiên cứu là đánh giá xem hệ thống có thể nhận biết và đánh giá đúng các động tác tập luyện hay không, từ đó hướng tới việc hỗ trợ theo dõi tập luyện từ xa trong tương lai.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with st.expander("2. QUY TRÌNH NGHIÊN CỨU", expanded=False):
+        st.markdown(f"""
+        <p>Nghiên cứu được thực hiện từ tháng 12 năm 2025 đến tháng 7 năm 2026 tại Khoa Phục hồi chức năng – Bệnh viện Đa khoa Phạm Ngọc Thạch. Người tham gia là người bệnh viêm quanh khớp vai đang được chỉ định tập phục hồi chức năng. Dự kiến có khoảng 05 người bệnh tham gia.</p>
+        <p>Người tham gia cần có khả năng thực hiện các bài tập theo hướng dẫn và đồng ý tham gia nghiên cứu. Những trường hợp không đủ điều kiện sức khỏe hoặc không thể phối hợp trong quá trình thực hiện sẽ không được tham gia.</p>
+        <p>Trong quá trình tham gia, người bệnh sẽ thực hiện các bài tập phục hồi chức năng khớp vai theo hướng dẫn của nhân viên y tế, bao gồm bài tập con lắc, bài tập với gậy và bài tập với dây kháng lực. Quá trình tập luyện sẽ được ghi hình bằng thiết bị điện tử. Thông tin thu thập bao gồm video ghi lại quá trình tập luyện và một số thông tin cơ bản liên quan đến việc thực hiện động tác. Các video này sẽ được sử dụng để đánh giá mức độ chính xác của động tác và so sánh với nhận định của nhân viên y tế. Kết quả đánh giá sẽ được thông báo lại cho người bệnh để biết và điều chỉnh cách tập nếu cần.</p>
+        <p>Mỗi lần tham gia kéo dài khoảng 5–10 phút và không làm ảnh hưởng đến thời gian điều trị thông thường của người bệnh.</p>
+        """, unsafe_allow_html=True)
+
+    with st.expander("3. NGUY CƠ CÓ THỂ XẢY RA", expanded=False):
+        st.warning("⚠️ Người bệnh có thể cảm thấy mệt, đau cơ nhẹ hoặc căng cơ khi thực hiện các bài tập. Việc ghi hình có thể khiến một số người cảm thấy không thoải mái.")
+        st.info("💡 Để giảm thiểu các nguy cơ này, người bệnh luôn có nhân viên y tế theo dõi. Dữ liệu (video) sẽ được mã hóa và bảo mật tuyệt đối.")
+
+    with st.expander("4. QUYỀN LỢI CỦA NGƯỜI THAM GIA", expanded=False):
+        st.success("✅ Người tham gia không phải trả bất kỳ chi phí nào. Được nhân viên y tế hướng dẫn và theo dõi tập luyện để đảm bảo an toàn và đúng kỹ thuật.")
+
+    with st.expander("5. BẢO MẬT VÀ LƯU TRỮ THÔNG TIN", expanded=False):
+        st.markdown("""
+        Toàn bộ thông tin và dữ liệu thu thập được bảo mật theo quy định. Dữ liệu được mã hóa và lưu trữ trong hệ thống an toàn; chỉ các thành viên được phân công mới có quyền truy cập. Thông tin cá nhân sẽ không được tiết lộ khi công bố kết quả.
+        """)
+
+    with st.expander("6. TÍNH CHẤT TÌNH NGUYỆN", expanded=False):
+        st.markdown("""
+        Việc tham gia hoàn toàn tự nguyện. Người bệnh có quyền từ chối hoặc rút khỏi nghiên cứu bất cứ lúc nào mà không cần nêu lý do. Quyết định này không ảnh hưởng đến việc điều trị tại bệnh viện.
+        """)
+
+    with st.expander("7. HÌNH THỨC CÔNG BỐ THÔNG TIN", expanded=False):
+        st.markdown("""
+        Kết quả có thể được sử dụng cho mục đích học tập, báo cáo khoa học hoặc hội thảo. Mọi thông tin cá nhân đều được bảo mật tuyệt đối.
+        """)
+
+    # Thông tin liên hệ dạng thẻ
+    st.markdown("### 📞 THÔNG TIN LIÊN HỆ")
+    col_c1, col_c2 = st.columns(2)
+    with col_c1:
+        st.markdown(f"""
+        <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 12px; border: 1px solid {accent_color}; border-top: 5px solid {accent_color};">
+            <h4 style="margin-top:0; color:{accent_color};">Nghiên cứu viên chính</h4>
+            <p style="margin:5px 0;"><b>Họ tên:</b> Đinh Lê Quỳnh Phương</p>
+            <p style="margin:5px 0;"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng</p>
+            <p style="margin:5px 0;"><b>Email:</b> 2211090031@studenthuph.edu.vn</p>
+            <p style="margin:5px 0;"><b>SĐT:</b> 0382665916</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_c2:
+        st.markdown(f"""
+        <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 12px; border: 1px solid #ff4b4b; border-top: 5px solid #ff4b4b;">
+            <h4 style="margin-top:0; color:#ff4b4b;">Hội đồng đạo đức</h4>
+            <p style="margin:5px 0;"><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</p>
+            <p style="margin:5px 0;"><b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, HN</p>
+            <p style="margin:5px 0;"><b>Email:</b> irb@huph.edu.vn</p>
+            <p style="margin:5px 0;"><b>SĐT:</b> 024 62663024</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
         st.markdown("""
@@ -4374,7 +4451,7 @@ def main():
             tab_titles.append("📊 KẾT QUẢ AI")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = ["🏠 TRANG CHỦ", "🩺 KHAI BÁO TRIỆU CHỨNG", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "🩺 KHAI BÁO TRIỆU CHỨNG", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
         tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
@@ -4925,6 +5002,10 @@ def main():
     if "📚 ĐỀ TÀI NCKH" in tab_map:
         with tab_map["📚 ĐỀ TÀI NCKH"]:
             hien_thi_tab_nckh()
+            
+    if "📄 THÔNG TIN NGHIÊN CỨU" in tab_map:
+        with tab_map["📄 THÔNG TIN NGHIÊN CỨU"]:
+            hien_thi_tab_thong_tin_nghien_cuu()
         
     if "👥 THÀNH VIÊN" in tab_map:
         with tab_map["👥 THÀNH VIÊN"]:
