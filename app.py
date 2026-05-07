@@ -2861,8 +2861,14 @@ def main():
         with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
         
         st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
-        chan_doan = st.selectbox("Chẩn đoán", ["","Viêm quanh khớp vai", "Hội chứng chóp xoay", "Đông cứng khớp vai"])
-        muc_do_dau = st.slider("Mức độ dau (VAS 0-10)", 0, 10, 3)
+        chan_doan = st.selectbox("Chẩn đoán", [
+            "", 
+            "Viêm quanh khớp vai thể giả liệt thể đông cứng", 
+            "Viêm quanh khớp vai thể đơn thuần", 
+            "Viêm quanh khớp cấp"
+        ])
+
+        muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
 
         
         st.markdown("### 🎯 CHỌN BÀI TẬP")
