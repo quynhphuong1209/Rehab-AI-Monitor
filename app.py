@@ -3,6 +3,7 @@ import os
 import sys
 import math
 import json
+import base64
 
 # FIX LỖI LIBGL CHO OPENCV TRÊN HEADLESS ENVIRONMENT
 os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'
@@ -3399,8 +3400,6 @@ def main():
 
     # ==================== FOOTER (CHÂN TRANG CHUYÊN NGHIỆP) ====================
     try:
-        import base64
-        import os
         if os.path.exists("abc1.png"):
             with open("abc1.png", "rb") as img_file:
                 logo_b64 = base64.b64encode(img_file.read()).decode()
