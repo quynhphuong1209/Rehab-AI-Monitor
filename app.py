@@ -962,17 +962,22 @@ def ve_cung_tron_goc(image, point1, center, point3, angle, color, radius=40):
 # MEDIAPIPE VỚI GPU
 # ============================================
 @st.cache_resource
-def get_pose_model():
-    """Khởi tạo MediaPipe Pose với cấu hình chính xác nhất"""
+def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
+    """Khởi tạo MediaPipe Pose với cấu hình linh hoạt"""
     # pyrefly: ignore [missing-import]
     import mediapipe as mp
     mp_pose = mp.solutions.pose
+    
+    complexity = 1
+    if "Lite" in model_type: complexity = 0
+    elif "Heavy" in model_type: complexity = 2
+    
     return mp_pose.Pose(
-        static_image_mode=True,        # QUAN TRỌNG: Dò tìm lại từng frame, không để bị trôi
-        model_complexity=1,            # Độ chính xác cao
-        smooth_landmarks=False,        # Tắt làm mịn để bám sát thực tế
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5
+        static_image_mode=True,
+        model_complexity=complexity,
+        smooth_landmarks=False,
+        min_detection_confidence=min_confidence,
+        min_tracking_confidence=min_confidence
     )
 
 # ============================================
@@ -1205,7 +1210,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
 # ============================================
 # XỬ LÝ VIDEO
 # ============================================
-def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
+def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaPipe Full", min_confidence=0.5):
     cap = cv2.VideoCapture(duong_dan_video)
     if not cap.isOpened():
         raise Exception(f"Không thể mở file video: {duong_dan_video}")
@@ -1229,7 +1234,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     writer = None # Sẽ khởi tạo động trong vòng lặp để khớp kích thước thật
     
-    model = get_pose_model()
+    model = get_pose_model(model_type=model_type, min_confidence=min_confidence)
     du_lieu_goc = []
     danh_sach_frame_paths = []
     danh_sach_frame_data = []
@@ -2364,8 +2369,13 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                             progress_bar.progress(p)
                             status_text.info(f"🔄 Đang tự động phân tích... {p*100:.0f}%")
                         
+                        # Lấy cấu hình từ session state (NCV) nếu có, nếu không dùng mặc định
+                        model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Full')
+                        conf_ncv = st.session_state.get('ncv_confidence', 0.5)
+
                         out_p, _, _, a_data, t_f, v_f, _, z_d, f_p, _, afd_p, a_w = xu_ly_video_day_du(
-                            v['video_path'], bt_auto['chuan'], update_progress_auto
+                            v['video_path'], bt_auto['chuan'], update_progress_auto,
+                            model_type=model_type_ncv, min_confidence=conf_ncv
                         )
                         
                         if v_f > 0:
@@ -2538,10 +2548,28 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                 <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
                     <span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
                 </div>
+                <div style="margin-top: 5px; font-size: 0.8rem; color: #888; text-align: right;">
+                    Model: <span style="color: #00c6ff;">{st.session_state.get('ncv_model_type', 'Default')}</span>
+                </div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # PHẦN DÀNH RIÊNG CHO NGHIÊN CỨU VIÊN KHI DÙNG HEAVY MODEL
+    if st.session_state.get('ncv_model_type') == "MediaPipe Heavy" and user_role == "Nghiên cứu viên":
+        with st.expander("🔬 DỮ LIỆU TỌA ĐỘ CHI TIẾT (RESEARCH ONLY)", expanded=False):
+            st.markdown("#### 📜 Trích xuất tọa độ 33 khớp xương (Keypoints)")
+            st.info("💡 Đây là dữ liệu thô phục vụ việc đối soát và huấn luyện mô hình (Dành cho bản Heavy).")
+            # Hiển thị 20 dòng đầu của DF để xem cấu trúc keypoints
+            st.dataframe(df.head(20), use_container_width=True)
+            st.download_button(
+                "📥 Tải xuống toàn bộ tọa độ (CSV)",
+                df.to_csv(index=False).encode('utf-8'),
+                "raw_keypoints_heavy.csv",
+                "text/csv",
+                key="dl_heavy_csv"
+            )
 
     # 2. HÀNG THỐNG KÊ TỔNG QUAN (4 THẺ)
     st.markdown(f"### 📈 THỐNG KÊ TỔNG QUAN")
@@ -4153,8 +4181,8 @@ def main():
             """, unsafe_allow_html=True)
             
             st.markdown("### ⚙️ CẤU HÌNH AI")
-            st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.5, help="Ngưỡng để AI chấp nhận một điểm khớp xương.")
-            st.slider("Độ nhạy chuyển động (Sensitivity)", 0.0, 1.0, 0.7, help="Ảnh hưởng đến việc tính toán vận tốc khớp.")
+            st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.5, key="ncv_confidence", help="Ngưỡng để AI chấp nhận một điểm khớp xương.")
+            st.slider("Độ nhạy chuyển động (Sensitivity)", 0.0, 1.0, 0.7, key="ncv_sensitivity", help="Ảnh hưởng đến việc tính toán vận tốc khớp.")
             
             st.markdown("### 📊 THỐNG KÊ HỆ THỐNG")
             # Giả lập các con số cho NCV
@@ -4169,7 +4197,7 @@ def main():
             """, unsafe_allow_html=True)
             
             st.markdown("### 🎯 CHỌN MÔ HÌNH")
-            st.selectbox("Mô hình Pose", ["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"])
+            st.selectbox("Mô hình Pose", ["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"], key="ncv_model_type")
             
             st.markdown("### 🎯 CHỌN BÀI TẬP")
             ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
@@ -4344,8 +4372,13 @@ def main():
                                 progress_bar.progress(0.2 + p * 0.7)
                                 status_text.info(f"🔄 Đang xử lý frame... {p*100:.0f}%")
                             
+                            # Lấy cấu hình từ session state (NCV) nếu có, nếu không dùng mặc định
+                            model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Full')
+                            conf_ncv = st.session_state.get('ncv_confidence', 0.5)
+
                             output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
-                                video_path, bai_tap['chuan'], update_progress
+                                video_path, bai_tap['chuan'], update_progress,
+                                model_type=model_type_ncv, min_confidence=conf_ncv
                             )
                             
                             progress_bar.progress(0.95)
