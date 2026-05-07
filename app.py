@@ -2788,6 +2788,7 @@ def hien_thi_form_danh_gia_bac_si():
                 "errors": loi_sai,
                 "comments": nhan_xet,
                 "plan": ke_hoach,
+                "doctor_name": st.session_state.user_info.get('full_name', st.session_state.user_info['username']),
                 "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
             }
             evals.append(new_eval)
@@ -2821,9 +2822,11 @@ def hien_thi_ket_qua_cho_benh_nhan():
                     st.metric("🤖 AI Accuracy", f"{e['ai_accuracy']}%")
                     st.metric("👨‍⚕️ Bác sĩ đánh giá", e['doctor_result'])
                 with c2:
+                    st.markdown(f"**Bác sĩ thực hiện:** {e.get('doctor_name', 'Bác sĩ chuyên khoa')}")
                     st.markdown(f"**Lỗi sai:** {', '.join(e['errors']) if e['errors'] else 'Không có'}")
                     st.markdown(f"**Nhận xét:** {e['comments']}")
                     st.markdown(f"**Kế hoạch:** {e['plan']}")
+                    st.markdown(f'<p style="color: #00ff00; font-size: 0.8rem;">📩 Đã nhận từ bác sĩ</p>', unsafe_allow_html=True)
         
         st.markdown("---")
         st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
@@ -2921,9 +2924,9 @@ def hien_thi_lich_nhac_nho():
                         <strong style="color: #ffd700; font-size: 1.1rem;">📌 {app['title']}</strong><br>
                         🕒 <b>Thời gian:</b> {app['datetime']}<br>
                         👨‍⚕️ <b>Bác sĩ:</b> {app.get('doctor_name', 'Hệ thống')}<br>
-                        👤 <b>Bệnh nhân:</b> {app.get('patient_name', app.get('patient_username', 'Chưa rõ'))}<br>
+                        {"👤 <b>Bệnh nhân:</b> " + app.get('patient_name', app.get('patient_username', 'Chưa rõ')) + "<br>" if user_role != "Bệnh nhân" else ""}
                         📝 <b>Ghi chú:</b> {app.get('notes', 'Không có')}<br>
-                        <span style="color: #00ff00; font-size: 0.8rem;">🟢 Đã gửi đến bệnh nhân</span>
+                        <span style="color: #ffd700; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
                     </div>
                     """, unsafe_allow_html=True)
                 with col2:
@@ -2947,8 +2950,8 @@ def hien_thi_lich_nhac_nho():
                         🕒 <b>Thời gian:</b> {ex['datetime']}<br>
                         🔁 <b>Tần suất:</b> {ex.get('frequency', 'Một lần')}<br>
                         👨‍⚕️ <b>Chỉ định bởi:</b> {ex.get('doctor_name', 'Hệ thống')}<br>
-                        👤 <b>Bệnh nhân:</b> {ex.get('patient_name', ex.get('patient_username', 'Chưa rõ'))}<br>
-                        <span style="color: #00ff00; font-size: 0.8rem;">🟢 Đã gửi đến bệnh nhân</span>
+                        {"👤 <b>Bệnh nhân:</b> " + ex.get('patient_name', ex.get('patient_username', 'Chưa rõ')) + "<br>" if user_role != "Bệnh nhân" else ""}
+                        <span style="color: #00CED1; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
                     </div>
                     """, unsafe_allow_html=True)
                 with col2:
@@ -2972,8 +2975,8 @@ def hien_thi_lich_nhac_nho():
                         🕒 <b>Thời gian:</b> {med['datetime']}<br>
                         💊 <b>Liều:</b> {med.get('dosage', 'Theo chỉ định')}<br>
                         👨‍⚕️ <b>Bác sĩ kê đơn:</b> {med.get('doctor_name', 'Hệ thống')}<br>
-                        👤 <b>Bệnh nhân:</b> {med.get('patient_name', med.get('patient_username', 'Chưa rõ'))}<br>
-                        <span style="color: #00ff00; font-size: 0.8rem;">🟢 Đã gửi đến bệnh nhân</span>
+                        {"👤 <b>Bệnh nhân:</b> " + med.get('patient_name', med.get('patient_username', 'Chưa rõ')) + "<br>" if user_role != "Bệnh nhân" else ""}
+                        <span style="color: #FF6B6B; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
                     </div>
                     """, unsafe_allow_html=True)
                 with col2:
