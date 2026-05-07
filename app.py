@@ -3081,79 +3081,100 @@ def hien_thi_form_danh_gia_bac_si():
             st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
             st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
 
-    # === HIỂN THỊ KẾT QUẢ AI TỪ NGHIÊN CỨU VIÊN (MỚI THÊM) ===
-    evals_data = load_data(EVALUATIONS_FILE)
-    patient_evals = [e for e in evals_data if e['patient_username'] == selected_video['username']]
-    if patient_evals:
-        with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ AI & CHUYÊN MÔN", expanded=True):
-            for e in reversed(patient_evals):
-                is_ai = e.get('doctor_username') == "AI_Researcher"
-                bg_color = "rgba(0,206,209,0.05)" if is_ai else "rgba(255,215,0,0.05)"
-                border_color = "#00CED1" if is_ai else "#ffd700"
-                label = "🤖 KẾT QUẢ AI" if is_ai else "👨‍⚕️ BÁC SĨ ĐÁNH GIÁ"
-                
-                st.markdown(f"""
-                <div style="background: {bg_color}; border: 1px solid {border_color}; padding: 1rem; border-radius: 10px; margin-bottom: 0.5rem;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <strong style="color: {border_color};">{label}</strong>
-                        <span style="color: #888; font-size: 0.8rem;">{e['time']}</span>
+    tab_form, tab_ai_charts, tab_ai_media = st.tabs([
+        "📝 ĐÁNH GIÁ CHUYÊN MÔN",
+        "📊 CHI TIẾT AI PHÂN TÍCH",
+        "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"
+    ])
+
+    with tab_form:
+        # === HIỂN THỊ KẾT QUẢ AI TỪ NGHIÊN CỨU VIÊN ===
+        evals_data = load_data(EVALUATIONS_FILE)
+        patient_evals = [e for e in evals_data if e['patient_username'] == selected_video['username']]
+        if patient_evals:
+            with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ AI & CHUYÊN MÔN", expanded=True):
+                for e in reversed(patient_evals):
+                    is_ai = e.get('doctor_username') == "AI_Researcher"
+                    bg_color = "rgba(0,206,209,0.05)" if is_ai else "rgba(255,215,0,0.05)"
+                    border_color = "#00CED1" if is_ai else "#ffd700"
+                    label = "🤖 KẾT QUẢ AI" if is_ai else "👨‍⚕️ BÁC SĨ ĐÁNH GIÁ"
+                    
+                    st.markdown(f"""
+                    <div style="background: {bg_color}; border: 1px solid {border_color}; padding: 1rem; border-radius: 10px; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <strong style="color: {border_color};">{label}</strong>
+                            <span style="color: #888; font-size: 0.8rem;">{e['time']}</span>
+                        </div>
+                        <p style="margin: 5px 0;"><b>Độ chính xác:</b> {e['ai_accuracy']}% | <b>Kết quả:</b> {e['doctor_result']}</p>
+                        <p style="margin: 5px 0; font-size: 0.9rem;"><b>Nhận xét:</b> {e['comments']}</p>
                     </div>
-                    <p style="margin: 5px 0;"><b>Độ chính xác:</b> {e['ai_accuracy']}% | <b>Kết quả:</b> {e['doctor_result']}</p>
-                    <p style="margin: 5px 0; font-size: 0.9rem;"><b>Nhận xét:</b> {e['comments']}</p>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
 
-    with st.form("doctor_eval_form"):
-        st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
-        bt_chosen = st.multiselect("Động tác bệnh nhân thực hiện:", 
-                                  ["1. Bài tập con lắc Codman", "2. Bài tập vận động với gậy", "3. Bài tập với dây kháng lực"],
-                                  default=[f"{i+1}. {selected_video['exercise']}" for i, k in enumerate(BAI_TAP.keys()) if BAI_TAP[k]['ten'] == selected_video['exercise']])
+        with st.form("doctor_eval_form"):
+            st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
+            bt_chosen = st.multiselect("Động tác bệnh nhân thực hiện:", 
+                                      ["1. Bài tập con lắc Codman", "2. Bài tập vận động với gậy", "3. Bài tập với dây kháng lực"],
+                                      default=[f"{i+1}. {selected_video['exercise']}" for i, k in enumerate(BAI_TAP.keys()) if BAI_TAP[k]['ten'] == selected_video['exercise']])
 
-        st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC (GROUND TRUTH)")
-        col1, col2 = st.columns(2)
-        with col1:
-            ket_qua = st.radio("1. Kết quả đánh giá tổng quát:", ["Đúng", "Sai", "Gần đúng"])
-        with col2:
-            loi_sai = st.multiselect("2. Lỗi sai thường gặp (nếu có):", 
-                                    ["Vị trí tay chưa đúng", "Biên độ chưa đạt", "Tốc độ quá nhanh/chậm", "Sai tư thế thân người"])
+            st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC (GROUND TRUTH)")
+            col1, col2 = st.columns(2)
+            with col1:
+                ket_qua = st.radio("1. Kết quả đánh giá tổng quát:", ["Đúng", "Sai", "Gần đúng"])
+            with col2:
+                loi_sai = st.multiselect("2. Lỗi sai thường gặp (nếu có):", 
+                                        ["Vị trí tay chưa đúng", "Biên độ chưa đạt", "Tốc độ quá nhanh/chậm", "Sai tư thế thân người"])
 
-        st.markdown("### V. NHẬN XÉT CỦA BÁC SĨ/KTV PHCN")
-        nhan_xet = st.text_area("Nhập nhận xét chuyên môn:", height=150)
+            st.markdown("### V. NHẬN XÉT CỦA BÁC SĨ/KTV PHCN")
+            nhan_xet = st.text_area("Nhập nhận xét chuyên môn:", height=150)
 
-        st.markdown("### VI. KẾ HOẠCH TIẾP THEO")
-        ke_hoach = st.radio("Chỉ định:", ["Tiếp tục bài tập hiện tại", "Chuyển sang bài tập mới", "Hẹn khám lại trực tiếp"])
+            st.markdown("### VI. KẾ HOẠCH TIẾP THEO")
+            ke_hoach = st.radio("Chỉ định:", ["Tiếp tục bài tập hiện tại", "Chuyển sang bài tập mới", "Hẹn khám lại trực tiếp"])
 
-        submitted = st.form_submit_button("🚀 GỬI ĐÁNH GIÁ CHO BỆNH NHÂN & NGHIÊN CỨU VIÊN", use_container_width=True)
-        
-    if submitted:
-        evals = load_data(EVALUATIONS_FILE)
-        new_eval = {
-            "patient_username": selected_video['username'],
-            "doctor_username": st.session_state.user_info['username'],
-            "video_name": selected_video['video_name'],
-            "exercise": selected_video['exercise'],
-            "ai_accuracy": selected_video['accuracy'],
-            "doctor_result": ket_qua,
-            "errors": loi_sai,
-            "comments": nhan_xet,
-            "plan": ke_hoach,
-            "doctor_name": st.session_state.user_info.get('full_name', st.session_state.user_info['username']),
-            "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
-        }
-        evals.append(new_eval)
-        save_data(EVALUATIONS_FILE, evals)
-        
-        # Cập nhật trạng thái video
-        video_list = load_data(VIDEOS_FILE)
-        for v in video_list:
-            if v['video_path'] == selected_video['video_path']:
-                v['status'] = "Đã đánh giá"
-        save_data(VIDEOS_FILE, video_list)
-        
-        st.success("✅ Đã gửi đánh giá thành công!")
-        if st.button("⏰ Đặt lịch hẹn/nhắc nhở cho BN này", use_container_width=True):
-            chuyen_tab_bang_js("LỊCH NHẮC NHỞ")
-        st.balloons()
+            submitted = st.form_submit_button("🚀 GỬI ĐÁNH GIÁ CHO BỆNH NHÂN & NGHIÊN CỨU VIÊN", use_container_width=True)
+            
+        if submitted:
+            evals = load_data(EVALUATIONS_FILE)
+            new_eval = {
+                "patient_username": selected_video['username'],
+                "doctor_username": st.session_state.user_info['username'],
+                "video_name": selected_video['video_name'],
+                "exercise": selected_video['exercise'],
+                "ai_accuracy": selected_video['accuracy'],
+                "doctor_result": ket_qua,
+                "errors": loi_sai,
+                "comments": nhan_xet,
+                "plan": ke_hoach,
+                "doctor_name": st.session_state.user_info.get('full_name', st.session_state.user_info['username']),
+                "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+            }
+            evals.append(new_eval)
+            save_data(EVALUATIONS_FILE, evals)
+            
+            # Cập nhật trạng thái video
+            video_list = load_data(VIDEOS_FILE)
+            for v in video_list:
+                if v['video_path'] == selected_video['video_path']:
+                    v['status'] = "Đã đánh giá"
+            save_data(VIDEOS_FILE, video_list)
+            
+            st.success("✅ Đã gửi đánh giá thành công!")
+            st.balloons()
+
+    with tab_ai_charts:
+        st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
+        # Chỉ hiển thị nếu NCV đã gửi kết quả
+        has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in patient_evals)
+        if has_ai_sent:
+            hien_thi_tab_phan_tich()
+        else:
+            st.info("🕒 Kết quả phân tích chi tiết sẽ hiển thị sau khi Nghiên cứu viên gửi báo cáo AI.")
+
+    with tab_ai_media:
+        st.markdown("### 🎬 VIDEO & HÌNH ẢNH TRÍCH XUẤT KHUNG XƯƠNG")
+        if has_ai_sent:
+            hien_thi_frames_day_du()
+        else:
+            st.info("🕒 Video và hình ảnh khung xương sẽ hiển thị sau khi Nghiên cứu viên chia sẻ.")
 
 def hien_thi_ket_qua_cho_benh_nhan():
     st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỪ BÁC SĨ & AI")
