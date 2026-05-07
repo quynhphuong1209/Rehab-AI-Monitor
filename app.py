@@ -3412,59 +3412,72 @@ def main():
     <style>
         .main-footer {{
             background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
-            padding: 30px 20px;
+            padding: 40px 20px;
             color: #ccc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Times New Roman', Times, serif;
             text-align: center;
         }}
         .footer-container {{
             display: flex;
             flex-wrap: wrap;
             justify-content: space-around;
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
-            gap: 20px;
+            gap: 30px;
             align-items: center;
         }}
         .footer-col {{
             flex: 1;
-            min-width: 300px;
+            min-width: 320px;
         }}
         .footer-logo-img {{
-            width: 100px;
-            filter: drop-shadow(0 0 8px rgba(0, 198, 255, 0.4));
+            width: 120px;
+            filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.4));
         }}
         .footer-title {{
             color: #00c6ff;
             font-weight: bold;
-            margin-bottom: 10px;
-            font-size: 1rem;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
             text-transform: uppercase;
         }}
         .footer-info-item {{
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 5px;
-            font-size: 0.85rem;
+            gap: 12px;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
         }}
         .footer-bottom {{
-            padding-top: 15px;
-            margin-top: 15px;
+            padding-top: 20px;
+            margin-top: 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 0.75rem;
-            color: #777;
+            font-size: 0.9rem;
+            color: #888;
         }}
         a {{ color: #00c6ff; text-decoration: none; }}
+        .school-name {{
+            margin-top: 15px; 
+            font-weight: bold; 
+            color: #fff; 
+            font-size: 1.2rem;
+            line-height: 1.4;
+        }}
+        .school-subname {{
+            font-size: 1rem; 
+            color: #00c6ff;
+            display: block;
+            margin-top: 5px;
+        }}
     </style>
     <div class="main-footer">
         <div class="footer-container">
             <div class="footer-col">
                 <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-                <p style="margin-top: 10px; font-weight: bold; color: #fff; font-size: 0.85rem;">
+                <p class="school-name">
                     TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG<br>
-                    <span style="font-size: 0.7rem; color: #00c6ff;">HANOI UNIVERSITY OF PUBLIC HEALTH</span>
+                    <span class="school-subname">HANOI UNIVERSITY OF PUBLIC HEALTH</span>
                 </p>
             </div>
             <div class="footer-col">
