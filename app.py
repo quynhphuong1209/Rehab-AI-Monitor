@@ -2532,16 +2532,22 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         "Giá trị": [f"{tk['thoi_gian']:.1f}s", tk['tong_frame'], tk['frame_dung'], tk['frame_gan_dung'], f"{max(0, fail_count_total)}", f"{tk['tb_goc_vai']:.1f}°", f"{tk['tb_goc_khuyu']:.1f}°"]
     })
 
+    # Lấy thông tin mô hình hiện tại
+    model_type = st.session_state.get('ncv_model_type', 'MediaPipe Full')
+    
     # 1. HEADER CHỈ SỐ TỔNG QUAN (CỐ ĐỊNH) - HIỂN THỊ ĐẦU TIÊN
+    header_title = "📊 DASHBOARD PHÂN TÍCH NHANH" if "Lite" in model_type else "📊 DASHBOARD PHÂN TÍCH LÂM SÀNG"
+    if "Heavy" in model_type: header_title = "🔬 PHÂN TÍCH NGHIÊN CỨU CHUYÊN SÂU"
+
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
                 border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
                 border: 1px solid #2a5298; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h2 style="color: #ffd700; margin: 0; font-size: 1.8rem;">📊 DASHBOARD PHÂN TÍCH LÂM SÀNG</h2>
+                <h2 style="color: #ffd700; margin: 0; font-size: 1.8rem;">{header_title}</h2>
                 <p style="color: #aaa; margin: 0.5rem 0 0 0;">
-                    🏥 Bài tập: {bt['ten']} | 🛡️ Độ tin cậy (ICC): {tk.get('icc', 0):.2f}
+                    🏥 Bài tập: {bt['ten']} | ⚙️ Model: <span style="color:#00c6ff;">{model_type}</span>
                 </p>
             </div>
             <div style="text-align: right;">
@@ -2614,16 +2620,16 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     st.markdown("<br>", unsafe_allow_html=True)
 
     # 2. HỆ THỐNG TAB NỘI BỘ
-    tab_overview, tab_joint, tab_advanced, tab_clinical, tab_export = st.tabs([
-        "🏠 TỔNG QUAN", 
-        "📈 PHÂN TÍCH KHỚP", 
-        "📦 NÂNG CAO (BOXPLOT)",
-        "🩺 NHẬN ĐỊNH LÂM SÀNG",
-        "📁 XUẤT BÁO CÁO"
-    ])
+    tab_list = ["🏠 TỔNG QUAN", "📈 PHÂN TÍCH KHỚP"]
+    if "Lite" not in model_type:
+        tab_list += ["📦 NÂNG CAO (BOXPLOT)", "🩺 NHẬN ĐỊNH LÂM SÀNG", "📁 XUẤT BÁO CÁO"]
+    
+    inner_tabs = st.tabs(tab_list)
+    t_map = {name: inner_tabs[i] for i, name in enumerate(tab_list)}
 
     # === TAB 1: TỔNG QUAN ===
-    with tab_overview:
+    if "🏠 TỔNG QUAN" in t_map:
+        with t_map["🏠 TỔNG QUAN"]:
         col_pie, col_metrics = st.columns([1, 1])
         
         with col_pie:
@@ -2686,7 +2692,8 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                     st.balloons()
 
     # === TAB 2: PHÂN TÍCH KHỚP ===
-    with tab_joint:
+    if "📈 PHÂN TÍCH KHỚP" in t_map:
+        with t_map["📈 PHÂN TÍCH KHỚP"]:
         st.markdown("#### 📈 BIỂU ĐỒ GÓC VAI")
         fig_vai = ve_bieu_do_goc_vai(df, bt)
         st.plotly_chart(fig_vai, use_container_width=True, key=f"vai_chart_{key_suffix}")
@@ -2739,7 +2746,8 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                     st.balloons()
 
     # === TAB 3: NÂNG CAO (BOXPLOT) ===
-    with tab_advanced:
+    if "📦 NÂNG CAO (BOXPLOT)" in t_map:
+        with t_map["📦 NÂNG CAO (BOXPLOT)"]:
         st.markdown("### 📦 PHÂN TÍCH BIÊN ĐỘ VẬN ĐỘNG (ROM)")
         st.info("💡 Biểu đồ này giúp bác sĩ so sánh sự ổn định của góc khớp giữa các lần thực hiện đúng và sai.")
         fig_box = ve_bieu_do_boxplot_phan_loai(df)
@@ -2773,7 +2781,8 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                     st.balloons()
 
     # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
-    with tab_clinical:
+    if "🩺 NHẬN ĐỊNH LÂM SÀNG" in t_map:
+        with t_map["🩺 NHẬN ĐỊNH LÂM SÀNG"]:
         st.markdown("### 🩺 NHẬN ĐỊNH CHUYÊN MÔN")
         insights = lay_nhan_dinh_lam_sang(tk['tb_goc_vai'], tk['tb_goc_khuyu'], bt)
         
@@ -2908,7 +2917,8 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             st.download_button("📥 Tải Bảng chỉ số (CSV)", stats_summary.to_csv(index=False).encode('utf-8'), "chi_so_nghien_cuu.csv", "text/csv", use_container_width=True, key=f"dl_stats_{key_suffix}")
 
     # === TAB 5: XUẤT BÁO CÁO ===
-    with tab_export:
+    if "📁 XUẤT BÁO CÁO" in t_map:
+        with t_map["📁 XUẤT BÁO CÁO"]:
         st.markdown("### 📁 QUẢN LÝ DỮ LIỆU VÀ XUẤT BÁO CÁO")
         
         # Thống kê tổng hợp (Đã định nghĩa ở đầu hàm)
