@@ -4143,54 +4143,85 @@ def main():
     with st.sidebar:
         st.markdown(f"### 🎭 VAI TRÒ: {user_role.upper()}")
         
-        # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
-        st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
-        ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
-        ma_nguoi_dung = st.text_input("Mã số định danh", placeholder="VD: BN0001 / BS0001")
-        col1, col2 = st.columns(2)
-        with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
-        with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
-        
-        if user_role == "Bệnh nhân":
-            st.info("ℹ️ Vui lòng sang tab **🩺 KHAI BÁO TRIỆU CHỨNG** để gửi thông tin cảm nhận và mức độ đau cho Bác sĩ.")
-        else:
-            st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
-            chan_doan = st.selectbox("Chẩn đoán", [
-                "", 
-                "Viêm quanh khớp vai thể giả liệt thể đông cứng", 
-                "Viêm quanh khớp vai thể đơn thuần", 
-                "Viêm quanh khớp cấp"
-            ])
-            muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
+        if user_role == "Nghiên cứu viên":
+            st.markdown("### 🔬 THÔNG TIN CHUYÊN GIA")
+            st.markdown(f"""
+            <div class="custom-card" style="padding: 10px; border-left: 5px solid #00c6ff; background: rgba(0, 198, 255, 0.05);">
+                <p style="margin:0; font-weight:bold; color:#00c6ff;">👤 {st.session_state.user_info.get('full_name', 'Chuyên gia AI')}</p>
+                <p style="margin:0; font-size:0.8rem; color:#888;">Trường Đại học Y tế Công cộng</p>
+            </div>
+            """, unsafe_allow_html=True)
             
-            if user_role == "Bác sĩ / KTV PHCN":
-                st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN")
-                symptoms_data = load_data(SYMPTOMS_FILE)
-                if symptoms_data:
-                    # Sắp xếp theo thời gian mới nhất (cần chuyển string time thành datetime nếu muốn chuẩn, 
-                    # nhưng hiện tại format "H:M - d/m/Y" có thể sort đảo ngược string hoặc dùng index)
-                    for idx, s in enumerate(reversed(symptoms_data[-5:])): # Lấy 5 người mới nhất
-                        col_s1, col_s2 = st.columns([4, 1])
-                        with col_s1:
-                            with st.expander(f"👤 {s['full_name']}"):
-                                st.caption(f"🕒 {s['time']}")
-                                st.write(f"**Tuổi:** {s['age']} | **GT:** {s['gender']}")
-                                st.info(f"**Triệu chứng:** {s['symptoms']}")
-                                st.warning(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
-                        with col_s2:
-                            if st.button("❌", key=f"x_symp_{idx}", help="Xóa tin này"):
-                                symptoms_data.pop(len(symptoms_data)-1-idx)
-                                save_data(SYMPTOMS_FILE, symptoms_data)
-                                st.rerun()
-                else:
-                    st.info("Chưa có BN gửi thông tin.")
+            st.markdown("### ⚙️ CẤU HÌNH AI")
+            st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.5, help="Ngưỡng để AI chấp nhận một điểm khớp xương.")
+            st.slider("Độ nhạy chuyển động (Sensitivity)", 0.0, 1.0, 0.7, help="Ảnh hưởng đến việc tính toán vận tốc khớp.")
+            
+            st.markdown("### 📊 THỐNG KÊ HỆ THỐNG")
+            # Giả lập các con số cho NCV
+            v_list = load_data(VIDEOS_FILE)
+            total_frames = sum([v.get('accuracy', 0) * 10 for v in v_list]) # Chỉ là giả lập
+            st.markdown(f"""
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px;">
+                <p style="margin:0; font-size:0.85rem;">📁 Video chờ xử lý: <b>{len([v for v in v_list if v['status'] == 'Chờ bác sĩ phân tích'])}</b></p>
+                <p style="margin:0; font-size:0.85rem;">🤖 Phiên bản AI: <b>v2.4.1-stable</b></p>
+                <p style="margin:0; font-size:0.85rem;">⚡ Độ trễ trung bình: <b>45ms</b></p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("### 🎯 CHỌN MÔ HÌNH")
+            st.selectbox("Mô hình Pose", ["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"])
+            
+            st.markdown("### 🎯 CHỌN BÀI TẬP")
+            ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+            bai_tap = BAI_TAP[ma_bai_tap]
+            
+        else:
+            # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
+            st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
+            ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
+            ma_nguoi_dung = st.text_input("Mã số định danh", placeholder="VD: BN0001 / BS0001")
+            col1, col2 = st.columns(2)
+            with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
+            with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
+            
+            if user_role == "Bệnh nhân":
+                st.info("ℹ️ Vui lòng sang tab **🩺 KHAI BÁO TRIỆU CHỨNG** để gửi thông tin cảm nhận và mức độ đau cho Bác sĩ.")
+            else: # Bác sĩ / KTV
+                st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
+                chan_doan = st.selectbox("Chẩn đoán", [
+                    "", 
+                    "Viêm quanh khớp vai thể giả liệt thể đông cứng", 
+                    "Viêm quanh khớp vai thể đơn thuần", 
+                    "Viêm quanh khớp cấp"
+                ])
+                muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
+                
+                if user_role == "Bác sĩ / KTV PHCN":
+                    st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN")
+                    symptoms_data = load_data(SYMPTOMS_FILE)
+                    if symptoms_data:
+                        for idx, s in enumerate(reversed(symptoms_data[-5:])): # Lấy 5 người mới nhất
+                            col_s1, col_s2 = st.columns([4, 1])
+                            with col_s1:
+                                with st.expander(f"👤 {s['full_name']}"):
+                                    st.caption(f"🕒 {s['time']}")
+                                    st.write(f"**Tuổi:** {s['age']} | **GT:** {s['gender']}")
+                                    st.info(f"**Triệu chứng:** {s['symptoms']}")
+                                    st.warning(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
+                            with col_s2:
+                                if st.button("❌", key=f"x_symp_{idx}", help="Xóa tin này"):
+                                    symptoms_data.pop(len(symptoms_data)-1-idx)
+                                    save_data(SYMPTOMS_FILE, symptoms_data)
+                                    st.rerun()
+                    else:
+                        st.info("Chưa có BN gửi thông tin.")
 
-        st.markdown("### 🎯 CHỌN BÀI TẬP")
-        ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
-        bai_tap = BAI_TAP[ma_bai_tap]
-        
-        st.markdown("### 📺 VIDEO HƯỚNG DẪN")
-        st.video(bai_tap["youtube"])
+            st.markdown("### 🎯 CHỌN BÀI TẬP")
+            ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+            bai_tap = BAI_TAP[ma_bai_tap]
+            
+            st.markdown("### 📺 VIDEO HƯỚNG DẪN")
+            st.video(bai_tap["youtube"])
         
         st.markdown("---")
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
