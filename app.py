@@ -3490,7 +3490,7 @@ def main():
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "🩺 KHAI BÁO TRIỆU CHỨNG", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "⏰ LỊCH NHẮC NHỞ", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     # Tạo mapping để truy cập tab theo tên, tránh lỗi index khi số lượng tab thay đổi theo vai trò
@@ -3534,15 +3534,26 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
                 
-            st.markdown("---")
-            # PHẦN UPLOAD QUAY LẠI VỊ TRÍ CŨ
-            st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
-            file_upload = st.file_uploader(
-                "📤 Tải lên video tập luyện của bệnh nhân", 
-                type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
-                help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB",
-                key="video_uploader_v2"
-            )
+                # PHẦN UPLOAD (Bỏ cho Bệnh nhân theo yêu cầu)
+                if user_role != "Bệnh nhân":
+                    # Lấy danh sách bệnh nhân để gán video
+                    users_db = load_users()
+                    patients_list = [u for u in users_db if users_db[u].get('role') == "Bệnh nhân"]
+                    target_patient = st.selectbox("🎯 Chọn bệnh nhân mục tiêu:", patients_list, 
+                                                format_func=lambda x: f"👤 {users_db[x].get('full_name', x)} ({x})",
+                                                key="target_patient_upload")
+                    st.session_state.last_uploaded_patient_username = target_patient
+                    
+                    st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
+                file_upload = st.file_uploader(
+                    "📤 Tải lên video tập luyện của bệnh nhân", 
+                    type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
+                    help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB",
+                    key="video_uploader_v2"
+                )
+            else:
+                file_upload = None
+                st.info("👋 Chào mừng bạn đến với hệ thống giám sát tập luyện. Hãy xem lịch hẹn và kết quả từ bác sĩ.")
             
             # === HIỆN KẾT QUẢ VÀ NÚT PHÂN TÍCH NGAY DƯỚI Ô TẢI FILE ===
             if file_upload is not None and not st.session_state.processing:
@@ -3649,13 +3660,31 @@ def main():
                                 
                                 # Điều hướng linh hoạt theo vai trò
                                 if user_role == "Nghiên cứu viên":
-                                    c_nav1, c_nav2 = st.columns(2)
+                                    c_nav1, c_nav2, c_nav3 = st.columns(3)
                                     with c_nav1:
                                         if st.button("📊 XEM BÁO CÁO PHÂN TÍCH", use_container_width=True, type="primary"):
                                             chuyen_tab_bang_js("PHÂN TÍCH")
                                     with c_nav2:
                                         if st.button("🎬 XEM VIDEO & ẢNH FRAME", use_container_width=True, type="primary"):
                                             chuyen_tab_bang_js("VIDEO & ẢNH")
+                                    with c_nav3:
+                                        if st.button("📤 GỬI KẾT QUẢ CHO BN", use_container_width=True, type="secondary"):
+                                            evals = load_data(EVALUATIONS_FILE)
+                                            evals.append({
+                                                "patient_username": st.session_state.get('last_uploaded_patient_username', 'unknown'),
+                                                "doctor_username": "AI_Researcher",
+                                                "video_name": file_upload.name,
+                                                "exercise": bai_tap['ten'],
+                                                "ai_accuracy": round(metrics["ty_le_tong_the"], 1),
+                                                "doctor_result": "AI Auto",
+                                                "errors": all_warnings,
+                                                "comments": "Kết quả phân tích tự động từ Nghiên cứu viên.",
+                                                "plan": "Chờ bác sĩ đánh giá thêm",
+                                                "doctor_name": f"NCV: {ten_nguoi_dung}",
+                                                "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                                            })
+                                            save_data(EVALUATIONS_FILE, evals)
+                                            st.success("✅ Đã gửi kết quả cho Bệnh nhân!")
                                 elif user_role == "Bệnh nhân":
                                     if st.button("📊 XEM KẾT QUẢ CHI TIẾT", use_container_width=True, type="primary"):
                                         chuyen_tab_bang_js("KẾT QUẢ")
@@ -3663,22 +3692,25 @@ def main():
                                     if st.button("📊 XEM ĐÁNH GIÁ LÂM SÀNG", use_container_width=True, type="primary"):
                                         chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
                                 
-                                # THEO DÕI VIDEO CHO BÁC SĨ (NCKH)
-                                if user_role == "Bệnh nhân":
-                                    if st.button("📤 GỬI KẾT QUẢ & VIDEO CHO BÁC SĨ/KTV", use_container_width=True, type="secondary", key="send_to_doc"):
-                                        video_list = load_data(VIDEOS_FILE)
-                                        video_list.append({
-                                            "username": st.session_state.user_info['username'],
-                                            "full_name": ten_nguoi_dung,
-                                            "video_name": file_upload.name,
-                                            "exercise": bai_tap['ten'],
-                                            "accuracy": round(metrics["ty_le_tong_the"], 1),
-                                            "time": datetime.now().strftime("%H:%M - %d/%m/%Y"),
-                                            "video_path": output_path,
-                                            "status": "Chờ đánh giá"
-                                        })
-                                        save_data(VIDEOS_FILE, video_list)
-                                        st.success("✅ Đã gửi video và kết quả phân tích AI cho Bác sĩ!")
+                                # TỰ ĐỘNG LƯU VIDEO VÀO HỆ THỐNG (Dành cho NCV & Bác sĩ)
+                                if user_role != "Bệnh nhân":
+                                    target_u = st.session_state.get('last_uploaded_patient_username', st.session_state.user_info['username'])
+                                    users_db = load_users()
+                                    target_fn = users_db.get(target_u, {}).get('full_name', target_u)
+                                    
+                                    video_list = load_data(VIDEOS_FILE)
+                                    video_list.append({
+                                        "username": target_u,
+                                        "full_name": target_fn,
+                                        "video_name": file_upload.name,
+                                        "exercise": bai_tap['ten'],
+                                        "accuracy": round(metrics["ty_le_tong_the"], 1),
+                                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y"),
+                                        "video_path": output_path,
+                                        "status": "Chờ đánh giá"
+                                    })
+                                    save_data(VIDEOS_FILE, video_list)
+                                    st.info(f"📁 Video đã được lưu cho BN: {target_fn}")
                                 st.markdown("---")
                                 
                                 # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
@@ -3760,8 +3792,8 @@ def main():
                 st.session_state.processing = False
                 # st.rerun() # Không cần rerun ở đây vì Streamlit sẽ tự update UI
 
-            # HIỂN THỊ DANH SÁCH VIDEO CHO BÁC SĨ (MỚI)
-            if user_role == "Bác sĩ / KTV PHCN":
+            # HIỂN THỊ DANH SÁCH VIDEO CHO BÁC SĨ & NGHIÊN CỨU VIÊN
+            if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
                 st.markdown("---")
                 st.markdown("### 🎬 DANH SÁCH VIDEO BỆNH NHÂN ĐÃ QUAY")
                 video_list = load_data(VIDEOS_FILE)
