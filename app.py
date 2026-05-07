@@ -93,6 +93,8 @@ if 'show_login_dialog' not in st.session_state:
     st.session_state.show_login_dialog = False
 if 'processed_video_path' not in st.session_state:
     st.session_state.processed_video_path = None
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'dark'
 
 # KIỂM TRA ĐĂNG NHẬP GOOGLE (Hỗ trợ Streamlit Cloud Identity)
 if not st.session_state.get('logged_in'):
@@ -258,6 +260,50 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# === CSS CHO CHẾ ĐỘ SÁNG (LIGHT MODE OVERRIDE) ===
+if st.session_state.get('theme') == 'light':
+    st.markdown("""
+    <style>
+        .stApp { background: #f8f9fa !important; color: #333 !important; }
+        .main-header { background: #ffffff !important; border: 1px solid #ddd !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important; }
+        .main-header h1 { color: #1a1a2e !important; }
+        .main-header p { color: #555 !important; }
+        .info-box, .metric-card, .member-card, .lecturer-card { 
+            background: #ffffff !important; 
+            border: 1px solid #e0e0e0 !important; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important; 
+            color: #333 !important; 
+        }
+        .metric-value { color: #0072ff !important; }
+        .metric-label { color: #666 !important; }
+        .stMarkdown, p, span, label, h1, h2, h3, h4 { color: #333 !important; }
+        .stTextInput input, .stSelectbox div, .stNumberInput input { 
+            background-color: #fff !important; 
+            color: #333 !important; 
+            border: 1px solid #ccc !important; 
+        }
+        .stTabs [data-baseweb="tab"] { 
+            background-color: #f1f3f5 !important; 
+            color: #555 !important; 
+            border: 1px solid #dee2e6 !important;
+        }
+        .stTabs [aria-selected="true"] { 
+            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important; 
+            color: #fff !important; 
+            border: 1px solid #0072ff !important;
+        }
+        .footer-container, .footer-col, .footer-bottom { color: #444 !important; }
+        .main-footer { background: #f8f9fa !important; border-top: 4px solid #0072ff !important; box-shadow: 0 -5px 15px rgba(0,0,0,0.05) !important; }
+        .school-name { color: #1a1a2e !important; }
+        .school-subname { color: #0072ff !important; }
+        .footer-title { color: #0072ff !important; }
+        .stExpander { background: #fff !important; border: 1px solid #eee !important; border-radius: 12px !important; }
+        [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #eee !important; }
+        [data-testid="stSidebar"] * { color: #333 !important; }
+        .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b { color: #333 !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
 MAX_FILE_SIZE_MB = 500
 
@@ -2906,6 +2952,23 @@ def main():
     """, unsafe_allow_html=True)
     
     with st.sidebar:
+        # === CHẾ ĐỘ SÁNG/TỐI (THEME TOGGLE) ===
+        t_col1, t_col2 = st.columns([1.5, 1], vertical_alignment="center")
+        with t_col1:
+            theme_label = "🌙 Tối" if st.session_state.theme == 'dark' else "☀️ Sáng"
+            st.markdown(f"**Chế độ: {theme_label}**")
+        with t_col2:
+            # Dùng checkbox giả lập toggle nếu bản Streamlit cũ, hoặc st.toggle nếu bản mới
+            try:
+                is_light = st.toggle("Sáng", value=(st.session_state.theme == 'light'), label_visibility="collapsed")
+                st.session_state.theme = 'light' if is_light else 'dark'
+            except:
+                is_light = st.checkbox("Sáng", value=(st.session_state.theme == 'light'))
+                st.session_state.theme = 'light' if is_light else 'dark'
+        
+        st.markdown("---")
+        
+        # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
         st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
         ten_benh_nhan = st.text_input("Họ và tên", placeholder="VD: Nguyễn Văn A")
         ma_benh_nhan = st.text_input("Mã số bệnh nhân", placeholder="VD: BN0001")
@@ -3409,16 +3472,24 @@ def main():
     except:
         logo_src = "https://upload.wikimedia.org/wikipedia/vi/f/f6/Logo_HUPH.png"
 
+    # Cấu hình màu sắc Footer theo Theme
+    is_light = st.session_state.get('theme') == 'light'
+    f_bg = "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+    f_text = "#444" if is_light else "#ccc"
+    f_border = "#0072ff" if is_light else "#00c6ff"
+    f_title = "#0072ff" if is_light else "#00c6ff"
+    f_shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(0, 198, 255, 0.2)"
+
     footer_html = f"""
     <style>
         .main-footer {{
-            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+            background: {f_bg};
             padding: 40px 20px;
-            color: #ccc;
+            color: {f_text};
             font-family: 'Times New Roman', Times, serif;
             text-align: center;
-            border-top: 4px solid #00c6ff;
-            box-shadow: 0 -10px 20px rgba(0, 198, 255, 0.2);
+            border-top: 4px solid {f_border};
+            box-shadow: 0 -10px 20px {f_shadow};
             margin-top: 60px;
         }}
         .footer-container {{
@@ -3439,7 +3510,7 @@ def main():
             filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.4));
         }}
         .footer-title {{
-            color: #00c6ff;
+            color: {f_title};
             font-weight: bold;
             margin-bottom: 15px;
             font-size: 1.3rem;
@@ -3456,11 +3527,11 @@ def main():
         .footer-bottom {{
             padding-top: 20px;
             margin-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid {"rgba(0, 0, 0, 0.05)" if is_light else "rgba(255, 255, 255, 0.05)"};
             font-size: 0.9rem;
-            color: #888;
+            color: {"#666" if is_light else "#888"};
         }}
-        a {{ color: #00c6ff; text-decoration: none; }}
+        a {{ color: {f_title}; text-decoration: none; }}
         .school-name {{
             margin-top: 15px; 
             font-weight: bold; 
