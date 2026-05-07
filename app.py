@@ -3396,112 +3396,112 @@ def main():
 
 
     # ==================== FOOTER (CHÂN TRANG CHUYÊN NGHIỆP) ====================
-    st.markdown("""
+    footer_html = """
 <style>
-    .main-footer {
-        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
-        padding: 40px 20px 20px 20px;
-        margin-top: 50px;
-        border-top: 2px solid #00c6ff;
-        color: #ccc;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .footer-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        max-width: 1200px;
-        margin: 0 auto;
-        gap: 30px;
-    }
-    .footer-col {
-        flex: 1;
-        min-width: 250px;
-    }
-    .footer-logo {
-        width: 120px;
-        filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.3));
-    }
-    .footer-title {
-        color: #00c6ff;
-        font-weight: bold;
-        margin-bottom: 15px;
-        font-size: 1.1rem;
-        text-transform: uppercase;
-    }
-    .footer-info-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 8px;
-        font-size: 0.9rem;
-    }
-    .footer-social {
-        display: flex;
-        gap: 15px;
-        margin-top: 15px;
-    }
-    .social-icon {
-        width: 35px;
-        height: 35px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s;
-        color: white;
-        text-decoration: none;
-        border: 1px solid rgba(0, 198, 255, 0.3);
-    }
-    .social-icon:hover {
-        background: #00c6ff;
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0, 198, 255, 0.4);
-    }
-    .footer-stats {
-        background: rgba(0, 198, 255, 0.05);
-        padding: 15px;
-        border-radius: 12px;
-        border: 1px solid rgba(0, 198, 255, 0.2);
-    }
-    .stat-item {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 5px;
-        font-size: 0.85rem;
-    }
-    .stat-value {
-        color: #ffd700;
-        font-weight: bold;
-    }
-    .footer-bottom {
-        text-align: center;
-        padding-top: 30px;
-        margin-top: 30px;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        font-size: 0.8rem;
-        color: #666;
-    }
-    .dev-link {
-        color: #00c6ff;
-        text-decoration: none;
-        font-weight: bold;
-    }
+.main-footer {
+    background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+    padding: 40px 20px 20px 20px;
+    margin-top: 50px;
+    border-top: 2px solid #00c6ff;
+    color: #ccc;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.footer-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 30px;
+}
+.footer-col {
+    flex: 1;
+    min-width: 250px;
+}
+.footer-logo-img {
+    width: 100px;
+    filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.3));
+    background: white;
+    border-radius: 50%;
+    padding: 5px;
+}
+.footer-title {
+    color: #00c6ff;
+    font-weight: bold;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+}
+.footer-info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+.footer-social {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+}
+.social-icon {
+    width: 35px;
+    height: 35px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    color: white;
+    text-decoration: none;
+    border: 1px solid rgba(0, 198, 255, 0.3);
+    font-weight: bold;
+}
+.social-icon:hover {
+    background: #00c6ff;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 198, 255, 0.4);
+}
+.footer-stats {
+    background: rgba(0, 198, 255, 0.05);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 198, 255, 0.2);
+}
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+}
+.stat-value {
+    color: #ffd700;
+    font-weight: bold;
+}
+.footer-bottom {
+    text-align: center;
+    padding-top: 30px;
+    margin-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.8rem;
+    color: #666;
+}
+.dev-link {
+    color: #00c6ff;
+    text-decoration: none;
+    font-weight: bold;
+}
 </style>
-
 <div class="main-footer">
     <div class="footer-container">
-        <!-- Cột 1: Logo -->
         <div class="footer-col" style="text-align: center;">
-            <img src="https://huph.edu.vn/uploads/logo-huph.png" class="footer-logo" alt="HUPH Logo">
-            <p style="margin-top: 15px; font-weight: bold; color: #fff; font-size: 0.8rem;">
+            <img src="https://huph.edu.vn/uploads/logo-huph.png" class="footer-logo-img" alt="HUPH">
+            <p style="margin-top: 15px; font-weight: bold; color: #fff; font-size: 0.85rem;">
                 TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG<br>
                 HANOI UNIVERSITY OF PUBLIC HEALTH
             </p>
         </div>
-        
-        <!-- Cột 2: Thông tin liên hệ -->
         <div class="footer-col">
             <div class="footer-title">📍 THÔNG TIN LIÊN HỆ</div>
             <div class="footer-info-item">🌐 <b>Website:</b> <a href="https://huph.edu.vn/" style="color: #00c6ff;">huph.edu.vn</a></div>
@@ -3510,8 +3510,6 @@ def main():
             <div class="footer-info-item">📠 <b>Fax:</b> 024.62662385</div>
             <div class="footer-info-item">📧 <b>Email:</b> <a href="mailto:2211090031@studenthuph.edu.vn" style="color: #00c6ff;">2211090031@studenthuph.edu.vn</a></div>
         </div>
-        
-        <!-- Cột 3: Mạng xã hội & Thống kê -->
         <div class="footer-col">
             <div class="footer-title">📊 THỐNG KÊ TRUY CẬP</div>
             <div class="footer-stats">
@@ -3526,13 +3524,13 @@ def main():
             </div>
         </div>
     </div>
-    
     <div class="footer-bottom">
         Đơn vị phát triển: <a href="#" class="dev-link">CÔNG TY CỔ PHẦN GIẢI PHÁP NAM VIỆT</a> | 
         © 2025 REHAB-AI-MONITOR - ĐỀ TÀI NCKH
     </div>
 </div>
-""", unsafe_allow_html=True)
+"""
+    st.markdown(footer_html, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
