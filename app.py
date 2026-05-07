@@ -364,12 +364,7 @@ if st.session_state.get('theme') == 'light':
         }
         .stTabs [aria-selected="true"] { 
             background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important; 
-            color: #ffffff !important; /* White text is OK on blue background */
-        }
-    </style>
-    """, unsafe_allow_html=True)
-            color: #fff !important; 
-            border: 1px solid #0072ff !important;
+            color: #ffffff !important;
         }
         .footer-container, .footer-col, .footer-bottom { color: #444 !important; }
         .main-footer { background: #f8f9fa !important; border-top: 4px solid #0072ff !important; box-shadow: 0 -5px 15px rgba(0,0,0,0.05) !important; }
@@ -2646,6 +2641,10 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     
     inner_tabs = st.tabs(tab_list)
     t_map = {name: inner_tabs[i] for i, name in enumerate(tab_list)}
+
+    # Khởi tạo các biểu đồ dùng chung
+    fig_hist = ve_bieu_do_histogram(df, bt)
+    fig_box = ve_bieu_do_boxplot_phan_loai(df)
 
     # === TAB 1: TỔNG QUAN ===
     if "🏠 TỔNG QUAN" in t_map:
