@@ -82,19 +82,19 @@ def hash_password(password):
 def verify_password(password, hashed):
     return hash_password(password) == hashed
 
-# Khởi tạo trạng thái đăng nhập và giao diện
+# Khởi tạo trạng thái đăng nhập
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'user_info' not in st.session_state:
     st.session_state.user_info = None
-if 'theme' not in st.session_state:
-    st.session_state.theme = 'dark' # Mặc định là giao diện tối cao cấp
 if 'forgot_password_mode' not in st.session_state:
     st.session_state.forgot_password_mode = False
 if 'show_login_dialog' not in st.session_state:
     st.session_state.show_login_dialog = False
 if 'processed_video_path' not in st.session_state:
     st.session_state.processed_video_path = None
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'dark'
 
 # KIỂM TRA ĐĂNG NHẬP GOOGLE (Hỗ trợ Streamlit Cloud Identity)
 if not st.session_state.get('logged_in'):
@@ -157,226 +157,212 @@ st.set_page_config(
 # ============================================
 # CSS CUSTOM - GIAO DIỆN HIỆN ĐẠI
 # ============================================
-# ============================================
-# CSS CUSTOM - GIAO DIỆN HIỆN ĐẠI (DYNAMIC THEME)
-# ============================================
-is_dark = st.session_state.theme == 'dark'
-
-# Định nghĩa các biến màu sắc theo chế độ
-if is_dark:
-    bg_color = "#0d0d1a"
-    text_color = "#ffffff"
-    glass_bg = "rgba(255, 255, 255, 0.04)"
-    glass_border = "rgba(255, 255, 255, 0.1)"
-    card_bg = "rgba(26, 26, 46, 0.8)"
-    sidebar_bg = "#0d0d1a"
-    tab_bg = "rgba(255, 255, 255, 0.05)"
-    metric_card_bg = "rgba(255, 255, 255, 0.05)"
-    input_bg = "rgba(255, 255, 255, 0.05)"
-    input_text = "white"
-    shadow = "0 10px 30px rgba(0, 0, 0, 0.5)"
-    header_grad = "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
-else:
-    bg_color = "#f8fafc"
-    text_color = "#1e293b"
-    glass_bg = "rgba(255, 255, 255, 0.8)"
-    glass_border = "rgba(0, 0, 0, 0.1)"
-    card_bg = "#ffffff"
-    sidebar_bg = "#ffffff"
-    tab_bg = "#f1f5f9"
-    metric_card_bg = "#ffffff"
-    input_bg = "#ffffff"
-    input_text = "#1e293b"
-    shadow = "0 10px 30px rgba(0, 0, 0, 0.05)"
-    header_grad = "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)"
-
-st.markdown(f"""
+st.markdown("""
 <style>
-    * {{ font-family: 'Times New Roman', Times, serif !important; }}
-    /* === CẤU HÌNH NỀN TOÀN BỘ === */
-    .stApp {{
-        background-color: {bg_color} !important;
-        color: {text_color} !important;
-    }}
-    
-    /* === SIDEBAR === */
-    [data-testid="stSidebar"] {{
-        background-color: {sidebar_bg} !important;
-        border-right: 1px solid {glass_border} !important;
-    }}
-    [data-testid="stSidebar"] * {{
-        color: {text_color} !important;
-    }}
-    
     /* === SỬA LỖI CHỮ RÁC ICON (TRIỆT ĐỂ) === */
-    button[data-testid="stSidebarCollapseButton"] span,
+    [data-testid="stSidebarCollapseButton"] {
+        color: transparent !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        width: 40px !important;
+        height: 40px !important;
+    }
+    [data-testid="stSidebarCollapseButton"] * {
+        display: none !important;
+    }
     [data-testid="stExpander"] summary span > span,
     [data-testid="stFileUploader"] section span > span,
-    .stIconMaterial {{
+    .stIconMaterial, .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
         display: none !important;
         color: transparent !important;
         font-size: 0 !important;
-    }}
-    
-    /* Ẩn text rác hiện ra khi lỗi font Material */
-    .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {{
-        display: none !important;
-    }}
-    
-    /* === GLASSMORPHISM CONTAINERS === */
-    [data-testid="stVerticalBlockBorderWrapper"] {{
-        background: {glass_bg} !important;
+        visibility: hidden !important;
+    }
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(255, 255, 255, 0.04) !important;
         border-radius: 20px !important;
-        border: 1px solid {glass_border} !important;
-        box-shadow: {shadow} !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
         padding: 25px !important;
-    }}
+    }
     
-    /* === INPUTS & FORMS === */
-    .stTextInput input, .stNumberInput input, .stSelectbox select, .stTextArea textarea {{
-        background-color: {input_bg} !important;
-        border: 1px solid {glass_border} !important;
+    .stTextInput input {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 10px !important;
-        color: {input_text} !important;
-    }}
+        color: white !important;
+    }
     
-    /* === TABS === */
-    .stTabs [data-baseweb="tab-list"] {{
+    .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: transparent;
         overflow-x: auto;
-    }}
+    }
 
-    .stTabs [data-baseweb="tab"] {{
-        height: 48px !important;
+    .stTabs [data-baseweb="tab"] {
+        height: 42px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        text-align: center !important;
-        background-color: {tab_bg};
-        border-radius: 12px;
-        color: {text_color} !important;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        color: white;
         transition: all 0.3s;
-        border: 1px solid {glass_border};
-        min-width: 130px !important;
+        border: 1px solid transparent;
+        min-width: 90px !important; 
         width: auto !important;
-        padding: 0 20px !important;
+        padding: 0 12px !important;
         white-space: nowrap !important;
-    }}
+    }
 
-    .stTabs [aria-selected="true"] {{
+    .stTabs [data-baseweb="tab"] div,
+    .stTabs [data-baseweb="tab"] p {
+        font-size: 0.82rem !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 4px !important;
+    }
+
+    .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
         border: 1px solid #00c6ff !important;
-        color: white !important;
         box-shadow: 0 0 15px rgba(0, 198, 255, 0.4);
-    }}
-    
-    .stTabs [aria-selected="true"] * {{
-        color: white !important;
-    }}
+    }
 
     /* ĐẨY GIAO DIỆN LÊN CAO TỐI ĐA */
-    .block-container {{
+    .block-container {
         padding-top: 2rem !important;
         padding-bottom: 0rem !important;
-    }}
+    }
     
-    .top-auth-container {{
+    .top-auth-container {
         margin-top: -30px;
         margin-bottom: 10px;
-    }}
+    }
 
-    /* === CÁC THÀNH PHẦN KHÁC === */
-    .info-box, .metric-card, .lecturer-card, .member-card, .warning-box {{
-        background: {card_bg} !important;
-        border: 1px solid {glass_border} !important;
-        color: {text_color} !important;
-        padding: 1.5rem !important;
-        border-radius: 16px !important;
-        box-shadow: {shadow} !important;
-        margin-bottom: 1rem !important;
-    }}
+    .google-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        color: #444;
+        padding: 12px;
+        border-radius: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: none;
+        width: 100%;
+        margin-top: 10px;
+    }
     
-    .info-box h3, .metric-card h4, .lecturer-name, .member-name {{
-        color: {'#ffd700' if is_dark else '#0072ff'} !important;
-    }}
-
-    .main-header {{
-        background: {card_bg} !important;
-        padding: 2rem !important;
-        border-radius: 20px !important;
-        text-align: center !important;
-        margin-bottom: 2rem !important;
-        border: 1px solid {glass_border} !important;
-        box-shadow: {shadow} !important;
-    }}
+    /* CUSTOM CARD ĐỂ DÙNG CHUNG */
+    .custom-card {
+        padding: 1.2rem;
+        border-radius: 16px;
+        text-align: center;
+        border: 1px solid #2a5298;
+    }
     
-    .main-header h1 {{ color: {'#ffffff' if is_dark else '#0f172a'} !important; font-size: 1.8rem !important; margin: 0 !important; }}
-    .main-header p {{ color: {'#aaa' if is_dark else '#475569'} !important; margin: 0.5rem 0 0 0 !important; }}
-
-    .stButton > button {{
-        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
-        color: white !important;
-        border-radius: 30px !important;
-        font-weight: bold !important;
-        transition: all 0.3s ease !important;
-        border: none !important;
-        padding: 0.5rem 2rem !important;
-    }}
-    
-    .stButton > button:hover {{
-        transform: scale(1.05) !important;
-        box-shadow: 0 5px 15px rgba(0, 198, 255, 0.4) !important;
-    }}
-
-    /* ĐỐI VỚI LIGHT MODE - ĐẢM BẢO KHÔNG CÒN MÀU ĐEN */
-    {'/* Light Mode Specific */' if not is_dark else ''}
-    {'h1, h2, h3, h4, h5, h6, p, span, li, label, div { color: #1e293b !important; }' if not is_dark else ''}
-    
-    /* ẨN ICON LỖI */
-    .stIconMaterial {{ display: none !important; }}
-
-    /* === GOOGLE LOGIN BUTTON === */
-    .google-btn {{
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        background: white !important;
-        color: #444 !important;
-        padding: 12px !important;
-        border-radius: 12px !important;
-        font-weight: bold !important;
-        cursor: pointer !important;
-        transition: all 0.3s !important;
-        border: none !important;
-        width: 100% !important;
-        margin-top: 10px !important;
-    }}
-    
-    .google-btn:hover {{
+    .google-btn:hover {
         background: #f1f1f1;
         box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
         transform: translateY(-2px);
-    }}
-    
-    /* Đảm bảo text luôn hiển thị đúng trên nền sáng */
-    h1, h2, h3, h4, h5, h6, p, li, span {{
-        color: {text_color} !important;
-    }}
-    
-    /* Override cho các badge nghiên cứu */
-    .research-badge {{
-        background: {'rgba(255, 215, 0, 0.1)' if is_dark else 'rgba(0, 114, 255, 0.1)'} !important;
-        border: 1px solid {'#ffd700' if is_dark else '#0072ff'} !important;
-        color: {'#ffd700' if is_dark else '#0072ff'} !important;
-        padding: 5px 15px !important;
-        border-radius: 30px !important;
-        display: inline-block !important;
-        margin: 10px 0 !important;
-        font-weight: bold !important;
-    }}
+    }
 </style>
 """, unsafe_allow_html=True)
+
+# === CSS CHO CHẾ ĐỘ SÁNG (LIGHT MODE OVERRIDE) ===
+if st.session_state.get('theme') == 'light':
+    st.markdown("""
+    <style>
+        .stApp { background: #f8f9fa !important; color: #333 !important; }
+        .main-header { background: #ffffff !important; border: 1px solid #ddd !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important; }
+        .main-header h1 { color: #000000 !important; }
+        .main-header p { color: #333333 !important; }
+        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card { 
+            background: #ffffff !important; 
+            border: 1px solid #e0e0e0 !important; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; 
+            color: #000000 !important; 
+        }
+        .metric-value { color: #0072ff !important; }
+        .metric-label { color: #444444 !important; }
+        .stMarkdown, p, span, label, h1, h2, h3, h4, li { color: #000000 !important; }
+        .stTextInput input, .stSelectbox div, .stNumberInput input { 
+            background-color: #fff !important; 
+            color: #000000 !important; 
+            border: 1px solid #ccc !important; 
+        }
+        .stTabs [data-baseweb="tab"] { 
+            background-color: #f1f3f5 !important; 
+            color: #666666 !important; 
+            border: 1px solid #dee2e6 !important;
+        }
+        .stTabs [aria-selected="true"] { 
+            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important; 
+            color: #fff !important; 
+            border: 1px solid #0072ff !important;
+        }
+        .footer-container, .footer-col, .footer-bottom { color: #444 !important; }
+        .main-footer { background: #f8f9fa !important; border-top: 4px solid #0072ff !important; box-shadow: 0 -5px 15px rgba(0,0,0,0.05) !important; }
+        .school-name { color: #1a1a2e !important; }
+        .school-subname { color: #0072ff !important; }
+        .footer-title { color: #0072ff !important; }
+        .stExpander { background: #fff !important; border: 1px solid #eee !important; border-radius: 12px !important; }
+        .stExpander summary { background: #f8f9fa !important; color: #000 !important; }
+        .stExpander summary:hover { background: #eee !important; }
+        [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #eee !important; }
+        [data-testid="stSidebar"] * { color: #333 !important; }
+        
+        /* Làm cho nút gạt (toggle) hiện rõ màu xám khi ở chế độ Sáng */
+        div[role="switch"][aria-checked="false"] {
+            background-color: #bdc3c7 !important;
+        }
+        div[role="switch"][aria-checked="false"] > div {
+            background-color: #ffffff !important;
+        }
+        [data-testid="stTable"] th { background-color: #f1f3f5 !important; color: #000 !important; }
+        [data-testid="stMetric"] { background: #ffffff !important; border: 1px solid #eee !important; padding: 10px !important; border-radius: 12px !important; }
+        /* Fix Form elements */
+        textarea, input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #ccc !important; }
+        [data-testid="stForm"] { background-color: #ffffff !important; border: 1px solid #eee !important; border-radius: 15px !important; }
+        
+        /* FIX ALL BUTTONS */
+        .stButton button, .stDownloadButton button, [data-testid="stFormSubmitButton"] button,
+        .stNumberInput button, [data-testid="stFileUploader"] button { 
+            background-color: #f1f3f5 !important; 
+            color: #000000 !important; 
+            border: 1px solid #ccc !important;
+            font-weight: bold !important;
+        }
+        .stButton button:hover, .stDownloadButton button:hover, [data-testid="stFormSubmitButton"] button:hover,
+        .stNumberInput button:hover, [data-testid="stFileUploader"] button:hover { 
+            background-color: #e9ecef !important; 
+            color: #0072ff !important; 
+            border: 1px solid #0072ff !important;
+        }
+        /* Fix Sidebar Inputs */
+        [data-testid="stSidebar"] .stTextInput input, 
+        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"],
+        [data-testid="stSidebar"] .stNumberInput input {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #ddd !important;
+        }
+        /* Fix File Uploader */
+        [data-testid="stFileUploader"] section {
+            background-color: #f8f9fa !important;
+            border: 1px dashed #ccc !important;
+            color: #333 !important;
+        }
+        [data-testid="stFileUploader"] section div { color: #333 !important; }
+        /* Fix Dropdown menus */
+        div[data-baseweb="popover"] div { background-color: #ffffff !important; color: #000000 !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
 MAX_FILE_SIZE_MB = 500
 
@@ -504,12 +490,7 @@ def hien_thi_tab_tien_trien():
         z_data = [[1, 1, 0, 1, 1, 1, 1], [1, 1, 1, 1, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0.5, 1, 1, 1]]
         fig_heat = ff.create_annotated_heatmap(z=z_data, x=['T2','T3','T4','T5','T6','T7','CN'], y=['W1','W2','W3','W4'], 
                                               colorscale='Viridis', showscale=False)
-        fig_heat.update_layout(
-            height=200, 
-            margin=dict(l=20, r=20, t=30, b=20), 
-            paper_bgcolor='rgba(0,0,0,0)',
-            font_color=text_color
-        )
+        fig_heat.update_layout(height=200, margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_heat, use_container_width=True)
     else:
         # CHẾ ĐỘ DỮ LIỆU THẬT
@@ -534,13 +515,7 @@ def hien_thi_tab_tien_trien():
         st.markdown("#### 📉 BIỂU ĐỒ TĂNG TRƯỞNG HIỆU SUẤT")
         fig_real = px.line(df_hist, x='ngay', y='accuracy', color='bai_tap', markers=True,
                           title="Sự thay đổi độ chính xác qua các lần tập")
-        fig_real.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', 
-            plot_bgcolor='rgba(0,0,0,0)', 
-            font_color=text_color,
-            xaxis=dict(gridcolor=glass_border),
-            yaxis=dict(gridcolor=glass_border)
-        )
+        fig_real.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='white')
         st.plotly_chart(fig_real, use_container_width=True)
         
         # 3. Bảng lịch sử chi tiết
@@ -618,8 +593,10 @@ def hien_thi_tab_phan_hoi():
                     st.warning("⚠️ Vui lòng nhập đầy đủ tên và nội dung.")
 
         st.markdown("#### 📞 Thông tin hỗ trợ kỹ thuật")
-        st.markdown("""
-        <div style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 15px; border: 1px solid #2a5298;">
+        is_light = st.session_state.theme == 'light'
+        box_bg = "rgba(0,114,255,0.05)" if is_light else "rgba(255,255,255,0.05)"
+        st.markdown(f"""
+        <div style="background: {box_bg}; padding: 1.2rem; border-radius: 15px; border: 1px solid #2a5298;">
             <p>📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</p>
             <p>🏫 <b>Đơn vị:</b> Khoa KHDL Y sinh - HUPH</p>
             <p>📍 <b>Vị trí:</b> 1A Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
@@ -632,15 +609,18 @@ def hien_thi_tab_phan_hoi():
         if not comments:
             st.info("Chưa có bình luận nào. Hãy là người đầu tiên để lại ý kiến!")
         else:
+            is_light = st.session_state.theme == 'light'
+            item_bg = "rgba(0,0,0,0.03)" if is_light else "rgba(255,255,255,0.08)"
+            item_text = "#333" if is_light else "#ccc"
             # Hiển thị danh sách bình luận dưới dạng thẻ
             for c in comments[:20]: # Hiển thị 20 bình luận mới nhất
                 st.markdown(f"""
-                <div style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #00CED1;">
+                <div style="background: {item_bg}; padding: 1rem; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #00CED1;">
                     <div style="display: flex; justify-content: space-between;">
-                        <b style="color: #ffd700;">👤 {c['name']}</b>
+                        <b style="color: {"#0072ff" if is_light else "#ffd700"};">👤 {c['name']}</b>
                         <span style="color: #666; font-size: 0.8rem;">{c['time']}</span>
                     </div>
-                    <p style="color: #ccc; margin-top: 5px; font-size: 0.95rem;">{c['message']}</p>
+                    <p style="color: {item_text}; margin-top: 5px; font-size: 0.95rem;">{c['message']}</p>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -689,7 +669,7 @@ class PoseProcessor(VideoProcessorBase):
 
 def hien_thi_tab_realtime(bai_tap):
     """Xử lý Camera trực tiếp qua Trình duyệt (WebRTC)"""
-    st.markdown("<h3 style='text-align: center;'>📹 TẬP LUYỆN TRỰC TIẾP VỚI AI (REAL-TIME)</h3>", unsafe_allow_html=True)
+    st.markdown("### 📹 TẬP LUYỆN TRỰC TIẾP VỚI AI (REAL-TIME)")
     st.info("💡 Trình duyệt sẽ yêu cầu quyền Camera. Hãy nhấn 'Allow' để bắt đầu.")
     
     RTC_CONFIGURATION = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
@@ -698,9 +678,7 @@ def hien_thi_tab_realtime(bai_tap):
     
     with col2:
         st.markdown(f"""
-        <div style="background: {header_grad}; 
-                    border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
-                    border: 1px solid {glass_border}; box-shadow: {shadow}; font-family: 'Times New Roman';">
+        <div class="info-box">
             <h4>🎯 BÀI TẬP: {bai_tap['ten']}</h4>
             <p>🦾 Mục tiêu Vai: {bai_tap['chuan']['vai']}°</p>
             <p>💪 Mục tiêu Khuỷu: {bai_tap['chuan']['khuyu']}°</p>
@@ -726,13 +704,20 @@ def hien_thi_tab_realtime(bai_tap):
 # ============================================
 def hien_thi_tab_kien_thuc_phcn():
     """Thiết kế Tab 8 về kiến thức y khoa Phục hồi chức năng"""
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+    # Cấu hình màu sắc theo Theme
+    is_light = st.session_state.theme == 'light'
+    bg_gradient = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)"
+    text_color = "#1a1a2e" if is_light else "#fff"
+    sub_color = "#0072ff" if is_light else "#00CED1"
+    border_color = "#0072ff" if is_light else "#00CED1"
+
+    st.markdown(f"""
+    <div style="background: {bg_gradient}; 
                 padding: 2rem; border-radius: 20px; text-align: center; 
-                border: 1px solid #00CED1; box-shadow: 0 10px 30px rgba(0, 206, 209, 0.1);
+                border: 1px solid {border_color}; box-shadow: 0 10px 30px rgba(0, 206, 209, 0.1);
                 margin-bottom: 2rem;">
-        <h1 style="color: #fff; margin: 0; font-size: 2rem;">🏥 KIẾN THỨC PHỤC HỒI CHỨC NĂNG</h1>
-        <p style="color: #00CED1; font-weight: bold; margin-top: 0.5rem;">
+        <h1 style="color: {text_color}; margin: 0; font-size: 2rem;">🏥 KIẾN THỨC PHỤC HỒI CHỨC NĂNG</h1>
+        <p style="color: {sub_color}; font-weight: bold; margin-top: 0.5rem;">
             Nền tảng y khoa cho sự phục hồi toàn diện
         </p>
     </div>
@@ -799,14 +784,22 @@ def hien_thi_tab_kien_thuc_phcn():
 def hien_thi_tab_cong_nghe():
     """Thiết kế Tab 7 với phong cách công nghệ cao cấp"""
     
+    # Cấu hình màu sắc theo Theme
+    is_light = st.session_state.theme == 'light'
+    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+    text_color = "#000000" if is_light else "#ffd700"
+    sub_color = "#0072ff" if is_light else "#00CED1"
+    border_color = "#0072ff" if is_light else "#ffd700"
+    shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(255, 215, 0, 0.1)"
+
     # 1. HEADER CHƯƠNG TRÌNH
     st.markdown(f"""
-    <div style="background: {card_bg}; 
+    <div style="background: {bg_gradient}; 
                 padding: 2.5rem; border-radius: 25px; text-align: center; 
-                border: 1px solid {glass_border}; box-shadow: {shadow};
+                border: 1px solid {border_color}; box-shadow: 0 15px 35px {shadow};
                 margin-bottom: 2rem;">
-        <h1 style="color: {'#ffd700' if is_dark else '#0072ff'}; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
-        <p style="color: {'#00CED1' if is_dark else '#1e293b'}; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
+        <h1 style="color: {text_color}; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
+        <p style="color: {sub_color}; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
             Sự kết hợp hoàn hảo giữa Phục hồi chức năng và Trí tuệ nhân tạo (AI)
         </p>
     </div>
@@ -1462,14 +1455,13 @@ def ve_bieu_do_goc_vai(df, bt):
         yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)',
                    range=[0, 180]),
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor=card_bg,
-        font_color=text_color,
+        paper_bgcolor='rgba(26,26,46,0.9)',
         hovermode='x unified',
         legend=dict(
             bgcolor='rgba(0,0,0,0.5)',
-            bordercolor=text_color,
+            bordercolor='white',
             borderwidth=1,
-            font=dict(color=text_color, size=12)
+            font=dict(color='white', size=12)
         ),
         margin=dict(l=50, r=50, t=70, b=50)
     )
@@ -1514,14 +1506,13 @@ def ve_bieu_do_goc_khuyu(df, bt):
         yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)',
                    range=[0, 180]),
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor=card_bg,
-        font_color=text_color,
+        paper_bgcolor='rgba(26,26,46,0.9)',
         hovermode='x unified',
         legend=dict(
             bgcolor='rgba(0,0,0,0.5)',
-            bordercolor=text_color,
+            bordercolor='white',
             borderwidth=1,
-            font=dict(color=text_color, size=12)
+            font=dict(color='white', size=12)
         ),
         margin=dict(l=50, r=50, t=70, b=50)
     )
@@ -1560,8 +1551,7 @@ def ve_bieu_do_histogram(df, bt):
             x=0.5
         ),
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor=card_bg,
-        font_color=text_color,
+        paper_bgcolor='rgba(26,26,46,0.9)',
         showlegend=False,
         height=500,
         bargap=0.05
@@ -1599,20 +1589,13 @@ def ve_bieu_do_tron_thong_ke(tk):
     fig.update_layout(
         title=dict(
             text="<b>📊 PHÂN BỔ KẾT QUẢ TẬP LUYỆN</b>",
-            font=dict(size=18, color=text_color),
+            font=dict(size=18, color='white'),
             x=0.5
         ),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color=text_color),
-        legend=dict(
-            orientation="h", 
-            yanchor="bottom", 
-            y=-0.1, 
-            xanchor="center", 
-            x=0.5,
-            font=dict(color=text_color)
-        ),
+        font=dict(color='white'),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5),
         height=450,
         margin=dict(t=80, b=50, l=20, r=20)
     )
@@ -1659,25 +1642,18 @@ def ve_bieu_do_boxplot_phan_loai(df):
     fig.update_layout(
         title=dict(
             text="<b>📦 PHÂN TÍCH BIÊN ĐỘ THEO NHÓM KẾT QUẢ</b>",
-            font=dict(size=18, color=text_color),
+            font=dict(size=18, color='white'),
             x=0.5
         ),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color=text_color),
+        font=dict(color='white'),
         height=500,
-        legend=dict(
-            orientation="h", 
-            yanchor="bottom", 
-            y=-0.2, 
-            xanchor="center", 
-            x=0.5,
-            font=dict(color=text_color)
-        ),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
         margin=dict(t=80, b=100)
     )
     
-    fig.update_yaxes(title_text="Góc (độ)", gridcolor=glass_border)
+    fig.update_yaxes(title_text="Góc (độ)", gridcolor='rgba(255,255,255,0.1)')
     
     return fig
 
@@ -1771,18 +1747,18 @@ def ve_bieu_do_radar(tk):
             radialaxis=dict(
                 visible=True,
                 range=[0, 1],
-                gridcolor=glass_border,
-                linecolor=glass_border,
-                tickfont=dict(color=text_color, size=10)
+                gridcolor='rgba(255,255,255,0.1)',
+                linecolor='rgba(255,255,255,0.1)',
+                tickfont=dict(color='white', size=10)
             ),
             angularaxis=dict(
-                gridcolor=glass_border,
-                linecolor=glass_border,
-                tickfont=dict(color=text_color, size=12)
+                gridcolor='rgba(255,255,255,0.1)',
+                linecolor='rgba(255,255,255,0.1)',
+                tickfont=dict(color='white', size=12)
             ),
             bgcolor='rgba(0,0,0,0)'
         ),
-        paper_bgcolor=card_bg,
+        paper_bgcolor='rgba(26,26,46,0.9)',
         showlegend=True,
         legend=dict(
             orientation="h",
@@ -1790,11 +1766,11 @@ def ve_bieu_do_radar(tk):
             y=1.1,
             xanchor="center",
             x=0.5,
-            font=dict(color=text_color)
+            font=dict(color='white')
         ),
         title=dict(
             text="<b>🔬 ĐÁNH GIÁ CHỈ SỐ KHOA HỌC (RADAR CHART)</b>",
-            font=dict(size=18, color=text_color, family='Arial Black'),
+            font=dict(size=18, color='white', family='Arial Black'),
             x=0.5,
             y=0.05
         ),
@@ -2119,7 +2095,180 @@ BAI_TAP = {
 
 # ============================================
 # CSS KẾT HỢP ĐẦY ĐỦ
-# Xóa CSS trùng lặp - Đã gộp vào phần CSS động ở trên
+# ============================================
+st.markdown("""
+<style>
+    * { font-family: 'Times New Roman', Times, serif !important; }
+    .stApp { background: linear-gradient(135deg, #0a0a0a 0%, #0f0f1a 50%, #1a1a2e 100%); }
+    
+    /* HEADER */
+    .main-header {
+        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        text-align: center;
+        margin-bottom: 2rem;
+        border: 1px solid #2a5298;
+    }
+    .main-header h1 { color: #ffffff !important; font-size: 1.8rem; margin: 0; }
+    .main-header p { color: #aaa !important; margin: 0.5rem 0 0 0; }
+    
+    /* RESEARCH BADGE */
+    .research-badge {
+        background: linear-gradient(135deg, #2a5298, #1a73e8);
+        padding: 0.3rem 1rem;
+        border-radius: 50px;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+    .research-badge span { color: white; font-size: 0.8rem; font-weight: bold; }
+    
+    /* INFO BOX */
+    .info-box {
+        background: rgba(26,26,46,0.8);
+        padding: 1.2rem;
+        border-radius: 16px;
+        border-left: 4px solid #2a5298;
+        margin-bottom: 1rem;
+    }
+    
+    /* BUTTON - CÓ HOVER EFFECT */
+    .stButton > button {
+        background: linear-gradient(135deg, #2a5298 0%, #1a73e8 100%) !important;
+        color: white !important;
+        border-radius: 30px !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .stButton > button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    /* MEMBER CARD */
+    .member-card {
+        background: linear-gradient(135deg, rgba(26,26,46,0.9) 0%, rgba(22,33,62,0.9) 100%);
+        padding: 1.2rem;
+        border-radius: 16px;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .member-name { color: #fff; font-size: 1.1rem; font-weight: bold; }
+    .member-role { color: #ffd700; font-size: 0.85rem; }
+    
+    /* LECTURER CARD */
+    .lecturer-card {
+        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        padding: 1.5rem;
+        border-radius: 20px;
+        text-align: center;
+        margin-bottom: 2rem;
+        border: 2px solid #ffd700;
+    }
+    .lecturer-name { color: #ffd700; font-size: 1.3rem; font-weight: bold; }
+    
+    /* FRAME THUMBNAIL */
+    .frame-thumbnail {
+        transition: transform 0.3s;
+        cursor: pointer;
+        width: 100%;
+        border-radius: 12px;
+    }
+    .frame-thumbnail:hover {
+        transform: scale(1.02);
+    }
+    
+    /* VIDEO */
+    video {
+        width: 100%;
+        border-radius: 16px;
+        background: black;
+        max-height: 70vh;
+    }
+    
+    /* WARNING BOX */
+    .warning-box {
+        background: rgba(255,100,0,0.2);
+        border-left: 4px solid #FFA500;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 10px 0;
+    }
+    
+    /* TABS STYLE - Đã được tối ưu ở đầu file */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    /* METRIC CARD - MỚI THÊM */
+    .metric-card {
+        background: linear-gradient(135deg, rgba(26,26,46,0.95) 0%, rgba(22,33,62,0.95) 100%);
+        border-radius: 16px;
+        padding: 1rem;
+        text-align: center;
+        border: 1px solid #2a5298;
+        transition: all 0.3s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        border-color: #ffd700;
+    }
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #00CED1;
+    }
+    .metric-label {
+        font-size: 0.85rem;
+        color: #aaa;
+        margin-top: 0.5rem;
+    }
+    
+    /* CUSTOM SCROLLBAR (TÙY CHỌN THÊM) */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #1a1a2e;
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #2a5298;
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #1a73e8;
+    }
+    
+    /* DATA FRAME STYLE */
+    .stDataFrame {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .stDataFrame div[data-testid="stDataFrame"] {
+        border-radius: 12px;
+    }
+    
+    /* EXPANDER STYLE */
+    .streamlit-expanderHeader {
+        background: rgba(26,26,46,0.8);
+        border-radius: 12px;
+        font-weight: bold;
+    }
+    
+    /* SUCCESS/WARNING/INFO MESSAGES */
+    .stAlert {
+        border-radius: 12px;
+        border-left: 4px solid;
+    }
+    .stAlert[data-baseweb="notification"] {
+        border-radius: 12px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================
 # HÀM HIỂN THỊ TAB 2 - THIẾT KẾ LẠI
@@ -2143,19 +2292,21 @@ def hien_thi_tab_phan_tich():
     })
     
     # 1. HEADER CHỈ SỐ TỔNG QUAN (CỐ ĐỊNH)
-    # 1. HEADER CHƯƠNG TRÌNH (DYNAMIC)
     st.markdown(f"""
-    <div style="background: {card_bg}; 
-                padding: 2rem; border-radius: 20px; text-align: center; 
-                border: 1px solid {glass_border}; box-shadow: {shadow};
-                margin-bottom: 2rem;">
-        <h1 style="color: {'#ffd700' if is_dark else '#0072ff'}; margin: 0; font-size: 1.8rem;">📊 DASHBOARD PHÂN TÍCH LÂM SÀNG</h1>
-        <p style="color: {'#aaa' if is_dark else '#475569'}; margin: 0.5rem 0 0 0;">
-            🏥 Bài tập: {bt['ten']} | 🛡️ Độ tin cậy (ICC): {tk.get('icc', 0):.2f}
-        </p>
-        <div style="display: flex; justify-content: center; margin-top: 15px;">
-            <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
-                <span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
+    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+                border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
+                border: 1px solid #2a5298; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="color: #ffd700; margin: 0; font-size: 1.8rem;">📊 DASHBOARD PHÂN TÍCH LÂM SÀNG</h2>
+                <p style="color: #aaa; margin: 0.5rem 0 0 0;">
+                    🏥 Bài tập: {bt['ten']} | 🛡️ Độ tin cậy (ICC): {tk.get('icc', 0):.2f}
+                </p>
+            </div>
+            <div style="text-align: right;">
+                <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
+                    <span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
+                </div>
             </div>
         </div>
     </div>
@@ -2246,11 +2397,28 @@ def hien_thi_tab_phan_tich():
                     <div class="metric-label">❌ Frames Sai (Fail)</div>
                 </div>
                 <div class="metric-card" style="margin-top: 15px;">
-                    <div class="metric-value" style="color: {'#00CED1' if is_dark else '#0072ff'};">{tk['do_chinh_xac']:.1f}%</div>
+                    <div class="metric-value" style="color: #ffd700;">{tk['do_chinh_xac']:.1f}%</div>
                     <div class="metric-label">🎯 Hiệu suất tổng thể</div>
                 </div>
                 """, unsafe_allow_html=True)
+
+    # === TAB 2: PHÂN TÍCH KHỚP ===
+    with tab_joint:
+        st.markdown("#### 📈 BIỂU ĐỒ GÓC VAI")
+        fig_vai = ve_bieu_do_goc_vai(df, bt)
+        st.plotly_chart(fig_vai, use_container_width=True)
+        col_m1, col_dl1 = st.columns([2, 1])
+        with col_m1:
+            st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
+        with col_dl1:
+            try:
+                st.download_button("📥 Tải ảnh biểu đồ Vai", fig_vai.to_image(format="png"), "bieu_do_vai.png", "image/png", use_container_width=True)
+            except: pass
         
+        st.markdown("---")
+        st.markdown("#### 📊 BIỂU ĐỒ GÓC KHUỶU")
+        fig_khuyu = ve_bieu_do_goc_khuyu(df, bt)
+        st.plotly_chart(fig_khuyu, use_container_width=True)
         col_m2, col_dl2 = st.columns([2, 1])
         with col_m2:
             st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
@@ -2310,9 +2478,9 @@ def hien_thi_tab_phan_tich():
             
         with ai_col2:
             st.markdown(f"""
-            <div style="background: {glass_bg}; border-radius: 15px; padding: 1.2rem; border: 1px dashed {glass_border};">
-                <p style="color: {'#00CED1' if is_dark else '#0072ff'}; font-weight: bold; margin-bottom: 5px;">🧬 PHÂN TÍCH TỪ MÔ HÌNH BLAZEPOSE:</p>
-                <ul style="margin-left: 15px; font-size: 0.95rem;">
+            <div style="background: rgba(0,206,209,0.05); border-radius: 15px; padding: 1.2rem; border: 1px dashed #00CED1;">
+                <p style="color: #00CED1; font-weight: bold; margin-bottom: 5px;">🧬 PHÂN TÍCH TỪ MÔ HÌNH BLAZEPOSE:</p>
+                <ul style="color: #ccc; font-size: 0.9rem; margin-left: 15px;">
                     <li><b>Độ ổn định tín hiệu:</b> { 'Rất tốt, độ nhiễu thấp.' if stability_score > 80 else 'Có hiện tượng nhiễu nhẹ (Jittering) trong quá trình vận động.' }</li>
                     <li><b>Tính khách quan:</b> Chỉ số ICC ({icc:.2f}) cho thấy sự tương quan chặt chẽ giữa dữ liệu trích xuất và chuẩn lâm sàng.</li>
                     <li><b>Phân loại tự động:</b> Mô hình AI đã phân tích thành công {tk['tong_frame_hop_le']} khung hình với độ chính xác {tk['do_chinh_xac']:.1f}%.</li>
@@ -2330,37 +2498,37 @@ def hien_thi_tab_phan_tich():
         # 2. THÔNG TIN CHỈ SỐ VÀ BẢNG (DÒNG TIẾP THEO)
         st.markdown("#### 📊 BẢNG TỔNG HỢP CHỈ SỐ KHOA HỌC")
         st.markdown(f"""
-        <div style="background: {card_bg}; padding: 1.5rem; border-radius: 15px; border: 1px solid {glass_border}; margin-bottom: 20px; box-shadow: {shadow};">
-            <table style="width: 100%; color: {text_color}; border-collapse: collapse;">
-                <tr style="border-bottom: 2px solid {glass_border}; text-align: left;">
-                    <th style="padding: 12px;">Chỉ số nghiên cứu</th>
-                    <th style="padding: 12px;">Giá trị thực tế</th>
-                    <th style="padding: 12px;">Mục tiêu đề tài</th>
-                    <th style="padding: 12px;">Trạng thái</th>
+        <div style="background: rgba(26,26,46,0.6); padding: 1.5rem; border-radius: 15px; border: 1px solid #2a5298; margin-bottom: 20px;">
+            <table style="width: 100%; color: white; border-collapse: collapse;">
+                <tr style="border-bottom: 2px solid #2a5298; text-align: left;">
+                    <th style="padding: 10px;">Chỉ số nghiên cứu</th>
+                    <th style="padding: 10px;">Giá trị thực tế</th>
+                    <th style="padding: 10px;">Mục tiêu đề tài</th>
+                    <th style="padding: 10px;">Trạng thái</th>
                 </tr>
-                <tr style="border-bottom: 1px solid {glass_border};">
-                    <td style="padding: 12px;">Độ chính xác (Accuracy)</td>
-                    <td style="padding: 12px; color: {'#00CED1' if is_dark else '#0072ff'}; font-weight: bold;">{tk['do_chinh_xac']:.1f}%</td>
-                    <td style="padding: 12px;">≥ 90%</td>
-                    <td style="padding: 12px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
+                <tr style="border-bottom: 1px solid #333;">
+                    <td style="padding: 10px;">Độ chính xác (Accuracy)</td>
+                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk['do_chinh_xac']:.1f}%</td>
+                    <td style="padding: 10px;">≥ 90%</td>
+                    <td style="padding: 10px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
                 </tr>
-                <tr style="border-bottom: 1px solid {glass_border};">
-                    <td style="padding: 12px;">F1-Score (Độ tin cậy)</td>
-                    <td style="padding: 12px; color: {'#00CED1' if is_dark else '#0072ff'}; font-weight: bold;">{tk.get('f1_score', 0):.2f}</td>
-                    <td style="padding: 12px;">≥ 0.85</td>
-                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('f1_score', 0) >= 0.85 else '⚠️ Cần cải thiện'}</td>
+                <tr style="border-bottom: 1px solid #333;">
+                    <td style="padding: 10px;">F1-Score (Độ tin cậy)</td>
+                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk.get('f1_score', 0):.2f}</td>
+                    <td style="padding: 10px;">≥ 0.85</td>
+                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('f1_score', 0) >= 0.85 else '⚠️ Cần cải thiện'}</td>
                 </tr>
-                <tr style="border-bottom: 1px solid {glass_border};">
-                    <td style="padding: 12px;">Sai số tuyệt đối (MAE)</td>
-                    <td style="padding: 12px; color: #FF6B6B; font-weight: bold;">{tk.get('mae_tong', 0):.1f}°</td>
-                    <td style="padding: 12px;">&lt; 5°</td>
-                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('mae_tong', 0) < 5 else '⚠️ Cần cải thiện'}</td>
+                <tr style="border-bottom: 1px solid #333;">
+                    <td style="padding: 10px;">Sai số tuyệt đối (MAE)</td>
+                    <td style="padding: 10px; color: #FF6B6B; font-weight: bold;">{tk.get('mae_tong', 0):.1f}°</td>
+                    <td style="padding: 10px;">&lt; 5°</td>
+                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('mae_tong', 0) < 5 else '⚠️ Cần cải thiện'}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 12px;">Tương quan nội lớp (ICC)</td>
-                    <td style="padding: 12px; color: {'#00CED1' if is_dark else '#0072ff'}; font-weight: bold;">{tk.get('icc', 0):.2f}</td>
-                    <td style="padding: 12px;">≥ 0.75</td>
-                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Cần cải thiện'}</td>
+                    <td style="padding: 10px;">Tương quan nội lớp (ICC)</td>
+                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk.get('icc', 0):.2f}</td>
+                    <td style="padding: 10px;">≥ 0.75</td>
+                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Cần cải thiện'}</td>
                 </tr>
             </table>
         </div>
@@ -2440,8 +2608,8 @@ def hien_thi_lich_nhac_nho():
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     st.markdown(f"""
-                    <div style="background: {card_bg}; border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border: 1px solid {glass_border}; box-shadow: {shadow};">
-                        <strong style="color: {'#ffd700' if is_dark else '#0072ff'};">📌 {app['title']}</strong><br>
+                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem;">
+                        <strong style="color: #ffd700;">📌 {app['title']}</strong><br>
                         🕒 {app['datetime']}<br>
                         📝 {app.get('notes', '')}
                     </div>
@@ -2713,6 +2881,12 @@ def hien_thi_frames_day_du():
     with col_stat5: st.metric("📄 Tổng số trang", total_pages)
 
 
+# Callback xử lý đổi theme nhanh (Để ngoài hàm main để tránh lỗi WebSocket Cache)
+def update_theme_callback():
+    if "theme_toggle_top" in st.session_state:
+        st.session_state.theme = 'dark' if st.session_state.theme_toggle_top else 'light'
+
+
 # ============================================
 # GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
 # ============================================
@@ -2804,11 +2978,11 @@ def hien_thi_dang_nhap_dang_ky():
                             st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay.")
                                 
             with t_google:
-                st.markdown(f"""
+                st.markdown("""
                 <div style="text-align: center; padding: 10px;">
                     <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="40" style="margin-bottom: 5px;">
-                    <h5 style="color: {text_color};">Đăng nhập nhanh</h5>
-                    <p style="color: {'#888' if is_dark else '#64748b'}; font-size: 0.85rem;">Truy cập an toàn qua Google ID</p>
+                    <h5 style="color: white;">Đăng nhập nhanh</h5>
+                    <p style="color: #888; font-size: 0.85rem;">Truy cập an toàn qua Google ID</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -2830,35 +3004,35 @@ def main():
         hien_thi_dang_nhap_dang_ky()
         return
 
-    # TOP BAR (THEME TOGGLE & LOGOUT)
+    # Callback xử lý đổi theme nhanh
+    def update_theme_callback():
+        st.session_state.theme = 'dark' if st.session_state.theme_toggle_top else 'light'
+
+    # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
+    # TOP BAR (LOGOUT) - Quay lại góc trên bên phải
     st.markdown('<div class="top-auth-container" style="margin-top: -50px; margin-bottom: 20px;">', unsafe_allow_html=True)
-    t_col1, t_col2 = st.columns([2.5, 2])
+    t_col1, t_col2 = st.columns([1.2, 3.8])
     
     with t_col2:
-        inner_c1, inner_c2, inner_c3 = st.columns([1.5, 1.2, 0.8], vertical_alignment="center")
+        inner_c1, inner_c2, inner_c3 = st.columns([1.2, 1.4, 0.8], vertical_alignment="center")
         with inner_c1:
+            # === CHẾ ĐỘ SÁNG/TỐI (THEME TOGGLE) - TỐI ƯU TỐC ĐỘ ===
+            current_theme = st.session_state.get('theme', 'dark')
+            label = "🌙 Tối" if current_theme == 'dark' else "☀️ Sáng"
+            st.toggle(label, value=(current_theme == 'dark'), 
+                      key="theme_toggle_top", 
+                      on_change=update_theme_callback)
+            
+        with inner_c2:
             st.markdown(f"""
             <div style="text-align: right; line-height: 1.1;">
-                <span style="color: {'#888' if is_dark else '#475569'}; font-size: 0.8rem;">Xin chào,</span><br>
-                <span style="color: {'#ffd700' if is_dark else '#0072ff'}; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
+                <span style="color: #888; font-size: 0.8rem;">Xin chào,</span><br>
+                <span style="color: #ffd700; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
             </div>
             """, unsafe_allow_html=True)
-        with inner_c2:
-            # TOGGLE GIAO DIỆN SÁNG/TỐI (Nằm ngay bên cạnh Xin chào)
-            theme_toggle = st.toggle(
-                "🌙 Giao diện tối", 
-                value=(st.session_state.theme == 'dark'),
-                key="theme_toggle",
-                help="Bật để dùng giao diện tối, tắt để dùng giao diện sáng trắng"
-            )
-            # Cập nhật theme nếu thay đổi
-            new_theme = 'dark' if theme_toggle else 'light'
-            if new_theme != st.session_state.theme:
-                st.session_state.theme = new_theme
-                st.rerun()
-                
+            
         with inner_c3:
-            if st.button("🚪", use_container_width=True, help="Đăng xuất"):
+            if st.button("🚪 Thoát", use_container_width=True, key="logout_top"):
                 if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
                     st.logout()
                 st.session_state.logged_in = False
@@ -2876,6 +3050,9 @@ def main():
     """, unsafe_allow_html=True)
     
     with st.sidebar:
+        # --- Đã di chuyển nút gạt theme lên Top Bar ---
+        
+        # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
         st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
         ten_benh_nhan = st.text_input("Họ và tên", placeholder="VD: Nguyễn Văn A")
         ma_benh_nhan = st.text_input("Mã số bệnh nhân", placeholder="VD: BN0001")
@@ -2905,18 +3082,23 @@ def main():
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
-        "🏠 TRANG CHỦ", "📹 TRỰC TIẾP", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH",
-        "⏰ LỊCH NHẮC NHỞ", "📈 TIẾN TRIỂN", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", 
-        "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
+        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", 
+        "🏥 KIẾN THỨC PHCN", "⏰ LỊCH NHẮC NHỞ", "🌐 CÔNG NGHỆ", 
+        "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
     ])
     
     # ==================== TAB 1: TRANG CHỦ ====================
     with tab1:
+        is_light = st.session_state.theme == 'light'
+        info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
+        info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
+        info_text = "#000" if is_light else "#fff"
+
         col1, col2 = st.columns([2,1])
         with col1:
             st.markdown(f"""
-            <div class="info-box">
+            <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
                 <h3>{bai_tap['icon']} {bai_tap['ten']}</h3>
                 <p>{bai_tap['mo_ta']}</p>
                 <p><strong>⏱️ Thời gian:</strong> {bai_tap['thoi_gian']} giây/lần</p>
@@ -2931,14 +3113,15 @@ def main():
         
         with col2:
             chuan = bai_tap['chuan']
+            card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
             st.markdown(f"""
-            <div style="background: {card_bg}; padding: 1.5rem; border-radius: 20px; text-align: center; border: 1px solid {glass_border}; box-shadow: {shadow};">
-                <h4 style="color: {'#ffffff' if is_dark else '#0f172a'}; margin-bottom: 1rem;">🎯 THÔNG SỐ CHUẨN</h4>
-                <p style="color: #00CED1; font-size: 1.1rem;">🦾 Góc vai: <strong>{chuan['vai']}°</strong> ±{chuan['sai_so']}°</p>
-                <p style="color: #FF6B6B; font-size: 1.1rem;">💪 Góc khuỷu: <strong>{chuan['khuyu']}°</strong> ±{chuan['sai_so']}°</p>
-                <hr style="margin: 15px 0; border: 0.5px solid {glass_border};">
-                <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.85rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
-                <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.85rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
+            <div class="custom-card" style="background: {card_bg};">
+                <h4 style="color:{"#0072ff" if is_light else "#fff"};">🎯 THÔNG SỐ CHUẨN</h4>
+                <p style="color:#00CED1;">🦾 Góc vai: <strong>{chuan['vai']}°</strong> ±{chuan['sai_so']}°</p>
+                <p style="color:#FF6B6B;">💪 Góc khuỷu: <strong>{chuan['khuyu']}°</strong> ±{chuan['sai_so']}°</p>
+                <hr style="margin:10px 0;">
+                <p style="color:{"#666" if is_light else "#aaa"}; font-size:0.8rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
+                <p style="color:{"#666" if is_light else "#aaa"}; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -3157,16 +3340,12 @@ def main():
             - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
             """)
     
-    # ==================== TAB 2: TRỰC TIẾP (REAL-TIME) ====================
+    # ==================== TAB 2: PHÂN TÍCH ====================
     with tab2:
-        hien_thi_tab_realtime(bai_tap)
-
-    # ==================== TAB 3: PHÂN TÍCH ====================
-    with tab3:
         hien_thi_tab_phan_tich()
-    
-    # ==================== TAB 4: VIDEO & ẢNH ====================
-    with tab4:
+
+    # ==================== TAB 3: VIDEO & ẢNH ====================
+    with tab3:
         if st.session_state.has_data and st.session_state.temp_video_file and os.path.exists(st.session_state.temp_video_file):
             st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
             st.video(st.session_state.temp_video_file)
@@ -3187,34 +3366,37 @@ def main():
         else:
             st.info("ℹ️ Chưa có video. Hãy upload và xử lý video ở tab TRANG CHỦ.")
 
-    # ==================== TAB 5: LỊCH NHẮC NHỞ ====================
+    # ==================== TAB 4: HƯỚNG DẪN ====================
+    with tab4:
+        hien_thi_tab_huong_dan()
+
+    # ==================== TAB 5: KIẾN THỨC PHCN ====================
     with tab5:
+        hien_thi_tab_kien_thuc_phcn()
+
+    # ==================== TAB 6: LỊCH NHẮC NHỞ ====================
+    with tab6:
         hien_thi_lich_nhac_nho()
 
-    # ==================== TAB 6: TIẾN TRIỂN ====================
-    with tab6:
-        hien_thi_tab_tien_trien()
-
-    # ==================== TAB 7: HƯỚNG DẪN ====================
+    # ==================== TAB 7: CÔNG NGHỆ ====================
     with tab7:
-        hien_thi_tab_huong_dan()
-        
-    # ==================== TAB 8: KIẾN THỨC PHCN ====================
-    with tab8:
-        hien_thi_tab_kien_thuc_phcn()
-        
-    # ==================== TAB 9: CÔNG NGHỆ ====================
-    with tab9:
         hien_thi_tab_cong_nghe()
         
-    # ==================== TAB 10: ĐỀ TÀI NCKH ====================
-    with tab10:
-        st.markdown("""
-        <div style="background: {card_bg}; padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid {glass_border}; box-shadow: {shadow};">
-            <h2 style="color: {'#ffffff' if is_dark else '#0f172a'}; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
-            <p style="color: {'#ffd700' if is_dark else '#0072ff'}; font-size: 1.1rem; margin-top: 0.5rem; font-weight: bold;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
-            <p>Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
-            <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
+    # ==================== TAB 8: ĐỀ TÀI NCKH ====================
+    with tab8:
+        # Cấu hình màu sắc theo Theme
+        is_light = st.session_state.theme == 'light'
+        bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+        text_color = "#000" if is_light else "white"
+        sub_color = "#0072ff" if is_light else "#ffd700"
+        border_color = "#0072ff" if is_light else "#2a5298"
+
+        st.markdown(f"""
+        <div style="background: {bg_gradient}; padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid {border_color};">
+            <h2 style="color: {text_color}; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
+            <p style="color: {sub_color}; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
+            <p style="color: {"#333" if is_light else "#ccc"};">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
+            <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -3287,29 +3469,29 @@ def main():
             8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
             """)
 
-    # ==================== TAB 11: THÀNH VIÊN ====================
-    with tab11:
+    # ==================== TAB 9: THÀNH VIÊN ====================
+    with tab9:
         st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
         st.markdown("""
         <div class="lecturer-card">
             <div class="lecturer-name">TS. Trần Hồng Việt</div>
-            <p style="color: {'#ccc' if is_dark else '#475569'}; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
-            <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
-            <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
+            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+            <p style="color: #aaa; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.markdown(f"""
-            <div class="member-card" style="border: 2px solid #ffd700;">
+            st.markdown("""
+            <div class="member-card" style="border-color: #ffd700; border: 2px solid #ffd700;">
                 <div class="member-name">Đinh Lê Quỳnh Phương</div>
-                <div class="member-role" style="color: #ffd700;">⭐ Chủ nhiệm đề tài ⭐</div>
-                <div class="member-class" style="color: {text_color};">Chuyên ngành Khoa học dữ liệu Y sinh</div>
-                <div class="member-id" style="color: {'#aaa' if is_dark else '#475569'};">MSSV: 2211090031</div>
-                <div class="member-id" style="color: {'#00CED1' if is_dark else '#0072ff'};">📧 2211090031@studenthuph.edu.vn</div>
-                <div class="member-id" style="color: {'#888' if is_dark else '#64748b'};">📱 0382665916</div>
+                <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
+                <div class="member-class">Chuyên ngành Khoa học dữ liệu Y sinh</div>
+                <div class="member-id">MSSV: 2211090031</div>
+                <div class="member-id">📧 2211090031@studenthuph.edu.vn</div>
+                <div class="member-id">📱 0382665916</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -3328,9 +3510,9 @@ def main():
                 st.markdown(f"""
                 <div class="member-card">
                     <div class="member-name">{ten}</div>
-                    <div class="member-role" style="color: {'#ffd700' if is_dark else '#0072ff'};">{vai_tro}</div>
-                    <div class="member-class" style="color: {'#aaa' if is_dark else '#475569'};">{lop}</div>
-                    <div class="member-id" style="color: {'#888' if is_dark else '#64748b'};">MSSV: {mssv}</div>
+                    <div class="member-role">{vai_tro}</div>
+                    <div class="member-class">{lop}</div>
+                    <div class="member-id">MSSV: {mssv}</div>
                 </div>
                 """, unsafe_allow_html=True)
         
@@ -3347,24 +3529,29 @@ def main():
                 st.markdown(f"""
                 <div class="member-card">
                     <div class="member-name">{ten}</div>
-                    <div class="member-role" style="color: {'#ffd700' if is_dark else '#0072ff'};">{vai_tro}</div>
-                    <div class="member-class" style="color: {'#aaa' if is_dark else '#475569'};">{lop}</div>
-                    <div class="member-id" style="color: {'#888' if is_dark else '#64748b'};">MSSV: {mssv}</div>
+                    <div class="member-role">{vai_tro}</div>
+                    <div class="member-class">{lop}</div>
+                    <div class="member-id">MSSV: {mssv}</div>
                 </div>
                 """, unsafe_allow_html=True)
         
         st.markdown("---")
         st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
-        st.markdown("""
-        <div style="background: {card_bg}; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid {glass_border}; box-shadow: {shadow};">
-            <p style="color: {'#ffd700' if is_dark else '#0072ff'}; font-weight: bold; font-size: 1.2rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
-            <p style="font-weight: bold; font-size: 1.1rem;">Khoa Phục hồi chức năng</p>
-            <p style="color: {'#aaa' if is_dark else '#64748b'}; font-size: 0.95rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
+        is_light = st.session_state.theme == 'light'
+        partner_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
+        partner_text = "#333" if is_light else "#ccc"
+        partner_title = "#0072ff" if is_light else "#ffd700"
+        
+        st.markdown(f"""
+        <div style="background: {partner_bg}; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #2a5298;">
+            <p style="color: {partner_title}; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
+            <p style="color: {partner_text};">Khoa Phục hồi chức năng</p>
+            <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
         </div>
         """, unsafe_allow_html=True)
 
-    # ==================== TAB 12: PHẢN HỒI ====================
-    with tab12:
+    # ==================== TAB 10: PHẢN HỒI ====================
+    with tab10:
         hien_thi_tab_phan_hoi()
 
 
@@ -3379,16 +3566,24 @@ def main():
     except:
         logo_src = "https://upload.wikimedia.org/wikipedia/vi/f/f6/Logo_HUPH.png"
 
+    # Cấu hình màu sắc Footer theo Theme
+    is_light = st.session_state.get('theme') == 'light'
+    f_bg = "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+    f_text = "#444" if is_light else "#ccc"
+    f_border = "#0072ff" if is_light else "#00c6ff"
+    f_title = "#0072ff" if is_light else "#00c6ff"
+    f_shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(0, 198, 255, 0.2)"
+
     footer_html = f"""
     <style>
         .main-footer {{
-            background: {sidebar_bg};
+            background: {f_bg};
             padding: 40px 20px;
-            color: {text_color};
+            color: {f_text};
             font-family: 'Times New Roman', Times, serif;
             text-align: center;
-            border-top: 4px solid #00c6ff;
-            box-shadow: {shadow};
+            border-top: 4px solid {f_border};
+            box-shadow: 0 -10px 20px {f_shadow};
             margin-top: 60px;
         }}
         .footer-container {{
@@ -3409,7 +3604,7 @@ def main():
             filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.4));
         }}
         .footer-title {{
-            color: #00c6ff;
+            color: {f_title};
             font-weight: bold;
             margin-bottom: 15px;
             font-size: 1.3rem;
@@ -3426,15 +3621,15 @@ def main():
         .footer-bottom {{
             padding-top: 20px;
             margin-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid {"rgba(0, 0, 0, 0.05)" if is_light else "rgba(255, 255, 255, 0.05)"};
             font-size: 0.9rem;
-            color: #888;
+            color: {"#666" if is_light else "#888"};
         }}
-        a {{ color: #00c6ff; text-decoration: none; }}
+        a {{ color: {f_title}; text-decoration: none; }}
         .school-name {{
             margin-top: 15px; 
             font-weight: bold; 
-            color: #fff; 
+            color: {"#1a1a2e" if is_light else "#fff"}; 
             font-size: 1.2rem;
             line-height: 1.4;
         }}
