@@ -133,9 +133,7 @@ st.markdown("""
     /* 1. Nhắm vào mọi thẻ span chứa văn bản icon trong Expander và File Uploader */
     [data-testid="stExpander"] summary span > span,
     [data-testid="stExpander"] summary svg + span,
-    [data-testid="stFileUploader"] section span > span,
-    .st-emotion-cache-1p6n6q3, /* Một số mã cache phổ biến của Streamlit */
-    .st-emotion-cache-16idsys {
+    [data-testid="stFileUploader"] section span > span {
         display: none !important;
         visibility: hidden !important;
         font-size: 0 !important;
@@ -170,18 +168,29 @@ st.markdown("""
     }
     
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
+        gap: 8px;
         background-color: transparent;
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
+        height: 75px; /* Tăng chiều cao để hiện cả Icon và Chữ */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         background-color: rgba(255, 255, 255, 0.05);
         border-radius: 12px;
         color: white;
         transition: all 0.3s;
         border: 1px solid transparent;
+        min-width: 90px; /* Đảm bảo không bị quá hẹp */
+        padding: 5px !important;
+    }
+
+    .stTabs [data-baseweb="tab"] p {
+        font-size: 0.85rem !important;
+        margin-top: 5px !important;
+        white-space: nowrap;
     }
 
     .stTabs [aria-selected="true"] {
@@ -2023,15 +2032,9 @@ st.markdown("""
         margin: 10px 0;
     }
     
-    /* TABS - CÓ FONT SIZE LỚN HƠN */
+    /* TABS STYLE - Đã được tối ưu ở đầu file */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: bold;
     }
     
     /* METRIC CARD - MỚI THÊM */
