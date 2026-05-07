@@ -2221,41 +2221,36 @@ def hien_thi_tab_phan_tich():
             st.plotly_chart(fig_pie, use_container_width=True)
             try:
                 img_pie = fig_pie.to_image(format="png")
-                st.download_bu        <div style="background: {glass_bg}; padding: 1.5rem; border-radius: 15px; border: 1px solid {glass_border}; margin-bottom: 20px; box-shadow: {shadow};">
-            <table style="width: 100%; color: {text_color}; border-collapse: collapse;">
-                <tr style="border-bottom: 2px solid {glass_border}; text-align: left;">
-                    <th style="padding: 12px;">Chỉ số nghiên cứu</th>
-                    <th style="padding: 12px;">Giá trị thực tế</th>
-                    <th style="padding: 12px;">Mục tiêu đề tài</th>
-                    <th style="padding: 12px;">Trạng thái</th>
-                </tr>
-                <tr style="border-bottom: 1px solid {glass_border};">
-                    <td style="padding: 12px;">Độ chính xác (Accuracy)</td>
-                    <td style="padding: 12px; color: #00CED1; font-weight: bold;">{tk['do_chinh_xac']:.1f}%</td>
-                    <td style="padding: 12px;">≥ 90%</td>
-                    <td style="padding: 12px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid {glass_border};">
-                    <td style="padding: 12px;">F1-Score (Độ tin cậy)</td>
-                    <td style="padding: 12px; color: #00CED1; font-weight: bold;">{tk.get('f1_score', 0):.2f}</td>
-                    <td style="padding: 12px;">≥ 0.85</td>
-                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('f1_score', 0) >= 0.85 else '⚠️ Cần cải thiện'}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid {glass_border};">
-                    <td style="padding: 12px;">Sai số tuyệt đối (MAE)</td>
-                    <td style="padding: 12px; color: #FF6B6B; font-weight: bold;">{tk.get('mae_tong', 0):.1f}°</td>
-                    <td style="padding: 12px;">&lt; 5°</td>
-                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('mae_tong', 0) < 5 else '⚠️ Cần cải thiện'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 12px;">Tương quan nội lớp (ICC)</td>
-                    <td style="padding: 12px; color: #00CED1; font-weight: bold;">{tk.get('icc', 0):.2f}</td>
-                    <td style="padding: 12px;">≥ 0.75</td>
-                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Cần cải thiện'}</td>
-                </tr>
-            </table>
-        </div>
-iner_width=True)
+                st.download_button("📥 Tải ảnh biểu đồ tròn", img_pie, "phan_bo_ket_qua.png", "image/png", use_container_width=True)
+            except: pass
+            
+        with col_metrics:
+            st.markdown("#### 📑 CHỈ SỐ HIỆU SUẤT")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-value">{tk['frame_dung']}</div>
+                    <div class="metric-label">✅ Frames Đúng (Pass)</div>
+                </div>
+                <div class="metric-card" style="margin-top: 15px;">
+                    <div class="metric-value" style="color: #FFA500;">{tk['frame_gan_dung']}</div>
+                    <div class="metric-label">⚠️ Frames Gần Đúng</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with c2:
+                fail_frames = tk['tong_frame_hop_le'] - tk['frame_dung'] - tk['frame_gan_dung']
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-value" style="color: #FF4444;">{max(0, fail_frames)}</div>
+                    <div class="metric-label">❌ Frames Sai (Fail)</div>
+                </div>
+                <div class="metric-card" style="margin-top: 15px;">
+                    <div class="metric-value" style="color: {'#00CED1' if is_dark else '#0072ff'};">{tk['do_chinh_xac']:.1f}%</div>
+                    <div class="metric-label">🎯 Hiệu suất tổng thể</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
         col_m2, col_dl2 = st.columns([2, 1])
         with col_m2:
             st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
@@ -2335,37 +2330,37 @@ iner_width=True)
         # 2. THÔNG TIN CHỈ SỐ VÀ BẢNG (DÒNG TIẾP THEO)
         st.markdown("#### 📊 BẢNG TỔNG HỢP CHỈ SỐ KHOA HỌC")
         st.markdown(f"""
-        <div style="background: rgba(26,26,46,0.6); padding: 1.5rem; border-radius: 15px; border: 1px solid #2a5298; margin-bottom: 20px;">
-            <table style="width: 100%; color: white; border-collapse: collapse;">
-                <tr style="border-bottom: 2px solid #2a5298; text-align: left;">
-                    <th style="padding: 10px;">Chỉ số nghiên cứu</th>
-                    <th style="padding: 10px;">Giá trị thực tế</th>
-                    <th style="padding: 10px;">Mục tiêu đề tài</th>
-                    <th style="padding: 10px;">Trạng thái</th>
+        <div style="background: {card_bg}; padding: 1.5rem; border-radius: 15px; border: 1px solid {glass_border}; margin-bottom: 20px; box-shadow: {shadow};">
+            <table style="width: 100%; color: {text_color}; border-collapse: collapse;">
+                <tr style="border-bottom: 2px solid {glass_border}; text-align: left;">
+                    <th style="padding: 12px;">Chỉ số nghiên cứu</th>
+                    <th style="padding: 12px;">Giá trị thực tế</th>
+                    <th style="padding: 12px;">Mục tiêu đề tài</th>
+                    <th style="padding: 12px;">Trạng thái</th>
                 </tr>
-                <tr style="border-bottom: 1px solid #333;">
-                    <td style="padding: 10px;">Độ chính xác (Accuracy)</td>
-                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk['do_chinh_xac']:.1f}%</td>
-                    <td style="padding: 10px;">≥ 90%</td>
-                    <td style="padding: 10px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
+                <tr style="border-bottom: 1px solid {glass_border};">
+                    <td style="padding: 12px;">Độ chính xác (Accuracy)</td>
+                    <td style="padding: 12px; color: {'#00CED1' if is_dark else '#0072ff'}; font-weight: bold;">{tk['do_chinh_xac']:.1f}%</td>
+                    <td style="padding: 12px;">≥ 90%</td>
+                    <td style="padding: 12px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
                 </tr>
-                <tr style="border-bottom: 1px solid #333;">
-                    <td style="padding: 10px;">F1-Score (Độ tin cậy)</td>
-                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk.get('f1_score', 0):.2f}</td>
-                    <td style="padding: 10px;">≥ 0.85</td>
-                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('f1_score', 0) >= 0.85 else '⚠️ Cần cải thiện'}</td>
+                <tr style="border-bottom: 1px solid {glass_border};">
+                    <td style="padding: 12px;">F1-Score (Độ tin cậy)</td>
+                    <td style="padding: 12px; color: {'#00CED1' if is_dark else '#0072ff'}; font-weight: bold;">{tk.get('f1_score', 0):.2f}</td>
+                    <td style="padding: 12px;">≥ 0.85</td>
+                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('f1_score', 0) >= 0.85 else '⚠️ Cần cải thiện'}</td>
                 </tr>
-                <tr style="border-bottom: 1px solid #333;">
-                    <td style="padding: 10px;">Sai số tuyệt đối (MAE)</td>
-                    <td style="padding: 10px; color: #FF6B6B; font-weight: bold;">{tk.get('mae_tong', 0):.1f}°</td>
-                    <td style="padding: 10px;">&lt; 5°</td>
-                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('mae_tong', 0) < 5 else '⚠️ Cần cải thiện'}</td>
+                <tr style="border-bottom: 1px solid {glass_border};">
+                    <td style="padding: 12px;">Sai số tuyệt đối (MAE)</td>
+                    <td style="padding: 12px; color: #FF6B6B; font-weight: bold;">{tk.get('mae_tong', 0):.1f}°</td>
+                    <td style="padding: 12px;">&lt; 5°</td>
+                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('mae_tong', 0) < 5 else '⚠️ Cần cải thiện'}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 10px;">Tương quan nội lớp (ICC)</td>
-                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk.get('icc', 0):.2f}</td>
-                    <td style="padding: 10px;">≥ 0.75</td>
-                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Cần cải thiện'}</td>
+                    <td style="padding: 12px;">Tương quan nội lớp (ICC)</td>
+                    <td style="padding: 12px; color: {'#00CED1' if is_dark else '#0072ff'}; font-weight: bold;">{tk.get('icc', 0):.2f}</td>
+                    <td style="padding: 12px;">≥ 0.75</td>
+                    <td style="padding: 12px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Cần cải thiện'}</td>
                 </tr>
             </table>
         </div>
