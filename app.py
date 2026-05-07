@@ -3893,60 +3893,70 @@ def hien_thi_dang_nhap_dang_ky():
             login_role = st.selectbox("🎭 Bạn truy cập với vai trò:", ["Bệnh nhân", "Bác sĩ / KTV PHCN", "Nghiên cứu viên", "Quản trị viên"], key="login_role_main")
             
             tab_list = ["🔐 ĐĂNG NHẬP", "📋 ĐĂNG KÝ", "🚀 GOOGLE ID"]
-            # Chỉ hiển thị tab Đổi mật khẩu cho Bác sĩ và NCV
-            if login_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
-                tab_list.insert(1, "🔑 ĐỔI MẬT KHẨU")
-            
             all_login_tabs = st.tabs(tab_list)
             t_map = {name: all_login_tabs[i] for i, name in enumerate(tab_list)}
             
             if "🔐 ĐĂNG NHẬP" in t_map:
                 with t_map["🔐 ĐĂNG NHẬP"]:
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    u = st.text_input("👤 Tên đăng nhập", placeholder="Nhập tên tài khoản", key="login_u")
-                    p = st.text_input("🔑 Mật khẩu", type="password", placeholder="Nhập mật khẩu", key="login_p")
-                    
-                    if st.button("🚀 ĐĂNG NHẬP NGAY", use_container_width=True, type="primary"):
-                        users = load_users()
-                        if u in users and verify_password(p, users[u]['password']):
-                            if users[u].get('role', 'Bệnh nhân') == login_role:
-                                st.session_state.logged_in = True
-                                st.session_state.user_info = {
-                                    "username": u, 
-                                    "email": users[u].get('email'),
-                                    "role": users[u].get('role', 'Bệnh nhân')
-                                }
-                                st.session_state.show_login_dialog = False
-                                st.rerun()
-                            else:
-                                st.error(f"❌ Tài khoản này không có quyền truy cập với vai trò {login_role}")
-                        else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
-                    
-                    if st.button("❓ Bạn quên mật khẩu?", use_container_width=True, type="secondary"):
-                        st.session_state.forgot_password_mode = True
-                        st.rerun()
-
-            if "🔑 ĐỔI MẬT KHẨU" in t_map:
-                with t_map["🔑 ĐỔI MẬT KHẨU"]:
-                    st.markdown("### 🔑 THAY ĐỔI MẬT KHẨU")
-                    st.info("💡 Điền thông tin bên dưới để cập nhật mật khẩu mới.")
-                    with st.form("login_change_password_form"):
-                        cp_u = st.text_input("👤 Tên đăng nhập", key="cp_u")
-                        cp_old = st.text_input("🔒 Mật khẩu hiện tại", type="password", key="cp_old")
-                        cp_new = st.text_input("🆕 Mật khẩu mới", type="password", key="cp_new")
-                        cp_conf = st.text_input("✅ Xác nhận mật khẩu mới", type="password", key="cp_conf")
+                    # CHẾ ĐỘ ĐỔI MẬT KHẨU TRONG LOGIN
+                    if st.session_state.get('change_password_mode', False):
+                        st.markdown("### 🔑 THAY ĐỔI MẬT KHẨU")
+                        st.info("💡 Điền thông tin bên dưới để cập nhật mật khẩu mới.")
+                        with st.form("login_change_password_form_v2"):
+                            cp_u = st.text_input("👤 Tên đăng nhập", key="cp_u_v2")
+                            cp_old = st.text_input("🔒 Mật khẩu hiện tại", type="password", key="cp_old_v2")
+                            cp_new = st.text_input("🆕 Mật khẩu mới", type="password", key="cp_new_v2")
+                            cp_conf = st.text_input("✅ Xác nhận mật khẩu mới", type="password", key="cp_conf_v2")
+                            
+                            c1, c2 = st.columns(2)
+                            with c1:
+                                if st.form_submit_button("💾 CẬP NHẬT", use_container_width=True):
+                                    users = load_users()
+                                    if cp_u in users and verify_password(cp_old, users[cp_u]['password']):
+                                        if users[cp_u].get('role') == login_role:
+                                            if cp_new == cp_conf and len(cp_new) >= 6:
+                                                users[cp_u]['password'] = hash_password(cp_new)
+                                                save_users(users)
+                                                st.success("✅ Thành công! Hãy đăng nhập lại.")
+                                                st.session_state.change_password_mode = False
+                                                st.rerun()
+                                            else: st.error("❌ Mật khẩu không khớp hoặc quá ngắn.")
+                                        else: st.error(f"❌ Tài khoản không khớp với vai trò {login_role}.")
+                                    else: st.error("❌ Thông tin không chính xác.")
+                            with c2:
+                                if st.form_submit_button("Hủy bỏ", use_container_width=True):
+                                    st.session_state.change_password_mode = False
+                                    st.rerun()
+                    else:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        u = st.text_input("👤 Tên đăng nhập", placeholder="Nhập tên tài khoản", key="login_u")
+                        p = st.text_input("🔑 Mật khẩu", type="password", placeholder="Nhập mật khẩu", key="login_p")
                         
-                        if st.form_submit_button("💾 CẬP NHẬT MẬT KHẨU", use_container_width=True):
+                        if st.button("🚀 ĐĂNG NHẬP NGAY", use_container_width=True, type="primary"):
                             users = load_users()
-                            if cp_u in users and verify_password(cp_old, users[cp_u]['password']):
-                                if users[cp_u].get('role') == login_role:
-                                    if cp_new == cp_conf and len(cp_new) >= 6:
-                                        users[cp_u]['password'] = hash_password(cp_new)
-                                        save_users(users)
-                                        st.success("✅ Đổi mật khẩu thành công! Hãy đăng nhập bằng mật khẩu mới.")
-                                    else: st.error("❌ Mật khẩu không khớp hoặc quá ngắn.")
-                                else: st.error(f"❌ Tài khoản không khớp với vai trò {login_role}.")
-                            else: st.error("❌ Thông tin đăng nhập không chính xác.")
+                            if u in users and verify_password(p, users[u]['password']):
+                                if users[u].get('role', 'Bệnh nhân') == login_role:
+                                    st.session_state.logged_in = True
+                                    st.session_state.user_info = {
+                                        "username": u, 
+                                        "email": users[u].get('email'),
+                                        "role": users[u].get('role', 'Bệnh nhân')
+                                    }
+                                    st.session_state.show_login_dialog = False
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ Tài khoản này không có quyền truy cập với vai trò {login_role}")
+                            else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
+                        
+                        # Chỉ hiện nút Đổi mật khẩu cho Bác sĩ và NCV
+                        if login_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
+                            if st.button("🔑 ĐỔI MẬT KHẨU", use_container_width=True, type="secondary"):
+                                st.session_state.change_password_mode = True
+                                st.rerun()
+
+                        if st.button("❓ Bạn quên mật khẩu?", use_container_width=True, type="secondary"):
+                            st.session_state.forgot_password_mode = True
+                            st.rerun()
                             
             if "📋 ĐĂNG KÝ" in t_map:
                 with t_map["📋 ĐĂNG KÝ"]:
