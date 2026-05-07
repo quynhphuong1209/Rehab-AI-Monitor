@@ -2922,7 +2922,8 @@ def hien_thi_lich_nhac_nho():
                         🕒 <b>Thời gian:</b> {app['datetime']}<br>
                         👨‍⚕️ <b>Bác sĩ:</b> {app.get('doctor_name', 'Hệ thống')}<br>
                         👤 <b>Bệnh nhân:</b> {app.get('patient_name', app.get('patient_username', 'Chưa rõ'))}<br>
-                        📝 <b>Ghi chú:</b> {app.get('notes', 'Không có')}
+                        📝 <b>Ghi chú:</b> {app.get('notes', 'Không có')}<br>
+                        <span style="color: #00ff00; font-size: 0.8rem;">🟢 Đã gửi đến bệnh nhân</span>
                     </div>
                     """, unsafe_allow_html=True)
                 with col2:
@@ -2946,7 +2947,8 @@ def hien_thi_lich_nhac_nho():
                         🕒 <b>Thời gian:</b> {ex['datetime']}<br>
                         🔁 <b>Tần suất:</b> {ex.get('frequency', 'Một lần')}<br>
                         👨‍⚕️ <b>Chỉ định bởi:</b> {ex.get('doctor_name', 'Hệ thống')}<br>
-                        👤 <b>Bệnh nhân:</b> {ex.get('patient_name', ex.get('patient_username', 'Chưa rõ'))}
+                        👤 <b>Bệnh nhân:</b> {ex.get('patient_name', ex.get('patient_username', 'Chưa rõ'))}<br>
+                        <span style="color: #00ff00; font-size: 0.8rem;">🟢 Đã gửi đến bệnh nhân</span>
                     </div>
                     """, unsafe_allow_html=True)
                 with col2:
@@ -2970,7 +2972,8 @@ def hien_thi_lich_nhac_nho():
                         🕒 <b>Thời gian:</b> {med['datetime']}<br>
                         💊 <b>Liều:</b> {med.get('dosage', 'Theo chỉ định')}<br>
                         👨‍⚕️ <b>Bác sĩ kê đơn:</b> {med.get('doctor_name', 'Hệ thống')}<br>
-                        👤 <b>Bệnh nhân:</b> {med.get('patient_name', med.get('patient_username', 'Chưa rõ'))}
+                        👤 <b>Bệnh nhân:</b> {med.get('patient_name', med.get('patient_username', 'Chưa rõ'))}<br>
+                        <span style="color: #00ff00; font-size: 0.8rem;">🟢 Đã gửi đến bệnh nhân</span>
                     </div>
                     """, unsafe_allow_html=True)
                 with col2:
