@@ -3193,11 +3193,20 @@ def hien_thi_ket_qua_cho_benh_nhan():
         
         with tab_charts:
             st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
-            hien_thi_tab_phan_tich()
+            # CHỈ HIỂN THỊ NẾU NCV ĐÃ GỬI KẾT QUẢ
+            has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in my_evals)
+            if has_ai_sent:
+                hien_thi_tab_phan_tich()
+            else:
+                st.info("🕒 Kết quả phân tích biểu đồ AI đang được Nghiên cứu viên xử lý và sẽ hiển thị tại đây sau khi được gửi.")
             
         with tab_media:
             st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
-            hien_thi_frames_day_du()
+            # CHỈ HIỂN THỊ NẾU NCV ĐÃ GỬI KẾT QUẢ
+            if has_ai_sent:
+                hien_thi_frames_day_du()
+            else:
+                st.info("🕒 Video trích xuất khung xương sẽ hiển thị tại đây sau khi Nghiên cứu viên chia sẻ kết quả.")
 
 def hien_thi_tab_khai_bao_trieu_chung():
     st.markdown("## 🩺 KHAI BÁO TRIỆU CHỨNG & CẢM NHẬN")
