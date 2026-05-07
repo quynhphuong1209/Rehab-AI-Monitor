@@ -3398,15 +3398,89 @@ def main():
     # ==================== FOOTER (CHÂN TRANG CHUYÊN NGHIỆP) ====================
     try:
         import base64
-        with open("abc1.png", "rb") as img_file:
-            logo_b64 = base64.b64encode(img_file.read()).decode()
-            logo_src = f"data:image/png;base64,{logo_b64}"
+        import os
+        if os.path.exists("abc1.png"):
+            with open("abc1.png", "rb") as img_file:
+                logo_b64 = base64.b64encode(img_file.read()).decode()
+                logo_src = f"data:image/png;base64,{logo_b64}"
+        else:
+            logo_src = "https://upload.wikimedia.org/wikipedia/vi/f/f6/Logo_HUPH.png"
     except:
         logo_src = "https://upload.wikimedia.org/wikipedia/vi/f/f6/Logo_HUPH.png"
 
-    footer_style = "<style>.main-footer {background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%); padding: 30px 20px; margin-top: 50px; border-top: 2px solid #00c6ff; color: #ccc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;} .footer-container {display: flex; flex-wrap: wrap; justify-content: space-around; max-width: 1000px; margin: 0 auto; gap: 40px; align-items: center;} .footer-col {flex: 1; min-width: 300px;} .footer-logo-img {width: 110px; filter: drop-shadow(0 0 8px rgba(0, 198, 255, 0.4));} .footer-title {color: #00c6ff; font-weight: bold; margin-bottom: 15px; font-size: 1.1rem; text-transform: uppercase;} .footer-info-item {display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 0.95rem;} .footer-bottom {text-align: center; padding-top: 20px; margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.8rem; color: #777;}</style>"
-    footer_content = f'<div class="main-footer"><div class="footer-container"><div class="footer-col" style="text-align: center;"><img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo"><p style="margin-top: 15px; font-weight: bold; color: #fff; font-size: 0.9rem; letter-spacing: 1px;">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG<br><span style="font-size: 0.75rem; color: #00c6ff;">HANOI UNIVERSITY OF PUBLIC HEALTH</span></p></div><div class="footer-col"><div class="footer-title">📍 THÔNG TIN LIÊN HỆ</div><div class="footer-info-item">🌐 <b>Website:</b> <a href="https://huph.edu.vn/" target="_blank" style="color: #00c6ff; text-decoration: none;">huph.edu.vn</a></div><div class="footer-info-item">🏠 <b>Địa chỉ:</b> Số 1A, đường Đức Thắng, phường Đức Thắng, quận Bắc Từ Liêm, TP. Hà Nội</div><div class="footer-info-item">📞 <b>Điện thoại:</b> 024.62662299</div><div class="footer-info-item">📠 <b>Fax:</b> 024.62662385</div><div class="footer-info-item">📧 <b>Email:</b> <a href="mailto:2211090031@studenthuph.edu.vn" style="color: #00c6ff; text-decoration: none;">2211090031@studenthuph.edu.vn</a></div></div></div><div class="footer-bottom">Đơn vị phát triển: <b>CÔNG TY CỔ PHẦN GIẢI PHÁP NAM VIỆT</b> | © 2025 REHAB-AI-MONITOR</div></div>'
-    st.markdown(footer_style + footer_content, unsafe_allow_html=True)
+    footer_html = f"""
+    <style>
+        .main-footer {{
+            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+            padding: 30px 20px;
+            color: #ccc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+        }}
+        .footer-container {{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            max-width: 1000px;
+            margin: 0 auto;
+            gap: 20px;
+            align-items: center;
+        }}
+        .footer-col {{
+            flex: 1;
+            min-width: 300px;
+        }}
+        .footer-logo-img {{
+            width: 100px;
+            filter: drop-shadow(0 0 8px rgba(0, 198, 255, 0.4));
+        }}
+        .footer-title {{
+            color: #00c6ff;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            text-transform: uppercase;
+        }}
+        .footer-info-item {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }}
+        .footer-bottom {{
+            padding-top: 15px;
+            margin-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.75rem;
+            color: #777;
+        }}
+        a {{ color: #00c6ff; text-decoration: none; }}
+    </style>
+    <div class="main-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
+                <p style="margin-top: 10px; font-weight: bold; color: #fff; font-size: 0.85rem;">
+                    TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG<br>
+                    <span style="font-size: 0.7rem; color: #00c6ff;">HANOI UNIVERSITY OF PUBLIC HEALTH</span>
+                </p>
+            </div>
+            <div class="footer-col">
+                <div class="footer-title">📍 THÔNG TIN LIÊN HỆ</div>
+                <div class="footer-info-item">🌐 <b>Website:</b> <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></div>
+                <div class="footer-info-item">🏠 <b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
+                <div class="footer-info-item">📞 <b>ĐT:</b> 024.62662299 | 📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            Đơn vị phát triển: <b>CÔNG TY CỔ PHẦN GIẢI PHÁP NAM VIỆT</b> | © 2025 REHAB-AI-MONITOR
+        </div>
+    </div>
+    """
+    import streamlit.components.v1 as components
+    components.html(footer_html, height=250)
 
 
 if __name__ == "__main__":
