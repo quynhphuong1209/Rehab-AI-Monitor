@@ -321,8 +321,19 @@ if st.session_state.get('theme') == 'light':
         /* Fix Form elements */
         textarea, input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #ccc !important; }
         [data-testid="stForm"] { background-color: #ffffff !important; border: 1px solid #eee !important; border-radius: 15px !important; }
-        .stButton button { background-color: #f1f3f5 !important; color: #000 !important; border: 1px solid #ccc !important; }
-        .stButton button:hover { background-color: #e9ecef !important; color: #0072ff !important; }
+        
+        /* FIX ALL BUTTONS */
+        .stButton button, .stDownloadButton button, [data-testid="stFormSubmitButton"] button { 
+            background-color: #f1f3f5 !important; 
+            color: #000000 !important; 
+            border: 1px solid #ccc !important;
+            font-weight: bold !important;
+        }
+        .stButton button:hover, .stDownloadButton button:hover, [data-testid="stFormSubmitButton"] button:hover { 
+            background-color: #e9ecef !important; 
+            color: #0072ff !important; 
+            border: 1px solid #0072ff !important;
+        }
         /* Fix Sidebar Inputs */
         [data-testid="stSidebar"] .stTextInput input, 
         [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"],
@@ -3519,11 +3530,16 @@ def main():
         
         st.markdown("---")
         st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
-        st.markdown("""
-        <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1.5rem; text-align: center;">
-            <p style="color: #ffd700; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
-            <p style="color: #ccc;">Khoa Phục hồi chức năng</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
+        is_light = st.session_state.theme == 'light'
+        partner_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
+        partner_text = "#333" if is_light else "#ccc"
+        partner_title = "#0072ff" if is_light else "#ffd700"
+        
+        st.markdown(f"""
+        <div style="background: {partner_bg}; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #2a5298;">
+            <p style="color: {partner_title}; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
+            <p style="color: {partner_text};">Khoa Phục hồi chức năng</p>
+            <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -3606,7 +3622,7 @@ def main():
         .school-name {{
             margin-top: 15px; 
             font-weight: bold; 
-            color: #fff; 
+            color: {"#1a1a2e" if is_light else "#fff"}; 
             font-size: 1.2rem;
             line-height: 1.4;
         }}
