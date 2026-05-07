@@ -2746,6 +2746,14 @@ def hien_thi_form_danh_gia_bac_si():
     </div>
     """, unsafe_allow_html=True)
 
+    # Hiển thị triệu chứng của bệnh nhân này để bác sĩ tham khảo
+    symptoms_data = load_data(SYMPTOMS_FILE)
+    patient_symptom = next((s for s in reversed(symptoms_data) if s['username'] == selected_video['username']), None)
+    if patient_symptom:
+        with st.expander("🩺 TRIỆU CHỨNG BN KHAI BÁO", expanded=True):
+            st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
+            st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
+
     with st.form("doctor_eval_form"):
         st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
         bt_chosen = st.multiselect("Động tác bệnh nhân thực hiện:", 
@@ -3387,6 +3395,7 @@ def main():
                             st.caption(f"🕒 {s['time']}")
                             st.write(f"**Tuổi:** {s['age']} | **GT:** {s['gender']}")
                             st.info(f"**Triệu chứng:** {s['symptoms']}")
+                            st.warning(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
                 else:
                     st.info("Chưa có BN gửi thông tin.")
 
