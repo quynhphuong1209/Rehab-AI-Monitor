@@ -188,6 +188,100 @@ else:
     input_text = "#1e293b"
     shadow = "0 10px 30px rgba(0, 0, 0, 0.05)"
 
+st.markdown(f"""
+<style>
+    /* === CẤU HÌNH NỀN TOÀN BỘ === */
+    .stApp {{
+        background-color: {bg_color} !important;
+        color: {text_color} !important;
+    }}
+    
+    /* === SIDEBAR === */
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg} !important;
+        border-right: 1px solid {glass_border} !important;
+    }}
+    [data-testid="stSidebar"] * {{
+        color: {text_color} !important;
+    }}
+    
+    /* === SỬA LỖI CHỮ RÁC ICON (TRIỆT ĐỂ) === */
+    button[data-testid="stSidebarCollapseButton"] span,
+    [data-testid="stExpander"] summary span > span,
+    [data-testid="stFileUploader"] section span > span,
+    .stIconMaterial {{
+        display: none !important;
+        color: transparent !important;
+        font-size: 0 !important;
+    }}
+    
+    /* Ẩn text rác hiện ra khi lỗi font Material */
+    .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {{
+        display: none !important;
+    }}
+    
+    /* === GLASSMORPHISM CONTAINERS === */
+    [data-testid="stVerticalBlockBorderWrapper"] {{
+        background: {glass_bg} !important;
+        border-radius: 20px !important;
+        border: 1px solid {glass_border} !important;
+        box-shadow: {shadow} !important;
+        padding: 25px !important;
+    }}
+    
+    /* === INPUTS & FORMS === */
+    .stTextInput input, .stNumberInput input, .stSelectbox select, .stTextArea textarea {{
+        background-color: {input_bg} !important;
+        border: 1px solid {glass_border} !important;
+        border-radius: 10px !important;
+        color: {input_text} !important;
+    }}
+    
+    /* === TABS === */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 8px;
+        background-color: transparent;
+        overflow-x: auto;
+    }}
+
+    .stTabs [data-baseweb="tab"] {{
+        height: 48px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background-color: {tab_bg};
+        border-radius: 12px;
+        color: {text_color} !important;
+        transition: all 0.3s;
+        border: 1px solid {glass_border};
+        min-width: 130px !important;
+        width: auto !important;
+        padding: 0 20px !important;
+        white-space: nowrap !important;
+    }}
+
+    .stTabs [aria-selected="true"] {{
+        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
+        border: 1px solid #00c6ff !important;
+        color: white !important;
+        box-shadow: 0 0 15px rgba(0, 198, 255, 0.4);
+    }}
+    
+    .stTabs [aria-selected="true"] * {{
+        color: white !important;
+    }}
+
+    /* ĐẨY GIAO DIỆN LÊN CAO TỐI ĐA */
+    .block-container {{
+        padding-top: 2rem !important;
+        padding-bottom: 0rem !important;
+    }}
+    
+    .top-auth-container {{
+        margin-top: -30px;
+        margin-bottom: 10px;
+    }}
+
     /* === CÁC THÀNH PHẦN KHÁC === */
     .info-box, .metric-card, .lecturer-card, .member-card, .warning-box {{
         background: {card_bg} !important;
@@ -237,22 +331,22 @@ else:
     
     /* ẨN ICON LỖI */
     .stIconMaterial {{ display: none !important; }}
-</style>
 
+    /* === GOOGLE LOGIN BUTTON === */
     .google-btn {{
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: white;
-        color: #444;
-        padding: 12px;
-        border-radius: 12px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s;
-        border: none;
-        width: 100%;
-        margin-top: 10px;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: white !important;
+        color: #444 !important;
+        padding: 12px !important;
+        border-radius: 12px !important;
+        font-weight: bold !important;
+        cursor: pointer !important;
+        transition: all 0.3s !important;
+        border: none !important;
+        width: 100% !important;
+        margin-top: 10px !important;
     }}
     
     .google-btn:hover {{
