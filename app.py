@@ -4362,18 +4362,23 @@ def main():
             info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
             info_text = "#000" if is_light else "#fff"
 
-            col1, col2 = st.columns([2,1])
+            # 1. HÀNG ĐẦU: THÔNG TIN VÀ CHỈ SỐ
+            col1, col2 = st.columns([2, 1])
             with col1:
                 st.markdown(f"""
                 <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
-                    <h3>{bai_tap['icon']} {bai_tap['ten']}</h3>
+                    <h3 style="margin-top:0;">{bai_tap['icon']} {bai_tap['ten']}</h3>
                     <p>{bai_tap['mo_ta']}</p>
-                    <p><strong>⏱️ Thời gian:</strong> {bai_tap['thoi_gian']} giây/lần</p>
-                    <p><strong>🔄 Số lần:</strong> {bai_tap['lan']} lần/ngày</p>
+                    <div style="display: flex; gap: 20px; font-size: 0.9rem; opacity: 0.8;">
+                        <span>⏱️ <b>Thời gian:</b> {bai_tap['thoi_gian']}s/lần</span>
+                        <span>🔄 <b>Số lần:</b> {bai_tap['lan']} lần/ngày</span>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
+                
                 with st.expander("📖 HƯỚNG DẪN TẬP LUYỆN", expanded=True):
                     st.markdown(bai_tap['huong_dan'])
+                
                 with st.expander("✨ LỢI ÍCH CỦA BÀI TẬP", expanded=False):
                     for loi_ich in bai_tap['loi_ich']:
                         st.markdown(f"- {loi_ich}")
@@ -4382,61 +4387,66 @@ def main():
                 chuan = bai_tap['chuan']
                 card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
                 st.markdown(f"""
-                <div class="custom-card" style="background: {card_bg};">
-                    <h4 style="color:{"#0072ff" if is_light else "#fff"};">🎯 THÔNG SỐ CHUẨN</h4>
-                    <p style="color:#00CED1;">🦾 Góc vai: <strong>{chuan['vai']}°</strong> ±{chuan['sai_so']}°</p>
-                    <p style="color:#FF6B6B;">💪 Góc khuỷu: <strong>{chuan['khuyu']}°</strong> ±{chuan['sai_so']}°</p>
-                    <hr style="margin:10px 0;">
-                    <p style="color:{"#666" if is_light else "#aaa"}; font-size:0.8rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
-                    <p style="color:{"#666" if is_light else "#aaa"}; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
+                <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
+                    <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 THÔNG SỐ CHUẨN</h4>
+                    <p style="color:#00CED1; margin-bottom:5px;">🦾 Góc vai: <b>{chuan['vai']}°</b> ±{chuan['sai_so']}°</p>
+                    <p style="color:#FF6B6B; margin-bottom:10px;">💪 Góc khuỷu: <b>{chuan['khuyu']}°</b> ±{chuan['sai_so']}°</p>
+                    <div style="font-size:0.8rem; opacity:0.7; border-top:1px solid {info_border}; padding-top:10px;">
+                        <p style="margin-bottom:3px;">✅ Đạt: Cả 2 góc trong vùng sai số</p>
+                        <p style="margin-bottom:0;">❌ Không đạt: Có góc ngoài vùng sai số</p>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # PHẦN UPLOAD (Hiện cho Bệnh nhân, ẩn cho Bác sĩ/NCV/Admin theo yêu cầu)
-                if user_role == "Bệnh nhân":
-                    st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
-                    file_upload = st.file_uploader(
-                        "📤 Tải lên video tập luyện của bạn để gửi cho Bác sĩ/NCV", 
-                        type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
-                        help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB",
-                        key="video_uploader_v2"
-                    )
-                else:
-                    file_upload = None
-                    st.info("👋 Chào mừng bạn đến với hệ thống quản lý. Hãy chọn bệnh nhân trong danh sách dưới đây để xem video và đánh giá.")
+                # Video hướng dẫn mẫu
+                if 'video_guide' in bai_tap:
+                    st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
+                    st.video(bai_tap['video_guide'])
+
+            # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
+            st.markdown("---")
             
-            # === HIỆN KẾT QUẢ VÀ NÚT PHÂN TÍCH NGAY DƯỚI Ô TẢI FILE ===
+            if user_role == "Bệnh nhân":
+                st.markdown("### 📤 TẢI LÊN VIDEO TẬP LUYỆN")
+                st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
+                file_upload = st.file_uploader(
+                    "Tải lên video của bạn để AI phân tích và gửi kết quả cho Bác sĩ/NCV", 
+                    type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
+                    help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
+                    key="video_uploader_v2"
+                )
+            elif user_role == "Nghiên cứu viên":
+                st.markdown("### 🧪 PHÂN TÍCH VIDEO NGHIÊN CỨU")
+                st.info("💡 NCV có quyền truy cập sâu vào tọa độ khớp và biểu đồ nghiên cứu.")
+                file_upload = st.file_uploader(
+                    "Tải lên video thô (Raw Data)", 
+                    type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
+                    key="video_uploader_ncv"
+                )
+            else:
+                file_upload = None
+                if user_role != "Quản trị viên":
+                    st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
+            
+            # XỬ LÝ VIDEO
             if file_upload is not None and not st.session_state.processing:
-                file_size_mb = file_upload.size / (1024 * 1024)
-                st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.2f} MB)")
-                if file_upload.size < 1000:
-                    st.warning("⚠️ CẢNH BÁO: File quá nhỏ. Nội dung file:")
-                    st.code(file_upload.getvalue()[:200])
-                # PHÂN QUYỀN NÚT BẤM (Chỉ Nghiên cứu viên mới có quyền phân tích thô)
-                if user_role == "Nghiên cứu viên":
-                    if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", width='stretch'):
+                st.success(f"✅ Đã chọn file: {file_upload.name} ({file_upload.size / (1024*1024):.2f} MB)")
+                
+                if user_role in ["Bệnh nhân", "Nghiên cứu viên"]:
+                    btn_text = "🚀 GỬI & PHÂN TÍCH AI" if user_role == "Bệnh nhân" else "🚀 BẮT ĐẦU XỬ LÝ AI"
+                    if st.button(btn_text, use_container_width=True, type="primary"):
                         st.session_state.processing = True
                         st.session_state.has_data = False
-                        st.session_state.all_frames_data = []
-                        st.session_state.angle_df = None
-                        st.session_state.stats = None
-                        st.session_state.frames_zip = None
-                        st.session_state.temp_video_file = None
                         
                         progress_bar = st.progress(0)
                         status_text = st.empty()
                         
                         try:
                             status_text.info("📤 Đang đọc file video...")
-                            try:
-                                # CÁCH CŨ ỔN ĐỊNH: Đọc toàn bộ file
-                                with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
-                                    tmp_file.write(file_upload.getvalue())
-                                    video_path = tmp_file.name
-                            except Exception as e:
-                                st.warning(f"⚠️ Lỗi đọc file: {e}. Vui lòng thử lại!")
-                                st.session_state.processing = False
-                                st.stop()
+                            # Lưu file vào thư mục tạm để OpenCV có thể đọc
+                            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
+                                tmp_file.write(file_upload.getvalue())
+                                video_path = tmp_file.name
                             
                             progress_bar.progress(0.2)
                             status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
