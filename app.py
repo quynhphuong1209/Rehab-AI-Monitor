@@ -2469,21 +2469,6 @@ def hien_thi_tab_phan_tich():
         # Tính toán các chỉ số AI
         stability_score = max(0, 100 - (tk.get('std_goc_vai', 0) + tk.get('std_goc_khuyu', 0)))
         f1 = tk.get('f1_score', 0)
-        icc = tk.get('icc', 0)
-        
-        ai_col1, ai_col2 = st.columns([1, 2])
-        with ai_col1:
-            st.metric("🎯 AI Confidence", f"{f1*100:.1f}%", f"{'Tin cậy cao' if f1 > 0.8 else 'Cần kiểm tra'}")
-            st.metric("📉 Độ mượt động tác", f"{stability_score:.1f}/100")
-            
-        with ai_col2:
-            st.markdown(f"""
-            <div style="background: rgba(0,206,209,0.05); border-radius: 15px; padding: 1.2rem; border: 1px dashed #00CED1;">
-                <p style="color: #00CED1; font-weight: bold; margin-bottom: 5px;">🧬 PHÂN TÍCH TỪ MÔ HÌNH BLAZEPOSE:</p>
-                <ul style="color: #ccc; font-size: 0.9rem; margin-left: 15px;">
-                    <li><b>Độ ổn định tín hiệu:</b> { 'Rất tốt, độ nhiễu thấp.' if stability_score > 80 else 'Có hiện tượng nhiễu nhẹ (Jittering) trong quá trình vận động.' }</li>
-                    <li><b>Tính khách quan:</b> Chỉ số ICC ({icc:.2f}) cho thấy sự tương quan chặt chẽ giữa dữ liệu trích xuất và chuẩn lâm sàng.</li>
-                    <li><b>Phân loại tự động:</b> Mô hình AI đã phân tích thành công {tk['tong_frame_hop_le']} khung hình với độ chính xác {tk['do_chinh_xac']:.1f}%.</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
@@ -2577,7 +2562,7 @@ def hien_thi_tab_phan_tich():
                     st.error(f"❌ Lỗi: {e}. Vui lòng cài đặt: pip install -U kaleido")
 # HÀM HIỂN THỊ LỊCH NHẮC NHỞ
 # ============================================
-def hien_thi_lich_nhac_nho():
+def hien_thi_lich_nhac_nho(suffix="default"):
     """Hiển thị lịch nhắc nhở chi tiết"""
     st.markdown("## ⏰ LỊCH NHẮC NHỞ CHI TIẾT")
     
@@ -2661,7 +2646,7 @@ def hien_thi_lich_nhac_nho():
     
     with tab_lich4:
         st.subheader("➕ Thêm lịch nhắc nhở mới")
-        loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True, key=f"reminder_type_{st.session_state.user_info.get('role', 'NCV')}")
+        loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True, key=f"reminder_type_{suffix}")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -3248,7 +3233,7 @@ def hien_thi_giao_dien_benh_nhan():
     with tabs[2]: st.info("🕒 Bác sĩ chưa kê lịch thuốc và tập luyện mới.")
     with tabs[3]: hien_thi_tab_huong_dan()
     with tabs[4]: hien_thi_tab_kien_thuc_phcn()
-    with tabs[5]: hien_thi_lich_nhac_nho()
+    with tabs[5]: hien_thi_lich_nhac_nho(suffix="p")
     with tabs[6]: hien_thi_tab_cong_nghe()
     with tabs[7]: hien_thi_tab_NCKH()
     with tabs[8]: hien_thi_tab_thanh_vien()
@@ -3281,7 +3266,7 @@ def hien_thi_giao_dien_bac_si():
     with tabs[2]: st.subheader("📝 Kê đơn & Lịch tập luyện")
     with tabs[3]: hien_thi_tab_huong_dan()
     with tabs[4]: hien_thi_tab_kien_thuc_phcn()
-    with tabs[5]: hien_thi_lich_nhac_nho()
+    with tabs[5]: hien_thi_lich_nhac_nho(suffix="d")
     with tabs[6]: hien_thi_tab_cong_nghe()
     with tabs[7]: hien_thi_tab_NCKH()
     with tabs[8]: hien_thi_tab_thanh_vien()
@@ -3352,7 +3337,7 @@ def hien_thi_giao_dien_nghien_cuu_vien():
     with tabs[2]: hien_thi_tab_video_anh()
     with tabs[3]: hien_thi_tab_huong_dan()
     with tabs[4]: hien_thi_tab_kien_thuc_phcn()
-    with tabs[5]: hien_thi_lich_nhac_nho()
+    with tabs[5]: hien_thi_lich_nhac_nho(suffix="r")
     with tabs[6]: hien_thi_tab_cong_nghe()
     with tabs[7]: hien_thi_tab_NCKH()
     with tabs[8]: hien_thi_tab_thanh_vien()
