@@ -327,6 +327,24 @@ if st.session_state.get('theme') == 'light':
         .main-header { background: #ffffff !important; border: 1px solid #ddd !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important; }
         .main-header h1 { color: #000000 !important; }
         .main-header p { color: #333333 !important; }
+        
+        /* Fix container background in Light Mode */
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            background: #ffffff !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+        }
+
+        /* Fix Text Input contrast */
+        .stTextInput input, .stTextArea textarea, .stNumberInput input {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #ced4da !important;
+        }
+        .stTextInput label, .stSelectbox label, .stNumberInput label {
+            color: #212529 !important;
+        }
+
         .info-box, .metric-card, .member-card, .lecturer-card, .custom-card { 
             background: #ffffff !important; 
             border: 1px solid #e0e0e0 !important; 
@@ -335,19 +353,21 @@ if st.session_state.get('theme') == 'light':
         }
         .metric-value { color: #0072ff !important; }
         .metric-label { color: #444444 !important; }
-        .stMarkdown, p, span, label, h1, h2, h3, h4, li { color: #000000 !important; }
-        .stTextInput input, .stSelectbox div, .stNumberInput input { 
-            background-color: #fff !important; 
-            color: #000000 !important; 
-            border: 1px solid #ccc !important; 
-        }
+        
+        /* Ensure all text is dark */
+        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div { color: #212529 !important; }
+        
         .stTabs [data-baseweb="tab"] { 
             background-color: #f1f3f5 !important; 
-            color: #666666 !important; 
+            color: #495057 !important; 
             border: 1px solid #dee2e6 !important;
         }
         .stTabs [aria-selected="true"] { 
             background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important; 
+            color: #ffffff !important; /* White text is OK on blue background */
+        }
+    </style>
+    """, unsafe_allow_html=True)
             color: #fff !important; 
             border: 1px solid #0072ff !important;
         }
@@ -3849,10 +3869,14 @@ def update_theme_callback():
 # GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
 # ============================================
 def hien_thi_dang_nhap_dang_ky():
-    st.markdown("""
+    # Định nghĩa màu sắc tiêu đề theo theme
+    header_color = "#ffd700" # Vàng gold giữ nguyên
+    sub_color = "#aaa" if st.session_state.get('theme') == 'dark' else "#555"
+    
+    st.markdown(f"""
     <div style="text-align: center; padding: 1rem 0 2rem 0;">
-        <h1 style="color: #ffd700; font-size: 2.8rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🏥 Rehab AI Monitor</h1>
-        <p style="color: #aaa; font-size: 1.2rem; font-style: italic;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
+        <h1 style="color: {header_color}; font-size: 2.8rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🏥 Rehab AI Monitor</h1>
+        <p style="color: {sub_color}; font-size: 1.2rem; font-style: italic;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
     </div>
     """, unsafe_allow_html=True)
     
