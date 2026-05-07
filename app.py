@@ -3081,11 +3081,17 @@ def hien_thi_form_danh_gia_bac_si():
             st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
             st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
 
-    tab_form, tab_ai_charts, tab_ai_media = st.tabs([
-        "📝 ĐÁNH GIÁ CHUYÊN MÔN",
-        "📊 CHI TIẾT AI PHÂN TÍCH",
-        "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"
-    ])
+    # Kiểm tra xem NCV đã gửi kết quả chưa
+    evals_data = load_data(EVALUATIONS_FILE)
+    patient_evals = [e for e in evals_data if e['patient_username'] == selected_video['username']]
+    has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in patient_evals)
+
+    tab_titles_eval = ["📝 ĐÁNH GIÁ CHUYÊN MÔN"]
+    if has_ai_sent:
+        tab_titles_eval += ["📊 CHI TIẾT AI PHÂN TÍCH", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"]
+    
+    tabs_eval = st.tabs(tab_titles_eval)
+    tab_form = tabs_eval[0]
 
     with tab_form:
         # === HIỂN THỊ KẾT QUẢ AI TỪ NGHIÊN CỨU VIÊN ===
@@ -3160,21 +3166,17 @@ def hien_thi_form_danh_gia_bac_si():
             st.success("✅ Đã gửi đánh giá thành công!")
             st.balloons()
 
-    with tab_ai_charts:
-        st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
-        # Chỉ hiển thị nếu NCV đã gửi kết quả
-        has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in patient_evals)
-        if has_ai_sent:
+    if has_ai_sent:
+        tab_ai_charts = tabs_eval[1]
+        tab_ai_media = tabs_eval[2]
+        
+        with tab_ai_charts:
+            st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
             hien_thi_tab_phan_tich(key_suffix="doc_eval")
-        else:
-            st.info("🕒 Kết quả phân tích chi tiết sẽ hiển thị sau khi Nghiên cứu viên gửi báo cáo AI.")
 
-    with tab_ai_media:
-        st.markdown("### 🎬 VIDEO & HÌNH ẢNH TRÍCH XUẤT KHUNG XƯƠNG")
-        if has_ai_sent:
+        with tab_ai_media:
+            st.markdown("### 🎬 VIDEO & HÌNH ẢNH TRÍCH XUẤT KHUNG XƯƠNG")
             hien_thi_frames_day_du(key_suffix="doc_eval")
-        else:
-            st.info("🕒 Video và hình ảnh khung xương sẽ hiển thị sau khi Nghiên cứu viên chia sẻ.")
 
 def hien_thi_ket_qua_cho_benh_nhan():
     st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỪ BÁC SĨ & AI")
@@ -3927,7 +3929,17 @@ def main():
     
     # Định nghĩa các tab dựa trên vai trò
     if user_role == "Bác sĩ / KTV PHCN":
-        tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN", "📊 KẾT QUẢ AI", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        # Kiểm tra BN được chọn có kết quả AI chưa để hiện Tab Kết quả AI
+        selected_video_main = st.session_state.get('current_eval_video')
+        has_ai_main = False
+        if selected_video_main:
+            evals_main = load_data(EVALUATIONS_FILE)
+            has_ai_main = any(e.get('doctor_username') == "AI_Researcher" and e['patient_username'] == selected_video_main['username'] for e in evals_main)
+            
+        tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN"]
+        if has_ai_main:
+            tab_titles.append("📊 KẾT QUẢ AI")
+        tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "🩺 KHAI BÁO TRIỆU CHỨNG", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
