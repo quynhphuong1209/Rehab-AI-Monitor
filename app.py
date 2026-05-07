@@ -4393,7 +4393,39 @@ def main():
             with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
             
             if user_role == "Bệnh nhân":
-                st.info("ℹ️ Vui lòng sang tab **🩺 KHAI BÁO TRIỆU CHỨNG** để gửi thông tin cảm nhận và mức độ đau cho Bác sĩ.")
+                with st.expander("🩺 KHAI BÁO TRIỆU CHỨNG", expanded=False):
+                    with st.form("patient_symptoms_sidebar"):
+                        s_full_name = st.text_input("Họ tên", value=st.session_state.user_info.get('full_name', ''), key="s_sb_name")
+                        s_age = st.number_input("Tuổi", 0, 120, 22, key="s_sb_age")
+                        s_gender = st.selectbox("Giới tính", ["Nam", "Nữ", "Khác"], key="s_sb_gender")
+                        
+                        s_desc = st.text_area("Mô tả cảm giác đau:", 
+                                              placeholder="VD: Đau nhói ở khớp vai...",
+                                              height=100, key="s_sb_desc")
+                        
+                        s_vas = st.select_slider("Mức độ đau (VAS):", 
+                                                 options=list(range(11)), 
+                                                 value=3, key="s_sb_vas")
+                        
+                        s_submitted = st.form_submit_button("📤 GỬI CHO BÁC SĨ", use_container_width=True, type="primary")
+                        
+                        if s_submitted:
+                            if s_desc:
+                                s_data = load_data(SYMPTOMS_FILE)
+                                s_data.append({
+                                    "username": st.session_state.user_info['username'],
+                                    "full_name": s_full_name,
+                                    "age": s_age,
+                                    "gender": s_gender,
+                                    "symptoms": s_desc,
+                                    "vas": s_vas,
+                                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                                })
+                                save_data(SYMPTOMS_FILE, s_data)
+                                st.success("✅ Đã gửi thành công!")
+                                st.balloons()
+                            else:
+                                st.warning("⚠️ Vui lòng nhập mô tả.")
             else: # Bác sĩ / KTV
                 st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
                 chan_doan = st.selectbox("Chẩn đoán", [
@@ -4451,7 +4483,7 @@ def main():
             tab_titles.append("📊 KẾT QUẢ AI")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = ["🏠 TRANG CHỦ", "🩺 KHAI BÁO TRIỆU CHỨNG", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
         tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
