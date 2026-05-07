@@ -160,12 +160,14 @@ st.markdown("""
     [data-testid="stExpander"] summary span > span {
         display: none !important;
         font-size: 0 !important;
+        visibility: hidden !important;
     }
 
     /* Nhắm vào nút đóng/mở sidebar */
     [data-testid="stSidebarCollapseButton"] span {
         font-size: 0 !important;
         color: transparent !important;
+        visibility: hidden !important;
     }
 
     /* === LOGIN CARD STYLING === */
@@ -2977,7 +2979,7 @@ def main():
             "📤 Tải lên video tập luyện của bệnh nhân", 
             type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
             help=f"Hỗ trợ file tối đa {MAX_FILE_SIZE_MB}MB",
-            key="video_uploader_v1"
+            key="video_uploader_v2"
         )
         
         # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
