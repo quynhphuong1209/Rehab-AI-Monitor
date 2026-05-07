@@ -3093,13 +3093,6 @@ def main():
 def hien_thi_giao_dien_benh_nhan():
     with st.sidebar:
         st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
-        st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), key="p_name")
-        col1, col2 = st.columns(2)
-        with col1: st.number_input("Tuổi", 0, 120, 22, key="p_age")
-        with col2: st.selectbox("Giới tính", ["Nam", "Nữ"], key="p_gender")
-        st.text_input("Chẩn đoán", placeholder="VD: Viêm quanh khớp vai", key="p_diag")
-        
-        st.markdown("### 🎯 CHỌN BÀI TẬP")
         ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="p_exercise")
         bai_tap = BAI_TAP[ma_bai_tap]
         st.video(bai_tap["youtube"])
@@ -3182,19 +3175,17 @@ def hien_thi_form_danh_gia_bac_si():
 
 def hien_thi_giao_dien_nghien_cuu_vien():
     with st.sidebar:
-        st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
-        ten_benh_nhan = st.text_input("Họ và tên", placeholder="VD: Nguyễn Văn A")
-        ma_benh_nhan = st.text_input("Mã số bệnh nhân", placeholder="VD: BN0001")
+        st.markdown("### 📋 THÔNG TIN NGHIÊN CỨU")
+        st.text_input("Họ và tên bệnh nhân", key="ncv_p_name")
+        st.text_input("Mã số bệnh nhân", key="ncv_p_id")
         col1, col2 = st.columns(2)
-        with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
-        with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
-        
-        st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
-        chan_doan = st.selectbox("Chẩn đoán", ["", "Viêm quanh khớp vai thể giả liệt thể đông cứng", "Viêm quanh khớp vai thể đơn thuần", "Viêm quanh khớp cấp"])
-        muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
+        with col1: st.number_input("Tuổi", 0, 120, 22, key="ncv_p_age")
+        with col2: st.selectbox("Giới tính", ["Nam", "Nữ"], key="ncv_p_gender")
         
         st.markdown("### 🎯 CHỌN BÀI TẬP")
-        ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+        ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), 
+                                 format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
+                                 key="ncv_exercise")
         bai_tap = BAI_TAP[ma_bai_tap]
         st.video(bai_tap["youtube"])
         
