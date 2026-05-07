@@ -4828,9 +4828,9 @@ def main():
                                     st.write(f"**Độ chính xác AI:** {acc_text}")
                                     st.write(f"**Trạng thái:** {v['status']}")
                                     
-                                    # Bỏ nút phân tích theo yêu cầu người dùng
-                                    
-                                    if st.button("📝 Phân tích và kết quả trích xuất khung xương video", key=f"eval_btn_{idx}", use_container_width=True):
+                                    # Đổi nhãn nút theo vai trò
+                                    eval_btn_label = "📝 Đánh giá của chuyên môn PHCN" if user_role == "Bác sĩ / KTV PHCN" else "📝 Phân tích và trích xuất khung xương AI"
+                                    if st.button(eval_btn_label, key=f"eval_btn_{idx}", use_container_width=True):
                                         st.session_state.current_eval_video = v
                                         # Reset analysis state để load video mới
                                         st.session_state.has_data = False
