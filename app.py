@@ -2307,6 +2307,22 @@ def hien_thi_tab_phan_tich():
         "Giá trị": [f"{tk['thoi_gian']:.1f}s", tk['tong_frame'], tk['frame_dung'], tk['frame_gan_dung'], f"{max(0, fail_count_total)}", f"{tk['tb_goc_vai']:.1f}°", f"{tk['tb_goc_khuyu']:.1f}°"]
     })
     
+    # 0. VIDEO PHÂN TÍCH (THÊM VÀO ĐỂ HIỂN THỊ LOGIC TRÍCH XUẤT)
+    st.markdown("### 🎬 VIDEO PHÂN TÍCH TRÍCH XUẤT KHUNG XƯƠNG")
+    col_v1, col_v2 = st.columns([2, 1])
+    with col_v1:
+        if st.session_state.get('processed_video_path') and os.path.exists(st.session_state.processed_video_path):
+            st.video(st.session_state.processed_video_path)
+        else:
+            st.warning("⚠️ Không tìm thấy file video đã xử lý.")
+    with col_v2:
+        st.info(f"""
+        **Thông tin Video:**
+        - **File:** {st.session_state.get('uploaded_file_name', 'N/A')}
+        - **Thời gian xử lý:** {tk.get('thoi_gian', 0):.1f}s
+        - **Tổng Frame:** {tk.get('tong_frame', 0)}
+        """)
+
     # 1. HEADER CHỈ SỐ TỔNG QUAN (CỐ ĐỊNH)
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
@@ -2745,6 +2761,13 @@ def hien_thi_form_danh_gia_bac_si():
         <strong>🎬 Đang đánh giá video:</strong> {selected_video['full_name']} - {selected_video['exercise']} ({selected_video['time']})
     </div>
     """, unsafe_allow_html=True)
+
+    # Hiển thị video để bác sĩ xem lại
+    if os.path.exists(selected_video['video_path']):
+        st.markdown("### 📺 XEM LẠI VIDEO TRÍCH XUẤT")
+        st.video(selected_video['video_path'])
+    else:
+        st.error("❌ Không tìm thấy file video trên hệ thống.")
 
     # Hiển thị triệu chứng của bệnh nhân này để bác sĩ tham khảo
     symptoms_data = load_data(SYMPTOMS_FILE)
@@ -3663,10 +3686,10 @@ def main():
                                     c_nav1, c_nav2, c_nav3 = st.columns(3)
                                     with c_nav1:
                                         if st.button("📊 XEM BÁO CÁO PHÂN TÍCH", use_container_width=True, type="primary"):
-                                            chuyen_tab_bang_js("PHÂN TÍCH")
+                                            chuyen_tab_bang_js("📊 PHÂN TÍCH")
                                     with c_nav2:
                                         if st.button("🎬 XEM VIDEO & ẢNH FRAME", use_container_width=True, type="primary"):
-                                            chuyen_tab_bang_js("VIDEO & ẢNH")
+                                            chuyen_tab_bang_js("🎬 VIDEO & ẢNH")
                                     with c_nav3:
                                         if st.button("📤 GỬI KẾT QUẢ CHO BN", use_container_width=True, type="secondary"):
                                             evals = load_data(EVALUATIONS_FILE)
@@ -3820,7 +3843,10 @@ def main():
                                     
                                     if st.button("📝 Phân tích và kết quả trích xuất khung xương video", key=f"eval_btn_{idx}", use_container_width=True):
                                         st.session_state.current_eval_video = v
-                                        chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
+                                        if user_role == "Bác sĩ / KTV PHCN":
+                                            chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
+                                        else: # Nghiên cứu viên
+                                            chuyen_tab_bang_js("PHÂN TÍCH")
                                     
                                     if st.button("🗑️ Xóa video này", key=f"del_video_{idx}", use_container_width=True):
                                         # Xóa file thực tế
