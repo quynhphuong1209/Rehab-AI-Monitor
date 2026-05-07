@@ -3818,7 +3818,7 @@ def main():
                                     
                                     # Bỏ nút phân tích theo yêu cầu người dùng
                                     
-                                    if st.button("📝 Đánh giá video này", key=f"eval_btn_{idx}", use_container_width=True):
+                                    if st.button("📝 Phân tích và kết quả trích xuất khung xương video", key=f"eval_btn_{idx}", use_container_width=True):
                                         st.session_state.current_eval_video = v
                                         chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
                                     
