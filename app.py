@@ -2697,6 +2697,16 @@ def hien_thi_tab_phan_tich():
             """, unsafe_allow_html=True)
 
         st.markdown("---")
+        # CHUYỂN PHẦN NÀY VÀO TRONG TAB NHỎ THEO YÊU CẦU
+        st.markdown("### 🩺 NHẬN XÉT LÂM SÀNG TỪ BÁC SĨ (DÀNH CHO NCKH)")
+        evals = load_data(EVALUATIONS_FILE)
+        if evals:
+            # Lọc đánh giá cho bệnh nhân hiện tại nếu cần, hoặc hiển thị tất cả
+            st.dataframe(pd.DataFrame(evals), use_container_width=True)
+        else:
+            st.info("Chưa có dữ liệu đánh giá lâm sàng.")
+
+        st.markdown("---")
         st.markdown("### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU (RESEARCH EVALUATION)")
         st.info("💡 Biểu đồ Radar so sánh kết quả thực tế với mục tiêu đề tài nghiên cứu khoa học.")
         
@@ -4135,14 +4145,6 @@ def main():
                 hien_thi_ket_qua_cho_benh_nhan()
             else: # Nghiên cứu viên
                 hien_thi_tab_phan_tich()
-                # Hiển thị thêm các đánh giá của bác sĩ cho nghiên cứu viên xem
-                st.markdown("---")
-                st.markdown("### 🩺 NHẬN XÉT LÂM SÀNG TỪ BÁC SĨ (DÀNH CHO NCKH)")
-                evals = load_data(EVALUATIONS_FILE)
-                if evals:
-                    st.dataframe(pd.DataFrame(evals))
-                else:
-                    st.info("Chưa có dữ liệu đánh giá lâm sàng.")
 
     # ==================== TAB: KHAI BÁO TRIỆU CHỨNG ====================
     if "🩺 KHAI BÁO TRIỆU CHỨNG" in tab_map:
