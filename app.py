@@ -3228,10 +3228,11 @@ def main():
 
 def hien_thi_giao_dien_benh_nhan():
     with st.sidebar:
-        st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
-        ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="p_exercise")
-        bai_tap = BAI_TAP[ma_bai_tap]
-        st.video(bai_tap["youtube"])
+        st.markdown("### 👤 BỆNH NHÂN")
+        st.markdown(f"**Họ tên:** {st.session_state.user_info.get('full_name', 'Bệnh nhân')}")
+        st.markdown(f"**Mã BN:** {st.session_state.user_info.get('username', 'BN001')}")
+        st.markdown("---")
+        st.info("💡 Hãy chọn bài tập và upload video ở Tab TRANG CHỦ để AI phân tích.")
 
     tabs = st.tabs([
         "🏠 TRANG CHỦ", "🏥 KẾT LUẬN", "💊 ĐIỀU TRỊ", "📖 HƯỚNG DẪN", 
@@ -3239,8 +3240,17 @@ def hien_thi_giao_dien_benh_nhan():
         "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
     ])
     
-    with tabs[0]: # Trang chủ tập luyện (Lấy logic cũ sang)
+    with tabs[0]:
+        with st.expander("🎯 CHỌN BÀI TẬP TẬP LUYỆN", expanded=True):
+            ma_bai_tap = st.selectbox("Chọn bài tập hôm nay", list(BAI_TAP.keys()), 
+                                     format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
+                                     key="p_exercise_main")
+            bai_tap = BAI_TAP[ma_bai_tap]
+            st.video(bai_tap["youtube"])
+        
+        st.markdown("---")
         hien_thi_tab_trang_chu_benh_nhan(bai_tap)
+
     with tabs[1]: st.info("🕒 Đang chờ bác sĩ đánh giá kết quả tập luyện của bạn...")
     with tabs[2]: st.info("🕒 Bác sĩ chưa kê lịch thuốc và tập luyện mới.")
     with tabs[3]: hien_thi_tab_huong_dan()
@@ -3405,47 +3415,9 @@ def hien_thi_tab_trang_chu_benh_nhan(bai_tap):
             </script>
         """, height=0)
     
-    with st.sidebar:
-        # --- Đã di chuyển nút gạt theme lên Top Bar ---
-        
-        # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
-        st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
-        ten_benh_nhan = st.text_input("Họ và tên", placeholder="VD: Nguyễn Văn A")
-        ma_benh_nhan = st.text_input("Mã số bệnh nhân", placeholder="VD: BN0001")
-        col1, col2 = st.columns(2)
-        with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
-        with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
-        
-        st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
-        chan_doan = st.selectbox("Chẩn đoán", [
-            "", 
-            "Viêm quanh khớp vai thể giả liệt thể đông cứng", 
-            "Viêm quanh khớp vai thể đơn thuần", 
-            "Viêm quanh khớp cấp"
-        ])
-
-        muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
-
-        
-        st.markdown("### 🎯 CHỌN BÀI TẬP")
-        ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
-        bai_tap = BAI_TAP[ma_bai_tap]
-        
-        st.markdown("### 📺 VIDEO HƯỚNG DẪN")
-        st.video(bai_tap["youtube"])
-        
-        st.markdown("---")
-        st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
-        st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
+    # Sidebar has been removed to prevent duplication
     
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
-        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", 
-        "🏥 KIẾN THỨC PHCN", "⏰ LỊCH NHẮC NHỞ", "🌐 CÔNG NGHỆ", 
-        "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
-    ])
-    
-    # ==================== TAB 1: TRANG CHỦ ====================
-    with tab1:
+    # Nested tabs have been removed to prevent duplication
         is_light = st.session_state.theme == 'light'
         info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
         info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
