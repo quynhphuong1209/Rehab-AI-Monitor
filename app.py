@@ -2289,7 +2289,7 @@ st.markdown("""
 # ============================================
 # HÀM HIỂN THỊ TAB 2 - THIẾT KẾ LẠI
 # ============================================
-def hien_thi_tab_phan_tich():
+def hien_thi_tab_phan_tich(key_suffix=""):
     """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
     user_role = st.session_state.user_info.get('role')
     
@@ -2578,7 +2578,7 @@ def hien_thi_tab_phan_tich():
         
         with col_pie:
             fig_pie = ve_bieu_do_tron_thong_ke(tk)
-            st.plotly_chart(fig_pie, use_container_width=True)
+            st.plotly_chart(fig_pie, use_container_width=True, key=f"pie_chart_{key_suffix}")
             try:
                 img_pie = fig_pie.to_image(format="png")
                 st.download_button("📥 Tải ảnh biểu đồ tròn", img_pie, "phan_bo_ket_qua.png", "image/png", use_container_width=True)
@@ -2639,7 +2639,7 @@ def hien_thi_tab_phan_tich():
     with tab_joint:
         st.markdown("#### 📈 BIỂU ĐỒ GÓC VAI")
         fig_vai = ve_bieu_do_goc_vai(df, bt)
-        st.plotly_chart(fig_vai, use_container_width=True)
+        st.plotly_chart(fig_vai, use_container_width=True, key=f"vai_chart_{key_suffix}")
         col_m1, col_dl1 = st.columns([2, 1])
         with col_m1:
             st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
@@ -2651,7 +2651,7 @@ def hien_thi_tab_phan_tich():
         st.markdown("---")
         st.markdown("#### 📊 BIỂU ĐỒ GÓC KHUỶU")
         fig_khuyu = ve_bieu_do_goc_khuyu(df, bt)
-        st.plotly_chart(fig_khuyu, use_container_width=True)
+        st.plotly_chart(fig_khuyu, use_container_width=True, key=f"khuyu_chart_{key_suffix}")
         col_m2, col_dl2 = st.columns([2, 1])
         with col_m2:
             st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
@@ -2693,7 +2693,7 @@ def hien_thi_tab_phan_tich():
         st.markdown("### 📦 PHÂN TÍCH BIÊN ĐỘ VẬN ĐỘNG (ROM)")
         st.info("💡 Biểu đồ này giúp bác sĩ so sánh sự ổn định của góc khớp giữa các lần thực hiện đúng và sai.")
         fig_box = ve_bieu_do_boxplot_phan_loai(df)
-        st.plotly_chart(fig_box, use_container_width=True)
+        st.plotly_chart(fig_box, use_container_width=True, key=f"box_chart_{key_suffix}")
         try:
             st.download_button("📥 Tải ảnh biểu đồ Boxplot", fig_box.to_image(format="png"), "boxplot_rom.png", "image/png")
         except: pass
@@ -2805,7 +2805,7 @@ def hien_thi_tab_phan_tich():
         st.info("💡 Biểu đồ Radar so sánh kết quả thực tế với mục tiêu đề tài nghiên cứu khoa học.")
         
         # 1. BIỂU ĐỒ RADAR PHÓNG TO (FULL WIDTH)
-        st.plotly_chart(ve_bieu_do_radar(tk), use_container_width=True)
+        st.plotly_chart(ve_bieu_do_radar(tk), use_container_width=True, key=f"radar_chart_{key_suffix}")
         
         # 2. THÔNG TIN CHỈ SỐ VÀ BẢNG (DÒNG TIẾP THEO)
         st.markdown("#### 📊 BẢNG TỔNG HỢP CHỈ SỐ KHOA HỌC")
@@ -3165,7 +3165,7 @@ def hien_thi_form_danh_gia_bac_si():
         # Chỉ hiển thị nếu NCV đã gửi kết quả
         has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in patient_evals)
         if has_ai_sent:
-            hien_thi_tab_phan_tich()
+            hien_thi_tab_phan_tich(key_suffix="doc_eval")
         else:
             st.info("🕒 Kết quả phân tích chi tiết sẽ hiển thị sau khi Nghiên cứu viên gửi báo cáo AI.")
 
@@ -3185,7 +3185,7 @@ def hien_thi_ket_qua_cho_benh_nhan():
     if not my_evals:
         st.info("📭 Hiện chưa có đánh giá nào từ bác sĩ. Kết quả AI của bạn sẽ hiển thị sau khi bạn upload video ở TRANG CHỦ.")
         if st.session_state.has_data:
-            hien_thi_tab_phan_tich()
+            hien_thi_tab_phan_tich(key_suffix="pat_no_eval")
     else:
         tab_eval, tab_charts, tab_media = st.tabs([
             "📝 NHẬN XÉT CỦA BÁC SĨ & AI",
@@ -3217,7 +3217,7 @@ def hien_thi_ket_qua_cho_benh_nhan():
             # CHỈ HIỂN THỊ NẾU NCV ĐÃ GỬI KẾT QUẢ
             has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in my_evals)
             if has_ai_sent:
-                hien_thi_tab_phan_tich()
+                hien_thi_tab_phan_tich(key_suffix="pat_eval")
             else:
                 st.info("🕒 Kết quả phân tích biểu đồ AI đang được Nghiên cứu viên xử lý và sẽ hiển thị tại đây sau khi được gửi.")
             
@@ -4366,13 +4366,13 @@ def main():
                 else:
                     tab_ai_1, tab_ai_2 = st.tabs(["📊 BIỂU ĐỒ CHI TIẾT", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"])
                     with tab_ai_1:
-                        hien_thi_tab_phan_tich()
+                        hien_thi_tab_phan_tich(key_suffix="doc_ai_tab")
                     with tab_ai_2:
                         hien_thi_frames_day_du()
 
     if "📊 PHÂN TÍCH" in tab_map:
         with tab_map["📊 PHÂN TÍCH"]:
-            hien_thi_tab_phan_tich()
+            hien_thi_tab_phan_tich(key_suffix="ncv_tab")
 
     if "📊 KẾT QUẢ" in tab_map:
         with tab_map["📊 KẾT QUẢ"]:
