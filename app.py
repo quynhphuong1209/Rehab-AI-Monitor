@@ -2292,9 +2292,29 @@ st.markdown("""
 def hien_thi_tab_phan_tich():
     """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
     
-    if not st.session_state.has_data or not st.session_state.stats:
-        st.info("ℹ️ Chưa có kết quả. Vui lòng upload video ở tab TRANG CHỦ.")
-        return
+    # TỰ ĐỘNG LOAD DỮ LIỆU NẾU ĐANG CHỌN VIDEO TỪ DANH SÁCH
+    if not st.session_state.get('has_data') or not st.session_state.get('stats'):
+        if st.session_state.get('current_eval_video'):
+            v = st.session_state.current_eval_video
+            if 'metrics' in v:
+                st.session_state.stats = v['metrics']
+                st.session_state.processed_video_path = v['video_path']
+                st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
+                st.session_state.all_frames_data_path = v.get('all_frames_data_path')
+                st.session_state.has_data = True
+                # Load DF nếu có
+                if 'df_path' in v and os.path.exists(v['df_path']):
+                    try:
+                        st.session_state.angle_df = pd.read_csv(v['df_path'])
+                    except: pass
+            else:
+                st.info("ℹ️ Video này chưa có dữ liệu phân tích chi tiết. Vui lòng thực hiện phân tích lại ở tab TRANG CHỦ.")
+                if v.get('video_path') and os.path.exists(v['video_path']):
+                    st.video(v['video_path'])
+                return
+        else:
+            st.info("ℹ️ Chưa có kết quả. Vui lòng upload video ở tab TRANG CHỦ hoặc chọn video từ danh sách.")
+            return
     
     bt = st.session_state.exercise
     tk = st.session_state.stats
@@ -3664,7 +3684,13 @@ def main():
                                 st.session_state.exercise = bai_tap
                                 st.session_state.all_frames_paths = frame_paths
                                 st.session_state.temp_video_file = output_path
+                                st.session_state.processed_video_path = output_path
                                 st.session_state.all_frames_data_path = all_frames_data
+                                
+                                # Lưu DataFrame ra CSV để load lại sau
+                                df_csv_path = output_path.replace('.mp4', '_data.csv')
+                                df.to_csv(df_csv_path, index=False)
+                                st.session_state.current_df_csv_path = df_csv_path
                                 
                                 try:
                                     os.unlink(video_path)
@@ -3730,6 +3756,9 @@ def main():
                                         "accuracy": round(metrics["ty_le_tong_the"], 1),
                                         "time": datetime.now().strftime("%H:%M - %d/%m/%Y"),
                                         "video_path": output_path,
+                                        "metrics": st.session_state.stats,
+                                        "df_path": df_csv_path,
+                                        "all_frames_data_path": all_frames_data,
                                         "status": "Chờ đánh giá"
                                     })
                                     save_data(VIDEOS_FILE, video_list)
