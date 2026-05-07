@@ -4729,64 +4729,101 @@ def main():
 
             # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
             st.markdown("---")
-            st.markdown("<h3 style='color: #00c6ff; text-align: center; margin-bottom: 20px;'>🧬 QUY TRÌNH THU THẬP & XỬ LÝ DỮ LIỆU (NCKH)</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color: #00c6ff; text-align: center; margin-bottom: 25px;'>⚙️ QUY TRÌNH XỬ LÝ DỮ LIỆU NCKH</h3>", unsafe_allow_html=True)
             
-            with st.container(border=True):
-                # Tạo hệ thống Tab Quy trình (Pill style từ CSS global)
-                q_tabs = st.tabs([
-                    "📸 BƯỚC 1: GHI HÌNH", 
-                    "⚙️ BƯỚC 2: TRÍCH XUẤT", 
-                    "📊 BƯỚC 3: PHÂN TÍCH", 
-                    "💾 BƯỚC 4: LƯU TRỮ"
-                ])
+            # CSS cho các thẻ Quy trình
+            st.markdown("""
+            <style>
+            .step-container {
+                display: flex;
+                gap: 15px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+            .step-box {
+                flex: 1;
+                min-width: 200px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(0, 198, 255, 0.3);
+                border-radius: 12px;
+                padding: 18px;
+                text-align: center;
+                transition: all 0.3s;
+                border-top: 3px solid #00c6ff;
+            }
+            .step-box:hover {
+                transform: translateY(-5px);
+                background: rgba(0, 198, 255, 0.08);
+                border-color: #00c6ff;
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            }
+            .step-num {
+                background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+                color: white;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 10px;
+                font-weight: bold;
+                font-size: 0.9rem;
+            }
+            .step-txt-title {
+                color: #00c6ff;
+                font-weight: bold;
+                font-size: 1rem;
+                margin-bottom: 8px;
+                display: block;
+            }
+            .step-txt-desc {
+                color: #aaa;
+                font-size: 0.8rem;
+                line-height: 1.4;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            c1, c2, c3, c4 = st.columns(4)
+            
+            with c1:
+                st.markdown("""
+                <div class="step-box">
+                    <div class="step-num">1</div>
+                    <span class="step-txt-title">📸 GHI HÌNH</span>
+                    <p class="step-txt-desc">Camera đặt ngang vai (90°), tối thiểu 30 FPS, đủ ánh sáng.</p>
+                </div>
+                """, unsafe_allow_html=True)
                 
-                with q_tabs[0]:
-                    st.markdown("""
-                    <div style="padding: 15px; background: rgba(0, 198, 255, 0.05); border-left: 4px solid #00c6ff; border-radius: 8px;">
-                        <h4 style="margin-top:0; color:#00c6ff;">🎯 Mục tiêu: Thu thập dữ liệu thô (Raw Data)</h4>
-                        <ul style="margin-bottom:0;">
-                            <li><b>Góc quay:</b> Camera đặt ngang tầm khớp vai (góc 90 độ) để tránh sai số phối cảnh.</li>
-                            <li><b>Chất lượng:</b> Tối thiểu 30 FPS, độ phân giải HD (720p) trở lên.</li>
-                            <li><b>Môi trường:</b> Đảm bảo độ tương phản cao giữa trang phục bệnh nhân và nền tường.</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                with q_tabs[1]:
-                    st.markdown("""
-                    <div style="padding: 15px; background: rgba(0, 198, 255, 0.05); border-left: 4px solid #00c6ff; border-radius: 8px;">
-                        <h4 style="margin-top:0; color:#00c6ff;">⚙️ Mục tiêu: Tiền xử lý & Trích xuất Pose</h4>
-                        <ul style="margin-bottom:0;">
-                            <li><b>Cắt tỉa:</b> Loại bỏ các phân đoạn video không chứa người hoặc bị che khuất.</li>
-                            <li><b>AI Engine:</b> Sử dụng <b>MediaPipe Pose (Heavy)</b> để trích xuất 33 điểm mốc (Landmarks).</li>
-                            <li><b>Landmark Pinning:</b> Pin chính xác các khớp Vai (Shoulder), Khuỷu (Elbow) và Cổ tay (Wrist).</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                with q_tabs[2]:
-                    st.markdown("""
-                    <div style="padding: 15px; background: rgba(0, 198, 255, 0.05); border-left: 4px solid #00c6ff; border-radius: 8px;">
-                        <h4 style="margin-top:0; color:#00c6ff;">📊 Mục tiêu: Tính toán đặc trưng hình học</h4>
-                        <ul style="margin-bottom:0;">
-                            <li><b>Vector Math:</b> Áp dụng tích vô hướng để tính góc giữa các đoạn xương.</li>
-                            <li><b>Validation:</b> So sánh trực tiếp với bộ thông số chuẩn (Gold Standard) từ bài tập.</li>
-                            <li><b>Denoising:</b> Sử dụng bộ lọc Moving Average để làm mượt các nhiễu rung từ camera.</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                with q_tabs[3]:
-                    st.markdown("""
-                    <div style="padding: 15px; background: rgba(0, 198, 255, 0.05); border-left: 4px solid #00c6ff; border-radius: 8px;">
-                        <h4 style="margin-top:0; color:#00c6ff;">💾 Mục tiêu: Số hóa & Lưu trữ NCKH</h4>
-                        <ul style="margin-bottom:0;">
-                            <li><b>Data Format:</b> Xuất tọa độ và góc độ sang định dạng <b>JSON</b> và <b>CSV</b>.</li>
-                            <li><b>Big Data:</b> Lưu trữ hàng nghìn frames dữ liệu phục vụ huấn luyện mô hình sau này.</li>
-                            <li><b>Báo cáo:</b> Tự động tổng hợp biểu đồ ROM (Range of Motion) phục vụ báo cáo lâm sàng.</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
+            with c2:
+                st.markdown("""
+                <div class="step-box">
+                    <div class="step-num">2</div>
+                    <span class="step-txt-title">⚙️ TRÍCH XUẤT</span>
+                    <p class="step-txt-desc">Sử dụng MediaPipe Heavy trích xuất 33 điểm Landmarks.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with c3:
+                st.markdown("""
+                <div class="step-box">
+                    <div class="step-num">3</div>
+                    <span class="step-txt-title">📊 PHÂN TÍCH</span>
+                    <p class="step-txt-desc">Tính toán Vector góc Vai/Khuỷu và làm mượt dữ liệu.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with c4:
+                st.markdown("""
+                <div class="step-box">
+                    <div class="step-num">4</div>
+                    <span class="step-txt-title">💾 LƯU TRỮ</span>
+                    <p class="step-txt-desc">Số hóa dữ liệu sang JSON/CSV phục vụ báo cáo NCKH.</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
     
     # ==================== TAB: PHÂN TÍCH / ĐÁNH GIÁ ====================
     if "📝 ĐÁNH GIÁ PHCN" in tab_map:
