@@ -2578,8 +2578,6 @@ def hien_thi_tab_phan_tich():
 # ============================================
 def hien_thi_lich_nhac_nho(suffix="default"):
     """Hiển thị lịch nhắc nhở chi tiết"""
-    st.markdown("## ⏰ LỊCH NHẮC NHỞ CHI TIẾT")
-    
     current_time = datetime.now()
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -2664,14 +2662,14 @@ def hien_thi_lich_nhac_nho(suffix="default"):
         
         col1, col2 = st.columns(2)
         with col1:
-            date = st.date_input("Ngày", min_value=datetime.now().date())
+            date = st.date_input("Ngày", min_value=datetime.now().date(), key=f"date_{suffix}")
         with col2:
-            time_input = st.time_input("Giờ")
+            time_input = st.time_input("Giờ", key=f"time_{suffix}")
         
         if loai == "Lịch hẹn khám":
-            title = st.text_input("Tiêu đề")
-            notes = st.text_area("Ghi chú")
-            if st.button("➕ Thêm", key="add_appointment"):
+            title = st.text_input("Tiêu đề", key=f"app_title_{suffix}")
+            notes = st.text_area("Ghi chú", key=f"app_notes_{suffix}")
+            if st.button("➕ Thêm", key=f"add_appointment_{suffix}"):
                 if title:
                     new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
                     st.session_state.appointments.append({
@@ -2684,10 +2682,10 @@ def hien_thi_lich_nhac_nho(suffix="default"):
                     st.rerun()
         
         elif loai == "Lịch tập luyện":
-            exercise = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: BAI_TAP[x]['ten'])
-            frequency = st.selectbox("Tần suất", ["Một lần", "Hàng ngày", "Thứ 2-4-6", "Thứ 3-5-7"])
-            notes = st.text_area("Ghi chú")
-            if st.button("➕ Thêm", key="add_exercise"):
+            exercise = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: BAI_TAP[x]['ten'], key=f"ex_select_{suffix}")
+            frequency = st.selectbox("Tần suất", ["Một lần", "Hàng ngày", "Thứ 2-4-6", "Thứ 3-5-7"], key=f"ex_freq_{suffix}")
+            notes = st.text_area("Ghi chú", key=f"ex_notes_{suffix}")
+            if st.button("➕ Thêm", key=f"add_exercise_{suffix}"):
                 new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
                 st.session_state.exercise_reminders.append({
                     'id': new_id,
@@ -2700,10 +2698,10 @@ def hien_thi_lich_nhac_nho(suffix="default"):
                 st.rerun()
         
         else:
-            med_name = st.text_input("Tên thuốc")
-            dosage = st.text_input("Liều lượng")
-            notes = st.text_area("Ghi chú")
-            if st.button("➕ Thêm", key="add_medication"):
+            med_name = st.text_input("Tên thuốc", key=f"med_name_{suffix}")
+            dosage = st.text_input("Liều lượng", key=f"med_dosage_{suffix}")
+            notes = st.text_area("Ghi chú", key=f"med_notes_{suffix}")
+            if st.button("➕ Thêm", key=f"add_medication_{suffix}"):
                 if med_name:
                     new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
                     st.session_state.medication_reminders.append({
