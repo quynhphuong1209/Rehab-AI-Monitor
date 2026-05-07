@@ -161,17 +161,15 @@ st.markdown("""
 <style>
     /* === SỬA LỖI CHỮ RÁC ICON (TRIỆT ĐỂ) === */
     button[data-testid="stSidebarCollapseButton"] span,
+    button[data-testid="stSidebarCollapseButton"]::before,
+    button[data-testid="stSidebarCollapseButton"]::after,
     [data-testid="stExpander"] summary span > span,
     [data-testid="stFileUploader"] section span > span,
-    .stIconMaterial {
+    .stIconMaterial, .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
         display: none !important;
         color: transparent !important;
         font-size: 0 !important;
-    }
-    
-    /* Ẩn text rác hiện ra khi lỗi font Material */
-    .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
-        display: none !important;
+        visibility: hidden !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.04) !important;
@@ -308,9 +306,14 @@ if st.session_state.get('theme') == 'light':
         .school-subname { color: #0072ff !important; }
         .footer-title { color: #0072ff !important; }
         .stExpander { background: #fff !important; border: 1px solid #eee !important; border-radius: 12px !important; }
+        .stExpander summary { background: #f8f9fa !important; color: #000 !important; }
+        .stExpander summary:hover { background: #eee !important; }
         [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #eee !important; }
         [data-testid="stSidebar"] * { color: #333 !important; }
         .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b { color: #333 !important; }
+        /* Fix Table headers */
+        [data-testid="stTable"] th { background-color: #f1f3f5 !important; color: #000 !important; }
+        [data-testid="stMetric"] { background: #ffffff !important; border: 1px solid #eee !important; padding: 10px !important; border-radius: 12px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -649,13 +652,20 @@ def hien_thi_tab_realtime(bai_tap):
 # ============================================
 def hien_thi_tab_kien_thuc_phcn():
     """Thiết kế Tab 8 về kiến thức y khoa Phục hồi chức năng"""
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+    # Cấu hình màu sắc theo Theme
+    is_light = st.session_state.theme == 'light'
+    bg_gradient = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)"
+    text_color = "#1a1a2e" if is_light else "#fff"
+    sub_color = "#0072ff" if is_light else "#00CED1"
+    border_color = "#0072ff" if is_light else "#00CED1"
+
+    st.markdown(f"""
+    <div style="background: {bg_gradient}; 
                 padding: 2rem; border-radius: 20px; text-align: center; 
-                border: 1px solid #00CED1; box-shadow: 0 10px 30px rgba(0, 206, 209, 0.1);
+                border: 1px solid {border_color}; box-shadow: 0 10px 30px rgba(0, 206, 209, 0.1);
                 margin-bottom: 2rem;">
-        <h1 style="color: #fff; margin: 0; font-size: 2rem;">🏥 KIẾN THỨC PHỤC HỒI CHỨC NĂNG</h1>
-        <p style="color: #00CED1; font-weight: bold; margin-top: 0.5rem;">
+        <h1 style="color: {text_color}; margin: 0; font-size: 2rem;">🏥 KIẾN THỨC PHỤC HỒI CHỨC NĂNG</h1>
+        <p style="color: {sub_color}; font-weight: bold; margin-top: 0.5rem;">
             Nền tảng y khoa cho sự phục hồi toàn diện
         </p>
     </div>
@@ -722,14 +732,22 @@ def hien_thi_tab_kien_thuc_phcn():
 def hien_thi_tab_cong_nghe():
     """Thiết kế Tab 7 với phong cách công nghệ cao cấp"""
     
+    # Cấu hình màu sắc theo Theme
+    is_light = st.session_state.theme == 'light'
+    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+    text_color = "#000000" if is_light else "#ffd700"
+    sub_color = "#0072ff" if is_light else "#00CED1"
+    border_color = "#0072ff" if is_light else "#ffd700"
+    shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(255, 215, 0, 0.1)"
+
     # 1. HEADER CHƯƠNG TRÌNH
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%); 
+    st.markdown(f"""
+    <div style="background: {bg_gradient}; 
                 padding: 2.5rem; border-radius: 25px; text-align: center; 
-                border: 1px solid #ffd700; box-shadow: 0 15px 35px rgba(255, 215, 0, 0.1);
+                border: 1px solid {border_color}; box-shadow: 0 15px 35px {shadow};
                 margin-bottom: 2rem;">
-        <h1 style="color: #ffd700; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
-        <p style="color: #00CED1; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
+        <h1 style="color: {text_color}; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
+        <p style="color: {sub_color}; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
             Sự kết hợp hoàn hảo giữa Phục hồi chức năng và Trí tuệ nhân tạo (AI)
         </p>
     </div>
@@ -3311,12 +3329,19 @@ def main():
         
     # ==================== TAB 10: ĐỀ TÀI NCKH ====================
     with tab10:
-        st.markdown("""
-        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid #2a5298;">
-            <h2 style="color: white; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
-            <p style="color: #ffd700; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
-            <p style="color: #ccc;">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
+        # Cấu hình màu sắc theo Theme
+        is_light = st.session_state.theme == 'light'
+        bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+        text_color = "#000" if is_light else "white"
+        sub_color = "#0072ff" if is_light else "#ffd700"
+        border_color = "#0072ff" if is_light else "#2a5298"
+
+        st.markdown(f"""
+        <div style="background: {bg_gradient}; padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid {border_color};">
+            <h2 style="color: {text_color}; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
+            <p style="color: {sub_color}; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
+            <p style="color: {"#333" if is_light else "#ccc"};">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
+            <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
         </div>
         """, unsafe_allow_html=True)
         
