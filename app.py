@@ -2873,21 +2873,29 @@ def hien_thi_tab_khai_bao_trieu_chung():
                 st.warning("⚠️ Vui lòng nhập mô tả triệu chứng.")
 
 def hien_thi_lich_nhac_nho():
-    """Hiển thị lịch nhắc nhở chi tiết"""
-    st.markdown("## ⏰ LỊCH NHẮC NHỞ CHI TIẾT")
+    """Hiển thị lịch nhắc nhở chi tiết (Persistent & Role-based)"""
+    st.markdown("## ⏰ LỊCH NHẮC NHỞ & HẸN KHÁM")
     
-    user_role = st.session_state.user_info.get('role', 'Bệnh nhân')
+    user_info = st.session_state.user_info
+    user_role = user_info.get('role', 'Bệnh nhân')
+    username = user_info.get('username')
+    
+    # LOAD DATA TỪ FILE
+    schedules = load_data(REMINDERS_FILE)
+    if not isinstance(schedules, list): schedules = []
+    
+    # FILTER DATA
+    if user_role == "Bệnh nhân":
+        display_schedules = [s for s in schedules if s.get('patient_username') == username]
+    else:
+        display_schedules = schedules
+
     current_time = datetime.now()
     col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("📅 Hôm nay", current_time.strftime("%d/%m/%Y"))
-    with col2:
-        st.metric("⏰ Hiện tại", current_time.strftime("%H:%M:%S"))
-    with col3:
-        st.metric("📆 Thứ", current_time.strftime("%A"))
-    with col4:
-        tong = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders)
-        st.metric("📊 Tổng lịch", tong)
+    with col1: st.metric("📅 Hôm nay", current_time.strftime("%d/%m/%Y"))
+    with col2: st.metric("⏰ Hiện tại", current_time.strftime("%H:%M:%S"))
+    with col3: st.metric("📆 Thứ", current_time.strftime("%A"))
+    with col4: st.metric("📊 Tổng lịch", len(display_schedules))
     
     st.markdown("---")
     
@@ -2897,69 +2905,93 @@ def hien_thi_lich_nhac_nho():
         
     all_lich_tabs = st.tabs(tab_list)
     
+    # Phân loại schedules
+    apps = [s for s in display_schedules if s['type'] == "appointment"]
+    exercises = [s for s in display_schedules if s['type'] == "exercise"]
+    meds = [s for s in display_schedules if s['type'] == "medication"]
+
     with all_lich_tabs[0]:
         st.subheader("🩺 Lịch hẹn với bác sĩ")
-        if not st.session_state.appointments:
+        if not apps:
             st.info("📭 Không có lịch hẹn nào.")
         else:
-            for app in st.session_state.appointments:
+            for app in apps:
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     st.markdown(f"""
-                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem;">
-                        <strong style="color: #ffd700;">📌 {app['title']}</strong><br>
-                        🕒 {app['datetime']}<br>
-                        📝 {app.get('notes', '')}
+                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border-left: 5px solid #ffd700;">
+                        <strong style="color: #ffd700; font-size: 1.1rem;">📌 {app['title']}</strong><br>
+                        🕒 <b>Thời gian:</b> {app['datetime']}<br>
+                        👨‍⚕️ <b>Bác sĩ:</b> {app.get('doctor_name', 'Hệ thống')}<br>
+                        👤 <b>Bệnh nhân:</b> {app.get('patient_name', app.get('patient_username', 'Chưa rõ'))}<br>
+                        📝 <b>Ghi chú:</b> {app.get('notes', 'Không có')}
                     </div>
                     """, unsafe_allow_html=True)
                 with col2:
-                    if st.button("🗑️", key=f"del_app_{app['id']}"):
-                        st.session_state.appointments.remove(app)
-                        st.rerun()
+                    if user_role == "Bác sĩ / KTV PHCN":
+                        if st.button("🗑️", key=f"del_app_{app['id']}"):
+                            schedules = [s for s in schedules if s['id'] != app['id']]
+                            save_data(REMINDERS_FILE, schedules)
+                            st.rerun()
     
     with all_lich_tabs[1]:
         st.subheader("🏋️ Lịch tập luyện")
-        if not st.session_state.exercise_reminders:
+        if not exercises:
             st.info("📭 Không có lịch tập nào.")
         else:
-            for ex in st.session_state.exercise_reminders:
+            for ex in exercises:
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     st.markdown(f"""
-                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem;">
-                        <strong style="color: #ffd700;">💪 {ex['exercise_name']}</strong><br>
-                        🕒 {ex['datetime']}<br>
-                        🔁 {ex.get('frequency', 'Một lần')}
+                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border-left: 5px solid #00CED1;">
+                        <strong style="color: #00CED1; font-size: 1.1rem;">💪 {ex['exercise_name']}</strong><br>
+                        🕒 <b>Thời gian:</b> {ex['datetime']}<br>
+                        🔁 <b>Tần suất:</b> {ex.get('frequency', 'Một lần')}<br>
+                        👨‍⚕️ <b>Chỉ định bởi:</b> {ex.get('doctor_name', 'Hệ thống')}<br>
+                        👤 <b>Bệnh nhân:</b> {ex.get('patient_name', ex.get('patient_username', 'Chưa rõ'))}
                     </div>
                     """, unsafe_allow_html=True)
                 with col2:
-                    if st.button("🗑️", key=f"del_ex_{ex['id']}"):
-                        st.session_state.exercise_reminders.remove(ex)
-                        st.rerun()
+                    if user_role == "Bác sĩ / KTV PHCN":
+                        if st.button("🗑️", key=f"del_ex_{ex['id']}"):
+                            schedules = [s for s in schedules if s['id'] != ex['id']]
+                            save_data(REMINDERS_FILE, schedules)
+                            st.rerun()
     
     with all_lich_tabs[2]:
         st.subheader("💊 Lịch uống thuốc")
-        if not st.session_state.medication_reminders:
+        if not meds:
             st.info("📭 Không có lịch uống thuốc nào.")
         else:
-            for med in st.session_state.medication_reminders:
+            for med in meds:
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     st.markdown(f"""
-                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem;">
-                        <strong style="color: #ffd700;">💊 {med['medication_name']}</strong><br>
-                        🕒 {med['datetime']}<br>
-                        💊 Liều: {med.get('dosage', 'Theo chỉ định')}
+                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border-left: 5px solid #FF6B6B;">
+                        <strong style="color: #FF6B6B; font-size: 1.1rem;">💊 {med['medication_name']}</strong><br>
+                        🕒 <b>Thời gian:</b> {med['datetime']}<br>
+                        💊 <b>Liều:</b> {med.get('dosage', 'Theo chỉ định')}<br>
+                        👨‍⚕️ <b>Bác sĩ kê đơn:</b> {med.get('doctor_name', 'Hệ thống')}<br>
+                        👤 <b>Bệnh nhân:</b> {med.get('patient_name', med.get('patient_username', 'Chưa rõ'))}
                     </div>
                     """, unsafe_allow_html=True)
                 with col2:
-                    if st.button("🗑️", key=f"del_med_{med['id']}"):
-                        st.session_state.medication_reminders.remove(med)
-                        st.rerun()
+                    if user_role == "Bác sĩ / KTV PHCN":
+                        if st.button("🗑️", key=f"del_med_{med['id']}"):
+                            schedules = [s for s in schedules if s['id'] != med['id']]
+                            save_data(REMINDERS_FILE, schedules)
+                            st.rerun()
     
     if user_role == "Bác sĩ / KTV PHCN":
         with all_lich_tabs[3]:
             st.subheader("➕ Thêm lịch nhắc nhở mới")
+            
+            # Lấy danh sách bệnh nhân để chọn
+            users = load_users()
+            patients = [u for u in users if users[u].get('role') == "Bệnh nhân"]
+            
+            selected_patient = st.selectbox("Chọn bệnh nhân:", patients, format_func=lambda x: f"👤 {users[x].get('full_name', x)} ({x})")
+            
             loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True)
             
             col1, col2 = st.columns(2)
@@ -2969,52 +3001,71 @@ def hien_thi_lich_nhac_nho():
                 time_input = st.time_input("Giờ")
             
             if loai == "Lịch hẹn khám":
-                title = st.text_input("Tiêu đề")
+                title = st.text_input("Tiêu đề", placeholder="VD: Khám lại khớp vai")
                 notes = st.text_area("Ghi chú")
-                if st.button("➕ Thêm", key="add_appointment"):
-                    if title:
-                        new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
-                        st.session_state.appointments.append({
-                            'id': new_id,
+                if st.button("➕ Thêm lịch hẹn", key="add_appointment_btn", type="primary", use_container_width=True):
+                    if title and selected_patient:
+                        new_item = {
+                            'id': int(time.time() * 1000),
+                            'type': 'appointment',
                             'title': title,
                             'datetime': f"{date} {time_input}",
-                            'notes': notes
-                        })
-                        st.success("✅ Đã thêm!")
+                            'notes': notes,
+                            'patient_username': selected_patient,
+                            'patient_name': users[selected_patient].get('full_name', selected_patient),
+                            'doctor_username': username,
+                            'doctor_name': user_info.get('full_name', username)
+                        }
+                        schedules.append(new_item)
+                        save_data(REMINDERS_FILE, schedules)
+                        st.success(f"✅ Đã thêm lịch hẹn cho {users[selected_patient].get('full_name', selected_patient)}!")
                         st.rerun()
             
             elif loai == "Lịch tập luyện":
                 exercise = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: BAI_TAP[x]['ten'])
                 frequency = st.selectbox("Tần suất", ["Một lần", "Hàng ngày", "Thứ 2-4-6", "Thứ 3-5-7"])
                 notes = st.text_area("Ghi chú")
-                if st.button("➕ Thêm", key="add_exercise"):
-                    new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
-                    st.session_state.exercise_reminders.append({
-                        'id': new_id,
-                        'exercise_name': BAI_TAP[exercise]['ten'],
-                        'datetime': f"{date} {time_input}",
-                        'frequency': frequency,
-                        'notes': notes
-                    })
-                    st.success("✅ Đã thêm!")
-                    st.rerun()
+                if st.button("➕ Thêm lịch tập", key="add_exercise_btn", type="primary", use_container_width=True):
+                    if selected_patient:
+                        new_item = {
+                            'id': int(time.time() * 1000),
+                            'type': 'exercise',
+                            'exercise_name': BAI_TAP[exercise]['ten'],
+                            'datetime': f"{date} {time_input}",
+                            'frequency': frequency,
+                            'notes': notes,
+                            'patient_username': selected_patient,
+                            'patient_name': users[selected_patient].get('full_name', selected_patient),
+                            'doctor_username': username,
+                            'doctor_name': user_info.get('full_name', username)
+                        }
+                        schedules.append(new_item)
+                        save_data(REMINDERS_FILE, schedules)
+                        st.success(f"✅ Đã thêm lịch tập cho {users[selected_patient].get('full_name', selected_patient)}!")
+                        st.rerun()
             
             else:
                 med_name = st.text_input("Tên thuốc")
                 dosage = st.text_input("Liều lượng")
                 notes = st.text_area("Ghi chú")
-                if st.button("➕ Thêm", key="add_medication"):
-                    if med_name:
-                        new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
-                        st.session_state.medication_reminders.append({
-                            'id': new_id,
+                if st.button("➕ Thêm lịch uống thuốc", key="add_medication_btn", type="primary", use_container_width=True):
+                    if med_name and selected_patient:
+                        new_item = {
+                            'id': int(time.time() * 1000),
+                            'type': 'medication',
                             'medication_name': med_name,
                             'dosage': dosage,
                             'datetime': f"{date} {time_input}",
                             'notes': notes,
-                            'taken': False
-                        })
-                        st.success("✅ Đã thêm!")
+                            'taken': False,
+                            'patient_username': selected_patient,
+                            'patient_name': users[selected_patient].get('full_name', selected_patient),
+                            'doctor_username': username,
+                            'doctor_name': user_info.get('full_name', username)
+                        }
+                        schedules.append(new_item)
+                        save_data(REMINDERS_FILE, schedules)
+                        st.success(f"✅ Đã thêm lịch uống thuốc cho {users[selected_patient].get('full_name', selected_patient)}!")
                         st.rerun()
 
 # ============================================
