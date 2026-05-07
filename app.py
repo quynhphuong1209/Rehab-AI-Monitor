@@ -169,13 +169,22 @@ st.markdown("""
     }
 
     /* === LOGIN UI CREATIVE DESIGN === */
-    .login-container {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(15px);
-        border-radius: 24px;
-        padding: 3rem;
+    .login-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        border-radius: 30px;
+        padding: 40px;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        margin-top: 20px;
+    }
+    
+    .stTextInput input {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        color: white !important;
+        padding-left: 10px !important;
     }
     
     .stTabs [data-baseweb="tab-list"] {
