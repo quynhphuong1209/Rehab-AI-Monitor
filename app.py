@@ -4729,44 +4729,64 @@ def main():
 
             # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
             st.markdown("---")
-            st.markdown("<h3 style='color: #00c6ff;'>🧬 QUY TRÌNH THU THẬP DỮ LIỆU DATA FRAMES (NCKH)</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color: #00c6ff; text-align: center; margin-bottom: 20px;'>🧬 QUY TRÌNH THU THẬP & XỬ LÝ DỮ LIỆU (NCKH)</h3>", unsafe_allow_html=True)
             
-            tab_step1, tab_step2, tab_step3, tab_step4 = st.tabs([
-                "📸 BƯỚC 1: GHI HÌNH", 
-                "⚙️ BƯỚC 2: TRÍCH XUẤT", 
-                "🔍 BƯỚC 3: PHÂN TÍCH", 
-                "💾 BƯỚC 4: LƯU TRỮ"
-            ])
-            
-            with tab_step1:
-                st.markdown("""
-                **Mục tiêu:** Thu thập dữ liệu thô (Raw Data).
-                - **Yêu cầu:** Camera đặt ngang tầm khớp vai (góc 90 độ).
-                - **Tốc độ:** Tối thiểu 30 frames/giây (FPS) để đảm bảo độ mịn.
-                - **Ánh sáng:** Đảm bảo độ tương phản cao giữa bệnh nhân và nền.
-                """)
+            with st.container(border=True):
+                # Tạo hệ thống Tab Quy trình (Pill style từ CSS global)
+                q_tabs = st.tabs([
+                    "📸 BƯỚC 1: GHI HÌNH", 
+                    "⚙️ BƯỚC 2: TRÍCH XUẤT", 
+                    "📊 BƯỚC 3: PHÂN TÍCH", 
+                    "💾 BƯỚC 4: LƯU TRỮ"
+                ])
                 
-            with tab_step2:
-                st.markdown("""
-                **Mục tiêu:** Tiền xử lý dữ liệu (Pre-processing).
-                - **Cắt tỉa:** Loại bỏ các phần video không có người hoặc bị nhiễu.
-                - **Chuẩn hóa:** Chuyển đổi về định dạng MP4/H.264 tiêu chuẩn.
-                - **Đồng bộ:** Đảm bảo thời gian thực giữa video và nhãn dữ liệu.
-                """)
-                
-            with tab_step3:
-                st.markdown("""
-                **Mục tiêu:** Trích xuất đặc trưng hình học.
-                - **Công nghệ:** Sử dụng **MediaPipe Pose** để định vị 33 điểm mốc xương.
-                - **Tính toán:** Thuật toán Vector tính góc vai và khuỷu tay.
-                """)
-                
-            with tab_step4:
-                st.markdown("""
-                **Mục tiêu:** Số hóa dữ liệu (Data Digitization).
-                - **Định dạng:** Toàn bộ góc độ được lưu vào file JSON/CSV.
-                - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
-                """)
+                with q_tabs[0]:
+                    st.markdown("""
+                    <div style="padding: 15px; background: rgba(0, 198, 255, 0.05); border-left: 4px solid #00c6ff; border-radius: 8px;">
+                        <h4 style="margin-top:0; color:#00c6ff;">🎯 Mục tiêu: Thu thập dữ liệu thô (Raw Data)</h4>
+                        <ul style="margin-bottom:0;">
+                            <li><b>Góc quay:</b> Camera đặt ngang tầm khớp vai (góc 90 độ) để tránh sai số phối cảnh.</li>
+                            <li><b>Chất lượng:</b> Tối thiểu 30 FPS, độ phân giải HD (720p) trở lên.</li>
+                            <li><b>Môi trường:</b> Đảm bảo độ tương phản cao giữa trang phục bệnh nhân và nền tường.</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                with q_tabs[1]:
+                    st.markdown("""
+                    <div style="padding: 15px; background: rgba(0, 198, 255, 0.05); border-left: 4px solid #00c6ff; border-radius: 8px;">
+                        <h4 style="margin-top:0; color:#00c6ff;">⚙️ Mục tiêu: Tiền xử lý & Trích xuất Pose</h4>
+                        <ul style="margin-bottom:0;">
+                            <li><b>Cắt tỉa:</b> Loại bỏ các phân đoạn video không chứa người hoặc bị che khuất.</li>
+                            <li><b>AI Engine:</b> Sử dụng <b>MediaPipe Pose (Heavy)</b> để trích xuất 33 điểm mốc (Landmarks).</li>
+                            <li><b>Landmark Pinning:</b> Pin chính xác các khớp Vai (Shoulder), Khuỷu (Elbow) và Cổ tay (Wrist).</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                with q_tabs[2]:
+                    st.markdown("""
+                    <div style="padding: 15px; background: rgba(0, 198, 255, 0.05); border-left: 4px solid #00c6ff; border-radius: 8px;">
+                        <h4 style="margin-top:0; color:#00c6ff;">📊 Mục tiêu: Tính toán đặc trưng hình học</h4>
+                        <ul style="margin-bottom:0;">
+                            <li><b>Vector Math:</b> Áp dụng tích vô hướng để tính góc giữa các đoạn xương.</li>
+                            <li><b>Validation:</b> So sánh trực tiếp với bộ thông số chuẩn (Gold Standard) từ bài tập.</li>
+                            <li><b>Denoising:</b> Sử dụng bộ lọc Moving Average để làm mượt các nhiễu rung từ camera.</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                with q_tabs[3]:
+                    st.markdown("""
+                    <div style="padding: 15px; background: rgba(0, 198, 255, 0.05); border-left: 4px solid #00c6ff; border-radius: 8px;">
+                        <h4 style="margin-top:0; color:#00c6ff;">💾 Mục tiêu: Số hóa & Lưu trữ NCKH</h4>
+                        <ul style="margin-bottom:0;">
+                            <li><b>Data Format:</b> Xuất tọa độ và góc độ sang định dạng <b>JSON</b> và <b>CSV</b>.</li>
+                            <li><b>Big Data:</b> Lưu trữ hàng nghìn frames dữ liệu phục vụ huấn luyện mô hình sau này.</li>
+                            <li><b>Báo cáo:</b> Tự động tổng hợp biểu đồ ROM (Range of Motion) phục vụ báo cáo lâm sàng.</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
     
     # ==================== TAB: PHÂN TÍCH / ĐÁNH GIÁ ====================
     if "📝 ĐÁNH GIÁ PHCN" in tab_map:
