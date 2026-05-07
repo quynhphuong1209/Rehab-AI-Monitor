@@ -2901,10 +2901,13 @@ def hien_thi_lich_nhac_nho():
     with col4: st.metric("📊 Tổng lịch", len(display_schedules))
     
     st.markdown("---")
+    if user_role == "Bệnh nhân":
+        st.caption(f"👤 Tài khoản: `{username}`")
+    else:
+        st.caption(f"🔍 Hệ thống hiện có tổng cộng {len(schedules)} bản ghi. Đang quản lý với tư cách: `{user_info.get('full_name', username)}`")
     
     tab_list = ["🩺 Lịch hẹn khám", "🏋️ Lịch tập luyện", "💊 Lịch uống thuốc"]
     if user_role == "Bác sĩ / KTV PHCN":
-        st.caption(f"🔍 Hệ thống hiện có tổng cộng {len(schedules)} bản ghi lịch hẹn/nhắc nhở.")
         tab_list.append("➕ Thêm mới")
         
     all_lich_tabs = st.tabs(tab_list)
