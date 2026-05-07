@@ -3647,37 +3647,6 @@ def main():
             - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
             """)
     
-    # ==================== TAB 2: PHÂN TÍCH ====================
-    with tab2:
-        hien_thi_tab_phan_tich()
-
-    # ==================== TAB 3: VIDEO & ẢNH ====================
-    with tab3:
-        if st.session_state.has_data and st.session_state.temp_video_file and os.path.exists(st.session_state.temp_video_file):
-            st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
-            st.video(st.session_state.temp_video_file)
-            
-            file_ext = os.path.splitext(st.session_state.temp_video_file)[1]
-            mime_type = "video/webm" if file_ext == ".webm" else "video/mp4"
-            col1, col2 = st.columns(2)
-            with col1:
-                with open(st.session_state.temp_video_file, 'rb') as f:
-                    st.download_button("📥 Tải video xuống", f, f"video_processed{file_ext}", mime_type)
-            with col2:
-                if st.session_state.frames_zip and os.path.exists(st.session_state.frames_zip):
-                    with open(st.session_state.frames_zip, "rb") as f:
-                        st.download_button("📥 Tải tất cả frames (ZIP)", f, "tat_ca_frames.zip", "application/zip")
-            
-            st.markdown("---")
-            hien_thi_frames_day_du()
-        else:
-            st.info("ℹ️ Chưa có video. Hãy upload và xử lý video ở tab TRANG CHỦ.")
-
-    # ==================== TAB 4: HƯỚNG DẪN ====================
-    with tab4:
-        hien_thi_tab_huong_dan()
-
-    # ==================== TAB 5: KIẾN THỨC PHCN ====================
     # ==================== TAB 2: PHÂN TÍCH / ĐÁNH GIÁ ====================
     with all_tabs[1]:
         if user_role == "Bác sĩ / KTV PHCN":
