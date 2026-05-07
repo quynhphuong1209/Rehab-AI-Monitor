@@ -156,20 +156,6 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* Chỉ nhắm vào chữ đè trong Expander (Mũi tên) */
-    [data-testid="stExpander"] summary span > span {
-        display: none !important;
-        font-size: 0 !important;
-        visibility: hidden !important;
-    }
-
-    /* Nhắm vào nút đóng/mở sidebar */
-    [data-testid="stSidebarCollapseButton"] span {
-        font-size: 0 !important;
-        color: transparent !important;
-        visibility: hidden !important;
-    }
-
     /* === LOGIN CARD STYLING === */
     [data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.04) !important;
@@ -3026,6 +3012,9 @@ def main():
         if file_upload is not None and not st.session_state.processing:
             file_size_mb = file_upload.size / (1024 * 1024)
             st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.2f} MB)")
+            if file_upload.size < 1000:
+                st.warning("⚠️ CẢNH BÁO: File quá nhỏ. Nội dung file:")
+                st.code(file_upload.getvalue()[:200])
                 
             if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", width='stretch'):
                 st.session_state.processing = True
