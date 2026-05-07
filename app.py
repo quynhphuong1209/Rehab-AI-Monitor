@@ -2927,16 +2927,14 @@ def hien_thi_lich_nhac_nho():
             for app in apps:
                 col1, col2 = st.columns([4, 1])
                 with col1:
-                    st.markdown(f"""
-                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border-left: 5px solid #ffd700;">
-                        <strong style="color: #ffd700; font-size: 1.1rem;">📌 {app['title']}</strong><br>
-                        🕒 <b>Thời gian:</b> {app['datetime']}<br>
-                        👨‍⚕️ <b>Bác sĩ:</b> {app.get('doctor_name', 'Hệ thống')}<br>
-                        {f"👤 <b>Bệnh nhân:</b> {app.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
-                        {f"📝 <b>Ghi chú:</b> {app['notes']}<br>" if app.get('notes') else ""}
-                        <span style="color: #ffd700; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"""<div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border-left: 5px solid #ffd700;">
+<strong style="color: #ffd700; font-size: 1.1rem;">📌 {app['title']}</strong><br>
+🕒 <b>Thời gian:</b> {app['datetime']}<br>
+👨‍⚕️ <b>Bác sĩ:</b> {app.get('doctor_name', 'Hệ thống')}<br>
+{f"👤 <b>Bệnh nhân:</b> {app.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
+{f"📝 <b>Ghi chú:</b> {app['notes']}<br>" if app.get('notes') else ""}
+<span style="color: #ffd700; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
+</div>""", unsafe_allow_html=True)
                 with col2:
                     if user_role == "Bác sĩ / KTV PHCN":
                         if st.button("🗑️", key=f"del_app_{app['id']}"):
@@ -2952,17 +2950,15 @@ def hien_thi_lich_nhac_nho():
             for ex in exercises:
                 col1, col2 = st.columns([4, 1])
                 with col1:
-                    st.markdown(f"""
-                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border-left: 5px solid #00CED1;">
-                        <strong style="color: #00CED1; font-size: 1.1rem;">💪 {ex['exercise_name']}</strong><br>
-                        🕒 <b>Thời gian:</b> {ex['datetime']}<br>
-                        🔁 <b>Tần suất:</b> {ex.get('frequency', 'Một lần')}<br>
-                        👨‍⚕️ <b>Chỉ định bởi:</b> {ex.get('doctor_name', 'Hệ thống')}<br>
-                        {f"👤 <b>Bệnh nhân:</b> {ex.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
-                        {f"📝 <b>Ghi chú:</b> {ex['notes']}<br>" if ex.get('notes') else ""}
-                        <span style="color: #00CED1; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"""<div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border-left: 5px solid #00CED1;">
+<strong style="color: #00CED1; font-size: 1.1rem;">💪 {ex['exercise_name']}</strong><br>
+🕒 <b>Thời gian:</b> {ex['datetime']}<br>
+🔁 <b>Tần suất:</b> {ex.get('frequency', 'Một lần')}<br>
+👨‍⚕️ <b>Chỉ định bởi:</b> {ex.get('doctor_name', 'Hệ thống')}<br>
+{f"👤 <b>Bệnh nhân:</b> {ex.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
+{f"📝 <b>Ghi chú:</b> {ex['notes']}<br>" if ex.get('notes') else ""}
+<span style="color: #00CED1; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
+</div>""", unsafe_allow_html=True)
                 with col2:
                     if user_role == "Bác sĩ / KTV PHCN":
                         if st.button("🗑️", key=f"del_ex_{ex['id']}"):
@@ -2978,17 +2974,15 @@ def hien_thi_lich_nhac_nho():
             for med in meds:
                 col1, col2 = st.columns([4, 1])
                 with col1:
-                    st.markdown(f"""
-                    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border-left: 5px solid #FF6B6B;">
-                        <strong style="color: #FF6B6B; font-size: 1.1rem;">💊 {med['medication_name']}</strong><br>
-                        🕒 <b>Thời gian:</b> {med['datetime']}<br>
-                        💊 <b>Liều:</b> {med.get('dosage', 'Theo chỉ định')}<br>
-                        👨‍⚕️ <b>Bác sĩ kê đơn:</b> {med.get('doctor_name', 'Hệ thống')}<br>
-                        {f"👤 <b>Bệnh nhân:</b> {med.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
-                        {f"📝 <b>Ghi chú:</b> {med['notes']}<br>" if med.get('notes') else ""}
-                        <span style="color: #FF6B6B; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"""<div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem; border-left: 5px solid #FF6B6B;">
+<strong style="color: #FF6B6B; font-size: 1.1rem;">💊 {med['medication_name']}</strong><br>
+🕒 <b>Thời gian:</b> {med['datetime']}<br>
+💊 <b>Liều:</b> {med.get('dosage', 'Theo chỉ định')}<br>
+👨‍⚕️ <b>Bác sĩ kê đơn:</b> {med.get('doctor_name', 'Hệ thống')}<br>
+{f"👤 <b>Bệnh nhân:</b> {med.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
+{f"📝 <b>Ghi chú:</b> {med['notes']}<br>" if med.get('notes') else ""}
+<span style="color: #FF6B6B; font-size: 0.8rem;">{ "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }</span>
+</div>""", unsafe_allow_html=True)
                 with col2:
                     if user_role == "Bác sĩ / KTV PHCN":
                         if st.button("🗑️", key=f"del_med_{med['id']}"):
