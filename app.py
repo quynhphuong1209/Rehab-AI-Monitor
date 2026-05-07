@@ -3496,7 +3496,7 @@ def main():
     </div>
     """
     import streamlit.components.v1 as components
-    components.html(footer_html, height=250)
+    components.html(footer_html, height=350)
 
 
 if __name__ == "__main__":
