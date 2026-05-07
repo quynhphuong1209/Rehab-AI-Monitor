@@ -4570,8 +4570,8 @@ def main():
             if file_upload is not None and not st.session_state.processing:
                 st.success(f"✅ Đã chọn file: {file_upload.name} ({file_upload.size / (1024*1024):.2f} MB)")
                 
-                if user_role in ["Bệnh nhân", "Nghiên cứu viên"]:
-                    btn_text = "🚀 GỬI & PHÂN TÍCH AI" if user_role == "Bệnh nhân" else "🚀 BẮT ĐẦU XỬ LÝ AI"
+                if user_role == "Nghiên cứu viên":
+                    btn_text = "🚀 BẮT ĐẦU XỬ LÝ AI"
                     if st.button(btn_text, use_container_width=True, type="primary"):
                         st.session_state.processing = True
                         st.session_state.has_data = False
@@ -4761,7 +4761,7 @@ def main():
                             status_text.empty()
 
                 if user_role == "Bệnh nhân":
-                    if st.button("📤 GỬI VIDEO CHO BÁC SĨ / KTV", width='stretch', type="primary"):
+                    if st.button("📤 GỬI VIDEO CHO BÁC SĨ, KTV VÀ NCV", use_container_width=True, type="primary"):
                         # Tạo thư mục lưu trữ nếu chưa có
                         save_dir = "patient_uploads"
                         if not os.path.exists(save_dir):
