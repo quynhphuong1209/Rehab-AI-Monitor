@@ -2891,67 +2891,157 @@ def update_theme_callback():
 # CÁC TAB DÙNG CHUNG (CHO CẢ 3 VAI TRÒ)
 # ============================================
 def hien_thi_tab_NCKH():
-    is_light = st.session_state.get('theme') == 'light'
-    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
-    text_color = "#000" if is_light else "white"
-    sub_color = "#0072ff" if is_light else "#ffd700"
-    border_color = "#0072ff" if is_light else "#2a5298"
-
-    st.markdown(f"""
-    <div style="background: {bg_gradient}; padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid {border_color};">
-        <h2 style="color: {text_color}; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
-        <p style="color: {sub_color}; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
-        <p style="color: {"#333" if is_light else "#ccc"};">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
-        <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid #2a5298;">
+        <h2 style="color: white; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
+        <p style="color: #ffd700; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
+        <p style="color: #ccc;">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
+        <p style="color: #aaa; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
     </div>
     """, unsafe_allow_html=True)
     
     with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
         st.markdown("""
-        Trong những năm gần đây, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
-        Theo WHO, hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức PHCN. Tại Việt Nam, khoảng 7,06% dân số là người khuyết tật cần can thiệp PHCN.
-        Mặc dù nhu cầu lớn, năng lực cung cấp dịch vụ vẫn còn hạn chế. Nhiều bệnh nhân phải tự tập luyện tại nhà mà thiếu sự giám sát chuyên môn.
-        Đề tài này nhằm xây dựng mô hình giám sát thông minh để hỗ trợ bệnh nhân và bác sĩ trong quá trình phục hồi.
+        Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
+        
+        Theo Tổ chức Y tế Thế giới (WHO), hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng, chiếm gần một phần ba dân số toàn cầu. Tại Việt Nam, theo Hội Phục hồi chức năng Việt Nam (2023), có khoảng 7,06% dân số từ 2 tuổi trở lên là người khuyết tật, trong đó phần lớn cần được can thiệp PHCN.
+        
+        Mặc dù nhu cầu PHCN lớn, song năng lực cung cấp dịch vụ này tại Việt Nam vẫn còn hạn chế. Trung bình 10.000 người dân chỉ có 0,25 nhân viên phục hồi chức năng, thấp hơn đáng kể so với khuyến nghị của WHO là 0,5-1 người/10.000 dân. Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà sau khi xuất viện mà thiếu sự giám sát chuyên môn.
+        
+        Xuất phát từ thực tiễn trên, nhóm nghiên cứu quyết định thực hiện đề tài: **"Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)"**.
         """)
     
     with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
         st.markdown("""
-        - **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập PHCN cho bệnh nhân viêm quanh khớp vai (Codman, Gậy, Dây kháng lực).
-        - **Mục tiêu 2:** So sánh độ chính xác của mô hình AI với đánh giá thủ công của chuyên gia (Ground Truth).
+        **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập phục hồi chức năng cho bệnh nhân viêm quanh khớp vai, bao gồm:
+        - Bài tập con lắc Codman
+        - Bài tập với gậy
+        - Bài tập với dây kháng lực
+        
+        **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công trên một tập dữ liệu nhỏ.
         """)
-
-    with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP", expanded=True):
+    
+    with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP NGHIÊN CỨU", expanded=True):
         st.markdown("""
-        - **Đối tượng:** Bệnh nhân viêm quanh khớp vai tại BVĐK Phạm Ngọc Thạch.
-        - **Công nghệ:** MediaPipe Pose, Python, Computer Vision.
-        - **Thiết kế:** Nghiên cứu định lượng, phát triển mô hình học máy.
+        **Đối tượng nghiên cứu:** 05 bệnh nhân viêm quanh khớp vai + nhóm chuyên gia PHCN tại Khoa Phục hồi chức năng, Bệnh viện Đa khoa Phạm Ngọc Thạch.
+        
+        **Thiết kế nghiên cứu:** Nghiên cứu định lượng, phát triển mô hình học máy.
+        
+        **Công nghệ sử dụng:** 
+        - MediaPipe Pose Estimation cho ước lượng tư thế
+        - Python và các thư viện xử lý ảnh (OpenCV, NumPy, Pandas)
+        - Streamlit cho giao diện người dùng
+        - Plotly cho trực quan hóa dữ liệu
+        
+        **Cỡ mẫu dự kiến:** 500-1000 chuỗi chuyển động.
+        """)
+    
+    with st.expander("📊 KẾT QUẢ DỰ KIẾN", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Độ chính xác (Accuracy)", "≥ 90%")
+            st.metric("F1-Score", "≥ 0.85")
+        with col2:
+            st.metric("Sai số MAE", "< 5°")
+            st.metric("Hệ số ICC", "≥ 0.75")
+        with col3:
+            st.metric("Precision", "≥ 0.85")
+            st.metric("Recall", "≥ 0.85")
+    
+    with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
+        st.markdown("""
+        **- Về khoa học và đào tạo:** Xây dựng mô hình nhận diện động tác PHCN, tạo bộ dữ liệu chuẩn hóa, là tài liệu thực hành cho sinh viên ngành Khoa học dữ liệu y sinh.
+        
+        **- Về phát triển kinh tế:** Giảm chi phí đi lại, giảm tải cho nhân viên y tế, tối ưu nguồn lực bệnh viện.
+        
+        **- Về xã hội:** Tăng khả năng tiếp cận dịch vụ PHCN, thúc đẩy chuyển đổi số y tế, xây dựng hệ thống chăm sóc sức khỏe thông minh.
+        """)
+    
+    with st.expander("📚 TÀI LIỆU THAM KHẢO", expanded=False):
+        st.markdown("""
+        1. WHO. Rehabilitation 2030: A call for action.
+        2. Cieza A, et al. Global estimates of the need for rehabilitation. Lancet. 2021.
+        3. Lugaresi C, et al. MediaPipe: A Framework for Building Perception Pipelines. arXiv. 2019.
+        4. Cao Z, et al. OpenPose: Realtime Multi-Person 2D Pose Estimation. arXiv. 2019.
+        5. Hellstén T, et al. Reliability and validity of computer vision-based markerless human pose estimation. Healthc Technol Lett. 2025.
+        6. Ino T, et al. Validity and Reliability of OpenPose-Based Motion Analysis. J Sports Sci Med. 2024.
+        7. Aguilar-Ortega R, et al. UCO Physical Rehabilitation: New Dataset and Study. Sensors. 2023.
+        8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
         """)
 
 def hien_thi_tab_thanh_vien():
     st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
     st.markdown("""
-    <div class="lecturer-card" style="background: rgba(0,114,255,0.1); padding: 1.5rem; border-radius: 15px; border-left: 5px solid #0072ff;">
-        <h4 style="margin:0;">TS. Trần Hồng Việt</h4>
-        <p style="margin:5px 0 0 0;">Giảng viên - Trường Đại học Y tế Công cộng</p>
+    <div class="lecturer-card" style="background: rgba(0,114,255,0.1); padding: 1.5rem; border-radius: 15px; border-left: 5px solid #0072ff; margin-bottom: 2rem;">
+        <h4 style="margin:0; color: #00c6ff;">TS. Trần Hồng Việt</h4>
+        <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
+        <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+        <p style="color: #aaa; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div class="member-card" style="border: 2px solid #ffd700; padding: 1.5rem; border-radius: 15px; text-align: center; margin-bottom: 2rem;">
+            <h4 style="margin:0; color:#ffd700;">Đinh Lê Quỳnh Phương</h4>
+            <div style="color: #fff; font-weight: bold; margin-top: 5px;">⭐ Chủ nhiệm đề tài ⭐</div>
+            <div style="color: #ccc; margin-top: 5px;">Chuyên ngành: Khoa học dữ liệu Y sinh</div>
+            <div style="color: #aaa; font-size: 0.9rem;">MSSV: 2211090031</div>
+            <div style="color: #aaa; font-size: 0.9rem;">📧 2211090031@studenthuph.edu.vn</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
+    thanh_vien = [
+        ("Kim Mạnh Hưng", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
+        ("Nguyễn Hải An", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
+        ("Phan Vân Anh", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
+        ("Nguyễn Thị Thanh Nga", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
+    ]
+    
+    cols = st.columns(4)
+    for i, (ten, vai_tro, lop, mssv) in enumerate(thanh_vien):
+        with cols[i]:
+            st.markdown(f"""
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-align: center; height: 100%;">
+                <div style="font-weight: bold; color: #00c6ff;">{ten}</div>
+                <div style="font-size: 0.85rem; color: #aaa;">{vai_tro}</div>
+                <div style="font-size: 0.8rem; color: #888;">{lop}</div>
+                <div style="font-size: 0.8rem; color: #888;">{mssv}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("### 🩺 CHUYÊN GIA LÂM SÀNG")
+    chuyen_gia = [
+        ("Nguyễn Thị Thơm", "Chuyên gia PHCN", "CNCQ KTPHCN3-1A", "2216030122"),
+        ("Nguyễn Thị Thu Hương", "Chuyên gia PHCN", "CNCQYTCC22-1A", "2317010071"),
+    ]
+    
+    cols = st.columns(2)
+    for i, (ten, vai_tro, lop, mssv) in enumerate(chuyen_gia):
+        with cols[i]:
+            st.markdown(f"""
+            <div style="background: rgba(0,198,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(0,198,255,0.1); text-align: center;">
+                <div style="font-weight: bold; color: #00c6ff;">{ten}</div>
+                <div style="font-size: 0.85rem; color: #aaa;">{vai_tro}</div>
+                <div style="font-size: 0.8rem; color: #888;">{lop}</div>
+                <div style="font-size: 0.8rem; color: #888;">{mssv}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
     st.markdown("""
-    <div class="member-card" style="border: 2px solid #ffd700; padding: 1.5rem; border-radius: 15px;">
-        <h4 style="margin:0; color:#ffd700;">Đinh Lê Quỳnh Phương</h4>
-        <p style="margin:5px 0 0 0;">MSSV: 2211090031 | Chuyên ngành: Khoa học dữ liệu Y sinh</p>
+    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #2a5298;">
+        <p style="color: #ffd700; font-weight: bold; margin: 0;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
+        <p style="color: #ccc; margin: 5px 0;">Khoa Phục hồi chức năng</p>
+        <p style="color: #aaa; font-size: 0.9rem; margin: 0;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
-    cols = st.columns(2)
-    with cols[0]:
-        st.markdown("- Kim Mạnh Hưng (Thành viên)")
-        st.markdown("- Nguyễn Hải An (Thành viên)")
-    with cols[1]:
-        st.markdown("- Phan Vân Anh (Thành viên)")
-        st.markdown("- Nguyễn Thị Thanh Nga (Thành viên)")
 
 # ============================================
 # GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
@@ -3834,14 +3924,32 @@ def hien_thi_footer():
     f_title = "#0072ff" if is_light else "#00c6ff"
     
     footer_html = f"""
-    <div style="background: {f_bg}; padding: 30px; color: {f_text}; text-align: center; border-top: 3px solid {f_border}; margin-top: 50px; font-family: 'Times New Roman';">
-        <img src="{logo_src}" width="100">
-        <h3 style="color: {f_title};">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
-        <p><b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-        <p>© 2025 REHAB-AI-MONITOR | Đinh Lê Quỳnh Phương</p>
+    <div style="background: {f_bg}; padding: 40px 20px; color: {f_text}; text-align: center; border-top: 4px solid {f_border}; margin-top: 60px; font-family: 'Times New Roman';">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around; max-width: 1100px; margin: 0 auto; gap: 30px;">
+            <div style="flex: 1; min-width: 280px;">
+                <img src="{logo_src}" width="120" style="margin-bottom: 10px;">
+                <h3 style="color: {f_title}; margin: 5px 0;">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
+                <p style="font-weight: bold; margin: 0;">HANOI UNIVERSITY OF PUBLIC HEALTH</p>
+            </div>
+            <div style="flex: 1; min-width: 280px; text-align: left;">
+                <h4 style="color: {f_title}; border-bottom: 1px solid {f_border}; padding-bottom: 5px;">📍 THÔNG TIN LIÊN HỆ</h4>
+                <p><b>🏠 Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                <p><b>📞 Điện thoại:</b> 024.62662299</p>
+                <p><b>📧 Email:</b> 2211090031@studenthuph.edu.vn</p>
+            </div>
+            <div style="flex: 1; min-width: 280px; text-align: left;">
+                <h4 style="color: {f_title}; border-bottom: 1px solid {f_border}; padding-bottom: 5px;">🔗 LIÊN KẾT NHANH</h4>
+                <p>• <a href="https://huph.edu.vn" style="color: {f_text}; text-decoration: none;">Website Nhà trường</a></p>
+                <p>• <a href="#" style="color: {f_text}; text-decoration: none;">Cổng thông tin sinh viên</a></p>
+                <p>• <a href="#" style="color: {f_text}; text-decoration: none;">Thư viện điện tử</a></p>
+            </div>
+        </div>
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem;">
+            © 2025 REHAB-AI-MONITOR | Phát triển bởi <b>Đinh Lê Quỳnh Phương</b> & Nhóm nghiên cứu
+        </div>
     </div>
     """
-    st.components.v1.html(footer_html, height=250)
+    st.components.v1.html(footer_html, height=450)
 
 
 if __name__ == "__main__":
