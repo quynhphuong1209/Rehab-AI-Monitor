@@ -3166,31 +3166,38 @@ def hien_thi_ket_qua_cho_benh_nhan():
         if st.session_state.has_data:
             hien_thi_tab_phan_tich()
     else:
-        for e in reversed(my_evals):
-            is_ai = e.get('doctor_username') == "AI_Researcher"
-            title_color = "#00CED1" if is_ai else "#ffd700"
-            icon = "🤖" if is_ai else "👨‍⚕️"
+        tab_eval, tab_charts, tab_media = st.tabs([
+            "📝 NHẬN XÉT CỦA BÁC SĨ & AI",
+            "📊 BIỂU ĐỒ PHÂN TÍCH",
+            "🎬 VIDEO & HÌNH ẢNH"
+        ])
+
+        with tab_eval:
+            for e in reversed(my_evals):
+                is_ai = e.get('doctor_username') == "AI_Researcher"
+                title_color = "#00CED1" if is_ai else "#ffd700"
+                icon = "🤖" if is_ai else "👨‍⚕️"
+                
+                with st.expander(f"{icon} Đánh giá ngày {e['time']} - Bài tập: {e['exercise']}", expanded=True):
+                    c1, c2 = st.columns([1, 2])
+                    with c1:
+                        st.metric("📊 AI Accuracy", f"{e['ai_accuracy']}%")
+                        st.markdown(f"<h4 style='color: {title_color}; text-align: center;'>{e['doctor_result']}</h4>", unsafe_allow_html=True)
+                    with c2:
+                        st.markdown(f"**Nguồn đánh giá:** <span style='color: {title_color}; font-weight: bold;'>{e.get('doctor_name', 'Hệ thống AI')}</span>", unsafe_allow_html=True)
+                        st.markdown(f"**Lỗi sai:** {', '.join(e['errors']) if e['errors'] else 'Không phát hiện'}")
+                        st.markdown(f"**Nhận xét:** {e['comments']}")
+                        st.markdown(f"**Kế hoạch:** {e['plan']}")
+                        status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã xem"
+                        st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic;">📩 {status_text}</p>', unsafe_allow_html=True)
+        
+        with tab_charts:
+            st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
+            hien_thi_tab_phan_tich()
             
-            with st.expander(f"{icon} Đánh giá ngày {e['time']} - Bài tập: {e['exercise']}", expanded=True):
-                c1, c2 = st.columns([1, 2])
-                with c1:
-                    st.metric("📊 AI Accuracy", f"{e['ai_accuracy']}%")
-                    st.markdown(f"<h4 style='color: {title_color}; text-align: center;'>{e['doctor_result']}</h4>", unsafe_allow_html=True)
-                with c2:
-                    st.markdown(f"**Nguồn đánh giá:** <span style='color: {title_color}; font-weight: bold;'>{e.get('doctor_name', 'Hệ thống AI')}</span>", unsafe_allow_html=True)
-                    st.markdown(f"**Lỗi sai:** {', '.join(e['errors']) if e['errors'] else 'Không phát hiện'}")
-                    st.markdown(f"**Nhận xét:** {e['comments']}")
-                    st.markdown(f"**Kế hoạch:** {e['plan']}")
-                    status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã xem"
-                    st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic;">📩 {status_text}</p>', unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
-        hien_thi_tab_phan_tich()
-        
-        st.markdown("---")
-        st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
-        hien_thi_frames_day_du()
+        with tab_media:
+            st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
+            hien_thi_frames_day_du()
 
 def hien_thi_tab_khai_bao_trieu_chung():
     st.markdown("## 🩺 KHAI BÁO TRIỆU CHỨNG & CẢM NHẬN")
