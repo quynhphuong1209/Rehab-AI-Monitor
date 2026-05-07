@@ -93,8 +93,6 @@ if 'show_login_dialog' not in st.session_state:
     st.session_state.show_login_dialog = False
 if 'processed_video_path' not in st.session_state:
     st.session_state.processed_video_path = None
-if 'theme' not in st.session_state:
-    st.session_state.theme = 'dark'
 
 # KIỂM TRA ĐĂNG NHẬP GOOGLE (Hỗ trợ Streamlit Cloud Identity)
 if not st.session_state.get('logged_in'):
@@ -160,23 +158,18 @@ st.set_page_config(
 st.markdown("""
 <style>
     /* === SỬA LỖI CHỮ RÁC ICON (TRIỆT ĐỂ) === */
-    [data-testid="stSidebarCollapseButton"] {
-        color: transparent !important;
-        font-size: 0 !important;
-        line-height: 0 !important;
-        width: 40px !important;
-        height: 40px !important;
-    }
-    [data-testid="stSidebarCollapseButton"] * {
-        display: none !important;
-    }
+    button[data-testid="stSidebarCollapseButton"] span,
     [data-testid="stExpander"] summary span > span,
     [data-testid="stFileUploader"] section span > span,
-    .stIconMaterial, .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
+    .stIconMaterial {
         display: none !important;
         color: transparent !important;
         font-size: 0 !important;
-        visibility: hidden !important;
+    }
+    
+    /* Ẩn text rác hiện ra khi lỗi font Material */
+    .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
+        display: none !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.04) !important;
@@ -200,29 +193,29 @@ st.markdown("""
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 42px !important;
+        height: 48px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         background-color: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
+        border-radius: 12px;
         color: white;
         transition: all 0.3s;
         border: 1px solid transparent;
-        min-width: 90px !important; 
-        width: auto !important;
-        padding: 0 12px !important;
+        min-width: 130px !important; /* Tăng thêm độ rộng tối thiểu */
+        width: auto !important; /* Cho phép tự giãn */
+        padding: 0 20px !important;
         white-space: nowrap !important;
     }
 
     .stTabs [data-baseweb="tab"] div,
     .stTabs [data-baseweb="tab"] p {
-        font-size: 0.82rem !important;
+        font-size: 0.9rem !important;
         margin: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 4px !important;
+        gap: 8px !important;
     }
 
     .stTabs [aria-selected="true"] {
@@ -258,14 +251,6 @@ st.markdown("""
         margin-top: 10px;
     }
     
-    /* CUSTOM CARD ĐỂ DÙNG CHUNG */
-    .custom-card {
-        padding: 1.2rem;
-        border-radius: 16px;
-        text-align: center;
-        border: 1px solid #2a5298;
-    }
-    
     .google-btn:hover {
         background: #f1f1f1;
         box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
@@ -273,96 +258,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-# === CSS CHO CHẾ ĐỘ SÁNG (LIGHT MODE OVERRIDE) ===
-if st.session_state.get('theme') == 'light':
-    st.markdown("""
-    <style>
-        .stApp { background: #f8f9fa !important; color: #333 !important; }
-        .main-header { background: #ffffff !important; border: 1px solid #ddd !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important; }
-        .main-header h1 { color: #000000 !important; }
-        .main-header p { color: #333333 !important; }
-        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card { 
-            background: #ffffff !important; 
-            border: 1px solid #e0e0e0 !important; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; 
-            color: #000000 !important; 
-        }
-        .metric-value { color: #0072ff !important; }
-        .metric-label { color: #444444 !important; }
-        .stMarkdown, p, span, label, h1, h2, h3, h4, li { color: #000000 !important; }
-        .stTextInput input, .stSelectbox div, .stNumberInput input { 
-            background-color: #fff !important; 
-            color: #000000 !important; 
-            border: 1px solid #ccc !important; 
-        }
-        .stTabs [data-baseweb="tab"] { 
-            background-color: #f1f3f5 !important; 
-            color: #666666 !important; 
-            border: 1px solid #dee2e6 !important;
-        }
-        .stTabs [aria-selected="true"] { 
-            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important; 
-            color: #fff !important; 
-            border: 1px solid #0072ff !important;
-        }
-        .footer-container, .footer-col, .footer-bottom { color: #444 !important; }
-        .main-footer { background: #f8f9fa !important; border-top: 4px solid #0072ff !important; box-shadow: 0 -5px 15px rgba(0,0,0,0.05) !important; }
-        .school-name { color: #1a1a2e !important; }
-        .school-subname { color: #0072ff !important; }
-        .footer-title { color: #0072ff !important; }
-        .stExpander { background: #fff !important; border: 1px solid #eee !important; border-radius: 12px !important; }
-        .stExpander summary { background: #f8f9fa !important; color: #000 !important; }
-        .stExpander summary:hover { background: #eee !important; }
-        [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #eee !important; }
-        [data-testid="stSidebar"] * { color: #333 !important; }
-        
-        /* Làm cho nút gạt (toggle) hiện rõ màu xám khi ở chế độ Sáng */
-        div[role="switch"][aria-checked="false"] {
-            background-color: #bdc3c7 !important;
-        }
-        div[role="switch"][aria-checked="false"] > div {
-            background-color: #ffffff !important;
-        }
-        [data-testid="stTable"] th { background-color: #f1f3f5 !important; color: #000 !important; }
-        [data-testid="stMetric"] { background: #ffffff !important; border: 1px solid #eee !important; padding: 10px !important; border-radius: 12px !important; }
-        /* Fix Form elements */
-        textarea, input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #ccc !important; }
-        [data-testid="stForm"] { background-color: #ffffff !important; border: 1px solid #eee !important; border-radius: 15px !important; }
-        
-        /* FIX ALL BUTTONS */
-        .stButton button, .stDownloadButton button, [data-testid="stFormSubmitButton"] button,
-        .stNumberInput button, [data-testid="stFileUploader"] button { 
-            background-color: #f1f3f5 !important; 
-            color: #000000 !important; 
-            border: 1px solid #ccc !important;
-            font-weight: bold !important;
-        }
-        .stButton button:hover, .stDownloadButton button:hover, [data-testid="stFormSubmitButton"] button:hover,
-        .stNumberInput button:hover, [data-testid="stFileUploader"] button:hover { 
-            background-color: #e9ecef !important; 
-            color: #0072ff !important; 
-            border: 1px solid #0072ff !important;
-        }
-        /* Fix Sidebar Inputs */
-        [data-testid="stSidebar"] .stTextInput input, 
-        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"],
-        [data-testid="stSidebar"] .stNumberInput input {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            border: 1px solid #ddd !important;
-        }
-        /* Fix File Uploader */
-        [data-testid="stFileUploader"] section {
-            background-color: #f8f9fa !important;
-            border: 1px dashed #ccc !important;
-            color: #333 !important;
-        }
-        [data-testid="stFileUploader"] section div { color: #333 !important; }
-        /* Fix Dropdown menus */
-        div[data-baseweb="popover"] div { background-color: #ffffff !important; color: #000000 !important; }
-    </style>
-    """, unsafe_allow_html=True)
 
 MAX_FILE_SIZE_MB = 500
 
@@ -552,7 +447,7 @@ def hien_thi_tab_huong_dan():
 # ============================================
 # HÀM HIỂN THỊ TAB: PHẢN HỒI (MỚI)
 # ============================================
-def hien_thi_tab_phan_hoi(suffix="default"):
+def hien_thi_tab_phan_hoi():
     """Giao diện cộng đồng: Góp ý và hiển thị bình luận công khai"""
     st.markdown("### 💬 CỘNG ĐỒNG REHAB-AI: GÓP Ý & THẢO LUẬN")
     
@@ -570,7 +465,7 @@ def hien_thi_tab_phan_hoi(suffix="default"):
     
     with col_f1:
         st.markdown("#### 📮 Để lại ý kiến của bạn")
-        with st.form(f"feedback_form_{suffix}", clear_on_submit=True):
+        with st.form("feedback_form", clear_on_submit=True):
             default_name = st.session_state.user_info.get('username', '') if st.session_state.user_info else ''
             user_name = st.text_input("Tên của bạn", value=default_name)
             user_msg = st.text_area("Nội dung góp ý/thảo luận")
@@ -593,10 +488,8 @@ def hien_thi_tab_phan_hoi(suffix="default"):
                     st.warning("⚠️ Vui lòng nhập đầy đủ tên và nội dung.")
 
         st.markdown("#### 📞 Thông tin hỗ trợ kỹ thuật")
-        is_light = st.session_state.theme == 'light'
-        box_bg = "rgba(0,114,255,0.05)" if is_light else "rgba(255,255,255,0.05)"
-        st.markdown(f"""
-        <div style="background: {box_bg}; padding: 1.2rem; border-radius: 15px; border: 1px solid #2a5298;">
+        st.markdown("""
+        <div style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 15px; border: 1px solid #2a5298;">
             <p>📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</p>
             <p>🏫 <b>Đơn vị:</b> Khoa KHDL Y sinh - HUPH</p>
             <p>📍 <b>Vị trí:</b> 1A Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
@@ -609,18 +502,15 @@ def hien_thi_tab_phan_hoi(suffix="default"):
         if not comments:
             st.info("Chưa có bình luận nào. Hãy là người đầu tiên để lại ý kiến!")
         else:
-            is_light = st.session_state.theme == 'light'
-            item_bg = "rgba(0,0,0,0.03)" if is_light else "rgba(255,255,255,0.08)"
-            item_text = "#333" if is_light else "#ccc"
             # Hiển thị danh sách bình luận dưới dạng thẻ
             for c in comments[:20]: # Hiển thị 20 bình luận mới nhất
                 st.markdown(f"""
-                <div style="background: {item_bg}; padding: 1rem; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #00CED1;">
+                <div style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #00CED1;">
                     <div style="display: flex; justify-content: space-between;">
-                        <b style="color: {"#0072ff" if is_light else "#ffd700"};">👤 {c['name']}</b>
+                        <b style="color: #ffd700;">👤 {c['name']}</b>
                         <span style="color: #666; font-size: 0.8rem;">{c['time']}</span>
                     </div>
-                    <p style="color: {item_text}; margin-top: 5px; font-size: 0.95rem;">{c['message']}</p>
+                    <p style="color: #ccc; margin-top: 5px; font-size: 0.95rem;">{c['message']}</p>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -704,20 +594,13 @@ def hien_thi_tab_realtime(bai_tap):
 # ============================================
 def hien_thi_tab_kien_thuc_phcn():
     """Thiết kế Tab 8 về kiến thức y khoa Phục hồi chức năng"""
-    # Cấu hình màu sắc theo Theme
-    is_light = st.session_state.theme == 'light'
-    bg_gradient = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)"
-    text_color = "#1a1a2e" if is_light else "#fff"
-    sub_color = "#0072ff" if is_light else "#00CED1"
-    border_color = "#0072ff" if is_light else "#00CED1"
-
-    st.markdown(f"""
-    <div style="background: {bg_gradient}; 
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
                 padding: 2rem; border-radius: 20px; text-align: center; 
-                border: 1px solid {border_color}; box-shadow: 0 10px 30px rgba(0, 206, 209, 0.1);
+                border: 1px solid #00CED1; box-shadow: 0 10px 30px rgba(0, 206, 209, 0.1);
                 margin-bottom: 2rem;">
-        <h1 style="color: {text_color}; margin: 0; font-size: 2rem;">🏥 KIẾN THỨC PHỤC HỒI CHỨC NĂNG</h1>
-        <p style="color: {sub_color}; font-weight: bold; margin-top: 0.5rem;">
+        <h1 style="color: #fff; margin: 0; font-size: 2rem;">🏥 KIẾN THỨC PHỤC HỒI CHỨC NĂNG</h1>
+        <p style="color: #00CED1; font-weight: bold; margin-top: 0.5rem;">
             Nền tảng y khoa cho sự phục hồi toàn diện
         </p>
     </div>
@@ -784,22 +667,14 @@ def hien_thi_tab_kien_thuc_phcn():
 def hien_thi_tab_cong_nghe():
     """Thiết kế Tab 7 với phong cách công nghệ cao cấp"""
     
-    # Cấu hình màu sắc theo Theme
-    is_light = st.session_state.theme == 'light'
-    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
-    text_color = "#000000" if is_light else "#ffd700"
-    sub_color = "#0072ff" if is_light else "#00CED1"
-    border_color = "#0072ff" if is_light else "#ffd700"
-    shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(255, 215, 0, 0.1)"
-
     # 1. HEADER CHƯƠNG TRÌNH
-    st.markdown(f"""
-    <div style="background: {bg_gradient}; 
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%); 
                 padding: 2.5rem; border-radius: 25px; text-align: center; 
-                border: 1px solid {border_color}; box-shadow: 0 15px 35px {shadow};
+                border: 1px solid #ffd700; box-shadow: 0 15px 35px rgba(255, 215, 0, 0.1);
                 margin-bottom: 2rem;">
-        <h1 style="color: {text_color}; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
-        <p style="color: {sub_color}; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
+        <h1 style="color: #ffd700; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
+        <p style="color: #00CED1; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
             Sự kết hợp hoàn hảo giữa Phục hồi chức năng và Trí tuệ nhân tạo (AI)
         </p>
     </div>
@@ -2468,6 +2343,7 @@ def hien_thi_tab_phan_tich():
         
         # Tính toán các chỉ số AI
         stability_score = max(0, 100 - (tk.get('std_goc_vai', 0) + tk.get('std_goc_khuyu', 0)))
+        f1 = tk.get('f1_score', 0)
         icc = tk.get('icc', 0)
         
         ai_col1, ai_col2 = st.columns([1, 2])
@@ -2576,8 +2452,10 @@ def hien_thi_tab_phan_tich():
                     st.error(f"❌ Lỗi: {e}. Vui lòng cài đặt: pip install -U kaleido")
 # HÀM HIỂN THỊ LỊCH NHẮC NHỞ
 # ============================================
-def hien_thi_lich_nhac_nho(suffix="default"):
+def hien_thi_lich_nhac_nho():
     """Hiển thị lịch nhắc nhở chi tiết"""
+    st.markdown("## ⏰ LỊCH NHẮC NHỞ CHI TIẾT")
+    
     current_time = datetime.now()
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -2658,18 +2536,18 @@ def hien_thi_lich_nhac_nho(suffix="default"):
     
     with tab_lich4:
         st.subheader("➕ Thêm lịch nhắc nhở mới")
-        loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True, key=f"reminder_type_{suffix}")
+        loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True)
         
         col1, col2 = st.columns(2)
         with col1:
-            date = st.date_input("Ngày", min_value=datetime.now().date(), key=f"date_{suffix}")
+            date = st.date_input("Ngày", min_value=datetime.now().date())
         with col2:
-            time_input = st.time_input("Giờ", key=f"time_{suffix}")
+            time_input = st.time_input("Giờ")
         
         if loai == "Lịch hẹn khám":
-            title = st.text_input("Tiêu đề", key=f"app_title_{suffix}")
-            notes = st.text_area("Ghi chú", key=f"app_notes_{suffix}")
-            if st.button("➕ Thêm", key=f"add_appointment_{suffix}"):
+            title = st.text_input("Tiêu đề")
+            notes = st.text_area("Ghi chú")
+            if st.button("➕ Thêm", key="add_appointment"):
                 if title:
                     new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
                     st.session_state.appointments.append({
@@ -2682,10 +2560,10 @@ def hien_thi_lich_nhac_nho(suffix="default"):
                     st.rerun()
         
         elif loai == "Lịch tập luyện":
-            exercise = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: BAI_TAP[x]['ten'], key=f"ex_select_{suffix}")
-            frequency = st.selectbox("Tần suất", ["Một lần", "Hàng ngày", "Thứ 2-4-6", "Thứ 3-5-7"], key=f"ex_freq_{suffix}")
-            notes = st.text_area("Ghi chú", key=f"ex_notes_{suffix}")
-            if st.button("➕ Thêm", key=f"add_exercise_{suffix}"):
+            exercise = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: BAI_TAP[x]['ten'])
+            frequency = st.selectbox("Tần suất", ["Một lần", "Hàng ngày", "Thứ 2-4-6", "Thứ 3-5-7"])
+            notes = st.text_area("Ghi chú")
+            if st.button("➕ Thêm", key="add_exercise"):
                 new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
                 st.session_state.exercise_reminders.append({
                     'id': new_id,
@@ -2698,10 +2576,10 @@ def hien_thi_lich_nhac_nho(suffix="default"):
                 st.rerun()
         
         else:
-            med_name = st.text_input("Tên thuốc", key=f"med_name_{suffix}")
-            dosage = st.text_input("Liều lượng", key=f"med_dosage_{suffix}")
-            notes = st.text_area("Ghi chú", key=f"med_notes_{suffix}")
-            if st.button("➕ Thêm", key=f"add_medication_{suffix}"):
+            med_name = st.text_input("Tên thuốc")
+            dosage = st.text_input("Liều lượng")
+            notes = st.text_area("Ghi chú")
+            if st.button("➕ Thêm", key="add_medication"):
                 if med_name:
                     new_id = len(st.session_state.appointments) + len(st.session_state.exercise_reminders) + len(st.session_state.medication_reminders) + 1
                     st.session_state.medication_reminders.append({
@@ -2878,168 +2756,6 @@ def hien_thi_frames_day_du():
     with col_stat5: st.metric("📄 Tổng số trang", total_pages)
 
 
-# Callback xử lý đổi theme nhanh (Để ngoài hàm main để tránh lỗi WebSocket Cache)
-def update_theme_callback():
-    if "theme_toggle_top" in st.session_state:
-        st.session_state.theme = 'dark' if st.session_state.theme_toggle_top else 'light'
-
-
-# ============================================
-# CÁC TAB DÙNG CHUNG (CHO CẢ 3 VAI TRÒ)
-# ============================================
-def hien_thi_tab_NCKH():
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid #2a5298;">
-        <h2 style="color: white; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
-        <p style="color: #ffd700; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
-        <p style="color: #ccc;">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
-        <p style="color: #aaa; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
-        st.markdown("""
-        Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
-        
-        Theo Tổ chức Y tế Thế giới (WHO), hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng, chiếm gần một phần ba dân số toàn cầu. Tại Việt Nam, theo Hội Phục hồi chức năng Việt Nam (2023), có khoảng 7,06% dân số từ 2 tuổi trở lên là người khuyết tật, trong đó phần lớn cần được can thiệp PHCN.
-        
-        Mặc dù nhu cầu PHCN lớn, song năng lực cung cấp dịch vụ này tại Việt Nam vẫn còn hạn chế. Trung bình 10.000 người dân chỉ có 0,25 nhân viên phục hồi chức năng, thấp hơn đáng kể so với khuyến nghị của WHO là 0,5-1 người/10.000 dân. Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà sau khi xuất viện mà thiếu sự giám sát chuyên môn.
-        
-        Xuất phát từ thực tiễn trên, nhóm nghiên cứu quyết định thực hiện đề tài: **"Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)"**.
-        """)
-    
-    with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
-        st.markdown("""
-        **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập phục hồi chức năng cho bệnh nhân viêm quanh khớp vai, bao gồm:
-        - Bài tập con lắc Codman
-        - Bài tập với gậy
-        - Bài tập với dây kháng lực
-        
-        **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công trên một tập dữ liệu nhỏ.
-        """)
-    
-    with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP NGHIÊN CỨU", expanded=True):
-        st.markdown("""
-        **Đối tượng nghiên cứu:** 05 bệnh nhân viêm quanh khớp vai + nhóm chuyên gia PHCN tại Khoa Phục hồi chức năng, Bệnh viện Đa khoa Phạm Ngọc Thạch.
-        
-        **Thiết kế nghiên cứu:** Nghiên cứu định lượng, phát triển mô hình học máy.
-        
-        **Công nghệ sử dụng:** 
-        - MediaPipe Pose Estimation cho ước lượng tư thế
-        - Python và các thư viện xử lý ảnh (OpenCV, NumPy, Pandas)
-        - Streamlit cho giao diện người dùng
-        - Plotly cho trực quan hóa dữ liệu
-        
-        **Cỡ mẫu dự kiến:** 500-1000 chuỗi chuyển động.
-        """)
-    
-    with st.expander("📊 KẾT QUẢ DỰ KIẾN", expanded=True):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Độ chính xác (Accuracy)", "≥ 90%")
-            st.metric("F1-Score", "≥ 0.85")
-        with col2:
-            st.metric("Sai số MAE", "< 5°")
-            st.metric("Hệ số ICC", "≥ 0.75")
-        with col3:
-            st.metric("Precision", "≥ 0.85")
-            st.metric("Recall", "≥ 0.85")
-    
-    with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
-        st.markdown("""
-        **- Về khoa học và đào tạo:** Xây dựng mô hình nhận diện động tác PHCN, tạo bộ dữ liệu chuẩn hóa, là tài liệu thực hành cho sinh viên ngành Khoa học dữ liệu y sinh.
-        
-        **- Về phát triển kinh tế:** Giảm chi phí đi lại, giảm tải cho nhân viên y tế, tối ưu nguồn lực bệnh viện.
-        
-        **- Về xã hội:** Tăng khả năng tiếp cận dịch vụ PHCN, thúc đẩy chuyển đổi số y tế, xây dựng hệ thống chăm sóc sức khỏe thông minh.
-        """)
-    
-    with st.expander("📚 TÀI LIỆU THAM KHẢO", expanded=False):
-        st.markdown("""
-        1. WHO. Rehabilitation 2030: A call for action.
-        2. Cieza A, et al. Global estimates of the need for rehabilitation. Lancet. 2021.
-        3. Lugaresi C, et al. MediaPipe: A Framework for Building Perception Pipelines. arXiv. 2019.
-        4. Cao Z, et al. OpenPose: Realtime Multi-Person 2D Pose Estimation. arXiv. 2019.
-        5. Hellstén T, et al. Reliability and validity of computer vision-based markerless human pose estimation. Healthc Technol Lett. 2025.
-        6. Ino T, et al. Validity and Reliability of OpenPose-Based Motion Analysis. J Sports Sci Med. 2024.
-        7. Aguilar-Ortega R, et al. UCO Physical Rehabilitation: New Dataset and Study. Sensors. 2023.
-        8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
-        """)
-
-def hien_thi_tab_thanh_vien():
-    st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
-    st.markdown("""
-    <div class="lecturer-card" style="background: rgba(0,114,255,0.1); padding: 1.5rem; border-radius: 15px; border-left: 5px solid #0072ff; margin-bottom: 2rem;">
-        <h4 style="margin:0; color: #00c6ff;">TS. Trần Hồng Việt</h4>
-        <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
-        <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
-        <p style="color: #aaa; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
-        <div class="member-card" style="border: 2px solid #ffd700; padding: 1.5rem; border-radius: 15px; text-align: center; margin-bottom: 2rem;">
-            <h4 style="margin:0; color:#ffd700;">Đinh Lê Quỳnh Phương</h4>
-            <div style="color: #fff; font-weight: bold; margin-top: 5px;">⭐ Chủ nhiệm đề tài ⭐</div>
-            <div style="color: #ccc; margin-top: 5px;">Chuyên ngành: Khoa học dữ liệu Y sinh</div>
-            <div style="color: #aaa; font-size: 0.9rem;">MSSV: 2211090031</div>
-            <div style="color: #aaa; font-size: 0.9rem;">📧 2211090031@studenthuph.edu.vn</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
-    thanh_vien = [
-        ("Kim Mạnh Hưng", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
-        ("Nguyễn Hải An", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
-        ("Phan Vân Anh", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
-        ("Nguyễn Thị Thanh Nga", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
-    ]
-    
-    cols = st.columns(4)
-    for i, (ten, vai_tro, lop, mssv) in enumerate(thanh_vien):
-        with cols[i]:
-            st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-align: center; height: 100%;">
-                <div style="font-weight: bold; color: #00c6ff;">{ten}</div>
-                <div style="font-size: 0.85rem; color: #aaa;">{vai_tro}</div>
-                <div style="font-size: 0.8rem; color: #888;">{lop}</div>
-                <div style="font-size: 0.8rem; color: #888;">{mssv}</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.markdown("### 🩺 CHUYÊN GIA LÂM SÀNG")
-    chuyen_gia = [
-        ("Nguyễn Thị Thơm", "Chuyên gia PHCN", "CNCQ KTPHCN3-1A", "2216030122"),
-        ("Nguyễn Thị Thu Hương", "Chuyên gia PHCN", "CNCQYTCC22-1A", "2317010071"),
-    ]
-    
-    cols = st.columns(2)
-    for i, (ten, vai_tro, lop, mssv) in enumerate(chuyen_gia):
-        with cols[i]:
-            st.markdown(f"""
-            <div style="background: rgba(0,198,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(0,198,255,0.1); text-align: center;">
-                <div style="font-weight: bold; color: #00c6ff;">{ten}</div>
-                <div style="font-size: 0.85rem; color: #aaa;">{vai_tro}</div>
-                <div style="font-size: 0.8rem; color: #888;">{lop}</div>
-                <div style="font-size: 0.8rem; color: #888;">{mssv}</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
-    st.markdown("""
-    <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #2a5298;">
-        <p style="color: #ffd700; font-weight: bold; margin: 0;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
-        <p style="color: #ccc; margin: 5px 0;">Khoa Phục hồi chức năng</p>
-        <p style="color: #aaa; font-size: 0.9rem; margin: 0;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
-    </div>
-    """, unsafe_allow_html=True)
-
 # ============================================
 # GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
 # ============================================
@@ -3095,12 +2811,7 @@ def hien_thi_dang_nhap_dang_ky():
                     users = load_users()
                     if u in users and verify_password(p, users[u]['password']):
                         st.session_state.logged_in = True
-                        st.session_state.user_info = {
-                            "username": u, 
-                            "email": users[u].get('email'),
-                            "full_name": users[u].get('full_name', u),
-                            "role": users[u].get('role', 'Nghiên cứu viên') # Mặc định là NCV nếu chưa có
-                        }
+                        st.session_state.user_info = {"username": u, "email": users[u].get('email')}
                         st.session_state.show_login_dialog = False
                         st.rerun()
                     else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
@@ -3111,9 +2822,6 @@ def hien_thi_dang_nhap_dang_ky():
                             
             with t_register:
                 st.markdown("<br>", unsafe_allow_html=True)
-                reg_role = st.selectbox("🎭 BẠN LÀ: (Chọn vai trò để có giao diện phù hợp) *", 
-                                       ["Bệnh nhân", "Bác sĩ/KTV PHCN", "Nghiên cứu viên"], 
-                                       key="reg_role_new")
                 reg_name = st.text_input("📛 Họ và tên", placeholder="VD: Nguyễn Văn A", key="reg_n")
                 reg_u = st.text_input("👤 Tên đăng nhập *", placeholder="Chọn tên tài khoản", key="reg_u")
                 reg_e = st.text_input("📧 Email liên hệ *", placeholder="example@gmail.com", key="reg_e")
@@ -3133,7 +2841,6 @@ def hien_thi_dang_nhap_dang_ky():
                                 "password": hash_password(reg_p),
                                 "email": reg_e,
                                 "full_name": reg_name,
-                                "role": reg_role,
                                 "created_at": datetime.now().isoformat()
                             }
                             save_users(users)
@@ -3159,28 +2866,31 @@ def hien_thi_dang_nhap_dang_ky():
 # ============================================
 # MAIN - GIỮ NGUYÊN CẤU TRÚC TAB
 # ============================================
-def render_top_bar():
-    # TOP BAR (LOGOUT)
+def main():
+    # Kiểm tra trạng thái đăng nhập ngay đầu hàm main
+    if not st.session_state.logged_in:
+        # Nếu chưa đăng nhập, hiển thị trang đăng nhập toàn màn hình và dừng lại
+        hien_thi_dang_nhap_dang_ky()
+        return
+
+    # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
+    # TOP BAR (LOGOUT) - Quay lại góc trên bên phải
     st.markdown('<div class="top-auth-container" style="margin-top: -50px; margin-bottom: 20px;">', unsafe_allow_html=True)
-    t_col1, t_col2 = st.columns([1.2, 3.8])
+    t_col1, t_col2 = st.columns([3.5, 1])
     
     with t_col2:
-        inner_c1, inner_c2, inner_c3 = st.columns([1.2, 1.4, 0.8], vertical_alignment="center")
+        inner_c1, inner_c2 = st.columns([1.8, 1], vertical_alignment="center")
         with inner_c1:
-            current_theme = st.session_state.get('theme', 'dark')
-            label = "🌙 Tối" if current_theme == 'dark' else "☀️ Sáng"
-            st.toggle(label, value=(current_theme == 'dark'), 
-                      key="theme_toggle_top", 
-                      on_change=update_theme_callback)
-        with inner_c2:
             st.markdown(f"""
             <div style="text-align: right; line-height: 1.1;">
                 <span style="color: #888; font-size: 0.8rem;">Xin chào,</span><br>
                 <span style="color: #ffd700; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
             </div>
             """, unsafe_allow_html=True)
-        with inner_c3:
-            if st.button("🚪 Thoát", use_container_width=True, key="logout_top"):
+        with inner_c2:
+            if st.button("🚪 Thoát", use_container_width=True):
+                if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
+                    st.logout()
                 st.session_state.logged_in = False
                 st.session_state.user_info = None
                 st.rerun()
@@ -3194,247 +2904,49 @@ def render_top_bar():
         <p style="font-size: 0.8rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng</p>
     </div>
     """, unsafe_allow_html=True)
-
-def hien_thi_tab_trang_chu_benh_nhan(bai_tap):
-    is_light = st.session_state.theme == 'light'
-    info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
-    info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
-    info_text = "#000" if is_light else "#fff"
-
-    col1, col2 = st.columns([2,1])
-    with col1:
-        st.markdown(f"""
-        <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
-            <h3>{bai_tap['icon']} {bai_tap['ten']}</h3>
-            <p>{bai_tap['mo_ta']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-def main():
-    if not st.session_state.logged_in:
-        hien_thi_dang_nhap_dang_ky()
-        return
-
-    render_top_bar()
-
-    role = st.session_state.user_info.get('role', 'Nghiên cứu viên')
     
-    if role == "Bệnh nhân":
-        hien_thi_giao_dien_benh_nhan()
-    elif role == "Bác sĩ/KTV PHCN":
-        hien_thi_giao_dien_bac_si()
-    else:
-        hien_thi_giao_dien_nghien_cuu_vien()
-
-def hien_thi_giao_dien_benh_nhan():
     with st.sidebar:
         st.markdown("### 📋 THÔNG TIN BỆNH NHÂN")
-        st.markdown(f"**Xin chào:** {st.session_state.user_info['full_name']}")
+        ten_benh_nhan = st.text_input("Họ và tên", placeholder="VD: Nguyễn Văn A")
+        ma_benh_nhan = st.text_input("Mã số bệnh nhân", placeholder="VD: BN0001")
         col1, col2 = st.columns(2)
-        with col1: st.number_input("Tuổi", 0, 120, 22, key="p_age")
-        with col2: st.selectbox("Giới tính", ["Nam", "Nữ"], key="p_gender")
+        with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
+        with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
         
-        st.markdown("### 🩺 TRIỆU CHỨNG / CẢM NHẬN")
-        st.text_area("Hôm nay bạn cảm thấy thế nào?", 
-                    placeholder="VD: Đau nhẹ khớp vai khi đưa tay lên cao...", 
-                    key="p_symptoms")
-        
-        st.markdown("---")
-        st.info("💡 Hãy chọn bài tập và upload video ở Tab TRANG CHỦ để AI phân tích.")
+        st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
+        chan_doan = st.selectbox("Chẩn đoán", [
+            "", 
+            "Viêm quanh khớp vai thể giả liệt thể đông cứng", 
+            "Viêm quanh khớp vai thể đơn thuần", 
+            "Viêm quanh khớp cấp"
+        ])
 
-    tabs = st.tabs([
-        "🏠 TRANG CHỦ", "🏥 KẾT LUẬN", "💊 ĐIỀU TRỊ", "📖 HƯỚNG DẪN", 
-        "🏥 KIẾN THỨC PHCN", "⏰ LỊCH NHẮC NHỞ", "🌐 CÔNG NGHỆ", 
-        "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
-    ])
-    
-    with tabs[0]:
-        with st.expander("🎯 CHỌN BÀI TẬP TẬP LUYỆN", expanded=True):
-            ma_bai_tap = st.selectbox("Chọn bài tập hôm nay", list(BAI_TAP.keys()), 
-                                     format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
-                                     key="p_exercise_main")
-            bai_tap = BAI_TAP[ma_bai_tap]
-            st.video(bai_tap["youtube"])
+        muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
+
+        
+        st.markdown("### 🎯 CHỌN BÀI TẬP")
+        ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+        bai_tap = BAI_TAP[ma_bai_tap]
+        
+        st.markdown("### 📺 VIDEO HƯỚNG DẪN")
+        st.video(bai_tap["youtube"])
         
         st.markdown("---")
-        hien_thi_tab_trang_chu_benh_nhan(bai_tap)
-
-    with tabs[1]: st.info("🕒 Đang chờ bác sĩ đánh giá kết quả tập luyện của bạn...")
-    with tabs[2]: st.info("🕒 Bác sĩ chưa kê lịch thuốc và tập luyện mới.")
-    with tabs[3]: hien_thi_tab_huong_dan()
-    with tabs[4]: hien_thi_tab_kien_thuc_phcn()
-    with tabs[5]: hien_thi_lich_nhac_nho(suffix="p")
-    with tabs[6]: hien_thi_tab_cong_nghe()
-    with tabs[7]: hien_thi_tab_NCKH()
-    with tabs[8]: hien_thi_tab_thanh_vien()
-    with tabs[9]: hien_thi_tab_phan_hoi(suffix="p")
-    
-    hien_thi_footer()
-
-# ============================================
-# GIAO DIỆN BÁC SĨ
-# ============================================
-def hien_thi_giao_dien_bac_si():
-    with st.sidebar:
-        st.markdown(f"### 👨‍⚕️ BÁC SĨ/KTV: {st.session_state.user_info['full_name']}")
-        st.markdown("---")
-        st.markdown("#### 🏥 THÔNG TIN CHUYÊN MÔN")
-        st.text_input("Số CCHN", placeholder="VD: 012345/BYT-CCHN", key="dr_license")
-        st.selectbox("Chuyên khoa", ["Phục hồi chức năng", "Chấn thương chỉnh hình", "Nội khoa"], key="dr_specialty")
-        st.text_input("Đơn vị công tác", value="BVĐK Phạm Ngọc Thạch", key="dr_unit")
-        st.markdown("---")
-        st.info("💡 Chế độ chuyên gia: Đánh giá Ground Truth và Kê đơn điều trị.")
-
-    tabs = st.tabs([
-        "📋 DANH SÁCH", "✍️ ĐÁNH GIÁ", "📝 KÊ ĐƠN", "📖 HƯỚNG DẪN", 
-        "🏥 KIẾN THỨC PHCN", "⏰ LỊCH NHẮC NHỞ", "🌐 CÔNG NGHỆ", 
-        "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
-    ])
-    
-    with tabs[0]: st.subheader("📂 Danh sách bệnh nhân gửi video")
-    with tabs[1]: hien_thi_form_danh_gia_bac_si()
-    with tabs[2]: st.subheader("📝 Kê đơn & Lịch tập luyện")
-    with tabs[3]: hien_thi_tab_huong_dan()
-    with tabs[4]: hien_thi_tab_kien_thuc_phcn()
-    with tabs[5]: hien_thi_lich_nhac_nho(suffix="d")
-    with tabs[6]: hien_thi_tab_cong_nghe()
-    with tabs[7]: hien_thi_tab_NCKH()
-    with tabs[8]: hien_thi_tab_thanh_vien()
-    with tabs[9]: hien_thi_tab_phan_hoi(suffix="d")
-    
-    hien_thi_footer()
-
-def hien_thi_form_danh_gia_bac_si():
-    st.markdown("## 📋 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN (GROUND TRUTH)")
-    
-    with st.container(border=True):
-        st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
-        bai_tap_chon = st.multiselect("Động tác bệnh nhân thực hiện", 
-                                     ["Bài tập con lắc Codman", "Bài tập vận động với gậy", "Bài tập với dây kháng lực"])
-        
-        st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC")
-        col1, col2 = st.columns(2)
-        with col1:
-            ket_qua_tong_quat = st.radio("1. Kết quả đánh giá tổng quát:", ["Đúng", "Sai"])
-        with col2:
-            tong_lan = st.number_input("Tổng số lần thực hiện", 0, 100, 0)
-            dung_lan = st.number_input("Số lần đúng kỹ thuật", 0, 100, 0)
-            
-        st.text_area("3. Nhận xét chuyên môn (tùy chọn)", placeholder="Nhập nhận xét tại đây...")
-        
-        st.markdown("### V. THÔNG TIN DỮ LIỆU VIDEO")
-        v_col1, v_col2, v_col3 = st.columns(3)
-        with v_col1:
-            thiet_bi = st.selectbox("Thiết bị ghi hình", ["Điện thoại", "Webcam", "Khác"])
-        with v_col2:
-            goc_quay = st.selectbox("Góc quay", ["Chính diện", "Bên trái", "Bên phải"])
-        with v_col3:
-            khoang_cach = st.number_input("Khoảng cách camera (m)", 0.0, 10.0, 2.0)
-            
-        st.markdown("### VI. XÁC NHẬN CỦA NGƯỜI THU THẬP SỐ LIỆU")
-        st.caption("Tôi xác nhận các thông tin và đánh giá trên được ghi nhận trung thực...")
-        if st.button("🚀 GỬI ĐÁNH GIÁ & KẾT LUẬN", type="primary", use_container_width=True):
-            st.success("✅ Đã lưu đánh giá chuyên môn thành công!")
-
-def hien_thi_giao_dien_nghien_cuu_vien():
-    with st.sidebar:
-        st.markdown("### 📋 THÔNG TIN ĐỀ TÀI")
         st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
-        st.markdown("---")
-        st.info("💡 Chế độ Nghiên cứu viên cho phép truy cập đầy đủ các công cụ phân tích và dữ liệu thô.")
-
-    tabs = st.tabs([
-        "🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", 
-        "🏥 KIẾN THỨC PHCN", "⏰ LỊCH NHẮC NHỞ", "🌐 CÔNG NGHỆ", 
-        "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
+    
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
+        "🏠 TRANG CHỦ", "📹 TRỰC TIẾP", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH",
+        "⏰ LỊCH NHẮC NHỞ", "📈 TIẾN TRIỂN", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", 
+        "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"
     ])
     
-    with tabs[0]: 
-        with st.expander("🎯 THIẾT LẬP BÀI TẬP NGHIÊN CỨU", expanded=False):
-            ma_bai_tap = st.selectbox("Chọn bài tập nghiên cứu", list(BAI_TAP.keys()), 
-                                     format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
-                                     key="ncv_exercise_main")
-            bai_tap = BAI_TAP[ma_bai_tap]
-            
-            col_v1, col_v2 = st.columns([2, 1])
-            with col_v1:
-                st.video(bai_tap["youtube"])
-            with col_v2:
-                st.markdown(f"""
-                <div style="background: rgba(255,215,0,0.1); padding: 1rem; border-radius: 10px; border: 1px solid #ffd700;">
-                    <h4 style="margin:0; color: #ffd700;">{bai_tap['icon']} {bai_tap['ten']}</h4>
-                    <p style="font-size: 0.8rem; margin-top: 5px;">{bai_tap['mo_ta']}</p>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        hien_thi_tab_trang_chu_benh_nhan(bai_tap)
-    
-    with tabs[1]: hien_thi_tab_phan_tich()
-    with tabs[2]: hien_thi_tab_video_anh()
-    with tabs[3]: hien_thi_tab_huong_dan()
-    with tabs[4]: hien_thi_tab_kien_thuc_phcn()
-    with tabs[5]: hien_thi_lich_nhac_nho(suffix="r")
-    with tabs[6]: hien_thi_tab_cong_nghe()
-    with tabs[7]: hien_thi_tab_NCKH()
-    with tabs[8]: hien_thi_tab_thanh_vien()
-    with tabs[9]: hien_thi_tab_phan_hoi(suffix="r")
-    
-    hien_thi_footer()
-
-def hien_thi_tab_video_anh():
-    if st.session_state.has_data and st.session_state.temp_video_file and os.path.exists(st.session_state.temp_video_file):
-        st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
-        st.video(st.session_state.temp_video_file)
-        # ... (Nội dung tải video và frame như cũ)
-        hien_thi_frames_day_du()
-    else:
-        st.info("ℹ️ Chưa có video. Hãy upload và xử lý video ở tab TRANG CHỦ.")
-
-def hien_thi_tab_trang_chu_benh_nhan(bai_tap):
-    is_light = st.session_state.theme == 'light'
-    info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
-    info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
-    info_text = "#000" if is_light else "#fff"
-
-    col1, col2 = st.columns([2,1])
-    with col1:
-        st.markdown(f"""
-        <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
-            <h3>{bai_tap['icon']} {bai_tap['ten']}</h3>
-            <p>{bai_tap['mo_ta']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        # ... (Nội dung phân tích video AI đầy đủ như bản gốc)
-    
-    # === HỆ THỐNG ÂM THANH PHẢN HỒI (BEEP) ===
-    def play_beep(success=True):
-        freq = 880 if success else 440
-        st.components.v1.html(f"""
-            <script>
-            var context = new (window.AudioContext || window.webkitAudioContext)();
-            var osc = context.createOscillator();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime({freq}, context.currentTime);
-            osc.connect(context.destination);
-            osc.start();
-            setTimeout(() => osc.stop(), 200);
-            </script>
-        """, height=0)
-    
-    # Sidebar has been removed to prevent duplication
-    
-    # Nested tabs have been removed to prevent duplication
-        is_light = st.session_state.theme == 'light'
-        info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
-        info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
-        info_text = "#000" if is_light else "#fff"
-
+    # ==================== TAB 1: TRANG CHỦ ====================
+    with tab1:
         col1, col2 = st.columns([2,1])
         with col1:
             st.markdown(f"""
-            <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
+            <div class="info-box">
                 <h3>{bai_tap['icon']} {bai_tap['ten']}</h3>
                 <p>{bai_tap['mo_ta']}</p>
                 <p><strong>⏱️ Thời gian:</strong> {bai_tap['thoi_gian']} giây/lần</p>
@@ -3449,15 +2961,14 @@ def hien_thi_tab_trang_chu_benh_nhan(bai_tap):
         
         with col2:
             chuan = bai_tap['chuan']
-            card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
             st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg};">
-                <h4 style="color:{"#0072ff" if is_light else "#fff"};">🎯 THÔNG SỐ CHUẨN</h4>
+            <div style="background:rgba(26,26,46,0.8); padding:1.2rem; border-radius:16px; text-align:center; border:1px solid #2a5298;">
+                <h4 style="color:#fff;">🎯 THÔNG SỐ CHUẨN</h4>
                 <p style="color:#00CED1;">🦾 Góc vai: <strong>{chuan['vai']}°</strong> ±{chuan['sai_so']}°</p>
                 <p style="color:#FF6B6B;">💪 Góc khuỷu: <strong>{chuan['khuyu']}°</strong> ±{chuan['sai_so']}°</p>
                 <hr style="margin:10px 0;">
-                <p style="color:{"#666" if is_light else "#aaa"}; font-size:0.8rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
-                <p style="color:{"#666" if is_light else "#aaa"}; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
+                <p style="color:#aaa; font-size:0.8rem;">✅ Đạt: Cả 2 góc trong vùng cho phép</p>
+                <p style="color:#aaa; font-size:0.8rem;">❌ Không đạt: Một hoặc cả 2 góc ngoài vùng cho phép</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -3676,20 +3187,218 @@ def hien_thi_tab_trang_chu_benh_nhan(bai_tap):
             - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
             """)
     
+    # ==================== TAB 2: TRỰC TIẾP (REAL-TIME) ====================
+    with tab2:
+        hien_thi_tab_realtime(bai_tap)
+
+    # ==================== TAB 3: PHÂN TÍCH ====================
+    with tab3:
+        hien_thi_tab_phan_tich()
+    
+    # ==================== TAB 4: VIDEO & ẢNH ====================
+    with tab4:
+        if st.session_state.has_data and st.session_state.temp_video_file and os.path.exists(st.session_state.temp_video_file):
+            st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
+            st.video(st.session_state.temp_video_file)
+            
+            file_ext = os.path.splitext(st.session_state.temp_video_file)[1]
+            mime_type = "video/webm" if file_ext == ".webm" else "video/mp4"
+            col1, col2 = st.columns(2)
+            with col1:
+                with open(st.session_state.temp_video_file, 'rb') as f:
+                    st.download_button("📥 Tải video xuống", f, f"video_processed{file_ext}", mime_type)
+            with col2:
+                if st.session_state.frames_zip and os.path.exists(st.session_state.frames_zip):
+                    with open(st.session_state.frames_zip, "rb") as f:
+                        st.download_button("📥 Tải tất cả frames (ZIP)", f, "tat_ca_frames.zip", "application/zip")
+            
+            st.markdown("---")
+            hien_thi_frames_day_du()
+        else:
+            st.info("ℹ️ Chưa có video. Hãy upload và xử lý video ở tab TRANG CHỦ.")
+
+    # ==================== TAB 5: LỊCH NHẮC NHỞ ====================
+    with tab5:
+        hien_thi_lich_nhac_nho()
+
+    # ==================== TAB 6: TIẾN TRIỂN ====================
+    with tab6:
+        hien_thi_tab_tien_trien()
+
+    # ==================== TAB 7: HƯỚNG DẪN ====================
+    with tab7:
+        hien_thi_tab_huong_dan()
+        
+    # ==================== TAB 8: KIẾN THỨC PHCN ====================
+    with tab8:
+        hien_thi_tab_kien_thuc_phcn()
+        
+    # ==================== TAB 9: CÔNG NGHỆ ====================
+    with tab9:
+        hien_thi_tab_cong_nghe()
+        
+    # ==================== TAB 10: ĐỀ TÀI NCKH ====================
+    with tab10:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid #2a5298;">
+            <h2 style="color: white; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
+            <p style="color: #ffd700; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
+            <p style="color: #ccc;">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
+            st.markdown("""
+            Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
+            
+            Theo Tổ chức Y tế Thế giới (WHO), hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng, chiếm gần một phần ba dân số toàn cầu. Tại Việt Nam, theo Hội Phục hồi chức năng Việt Nam (2023), có khoảng 7,06% dân số từ 2 tuổi trở lên là người khuyết tật, trong đó phần lớn cần được can thiệp PHCN.
+            
+            Mặc dù nhu cầu PHCN lớn, song năng lực cung cấp dịch vụ này tại Việt Nam vẫn còn hạn chế. Trung bình 10.000 người dân chỉ có 0,25 nhân viên phục hồi chức năng, thấp hơn đáng kể so với khuyến nghị của WHO là 0,5-1 người/10.000 dân. Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà sau khi xuất viện mà thiếu sự giám sát chuyên môn.
+            
+            Xuất phát từ thực tiễn trên, nhóm nghiên cứu quyết định thực hiện đề tài: **"Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)"**.
+            """)
+        
+        with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
+            st.markdown("""
+            **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập phục hồi chức năng cho bệnh nhân viêm quanh khớp vai, bao gồm:
+            - Bài tập con lắc Codman
+            - Bài tập với gậy
+            - Bài tập với dây kháng lực
+            
+            **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công trên một tập dữ liệu nhỏ.
+            """)
+        
+        with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP NGHIÊN CỨU", expanded=True):
+            st.markdown("""
+            **Đối tượng nghiên cứu:** 05 bệnh nhân viêm quanh khớp vai + nhóm chuyên gia PHCN tại Khoa Phục hồi chức năng, Bệnh viện Đa khoa Phạm Ngọc Thạch.
+            
+            **Thiết kế nghiên cứu:** Nghiên cứu định lượng, phát triển mô hình học máy.
+            
+            **Công nghệ sử dụng:** 
+            - MediaPipe Pose Estimation cho ước lượng tư thế
+            - Python và các thư viện xử lý ảnh (OpenCV, NumPy, Pandas)
+            - Streamlit cho giao diện người dùng
+            - Plotly cho trực quan hóa dữ liệu
+            
+            **Cỡ mẫu dự kiến:** 500-1000 chuỗi chuyển động.
+            """)
+        
+        with st.expander("📊 KẾT QUẢ DỰ KIẾN", expanded=True):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Độ chính xác (Accuracy)", "≥ 90%")
+                st.metric("F1-Score", "≥ 0.85")
+            with col2:
+                st.metric("Sai số MAE", "< 5°")
+                st.metric("Hệ số ICC", "≥ 0.75")
+            with col3:
+                st.metric("Precision", "≥ 0.85")
+                st.metric("Recall", "≥ 0.85")
+        
+        with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
+            st.markdown("""
+            **- Về khoa học và đào tạo:** Xây dựng mô hình nhận diện động tác PHCN, tạo bộ dữ liệu chuẩn hóa, là tài liệu thực hành cho sinh viên ngành Khoa học dữ liệu y sinh.
+            
+            **- Về phát triển kinh tế:** Giảm chi phí đi lại, giảm tải cho nhân viên y tế, tối ưu nguồn lực bệnh viện.
+            
+            **- Về xã hội:** Tăng khả năng tiếp cận dịch vụ PHCN, thúc đẩy chuyển đổi số y tế, xây dựng hệ thống chăm sóc sức khỏe thông minh.
+            """)
+        
+        with st.expander("📚 TÀI LIỆU THAM KHẢO", expanded=False):
+            st.markdown("""
+            1. WHO. Rehabilitation 2030: A call for action.
+            2. Cieza A, et al. Global estimates of the need for rehabilitation. Lancet. 2021.
+            3. Lugaresi C, et al. MediaPipe: A Framework for Building Perception Pipelines. arXiv. 2019.
+            4. Cao Z, et al. OpenPose: Realtime Multi-Person 2D Pose Estimation. arXiv. 2019.
+            5. Hellstén T, et al. Reliability and validity of computer vision-based markerless human pose estimation. Healthc Technol Lett. 2025.
+            6. Ino T, et al. Validity and Reliability of OpenPose-Based Motion Analysis. J Sports Sci Med. 2024.
+            7. Aguilar-Ortega R, et al. UCO Physical Rehabilitation: New Dataset and Study. Sensors. 2023.
+            8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
+            """)
+
+    # ==================== TAB 11: THÀNH VIÊN ====================
+    with tab11:
+        st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
+        st.markdown("""
+        <div class="lecturer-card">
+            <div class="lecturer-name">TS. Trần Hồng Việt</div>
+            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+            <p style="color: #aaa; font-size: 0.85rem;">Chuyên ngành: Khoa học dữ liệu Y sinh</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown("""
+            <div class="member-card" style="border-color: #ffd700; border: 2px solid #ffd700;">
+                <div class="member-name">Đinh Lê Quỳnh Phương</div>
+                <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
+                <div class="member-class">Chuyên ngành Khoa học dữ liệu Y sinh</div>
+                <div class="member-id">MSSV: 2211090031</div>
+                <div class="member-id">📧 2211090031@studenthuph.edu.vn</div>
+                <div class="member-id">📱 0382665916</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
+        thanh_vien = [
+            ("Kim Mạnh Hưng", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
+            ("Nguyễn Hải An", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
+            ("Phan Vân Anh", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
+            ("Nguyễn Thị Thanh Nga", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
+        ]
+        
+        cols = st.columns(4)
+        for i, (ten, vai_tro, lop, mssv) in enumerate(thanh_vien):
+            with cols[i]:
+                st.markdown(f"""
+                <div class="member-card">
+                    <div class="member-name">{ten}</div>
+                    <div class="member-role">{vai_tro}</div>
+                    <div class="member-class">{lop}</div>
+                    <div class="member-id">MSSV: {mssv}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        st.markdown("### 🩺 CHUYÊN GIA LÂM SÀNG")
+        chuyen_gia = [
+            ("Nguyễn Thị Thơm", "Chuyên gia PHCN", "CNCQ KTPHCN3-1A", "2216030122"),
+            ("Nguyễn Thị Thu Hương", "Chuyên gia PHCN", "CNCQYTCC22-1A", "2317010071"),
+        ]
+        
+        cols = st.columns(2)
+        for i, (ten, vai_tro, lop, mssv) in enumerate(chuyen_gia):
+            with cols[i]:
+                st.markdown(f"""
+                <div class="member-card">
+                    <div class="member-name">{ten}</div>
+                    <div class="member-role">{vai_tro}</div>
+                    <div class="member-class">{lop}</div>
+                    <div class="member-id">MSSV: {mssv}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
+        st.markdown("""
+        <div style="background: rgba(26,26,46,0.8); border-radius: 16px; padding: 1.5rem; text-align: center;">
+            <p style="color: #ffd700; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
+            <p style="color: #ccc;">Khoa Phục hồi chức năng</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ==================== TAB 12: PHẢN HỒI ====================
+    with tab12:
+        hien_thi_tab_phan_hoi()
 
 
-def hien_thi_footer():
-    # --- 1. PHẦN TRÍCH DẪN (QUOTE) ---
-    st.markdown("""
-    <div style="margin-top: 3rem; padding: 1.5rem; background: rgba(255,215,0,0.05); border-radius: 15px; text-align: center;">
-        <p style="color: #aaa; font-style: italic;">
-            "Công nghệ không thay thế bác sĩ, nhưng bác sĩ sử dụng công nghệ sẽ thay thế những bác sĩ không sử dụng."
-        </p>
-        <p style="color: #ffd700; font-weight: bold; margin-top: 0.5rem;">— Rehab AI Monitor Team —</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # --- 2. PHẦN CHÂN TRANG CHÍNH ---
+    # ==================== FOOTER (CHÂN TRANG CHUYÊN NGHIỆP) ====================
     try:
         if os.path.exists("abc1.png"):
             with open("abc1.png", "rb") as img_file:
@@ -3700,24 +3409,16 @@ def hien_thi_footer():
     except:
         logo_src = "https://upload.wikimedia.org/wikipedia/vi/f/f6/Logo_HUPH.png"
 
-    # Cấu hình màu sắc Footer theo Theme
-    is_light = st.session_state.get('theme') == 'light'
-    f_bg = "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
-    f_text = "#444" if is_light else "#ccc"
-    f_border = "#0072ff" if is_light else "#00c6ff"
-    f_title = "#0072ff" if is_light else "#00c6ff"
-    f_shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(0, 198, 255, 0.2)"
-
     footer_html = f"""
     <style>
         .main-footer {{
-            background: {f_bg};
+            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
             padding: 40px 20px;
-            color: {f_text};
+            color: #ccc;
             font-family: 'Times New Roman', Times, serif;
             text-align: center;
-            border-top: 4px solid {f_border};
-            box-shadow: 0 -10px 20px {f_shadow};
+            border-top: 4px solid #00c6ff;
+            box-shadow: 0 -10px 20px rgba(0, 198, 255, 0.2);
             margin-top: 60px;
         }}
         .footer-container {{
@@ -3738,7 +3439,7 @@ def hien_thi_footer():
             filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.4));
         }}
         .footer-title {{
-            color: {f_title};
+            color: #00c6ff;
             font-weight: bold;
             margin-bottom: 15px;
             font-size: 1.3rem;
@@ -3753,19 +3454,17 @@ def hien_thi_footer():
             font-size: 1.1rem;
         }}
         .footer-bottom {{
-            padding-top: 25px;
-            margin-top: 25px;
-            border-top: 1px solid {"rgba(0, 0, 0, 0.1)" if is_light else "rgba(255, 255, 255, 0.1)"};
-            font-size: 1rem;
-            color: {"#000000" if is_light else "#ffffff"};
-            font-weight: bold;
-            letter-spacing: 0.5px;
+            padding-top: 20px;
+            margin-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+            color: #888;
         }}
-        a {{ color: {f_title}; text-decoration: none; }}
+        a {{ color: #00c6ff; text-decoration: none; }}
         .school-name {{
             margin-top: 15px; 
             font-weight: bold; 
-            color: {"#1a1a2e" if is_light else "#fff"}; 
+            color: #fff; 
             font-size: 1.2rem;
             line-height: 1.4;
         }}
@@ -3793,11 +3492,12 @@ def hien_thi_footer():
             </div>
         </div>
         <div class="footer-bottom">
-            Đơn vị phát triển: <b>NHÓM NGHIÊN CỨU KHOA HỌC DỮ LIỆU, PHỤC HỒI CHỨC NĂNG VÀ Y TẾ CÔNG CỘNG</b> | © 2025 REHAB-AI-MONITOR
+            Đơn vị phát triển: <b>CÔNG TY CỔ PHẦN GIẢI PHÁP NAM VIỆT</b> | © 2025 REHAB-AI-MONITOR
         </div>
     </div>
     """
-    st.components.v1.html(footer_html, height=600)
+    import streamlit.components.v1 as components
+    components.html(footer_html, height=350)
 
 
 if __name__ == "__main__":
