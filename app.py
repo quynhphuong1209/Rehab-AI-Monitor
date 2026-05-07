@@ -207,6 +207,17 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(0, 198, 255, 0.4);
     }
 
+    /* ĐẨY GIAO DIỆN LÊN CAO TỐI ĐA */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 0rem !important;
+    }
+    
+    .top-auth-container {
+        margin-top: -30px;
+        margin-bottom: 10px;
+    }
+
     .google-btn {
         display: flex;
         align-items: center;
@@ -2845,7 +2856,8 @@ def main():
         return
 
     # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
-    # TOP BAR (LOGOUT) - Đẩy sang bên phải
+    # TOP BAR (LOGOUT) - Đẩy sang bên phải và lên cao
+    st.markdown('<div class="top-auth-container">', unsafe_allow_html=True)
     t_col1, t_col2 = st.columns([3, 1])
     
     with t_col2:
@@ -2854,9 +2866,9 @@ def main():
         with inner_c1:
             # Thêm "Xin chào," và căn lề phải để sát nút Đăng xuất hơn
             st.markdown(f"""
-            <div style="text-align: right; line-height: 1.2;">
-                <span style="color: #888; font-size: 0.85rem;">Xin chào,</span><br>
-                <span style="color: #ffd700; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
+            <div style="text-align: right; line-height: 1.1;">
+                <span style="color: #888; font-size: 0.8rem;">Xin chào,</span><br>
+                <span style="color: #ffd700; font-weight: bold; font-size: 0.95rem;">👤 {st.session_state.user_info['username']}</span>
             </div>
             """, unsafe_allow_html=True)
         with inner_c2:
@@ -2866,6 +2878,7 @@ def main():
                 st.session_state.logged_in = False
                 st.session_state.user_info = None
                 st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="main-header">
