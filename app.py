@@ -3555,8 +3555,8 @@ def main():
                 if file_upload.size < 1000:
                     st.warning("⚠️ CẢNH BÁO: File quá nhỏ. Nội dung file:")
                     st.code(file_upload.getvalue()[:200])
-                # PHÂN QUYỀN NÚT BẤM
-                if user_role != "Bệnh nhân":
+                # PHÂN QUYỀN NÚT BẤM (Chỉ Nghiên cứu viên mới có quyền phân tích thô)
+                if user_role == "Nghiên cứu viên":
                     if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", width='stretch'):
                         st.session_state.processing = True
                         st.session_state.has_data = False
@@ -3788,59 +3788,7 @@ def main():
                                     st.write(f"**Độ chính xác AI:** {acc_text}")
                                     st.write(f"**Trạng thái:** {v['status']}")
                                     
-                                    if v['status'] == "Chờ bác sĩ phân tích":
-                                        if st.button("🚀 Phân tích video này", key=f"analyze_btn_{idx}", type="primary", use_container_width=True):
-                                            st.session_state.processing = True
-                                            st.session_state.has_data = False
-                                            
-                                            # Khởi tạo mô hình
-                                            model = get_pose_model()
-                                            progress_bar = st.progress(0)
-                                            status_text = st.empty()
-                                            
-                                            try:
-                                                def update_p(p):
-                                                    progress_bar.progress(p)
-                                                    status_text.info(f"🔄 Đang xử lý... {p*100:.0f}%")
-                                                
-                                                # Tìm bài tập chuẩn
-                                                bt_obj = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP["codman"])
-                                                
-                                                output_path, _, _, angle_data, total_frames, valid_frames, _, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
-                                                    v['video_path'], bt_obj['chuan'], update_p
-                                                )
-                                                
-                                                if valid_frames > 0:
-                                                    df = pd.DataFrame(angle_data)
-                                                    metrics = tinh_metrics_chi_tiet(df, bt_obj)
-                                                    
-                                                    # Cập nhật kết quả vào danh sách
-                                                    v['accuracy'] = round(metrics["ty_le_tong_the"], 1)
-                                                    v['status'] = "Đã phân tích - Chờ đánh giá"
-                                                    v['video_path'] = output_path # Cập nhật sang video đã xử lý (có skeleton)
-                                                    save_data(VIDEOS_FILE, video_list)
-                                                    
-                                                    # Lưu vào session state để hiển thị ngay
-                                                    st.session_state.has_data = True
-                                                    st.session_state.angle_df = df
-                                                    st.session_state.stats = { 
-                                                        "do_chinh_xac": metrics["ty_le_tong_the"], 
-                                                        "thoi_gian": 0, 
-                                                        "tong_frame": total_frames, 
-                                                        "tong_frame_hop_le": valid_frames,
-                                                        "frame_dung": metrics["frame_dung"],
-                                                        "frame_gan_dung": metrics["frame_gan_dung"],
-                                                        "tb_goc_vai": metrics.get("tb_goc_vai", 0),
-                                                        "tb_goc_khuyu": metrics.get("tb_goc_khuyu", 0),
-                                                        "icc": metrics.get("icc", 0)
-                                                    }
-                                                    st.session_state.all_frames_data_path = all_frames_data
-                                                    
-                                                    st.success("✅ Phân tích hoàn tất!")
-                                                    st.rerun()
-                                            except Exception as e:
-                                                st.error(f"Lỗi: {e}")
-                                                st.session_state.processing = False
+                                    # Bỏ nút phân tích theo yêu cầu người dùng
                                     
                                     if st.button("📝 Đánh giá video này", key=f"eval_btn_{idx}", use_container_width=True):
                                         st.session_state.current_eval_video = v
