@@ -4392,6 +4392,17 @@ def main():
             with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
             with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
             
+            if user_role == "Bệnh nhân":
+                st.markdown("---")
+                st.markdown("### 🩺 KHAI BÁO TRIỆU CHỨNG")
+                s_desc = st.text_area("Mô tả cảm giác đau:", 
+                                      placeholder="VD: Đau nhói ở khớp vai...",
+                                      height=100, key="s_sb_desc")
+                
+                s_vas = st.select_slider("Mức độ đau (VAS):", 
+                                         options=list(range(11)), 
+                                         value=3, key="s_sb_vas")
+            
             st.markdown("---")
             st.markdown("### 🎯 CHỌN BÀI TẬP")
             ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
@@ -4400,40 +4411,29 @@ def main():
             st.markdown("### 📺 VIDEO HƯỚNG DẪN")
             st.video(bai_tap["youtube"])
             
-            st.markdown("---")
-            
             if user_role == "Bệnh nhân":
-                with st.expander("🩺 KHAI BÁO TRIỆU CHỨNG", expanded=False):
-                    with st.form("patient_symptoms_sidebar"):
-                        s_desc = st.text_area("Mô tả cảm giác đau:", 
-                                              placeholder="VD: Đau nhói ở khớp vai...",
-                                              height=100, key="s_sb_desc")
-                        
-                        s_vas = st.select_slider("Mức độ đau (VAS):", 
-                                                 options=list(range(11)), 
-                                                 value=3, key="s_sb_vas")
-                        
-                        s_submitted = st.form_submit_button("📤 GỬI CHO BÁC SĨ, KTV & NCV", use_container_width=True, type="primary")
-                        
-                        if s_submitted:
-                            if s_desc:
-                                s_data = load_data(SYMPTOMS_FILE)
-                                s_data.append({
-                                    "username": st.session_state.user_info['username'],
-                                    "full_name": ten_nguoi_dung if ten_nguoi_dung else st.session_state.user_info.get('full_name', ''),
-                                    "age": tuoi,
-                                    "gender": gioi_tinh,
-                                    "exercise": BAI_TAP[ma_bai_tap]['ten'],
-                                    "symptoms": s_desc,
-                                    "vas": s_vas,
-                                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
-                                })
-                                save_data(SYMPTOMS_FILE, s_data)
-                                st.success("✅ Đã gửi thành công!")
-                                st.balloons()
-                            else:
-                                st.warning("⚠️ Vui lòng nhập mô tả.")
-            else: # Bác sĩ / KTV
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("📤 GỬI CHO BÁC SĨ, KTV & NCV", use_container_width=True, type="primary"):
+                    if s_desc:
+                        s_data = load_data(SYMPTOMS_FILE)
+                        s_data.append({
+                            "username": st.session_state.user_info['username'],
+                            "full_name": ten_nguoi_dung if ten_nguoi_dung else st.session_state.user_info.get('full_name', ''),
+                            "age": tuoi,
+                            "gender": gioi_tinh,
+                            "exercise": BAI_TAP[ma_bai_tap]['ten'],
+                            "symptoms": s_desc,
+                            "vas": s_vas,
+                            "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                        })
+                        save_data(SYMPTOMS_FILE, s_data)
+                        st.success("✅ Đã gửi thành công!")
+                        st.balloons()
+                    else:
+                        st.warning("⚠️ Vui lòng nhập mô tả.")
+            
+            if user_role == "Bác sĩ / KTV PHCN":
+                st.markdown("---")
                 st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
                 chan_doan = st.selectbox("Chẩn đoán", [
                     "", 
@@ -4441,7 +4441,7 @@ def main():
                     "Viêm quanh khớp vai thể đơn thuần", 
                     "Viêm quanh khớp cấp"
                 ])
-                muc_do_dau = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
+                muc_do_dau_bs = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
                 
                 if user_role == "Bác sĩ / KTV PHCN":
                     st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN")
