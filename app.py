@@ -2984,21 +2984,46 @@ def main():
         st.markdown("---")
         st.markdown("<h3 style='color: #00c6ff;'>🧬 QUY TRÌNH THU THẬP DỮ LIỆU DATA FRAMES (NCKH)</h3>", unsafe_allow_html=True)
         
-        with st.expander("📸 XEM CHI TIẾT CÁC BƯỚC THU THẬP DỮ LIỆU", expanded=False):
+        # Khôi phục lại các tab mini như cũ
+        tab_step1, tab_step2, tab_step3, tab_step4 = st.tabs([
+            "📸 BƯỚC 1: GHI HÌNH", 
+            "⚙️ BƯỚC 2: TRÍCH XUẤT", 
+            "🔍 BƯỚC 3: PHÂN TÍCH", 
+            "💾 BƯỚC 4: LƯU TRỮ"
+        ])
+        
+        with tab_step1:
             st.markdown("""
-            **BƯỚC 1: GHI HÌNH** - Camera đặt ngang tầm khớp vai, tốc độ 30 FPS.
-            **BƯỚC 2: TRÍCH XUẤT** - Sử dụng MediaPipe Pose trích xuất 33 điểm mốc xương.
-            **BƯỚC 3: PHÂN TÍCH** - Tính toán góc khớp và đối chiếu chuẩn PHCN.
-            **BƯỚC 4: LƯU TRỮ** - Số hóa dữ liệu vào JSON/CSV để theo dõi tiến triển.
+            **Mục tiêu:** Thu thập dữ liệu thô (Raw Data).
+            - **Yêu cầu:** Camera đặt ngang tầm khớp vai (góc 90 độ).
+            - **Tốc độ:** Tối thiểu 30 frames/giây (FPS) để đảm bảo độ mịn.
+            - **Ánh sáng:** Đảm bảo độ tương phản cao giữa bệnh nhân và nền.
+            """)
+            
+        with tab_step2:
+            st.markdown("""
+            **Mục tiêu:** Chuyển đổi Video sang chuỗi ảnh (Image Sequence).
+            - **Xử lý:** Video được chia nhỏ thành hàng trăm/ngàn Frames đơn lẻ.
+            - **Mã hóa:** Mỗi frame được gán một Timestamp và ID duy nhất.
+            """)
+            
+        with tab_step3:
+            st.markdown("""
+            **Mục tiêu:** Trích xuất đặc trưng hình học.
+            - **Công nghệ:** Sử dụng **MediaPipe Pose** để định vị 33 điểm mốc xương.
+            - **Tính toán:** Thuật toán Vector tính góc vai và khuỷu tay.
+            """)
+            
+        with tab_step4:
+            st.markdown("""
+            **Mục tiêu:** Số hóa dữ liệu (Data Digitization).
+            - **Định dạng:** Toàn bộ góc độ được lưu vào file JSON/CSV.
+            - **Ứng dụng:** Cơ sở để vẽ biểu đồ và phục vụ báo cáo NCKH.
             """)
         
         if file_upload is not None and not st.session_state.processing:
             file_size_mb = file_upload.size / (1024 * 1024)
-            
-            if file_size_mb > MAX_FILE_SIZE_MB:
-                st.error(f"❌ File quá lớn! {file_size_mb:.1f}MB > {MAX_FILE_SIZE_MB}MB")
-            else:
-                st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.1f} MB)")
+            st.success(f"✅ Đã chọn file: {file_upload.name} ({file_size_mb:.2f} MB)")
                 
                 if st.button("🚀 BẮT ĐẦU PHÂN TÍCH", width='stretch'):
                     st.session_state.processing = True
