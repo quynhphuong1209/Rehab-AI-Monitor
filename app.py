@@ -3517,13 +3517,22 @@ def main():
                             # === NÚT ĐIỀU HƯỚNG NHANH (SMART NAVIGATION) ===
                             st.markdown("### 🎯 KẾT QUẢ ĐÃ SẴN SÀNG")
                             st.write("Bạn có muốn xem kết quả chi tiết ngay không?")
-                            c_nav1, c_nav2 = st.columns(2)
-                            with c_nav1:
-                                if st.button("📊 XEM BÁO CÁO PHÂN TÍCH", use_container_width=True, type="primary"):
-                                    chuyen_tab_bang_js("PHÂN TÍCH")
-                            with c_nav2:
-                                if st.button("🎬 XEM VIDEO & ẢNH FRAME", use_container_width=True, type="primary"):
-                                    chuyen_tab_bang_js("VIDEO & ẢNH")
+                            
+                            # Điều hướng linh hoạt theo vai trò
+                            if user_role == "Nghiên cứu viên":
+                                c_nav1, c_nav2 = st.columns(2)
+                                with c_nav1:
+                                    if st.button("📊 XEM BÁO CÁO PHÂN TÍCH", use_container_width=True, type="primary"):
+                                        chuyen_tab_bang_js("PHÂN TÍCH")
+                                with c_nav2:
+                                    if st.button("🎬 XEM VIDEO & ẢNH FRAME", use_container_width=True, type="primary"):
+                                        chuyen_tab_bang_js("VIDEO & ẢNH")
+                            elif user_role == "Bệnh nhân":
+                                if st.button("📊 XEM KẾT QUẢ CHI TIẾT", use_container_width=True, type="primary"):
+                                    chuyen_tab_bang_js("KẾT QUẢ")
+                            else: # Bác sĩ
+                                if st.button("📊 XEM ĐÁNH GIÁ LÂM SÀNG", use_container_width=True, type="primary"):
+                                    chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
                             
                             # THEO DÕI VIDEO CHO BÁC SĨ (NCKH)
                             if user_role == "Bệnh nhân":
