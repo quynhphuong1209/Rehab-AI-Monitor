@@ -289,30 +289,37 @@ THUMBNAIL_QUALITY = 90
 THUMBNAIL_WIDTH = 400
 
 # ============================================
-# HÀM CHUYỂN ĐỔI MOV SANG MP4
+# HÀM CHUYỂN ĐỔI MOV SANG MP4 (NÂNG CẤP)
 # ============================================
 def convert_mov_to_mp4(input_path):
-    output_path = input_path.replace('.mov', '.mp4').replace('.MOV', '.mp4')
+    output_path = input_path.rsplit('.', 1)[0] + '_converted.mp4'
     try:
+        # Kiểm tra ffmpeg có sẵn không
         result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
         if result.returncode != 0:
+            st.error("🚨 Lỗi: Hệ thống thiếu thư viện ffmpeg để xử lý video iPhone.")
             return input_path
         
-        subprocess.run([
-            'ffmpeg', '-i', input_path,
-            '-vcodec', 'libx264',
-            '-acodec', 'aac',
-            '-preset', 'fast',
-            '-crf', '23',
-            '-y',
+        # Chuyển đổi sang chuẩn H.264 ổn định nhất
+        cmd = [
+            'ffmpeg', '-y', '-i', input_path,
+            '-c:v', 'libx264',
+            '-c:a', 'aac',
+            '-pix_fmt', 'yuv420p',
+            '-preset', 'ultrafast',
+            '-crf', '28',
             output_path
-        ], check=True, capture_output=True, text=True, timeout=300)
+        ]
         
-        if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+        process = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        
+        if process.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
             return output_path
-        return input_path
+        else:
+            st.warning(f"⚠️ Chuyển đổi video gặp sự cố nhỏ, đang thử dùng bản gốc...")
+            return input_path
     except Exception as e:
-        print(f"Lỗi chuyển đổi MOV: {e}")
+        st.error(f"❌ Lỗi kỹ thuật khi xử lý video: {e}")
         return input_path
 
 # ============================================
@@ -3082,11 +3089,22 @@ def main():
                         progress_bar.progress(0.1)
                         
                         if is_mov:
-                            status_text.info("🔄 Đang chuyển đổi MOV sang MP4...")
-                            converted_path = convert_mov_to_mp4(video_path)
-                            if converted_path != video_path:
-                                video_path = converted_path
+                            with st.spinner("🔄 Đang chuẩn hóa video iPhone (.mov) sang .mp4..."):
+                                converted_path = convert_mov_to_mp4(video_path)
+                                if converted_path != video_path:
+                                    # Xóa file .mov cũ để tiết kiệm dung lượng
+                                    try: os.unlink(video_path)
+                                    except: pass
+                                    video_path = converted_path
                         
+                        # Kiểm tra OpenCV có đọc được file không trước khi bắt đầu
+                        test_cap = cv2.VideoCapture(video_path)
+                        if not test_cap.isOpened():
+                            st.error(f"❌ Lỗi: Hệ thống không thể đọc được file video này. Vui lòng thử quay video ngắn hơn hoặc dùng định dạng .mp4 chuẩn.")
+                            st.session_state.processing = False
+                            st.stop()
+                        test_cap.release()
+
                         progress_bar.progress(0.2)
                         status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
                         
