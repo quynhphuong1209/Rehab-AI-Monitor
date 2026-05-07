@@ -2776,35 +2776,35 @@ def hien_thi_form_danh_gia_bac_si():
 
         submitted = st.form_submit_button("🚀 GỬI ĐÁNH GIÁ CHO BỆNH NHÂN & NGHIÊN CỨU VIÊN", use_container_width=True)
         
-        if submitted:
-            evals = load_data(EVALUATIONS_FILE)
-            new_eval = {
-                "patient_username": selected_video['username'],
-                "doctor_username": st.session_state.user_info['username'],
-                "video_name": selected_video['video_name'],
-                "exercise": selected_video['exercise'],
-                "ai_accuracy": selected_video['accuracy'],
-                "doctor_result": ket_qua,
-                "errors": loi_sai,
-                "comments": nhan_xet,
-                "plan": ke_hoach,
-                "doctor_name": st.session_state.user_info.get('full_name', st.session_state.user_info['username']),
-                "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
-            }
-            evals.append(new_eval)
-            save_data(EVALUATIONS_FILE, evals)
-            
-            # Cập nhật trạng thái video
-            video_list = load_data(VIDEOS_FILE)
-            for v in video_list:
-                if v['video_path'] == selected_video['video_path']:
-                    v['status'] = "Đã đánh giá"
-            save_data(VIDEOS_FILE, video_list)
-            
-            st.success("✅ Đã gửi đánh giá thành công!")
-            if st.button("⏰ Đặt lịch hẹn/nhắc nhở cho BN này", use_container_width=True):
-                chuyen_tab_bang_js("LỊCH NHẮC NHỞ")
-            st.balloons()
+    if submitted:
+        evals = load_data(EVALUATIONS_FILE)
+        new_eval = {
+            "patient_username": selected_video['username'],
+            "doctor_username": st.session_state.user_info['username'],
+            "video_name": selected_video['video_name'],
+            "exercise": selected_video['exercise'],
+            "ai_accuracy": selected_video['accuracy'],
+            "doctor_result": ket_qua,
+            "errors": loi_sai,
+            "comments": nhan_xet,
+            "plan": ke_hoach,
+            "doctor_name": st.session_state.user_info.get('full_name', st.session_state.user_info['username']),
+            "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+        }
+        evals.append(new_eval)
+        save_data(EVALUATIONS_FILE, evals)
+        
+        # Cập nhật trạng thái video
+        video_list = load_data(VIDEOS_FILE)
+        for v in video_list:
+            if v['video_path'] == selected_video['video_path']:
+                v['status'] = "Đã đánh giá"
+        save_data(VIDEOS_FILE, video_list)
+        
+        st.success("✅ Đã gửi đánh giá thành công!")
+        if st.button("⏰ Đặt lịch hẹn/nhắc nhở cho BN này", use_container_width=True):
+            chuyen_tab_bang_js("LỊCH NHẮC NHỞ")
+        st.balloons()
 
 def hien_thi_ket_qua_cho_benh_nhan():
     st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỪ BÁC SĨ & AI")
