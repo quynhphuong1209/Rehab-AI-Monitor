@@ -4504,7 +4504,7 @@ def main():
                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                         })
                         save_data(SYMPTOMS_FILE, s_data)
-                        st.success("✅ Đã gửi thành công!")
+                        st.success("✅ Đã gửi thông tin cho BÁC SĨ, KTV và NCV thành công!")
                         st.balloons()
                     else:
                         st.warning("⚠️ Vui lòng nhập mô tả.")
@@ -4875,7 +4875,7 @@ def main():
                             "status": "Chờ bác sĩ phân tích"
                         })
                         save_data(VIDEOS_FILE, video_list)
-                        st.success("✅ Đã gửi video cho Bác sĩ thành công! Bác sĩ sẽ xem và đánh giá bài tập của bạn.")
+                        st.success("✅ Đã gửi video cho BÁC SĨ, KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
                         st.balloons()
 
             # === HIỆN TRẠNG THÁI ĐANG XỬ LÝ HOẶC ĐÃ CÓ KẾT QUẢ ===
