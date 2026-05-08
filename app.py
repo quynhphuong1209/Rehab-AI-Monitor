@@ -3377,32 +3377,18 @@ def hien_thi_form_danh_gia_bac_si():
     tab_titles_eval = ["📝 ĐÁNH GIÁ CHUYÊN MÔN"]
     if has_ai_sent and st.session_state.user_info.get('role') == "Nghiên cứu viên":
         tab_titles_eval += ["📊 CHI TIẾT AI PHÂN TÍCH", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"]
-    
-    tabs_eval = st.tabs(tab_titles_eval)
-    tab_form = tabs_eval[0]
+
+    # HIỂN THỊ CÔNG CỤ THEO TAB (HOẶC TRỰC TIẾP NẾU CHỈ CÓ 1 TAB)
+    if len(tab_titles_eval) > 1:
+        tabs_eval = st.tabs(tab_titles_eval)
+        tab_form = tabs_eval[0]
+    else:
+        tab_form = st.container()
+
 
     with tab_form:
-        # === HIỂN THỊ KẾT QUẢ AI TỪ NGHIÊN CỨU VIÊN ===
-        evals_data = load_data(EVALUATIONS_FILE)
-        patient_evals = [e for e in evals_data if e['patient_username'] == selected_video['username']]
-        if patient_evals:
-            with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ AI & CHUYÊN MÔN", expanded=True):
-                for e in reversed(patient_evals):
-                    is_ai = e.get('doctor_username') == "AI_Researcher"
-                    bg_color = "rgba(0,206,209,0.05)" if is_ai else "rgba(255,215,0,0.05)"
-                    border_color = "#00CED1" if is_ai else "#ffd700"
-                    label = "🤖 KẾT QUẢ AI" if is_ai else "👨‍⚕️ BÁC SĨ ĐÁNH GIÁ"
-                    
-                    st.markdown(f"""
-                    <div style="background: {bg_color}; border: 1px solid {border_color}; padding: 1rem; border-radius: 10px; margin-bottom: 0.5rem;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <strong style="color: {border_color};">{label}</strong>
-                            <span style="color: #888; font-size: 0.8rem;">{e['time']}</span>
-                        </div>
-                        <p style="margin: 5px 0;"><b>Độ chính xác:</b> {e['ai_accuracy']}% | <b>Kết quả:</b> {e['doctor_result']}</p>
-                        <p style="margin: 5px 0; font-size: 0.9rem;"><b>Nhận xét:</b> {e['comments']}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+        # (Lịch sử đánh giá được ẩn đi cho Bác sĩ theo yêu cầu, chỉ hiển thị cho Bệnh nhân)
+
 
         with st.form("doctor_eval_form"):
             st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
@@ -3472,11 +3458,18 @@ def hien_thi_ket_qua_cho_benh_nhan():
     evals = load_data(EVALUATIONS_FILE)
     my_evals = [e for e in evals if e['patient_username'] == st.session_state.user_info['username']]
     
-    if not my_evals:
-        st.info("📭 Hiện chưa có đánh giá nào từ bác sĩ. Kết quả AI của bạn sẽ hiển thị sau khi bạn upload video ở TRANG CHỦ.")
+    # Kiểm tra điều kiện: Cần có cả đánh giá từ Bác sĩ và AI/NCV mới hiện kết quả
+    has_doctor_eval = any(e.get('doctor_username') != "AI_Researcher" for e in my_evals)
+    has_ai_eval = any(e.get('doctor_username') == "AI_Researcher" for e in my_evals)
+
+    if not has_doctor_eval or not has_ai_eval:
+        st.info("🕒 Kết quả đánh giá chuyên môn của bạn đang được xử lý. Vui lòng quay lại sau khi cả Bác sĩ và Nhóm Nghiên cứu hoàn tất đánh giá.")
         if st.session_state.has_data:
-            hien_thi_tab_phan_tich(key_suffix="pat_no_eval")
+            st.markdown("---")
+            st.markdown("### 📈 SƠ BỘ PHÂN TÍCH AI (DÀNH CHO BẠN)")
+            hien_thi_tab_phan_tich(key_suffix="pat_no_eval_full")
     else:
+
         tab_eval, tab_charts, tab_media = st.tabs([
             "📝 NHẬN XÉT CỦA BÁC SĨ & AI",
             "📊 BIỂU ĐỒ PHÂN TÍCH",
@@ -3570,7 +3563,6 @@ def hien_thi_lich_nhac_nho():
     
     # LOAD DATA TỪ FILE
     schedules = load_data(REMINDERS_FILE)
-    users = load_users()
     if not isinstance(schedules, list): schedules = []
     
     # FILTER DATA
@@ -5204,7 +5196,7 @@ def main():
             </div>
         </div>
         <div class="footer-bottom">
-            Đơn vị phát triển: <b>Nhóm Nghiên cứu viên Trường Đại học Y tế Công cộng</b> | © 2026 REHAB-AI-MONITOR
+            Đơn vị phát triển: <b>NHÓM NGHIÊN CỨU VIÊN TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</b> | © 2026 REHAB-AI-MONITOR
         </div>
     </div>
     """
