@@ -5203,7 +5203,7 @@ def main():
             </div>
         </div>
         <div class="footer-bottom">
-            Đơn vị phát triển: <b>CÔNG TY CỔ PHẦN GIẢI PHÁP NAM VIỆT</b> | © 2025 REHAB-AI-MONITOR
+            Đơn vị phát triển: <b>Nhóm Nghiên cứu viên Trường Đại học Y tế Công cộng</b> | © 2026 REHAB-AI-MONITOR
         </div>
     </div>
     """
