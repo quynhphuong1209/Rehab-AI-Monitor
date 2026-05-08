@@ -4500,7 +4500,14 @@ def main():
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        sel_v_ncv = st.session_state.get('current_eval_video')
+        has_ai_ncv = sel_v_ncv and sel_v_ncv.get('accuracy', 0) > 0
+        
+        tab_titles = ["🏠 TRANG CHỦ", "📝 TIẾN TRÌNH PHÂN TÍCH"]
+        if has_ai_ncv:
+            tab_titles += ["📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH"]
+            
+        tab_titles += ["📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     
@@ -4518,6 +4525,97 @@ def main():
             info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
             info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
             info_text = "#000" if is_light else "#fff"
+
+            # === PHẦN RIÊNG CHO TIẾN TRÌNH PHÂN TÍCH CỦA NCV ===
+            if "📝 TIẾN TRÌNH PHÂN TÍCH" in tab_map:
+                with tab_map["📝 TIẾN TRÌNH PHÂN TÍCH"]:
+                    v_ncv = st.session_state.get('current_eval_video')
+                    if v_ncv:
+                        st.markdown(f"## 📝 TIẾN TRÌNH PHÂN TÍCH: {v_ncv['full_name']}")
+                        
+                        # 1. HIỂN THỊ GROUND TRUTH TỪ BÁC SĨ ĐỂ NCV ĐỐI CHIẾU
+                        evals_db = load_data(EVALUATIONS_FILE)
+                        doc_eval = next((e for e in evals_db if e['patient_username'] == v_ncv['username'] and e['video_name'] == v_ncv['video_name'] and e.get('doctor_username') != "AI_Researcher"), None)
+                        
+                        st.markdown("### 🩺 1. DỮ LIỆU LÂM SÀNG (GROUND TRUTH)")
+                        if doc_eval:
+                            c1, c2 = st.columns(2)
+                            with c1:
+                                st.info(f"**Kết quả Bác sĩ:** {doc_eval['doctor_result']}")
+                                st.warning(f"**Lỗi sai chỉ định:** {', '.join(doc_eval.get('errors', [])) if doc_eval.get('errors') else 'Không có'}")
+                            with c2:
+                                st.success(f"**Nhận xét chuyên môn:** {doc_eval.get('comments', 'Không có')}")
+                                st.write(f"**Thời gian đánh giá:** {doc_eval.get('time', 'N/A')}")
+                        else:
+                            st.warning("⚠️ Bác sĩ chưa thực hiện đánh giá Ground Truth cho video này. Bạn vẫn có thể thực hiện phân tích AI, nhưng nên chờ kết quả lâm sàng để đối soát.")
+
+                        st.markdown("---")
+                        st.markdown("### 🤖 2. XỬ LÝ DỮ LIỆU KHUNG XƯƠNG AI")
+                        
+                        # Nếu chưa phân tích -> Hiện nút phân tích
+                        if v_ncv.get('accuracy', 0) == 0:
+                            st.info("💡 Bấm nút dưới đây để bắt đầu trích xuất tọa độ 33 khớp xương và tính toán ROM lâm sàng.")
+                            if st.button("🚀 BẮT ĐẦU PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU", use_container_width=True, type="primary"):
+                                st.session_state.processing = True
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
+                                
+                                try:
+                                    start_time_ncv = time.time()
+                                    ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == v_ncv['exercise']), 'codman')
+                                    bt_ncv = BAI_TAP[ex_key]
+                                    
+                                    def update_p_ncv(p):
+                                        progress_bar.progress(p)
+                                        status_text.info(f"🔄 Đang xử lý AI... {p*100:.0f}%")
+                                    
+                                    m_type = st.session_state.get('ncv_model_type', 'MediaPipe Full')
+                                    m_conf = st.session_state.get('ncv_confidence', 0.5)
+                                    
+                                    out_path, _, _, ang_data, t_f, v_f, _, _, _, _, afd_p, a_w = xu_ly_video_day_du(
+                                        v_ncv['video_path'], bt_ncv['chuan'], update_p_ncv,
+                                        model_type=m_type, min_confidence=m_conf
+                                    )
+                                    
+                                    if v_f > 0:
+                                        metrics = tinh_metrics_chi_tiet(pd.DataFrame(ang_data), bt_ncv)
+                                        v_ncv['accuracy'] = round(metrics["ty_le_tong_the"], 1)
+                                        v_ncv['metrics'] = {
+                                            "do_chinh_xac": metrics["ty_le_tong_the"],
+                                            "tb_goc_vai": metrics["tb_goc_vai"],
+                                            "tb_goc_khuyu": metrics["tb_goc_khuyu"],
+                                            "thoi_gian": time.time() - start_time_ncv,
+                                            "tong_frame": t_f,
+                                            "tong_frame_hop_le": v_f,
+                                            "frame_dung": metrics["frame_dung"],
+                                            "frame_gan_dung": metrics["frame_gan_dung"],
+                                            "warnings": a_w
+                                        }
+                                        v_ncv['processed_path'] = out_path
+                                        v_ncv['status'] = "Đã phân tích"
+                                        
+                                        # Lưu lại video_list
+                                        v_list = load_data(VIDEOS_FILE)
+                                        for vid in v_list:
+                                            if vid['video_path'] == v_ncv['video_path']:
+                                                vid.update(v_ncv)
+                                        save_data(VIDEOS_FILE, v_list)
+                                        
+                                        st.success("✅ Phân tích AI hoàn tất! Các tab dữ liệu chi tiết đã được mở khóa.")
+                                        st.balloons()
+                                        st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ Lỗi: {e}")
+                                finally:
+                                    st.session_state.processing = False
+                        else:
+                            st.success("✅ Video này đã được phân tích dữ liệu AI.")
+                            st.info("🎯 Bạn có thể truy cập các tab **📊 PHÂN TÍCH** và **🎬 VIDEO & ẢNH** ở thanh menu trên cùng để xem chi tiết.")
+                            if st.button("➡️ CHUYỂN ĐẾN TAB PHÂN TÍCH CHI TIẾT", use_container_width=True):
+                                st.session_state.trigger_tab_switch = "📊 PHÂN TÍCH"
+                                st.rerun()
+                    else:
+                        st.info("👋 Xin chào NCV! Vui lòng chọn một video từ **🏠 TRANG CHỦ** để bắt đầu quy trình phân tích.")
 
             # 1. HÀNG ĐẦU: THÔNG TIN VÀ CHỈ SỐ
             col1, col2 = st.columns([2, 1])
@@ -4874,6 +4972,15 @@ def main():
                                         
                                     st.write(f"**Trạng thái:** {v['status']}")
                                     
+                                    # HIỂN THỊ GROUND TRUTH CỦA BÁC SĨ (NẾU CÓ) CHO NCV
+                                    if user_role == "Nghiên cứu viên":
+                                        evals_db = load_data(EVALUATIONS_FILE)
+                                        doc_eval = next((e for e in evals_db if e['patient_username'] == v['username'] and e['video_name'] == v['video_name'] and e.get('doctor_username') != "AI_Researcher"), None)
+                                        if doc_eval:
+                                            st.markdown(f"**🩺 Ground Truth:** <span style='color: #00CED1; font-weight: bold;'>{doc_eval['doctor_result']}</span>", unsafe_allow_html=True)
+                                        else:
+                                            st.write("**🩺 Ground Truth:** ⏳ Chờ Bác sĩ")
+                                    
                                     # Đổi nhãn nút theo vai trò
                                     eval_btn_label = "📝 Đánh giá của chuyên môn PHCN" if user_role == "Bác sĩ / KTV PHCN" else "📝 Phân tích và trích xuất khung xương AI"
                                     if st.button(eval_btn_label, key=f"eval_btn_{idx}", use_container_width=True):
@@ -4886,7 +4993,7 @@ def main():
                                         if user_role == "Bác sĩ / KTV PHCN":
                                             st.session_state.trigger_tab_switch = "ĐÁNH GIÁ PHCN"
                                         else: # Nghiên cứu viên
-                                            st.session_state.trigger_tab_switch = "PHÂN TÍCH"
+                                            st.session_state.trigger_tab_switch = "TIẾN TRÌNH PHÂN TÍCH"
                                         st.rerun()
                                     
                                     if st.button("🗑️ Xóa video này", key=f"del_video_{idx}", use_container_width=True):
