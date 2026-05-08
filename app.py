@@ -1161,42 +1161,61 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     mau_khuyu = (0, 255, 0) if khuyu_dung else (ORANGE_BGR if khuyu_gan_dung else (0, 0, 255))
     mau_tong = (0, 255, 0) if tong_the else (ORANGE_BGR if gan_dung_tong_the else (0, 0, 255))
     
-    # VẼ CUNG TRÒN GÓC TẠI KHỚP
+    # === 1. VẼ HEADER TRÊN CÙNG (TOP BAR) ===
+    header_h = 35
+    cv2.rectangle(frame_output, (0, 0), (w, header_h), (10, 10, 10), -1) # Nền đen
+    cv2.rectangle(frame_output, (0, 0), (w, header_h), mau_tong, 2)    # Viền theo trạng thái
+    cv2.putText(frame_output, f"Frame #{frame_idx}", (w // 2 - 50, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    
+    # === 2. VẼ CUNG TRÒN VÀ SỐ ĐO TẠI KHỚP (JOINT LABELS) ===
+    # Vẽ cung tròn
     ve_cung_tron_goc(frame_output, pts_vai[0], pts_vai[1], pts_vai[2], goc_vai, mau_vai, radius=35)
     ve_cung_tron_goc(frame_output, pts_khuyu[0], pts_khuyu[1], pts_khuyu[2], goc_khuyu, mau_khuyu, radius=30)
     
-    # === VẼ OVERLAY THÔNG TIN CHI TIẾT (FRAME BOX) - THEO MẪU ẢNH ===
+    # Vẽ nhãn số đo ngay tại khớp
+    cv2.putText(frame_output, f"{int(goc_vai)}", (pts_vai[1][0] + 15, pts_vai[1][1] - 15), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, mau_vai, 2)
+    cv2.putText(frame_output, f"{int(goc_khuyu)}", (pts_khuyu[1][0] + 15, pts_khuyu[1][1] - 15), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, mau_khuyu, 2)
+    
+    # === 3. VẼ BOX THÔNG TIN CHI TIẾT (TOP-LEFT BOX) ===
+    box_x, box_y = 15, 50
+    box_w, box_h = 330, 160
+    
+    # Tạo lớp overlay cho độ trong suốt
     overlay = frame_output.copy()
-    box_w, box_h = 320, 160
-    cv2.rectangle(overlay, (10, 10), (box_w, box_h), (30, 30, 30), -1) # Nền tối
-    cv2.rectangle(overlay, (10, 10), (box_w, box_h), (255, 255, 255), 2) # Viền trắng
-    cv2.addWeighted(overlay, 0.7, frame_output, 0.3, 0, frame_output)
+    cv2.rectangle(overlay, (box_x, box_y), (box_x + box_w, box_y + box_h), (40, 40, 40), -1) # Nền xám tối
+    cv2.addWeighted(overlay, 0.6, frame_output, 0.4, 0, frame_output)
+    cv2.rectangle(frame_output, (box_x, box_y), (box_x + box_w, box_y + box_h), (255, 255, 255), 2) # Viền trắng
     
-    # Màu sắc trạng thái
+    # Text thông tin trong Box
     status_text = "PASS" if tong_the else ("NEARLY" if gan_dung_tong_the else "FAIL")
-    status_color = (0, 255, 0) if tong_the else (ORANGE_BGR if gan_dung_tong_the else (0, 0, 255))
     CYAN = (255, 255, 0) # BGR Cyan
-    
-    # Vẽ text thông tin
     font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(frame_output, f"FRAME #{frame_idx}", (25, 40), font, 0.7, CYAN, 2)
-    cv2.putText(frame_output, status_text, (box_w - 90, 40), font, 0.8, status_color, 3)
     
+    # Dòng 1: FRAME & STATUS
+    cv2.putText(frame_output, f"FRAME #{frame_idx}", (box_x + 15, box_y + 30), font, 0.75, CYAN, 2)
+    cv2.putText(frame_output, status_text, (box_x + 215, box_y + 30), font, 0.85, mau_tong, 3)
+    
+    # Dòng 2: TIME
     time_sec = frame_idx / fps
-    time_min = int(time_sec // 60)
-    time_rem = int(time_sec % 60)
-    cv2.putText(frame_output, f"TIME: {time_min:02d}:{time_rem:02d}", (25, 70), font, 0.6, CYAN, 1)
+    time_str = f"{int(time_sec // 60):02d}:{int(time_sec % 60):02d}"
+    cv2.putText(frame_output, f"TIME: {time_str}", (box_x + 15, box_y + 60), font, 0.6, (180, 180, 180), 1)
     
-    cv2.putText(frame_output, f"SHOULDER", (25, 100), font, 0.5, (200, 200, 200), 1)
-    cv2.putText(frame_output, f"{goc_vai:.1f} / {chuan_vai}", (25, 120), font, 0.6, mau_vai, 2)
+    # Dòng 3: SHOULDER
+    cv2.putText(frame_output, "SHOULDER", (box_x + 15, box_y + 100), font, 0.5, (220, 220, 220), 1)
+    cv2.putText(frame_output, f"{int(goc_vai)}", (box_x + 15, box_y + 130), font, 0.8, mau_vai, 2)
+    cv2.putText(frame_output, f"/ {chuan_vai}", (box_x + 85, box_y + 130), font, 0.6, (150, 150, 150), 1)
     
-    cv2.putText(frame_output, f"ELBOW", (170, 100), font, 0.5, (200, 200, 200), 1)
-    cv2.putText(frame_output, f"{goc_khuyu:.1f} / {chuan_khuyu}", (170, 120), font, 0.6, mau_khuyu, 2)
+    # Dòng 4: ELBOW
+    cv2.putText(frame_output, "ELBOW", (box_x + 180, box_y + 100), font, 0.5, (220, 220, 220), 1)
+    cv2.putText(frame_output, f"{int(goc_khuyu)}", (box_x + 180, box_y + 130), font, 0.8, mau_khuyu, 2)
+    cv2.putText(frame_output, f"/ {chuan_khuyu}", (box_x + 250, box_y + 130), font, 0.6, (150, 150, 150), 1)
     
     warnings_list = get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, ss)
     if warnings_list:
-        w_text = warnings_list[0][:30] + "..." if len(warnings_list[0]) > 30 else warnings_list[0]
-        cv2.putText(frame_output, f"WARNING: {w_text}", (25, 145), font, 0.45, (0, 255, 255), 1)
+        w_text = warnings_list[0][:40] + "..." if len(warnings_list[0]) > 40 else warnings_list[0]
+        cv2.putText(frame_output, f"! {w_text}", (box_x + 15, box_y + 152), font, 0.4, (0, 255, 255), 1)
 
     # Đảm bảo trả về kiểu dữ liệu Python chuẩn (tránh lỗi JSON serialization với NumPy)
     goc_vai = float(goc_vai)
