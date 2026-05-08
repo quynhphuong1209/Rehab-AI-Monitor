@@ -609,15 +609,22 @@ if st.session_state.get('theme') == 'light':
         }
         /* Fix ALL Selectboxes, TextInputs, and TextAreas in Light Mode */
         .stSelectbox div[data-baseweb="select"],
+        .stSelectbox div[data-baseweb="select"] *,
         .stTextInput input, 
         .stTextArea textarea,
-        .stNumberInput input {
+        .stNumberInput input,
+        .stNumberInput div[data-baseweb="input"],
+        .stNumberInput div[data-baseweb="input"] * {
             background-color: #ffffff !important;
             color: #000000 !important;
-            border: 1px solid #ced4da !important;
+            border-color: #ced4da !important;
         }
         
-        .stSelectbox div[data-baseweb="select"] * {
+        /* Fix the actual dropdown list and items */
+        div[data-baseweb="popover"] div, 
+        div[data-baseweb="popover"] ul, 
+        div[data-baseweb="popover"] li {
+            background-color: #ffffff !important;
             color: #000000 !important;
         }
 
@@ -626,20 +633,10 @@ if st.session_state.get('theme') == 'light':
             background-color: #ffffff !important;
         }
 
-        /* Fix Sidebar Labels */
-        [data-testid="stSidebar"] label {
+        /* Fix Sidebar Labels and Titles */
+        [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
             color: #212529 !important;
             font-weight: 600 !important;
-        }
-
-        /* Fix Dropdown menus globally */
-        div[data-baseweb="popover"] div { 
-            background-color: #ffffff !important; 
-            color: #000000 !important; 
-        }
-        
-        div[data-baseweb="popover"] li {
-            color: #000000 !important;
         }
 
         /* Fix File Uploader */
@@ -649,6 +646,12 @@ if st.session_state.get('theme') == 'light':
             color: #333 !important;
         }
         [data-testid="stFileUploader"] section div { color: #333 !important; }
+        
+        /* Fix pagination number input buttons */
+        .stNumberInput button {
+            background-color: #f1f3f5 !important;
+            color: #000000 !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
