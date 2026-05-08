@@ -3563,6 +3563,7 @@ def hien_thi_lich_nhac_nho():
     
     # LOAD DATA TỪ FILE
     schedules = load_data(REMINDERS_FILE)
+    users = load_users()
     if not isinstance(schedules, list): schedules = []
     
     # FILTER DATA
@@ -3677,7 +3678,9 @@ def hien_thi_lich_nhac_nho():
             
             if current_eval:
                 selected_patient = current_eval['username']
-                patient_name = users.get(selected_patient, {}).get('full_name', selected_patient)
+                # Đảm bảo users được load lại để tránh lỗi NameError
+                current_users = load_users()
+                patient_name = current_users.get(selected_patient, {}).get('full_name', selected_patient)
                 st.markdown(f"""
                 <div style="background: rgba(0, 198, 255, 0.1); padding: 15px; border-radius: 12px; border-left: 5px solid #00c6ff; margin-bottom: 20px;">
                     <p style="margin:0; color:#888; font-size:0.8rem;">👤 BỆNH NHÂN ĐƯỢC CHỌN:</p>
@@ -3693,7 +3696,7 @@ def hien_thi_lich_nhac_nho():
                 return
 
             selected_patient = st.selectbox("Xác nhận bệnh nhân:", patients, index=0, 
-                                          format_func=lambda x: f"🌟 {users[x].get('full_name', x)}")
+                                          format_func=lambda x: f"🌟 {load_users()[x].get('full_name', x)}")
             
             loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True)
             
@@ -3715,13 +3718,13 @@ def hien_thi_lich_nhac_nho():
                             'datetime': f"{date} {time_input}",
                             'notes': notes,
                             'patient_username': selected_patient,
-                            'patient_name': users[selected_patient].get('full_name', selected_patient),
+                            'patient_name': load_users()[selected_patient].get('full_name', selected_patient),
                             'doctor_username': username,
                             'doctor_name': user_info.get('full_name', username)
                         }
                         schedules.append(new_item)
                         save_data(REMINDERS_FILE, schedules)
-                        st.success(f"✅ Đã thêm lịch hẹn cho {users[selected_patient].get('full_name', selected_patient)}!")
+                        st.success(f"✅ Đã thêm lịch hẹn cho {load_users()[selected_patient].get('full_name', selected_patient)}!")
                         st.rerun()
             
             elif loai == "Lịch tập luyện":
@@ -3738,13 +3741,13 @@ def hien_thi_lich_nhac_nho():
                             'frequency': frequency,
                             'notes': notes,
                             'patient_username': selected_patient,
-                            'patient_name': users[selected_patient].get('full_name', selected_patient),
+                            'patient_name': load_users()[selected_patient].get('full_name', selected_patient),
                             'doctor_username': username,
                             'doctor_name': user_info.get('full_name', username)
                         }
                         schedules.append(new_item)
                         save_data(REMINDERS_FILE, schedules)
-                        st.success(f"✅ Đã thêm lịch tập cho {users[selected_patient].get('full_name', selected_patient)}!")
+                        st.success(f"✅ Đã thêm lịch tập cho {load_users()[selected_patient].get('full_name', selected_patient)}!")
                         st.rerun()
             
             else:
