@@ -3375,7 +3375,7 @@ def hien_thi_form_danh_gia_bac_si():
     has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in patient_evals)
 
     tab_titles_eval = ["📝 ĐÁNH GIÁ CHUYÊN MÔN"]
-    if has_ai_sent and st.session_state.user_info.get('role') == "Nghiên cứu viên":
+    if has_ai_sent and st.session_state.user_info.get('role') in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
         tab_titles_eval += ["📊 CHI TIẾT AI PHÂN TÍCH", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"]
 
     # HIỂN THỊ CÔNG CỤ THEO TAB (HOẶC TRỰC TIẾP NẾU CHỈ CÓ 1 TAB)
