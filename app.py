@@ -3686,9 +3686,9 @@ def hien_thi_frames_day_du(key_suffix=""):
         with open(path, 'rb') as img_file:
             return base64.b64encode(img_file.read()).decode('utf-8')
 
-    cols_per_row = 4
+    cols_per_row = 2
     for i in range(0, len(page_indices), cols_per_row):
-        cols = st.columns(cols_per_row, gap='large')
+        cols = st.columns([1.5, 1], gap='large')
         for j in range(cols_per_row):
             idx = i + j
             if idx < len(page_indices):
@@ -3707,33 +3707,64 @@ def hien_thi_frames_day_du(key_suffix=""):
                 image_b64 = image_to_base64(frame_path)
 
                 with cols[j]:
-                    st.markdown(f"""
-                    <div style='border-radius:18px; overflow:hidden; border:2px solid #10b981; background:#0f172a; box-shadow:0 8px 20px rgba(0,0,0,0.4);'>
-                        <div style='background:#10b981; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;'>
-                            <div style='font-size:0.82rem; color:#ffffff; font-weight:600; letter-spacing:0.04em;'>● Frame #{frame_number}</div>
-                            <div style='font-size:0.78rem; color:#ffffff; font-weight:600;'>{status_text}</div>
-                        </div>
-                        <div style='position:relative; background:#1e293b;'>
-                            <img src='data:image/png;base64,{image_b64}' style='width:100%; display:block; border-bottom:1px solid rgba(148,163,184,0.12);'/>
-                            <div style='position:absolute; top:8px; left:8px; background:rgba(15,23,42,0.85); border:1px solid rgba(16,185,129,0.4); border-radius:10px; padding:8px 12px;'>
-                                <div style='color:#a5f3fc; font-size:0.76rem; font-weight:700;'>FRAME #1</div>
-                                <div style='color:#cbd5e1; font-size:0.7rem; margin-top:2px;'>TIME: {timestamp}</div>
-                            </div>
-                        </div>
-                        <div style='padding:10px 12px; background:#0f172a; border-top:1px solid rgba(148,163,184,0.12);'>
-                            <div style='display:flex; flex-direction:column; gap:6px;'>
-                                <div style='display:flex; justify-content:space-between; font-size:0.78rem;'>
-                                    <span style='color:#7dd3fc;'>SHOULDER:</span>
-                                    <span style='color:#a5f3fc; font-weight:700;'>{shoulder_angle:.0f}°</span>
-                                </div>
-                                <div style='display:flex; justify-content:space-between; font-size:0.78rem;'>
-                                    <span style='color:#fda4af;'>ELBOW:</span>
-                                    <span style='color:#f87171; font-weight:700;'>{elbow_angle:.0f}°</span>
+                    # Layout: 70% ảnh + overlay, 30% thông tin
+                    col_img, col_info = st.columns([2, 1], gap='medium')
+                    
+                    with col_img:
+                        # Ảnh với overlay box
+                        st.markdown(f"""
+                        <div style='position:relative; display:inline-block; width:100%;'>
+                            <img src='data:image/png;base64,{image_b64}' style='width:100%; border-radius:16px; border:2px solid #10b981; display:block;'/>
+                            <div style='position:absolute; top:12px; left:12px; background:rgba(15,23,42,0.88); border:2px solid rgba(16,185,129,0.5); border-radius:12px; padding:10px 14px; backdrop-filter:blur(8px);'>
+                                <div style='color:#7dd3fc; font-size:0.85rem; font-weight:700; margin-bottom:4px;'>● FRAME #{frame_number}</div>
+                                <div style='color:#cbd5e1; font-size:0.75rem; margin-bottom:8px;'>TIME: {timestamp}</div>
+                                <div style='border-top:1px solid rgba(255,255,255,0.1); padding-top:6px;'>
+                                    <div style='color:#a5f3fc; font-size:0.8rem; margin-bottom:3px;'>SHOULDER</div>
+                                    <div style='color:#ffffff; font-size:0.9rem; font-weight:700; margin-bottom:6px;'>{shoulder_angle:.0f}° <span style="color:#94a3b8; font-size:0.75rem;">/ 90°</span></div>
+                                    <div style='color:#fda4af; font-size:0.8rem; margin-bottom:3px;'>ELBOW</div>
+                                    <div style='color:#ffffff; font-size:0.9rem; font-weight:700;'>{elbow_angle:.0f}° <span style="color:#94a3b8; font-size:0.75rem;">/ 160°</span></div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        """, unsafe_allow_html=True)
+                    
+                    with col_info:
+                        # Box thông tin bên phải
+                        status_color_bg = "#064e3b" if status_text == "PASS" else ("#78350f" if status_text == "NEARLY" else "#7f1d1d")
+                        st.markdown(f"""
+                        <div style='background:#0f172a; border:2px solid {status_color}; border-radius:14px; padding:14px; height:100%;'>
+                            <div style='display:flex; align-items:center; gap:8px; margin-bottom:12px;'>
+                                <div style='width:40px; height:40px; background:{status_color_bg}; border-radius:8px; display:flex; align-items:center; justify-content:center;'>
+                                    <span style='color:{status_color}; font-weight:900; font-size:1.2rem;'>●</span>
+                                </div>
+                                <div>
+                                    <div style='color:#94a3b8; font-size:0.75rem;'>STATUS</div>
+                                    <div style='color:{status_color}; font-size:1rem; font-weight:700;'>{status_text}</div>
+                                </div>
+                            </div>
+                            
+                            <div style='border-top:1px solid rgba(148,163,184,0.1); padding-top:10px;'>
+                                <div style='margin-bottom:10px;'>
+                                    <div style='color:#7dd3fc; font-size:0.8rem; margin-bottom:2px;'>SHOULDER ANGLE</div>
+                                    <div style='color:#ffffff; font-size:1rem; font-weight:700;'>{shoulder_angle:.1f}°</div>
+                                    <div style='color:#94a3b8; font-size:0.7rem;'>Reference: 90°</div>
+                                </div>
+                                
+                                <div style='margin-bottom:10px;'>
+                                    <div style='color:#fda4af; font-size:0.8rem; margin-bottom:2px;'>ELBOW ANGLE</div>
+                                    <div style='color:#ffffff; font-size:1rem; font-weight:700;'>{elbow_angle:.1f}°</div>
+                                    <div style='color:#94a3b8; font-size:0.7rem;'>Reference: 160°</div>
+                                </div>
+                                
+                                <div style='border-top:1px solid rgba(148,163,184,0.1); padding-top:8px; margin-top:8px;'>
+                                    <div style='color:#cbd5e1; font-size:0.75rem; display:flex; justify-content:space-between;'>
+                                        <span>Frame #{frame_number}</span>
+                                        <span>{timestamp}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
     st.markdown("---")
     summary_cols = st.columns(4, gap='large')
