@@ -3845,10 +3845,68 @@ def hien_thi_frames_day_du(key_suffix=""):
             """
             grid_html += frame_card
             
-    # Calculate height based on rows (1 column for MAXIMUM size)
-    num_rows = len(page_indices)
-    # Refined height to eliminate bottom gap (680px is optimal for most vertical views)
-    calculated_height = num_rows * 680 + 20 
+            """
+            grid_html += frame_card
+            
+        # APPEND SUMMARY BAR TO GRID HTML
+        grid_html += f"""
+        </div> <!-- End of grid-container -->
+        <div style='margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 30px;'>
+            <div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px;'>
+                <div style='text-align: center; background: rgba(56,189,248,0.1); padding: 15px; border-radius: 15px; border: 1px solid #38bdf8;'>
+                    <div style='font-size: 0.8rem; color: #888;'>📊 Tổng frame</div>
+                    <div style='font-size: 1.4rem; font-weight: bold; color: #38bdf8;'>{total_frames}</div>
+                </div>
+                <div style='text-align: center; background: rgba(34,197,94,0.1); padding: 15px; border-radius: 15px; border: 1px solid #22c55e;'>
+                    <div style='font-size: 0.8rem; color: #888;'>✅ PASS</div>
+                    <div style='font-size: 1.4rem; font-weight: bold; color: #22c55e;'>{pass_count}</div>
+                </div>
+                <div style='text-align: center; background: rgba(245,158,11,0.1); padding: 15px; border-radius: 15px; border: 1px solid #f59e0b;'>
+                    <div style='font-size: 0.8rem; color: #888;'>⚠️ NEARLY</div>
+                    <div style='font-size: 1.4rem; font-weight: bold; color: #f59e0b;'>{nearly_count}</div>
+                </div>
+                <div style='text-align: center; background: rgba(239,68,68,0.1); padding: 15px; border-radius: 15px; border: 1px solid #ef4444;'>
+                    <div style='font-size: 0.8rem; color: #888;'>❌ FAIL</div>
+                    <div style='font-size: 1.4rem; font-weight: bold; color: #ef4444;'>{fail_count}</div>
+                </div>
+                <div style='text-align: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2);'>
+                    <div style='font-size: 0.8rem; color: #888;'>📄 Trang</div>
+                    <div style='font-size: 1.4rem; font-weight: bold; color: white;'>{st.session_state[page_state_key]}/{total_pages}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style='margin-top: 50px; padding: 40px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); border-radius: 20px;'>
+            <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 20px;'>
+                    <img src="https://huph.edu.vn/uploads/logo/logo-huph.png" style="width: 100px; margin: 0 auto 15px auto; background: transparent; max-height: 80px; object-fit: contain;">
+                    <div style="font-weight: bold; color: #fff; font-size: 1rem;">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
+                    <div style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">HANOI UNIVERSITY OF PUBLIC HEALTH</div>
+                    <div style="font-size: 0.75rem; color: #888; margin-top: 10px;">📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
+                </div>
+                <div style='flex: 1; padding: 0 20px; border-right: 1px solid rgba(255,255,255,0.1);'>
+                    <div style="color: #a855f7; font-weight: bold; font-size: 0.9rem; margin-bottom: 15px;">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
+                    <div style="font-size: 0.85rem; color: #eee; margin-bottom: 5px;"><b>Họ tên:</b> Đinh Lê Quỳnh Phương</div>
+                    <div style="font-size: 0.85rem; color: #eee; margin-bottom: 5px;"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
+                    <div style="font-size: 0.85rem; color: #eee; margin-bottom: 5px;"><b>Email:</b> 2211090031@studenthuph.edu.vn</div>
+                    <div style="font-size: 0.85rem; color: #eee;"><b>SĐT:</b> 0382665916</div>
+                </div>
+                <div style='flex: 1; padding-left: 20px;'>
+                    <div style="color: #f59e0b; font-weight: bold; font-size: 0.9rem; margin-bottom: 15px;">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
+                    <div style="font-size: 0.85rem; color: #eee; margin-bottom: 5px;"><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</div>
+                    <div style="font-size: 0.85rem; color: #eee; margin-bottom: 5px;"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
+                    <div style="font-size: 0.85rem; color: #eee; margin-bottom: 5px;"><b>Email:</b> irb@huph.edu.vn</div>
+                    <div style="font-size: 0.85rem; color: #eee;"><b>SĐT:</b> 024 62663024</div>
+                </div>
+            </div>
+            <div style="text-align: center; color: #555; font-size: 0.7rem; margin-top: 30px;">
+                Đơn vị phát triển: NHÓM NGHIÊN CỨU VIÊN TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG | © 2026 REHAB-AI-MONITOR
+            </div>
+        </div>
+        """
+            
+    # Calculate total height (frames + summary + footer)
+    calculated_height = num_rows * 650 + 600 # 650px per row + 600px for footer/summary
     
     components.html(f"""
         <style>
@@ -3868,7 +3926,7 @@ def hien_thi_frames_day_du(key_suffix=""):
             img {{ 
                 width: 100%; 
                 height: auto; 
-                max-height: 1200px; /* Cực to cho chẩn đoán */
+                max-height: 1200px; 
                 object-fit: contain; 
                 background: #000;
                 display: block;
@@ -3885,52 +3943,9 @@ def hien_thi_frames_day_du(key_suffix=""):
         <div class='grid-container'>
             {grid_html}
         </div>
-    """, height=min(calculated_height, 20000), scrolling=True)
-    st.write("") # Spacer
+    """, height=min(calculated_height, 25000), scrolling=True)
 
-    st.markdown("---")
-    # === THANH TỔNG KẾT THÔNG SỐ (SUMMARY BAR) ===
-    s_col1, s_col2, s_col3, s_col4, s_col5 = st.columns(5)
-    
-    with s_col1:
-        st.markdown(f"""
-        <div style='text-align: center; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);'>
-            <div style='font-size: 0.8rem; color: #888;'>📊 Tổng frame</div>
-            <div style='font-size: 1.5rem; font-weight: bold; color: #38bdf8;'>{total_frames}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with s_col2:
-        st.markdown(f"""
-        <div style='text-align: center; background: rgba(34, 197, 94, 0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(34, 197, 94, 0.2);'>
-            <div style='font-size: 0.8rem; color: #888;'>✅ PASS</div>
-            <div style='font-size: 1.5rem; font-weight: bold; color: #22c55e;'>{pass_count}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with s_col3:
-        st.markdown(f"""
-        <div style='text-align: center; background: rgba(245, 158, 11, 0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.2);'>
-            <div style='font-size: 0.8rem; color: #888;'>⚠️ NEARLY</div>
-            <div style='font-size: 1.5rem; font-weight: bold; color: #f59e0b;'>{nearly_count}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with s_col4:
-        st.markdown(f"""
-        <div style='text-align: center; background: rgba(239, 68, 68, 0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);'>
-            <div style='font-size: 0.8rem; color: #888;'>❌ FAIL</div>
-            <div style='font-size: 1.5rem; font-weight: bold; color: #ef4444;'>{fail_count}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with s_col5:
-        st.markdown(f"""
-        <div style='text-align: center; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);'>
-            <div style='font-size: 0.8rem; color: #888;'>📄 Trang</div>
-            <div style='font-size: 1.2rem; font-weight: bold; color: #fff;'>{st.session_state[page_state_key]}/{total_pages}</div>
-        </div>
-        """, unsafe_allow_html=True)
+    st.write("") # Final spacer
 
 
 # Callback xử lý đổi theme nhanh (Để ngoài hàm main để tránh lỗi WebSocket Cache)
