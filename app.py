@@ -2375,87 +2375,6 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             
             # Nếu video CHƯA CÓ metrics -> Cho phép phân tích ngay tại đây
             else:
-                # TỰ ĐỘNG CHẠY PHÂN TÍCH NẾU ĐƯỢC KÍCH HOẠT TỪ TRANG CHỦ
-                if st.session_state.get('auto_start_analysis'):
-                    st.session_state.auto_start_analysis = False
-                    st.session_state.processing = True
-                    
-                    # Chạy logic phân tích ngay lập tức
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
-                    try:
-                        start_time_auto = time.time()
-                        ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), 'codman')
-                        bt_auto = BAI_TAP[ex_key]
-                        
-                        def update_progress_auto(p):
-                            elapsed = time.time() - start_time_auto
-                            progress_bar.progress(p)
-                            status_text.info(f"🔄 Đang tự động phân tích... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
-                        
-                        # Lấy cấu hình từ session state (NCV) nếu có, nếu không dùng mặc định
-                        model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Full')
-                        conf_ncv = st.session_state.get('ncv_confidence', 0.5)
-
-                        out_p, _, _, a_data, t_f, v_f, _, z_d, f_p, _, afd_p, a_w = xu_ly_video_day_du(
-                            v['video_path'], bt_auto['chuan'], update_progress_auto,
-                            model_type=model_type_ncv, min_confidence=conf_ncv
-                        )
-                        
-                        process_time_auto = time.time() - start_time_auto
-                        
-                        if v_f > 0:
-                            df_a = pd.DataFrame(a_data)
-                            met_a = tinh_metrics_chi_tiet(df_a, bt_auto)
-                            
-                            st.session_state.stats = {
-                                "do_chinh_xac": met_a["ty_le_tong_the"],
-                                "ty_le_gan_dung": met_a["ty_le_gan_dung"],
-                                "ty_le_vai_dung": met_a["ty_le_vai_dung"],
-                                "ty_le_khuyu_dung": met_a["ty_le_khuyu_dung"],
-                                "frame_dung": met_a["frame_dung"],
-                                "frame_gan_dung": met_a["frame_gan_dung"],
-                                "tong_frame_hop_le": v_f,
-                                "tb_goc_vai": met_a["tb_goc_vai"],
-                                "tb_goc_khuyu": met_a["tb_goc_khuyu"],
-                                "min_goc_vai": met_a["min_goc_vai"],
-                                "max_goc_vai": met_a["max_goc_vai"],
-                                "min_goc_khuyu": met_a["min_goc_khuyu"],
-                                "max_goc_khuyu": met_a["max_goc_khuyu"],
-                                "std_goc_vai": met_a["std_goc_vai"],
-                                "std_goc_khuyu": met_a["std_goc_khuyu"],
-                                "mae_tong": met_a["mae_tong"],
-                                "precision": met_a["precision"],
-                                "recall": met_a["recall"],
-                                "f1_score": met_a["f1_score"],
-                                "icc": met_a["icc"],
-                                "thoi_gian": process_time_auto,
-                                "tong_frame": t_f,
-                                "warnings": a_w
-                            }
-                            st.session_state.has_data = True
-                            st.session_state.angle_df = df_a
-                            st.session_state.processed_video_path = out_p
-                            st.session_state.all_frames_data_path = afd_p
-                            st.session_state.exercise = bt_auto
-                            
-                            # Cập nhật database
-                            v_list = load_data(VIDEOS_FILE)
-                            for vid in v_list:
-                                if vid['video_path'] == v['video_path']:
-                                    vid['accuracy'] = round(met_a["ty_le_tong_the"], 1)
-                                    vid['metrics'] = st.session_state.stats
-                                    vid['all_frames_data_path'] = afd_p
-                                    vid['df_path'] = out_p.replace('.mp4', '_data.csv')
-                                    vid['processed_path'] = out_p
-                                    vid['status'] = "Đã phân tích"
-                                    df_a.to_csv(vid['df_path'], index=False)
-                            save_data(VIDEOS_FILE, v_list)
-                            st.rerun()
-                    except Exception as ex:
-                        st.error(f"❌ Lỗi tự động phân tích: {ex}")
-                    finally:
-                        st.session_state.processing = False
 
                 st.warning(f"⚠️ Video '{v.get('video_name')}' của BN {v.get('full_name')} chưa được phân tích.")
                 col_v1, col_v2 = st.columns([2, 1])
@@ -4891,7 +4810,7 @@ def main():
                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
                             "video_path": file_path,        # Video gốc
                             "processed_path": None,        # Video có khung xương (sau khi NCV gửi)
-                            "status": "Chờ bác sĩ phân tích"
+                            "status": "Chờ NCV phân tích"
                         })
                         save_data(VIDEOS_FILE, video_list)
                         st.success("✅ Đã gửi video cho BÁC SĨ - KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
@@ -4963,9 +4882,6 @@ def main():
                                         st.session_state.has_data = False
                                         st.session_state.stats = None
                                         
-                                        # Kích hoạt tự động phân tích nếu video mới
-                                        if v.get('accuracy', 0) == 0:
-                                            st.session_state.auto_start_analysis = True
                                         
                                         if user_role == "Bác sĩ / KTV PHCN":
                                             st.session_state.trigger_tab_switch = "ĐÁNH GIÁ PHCN"
