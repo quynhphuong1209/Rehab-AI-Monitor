@@ -3722,7 +3722,6 @@ def hien_thi_frames_day_du(key_suffix=""):
         if st.button("◀ Trước", key=f"p_prev_{key_suffix}", width='stretch'):
             if st.session_state[page_state_key] > 1:
                 st.session_state[page_state_key] -= 1
-                st.rerun()
     with p_col2:
         page = st.number_input("Trang", min_value=1, max_value=total_pages, value=st.session_state[page_state_key], key=f"p_in_{key_suffix}", label_visibility="collapsed")
         if page != st.session_state[page_state_key]:
@@ -3732,7 +3731,6 @@ def hien_thi_frames_day_du(key_suffix=""):
         if st.button("Sau ▶", key=f"p_next_{key_suffix}", width='stretch'):
             if st.session_state[page_state_key] < total_pages:
                 st.session_state[page_state_key] += 1
-                st.rerun()
     with p_col4:
         st.caption(f"Trang {st.session_state[page_state_key]}/{total_pages} (Tổng {total_filtered} frames)")
 
