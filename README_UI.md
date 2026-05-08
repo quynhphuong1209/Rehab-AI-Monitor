@@ -1,47 +1,52 @@
-# 🎨 Tài liệu Kiến trúc Giao diện (UI/UX) - Rehab AI Monitor
+# 🎨 Tài liệu Kiến trúc Giao diện (UI/UX) - Rehab AI Monitor (v3.0)
 
-Tài liệu này mô tả chi tiết về cấu trúc mã nguồn, thiết kế giao diện (UI) và trải nghiệm người dùng (UX) của hệ thống **Rehab AI Monitor**. Hệ thống áp dụng phong cách **Glassmorphism** hiện đại kết hợp với **Custom CSS** cao cấp.
+Tài liệu này mô tả chi tiết về cấu trúc mã nguồn, thiết kế giao diện (UI) và trải nghiệm người dùng (UX) của hệ thống **Rehab AI Monitor**. Hệ thống áp dụng phong cách **Clinical Aesthetics** (Thẩm mỹ Lâm sàng) kết hợp với công nghệ **Glassmorphism** và **Custom CSS** cao cấp.
 
 ---
 
 ## 1. Tổng quan Công nghệ UI
 - **Framework chính:** Streamlit (Python).
-- **Thiết kế:** Custom CSS nhúng qua Markdown (`unsafe_allow_html=True`).
-- **Tương tác:** WebRTC (Xử lý Camera trình duyệt), Plotly (Biểu đồ tương tác).
-- **Tối ưu:** Quản lý RAM 1GB thông qua luồng đọc Chunk và Session State.
+- **Thiết kế:** Custom CSS nhúng qua Markdown (`unsafe_allow_html=True`) với font chữ chủ đạo là **Times New Roman**.
+- **Tương tác:** 
+    - **WebRTC:** Xử lý luồng Camera thời gian thực.
+    - **JavaScript Injection:** Thực hiện tự động hóa UI (Auto-Tab Switching).
+    - **Plotly Engine:** Trực quan hóa dữ liệu lâm sàng và AI.
+- **Tối ưu:** Cơ chế đồng bộ Theme (Light/Dark Mode) đảm bảo không có artifacts và độ tương phản chuẩn y tế.
 
 ---
 
-## 2. Cấu trúc Giao diện & Trải nghiệm (v2.5)
-Ứng dụng được thiết kế tối ưu cho từng vai trò người dùng (Role-based UI):
+## 2. Cấu trúc Giao diện & Trải nghiệm (Finalized)
+Ứng dụng được thiết kế tối ưu hóa theo mô hình Role-based UI (Giao diện theo vai trò):
 
-### 🏠 Trang Chủ (Dashboard Tổng quan)
-- **Thiết kế:** Bố cục card-based hàng ngang với các thẻ thông tin bài tập (Thời gian, Số lần, Thông số chuẩn).
-- **Trải nghiệm:** Tải lên video và gửi trực tiếp cho đội ngũ chuyên môn. Hệ thống tự động ẩn các tính năng kỹ thuật phức tạp đối với Bệnh nhân để tối ưu hóa sự đơn giản.
+### 🏥 Thẩm mỹ Lâm sàng (Clinical Aesthetics)
+- **Typography:** Sử dụng font chữ 'Times New Roman' cho toàn bộ hệ thống, mang lại cảm giác tin cậy, chuyên nghiệp trong môi trường y tế.
+- **Theme Sync:** Hệ thống tự động điều chỉnh màu sắc Input, Card, và Sidebar khi chuyển đổi giữa Light và Dark mode, đảm bảo tính nhất quán (Pixel-perfect consistency).
 
-### 📄 Trang Thông Tin Nghiên Cứu (Dành cho Bệnh nhân)
-- **Nội dung:** Hiển thị chi tiết về đề tài NCKH (Quy trình, nguy cơ, bảo mật, thông tin liên hệ).
-- **Trình bày:** Sử dụng các khối `Expander` và `Custom Cards` để tạo cảm giác chuyên nghiệp, minh bạch.
+### 🏠 Trang Chủ & Dashboard
+- **Thiết kế:** Bố cục card-based với các thẻ thông tin bài tập (Thời gian, Số lần, Thông số chuẩn).
+- **Sidebar Phẳng:** Loại bỏ các container lồng nhau để tạo luồng thao tác phẳng (Thông tin BN -> Chọn bài tập -> Khai báo triệu chứng).
 
-### 🩺 Đánh Giá Chuyên Môn (Dành cho Bác sĩ/KTV)
-- **Workflow:** Bác sĩ chọn video BN -> Tự động chuyển Tab -> Nhập đánh giá lâm sàng.
-- **Tập trung:** Loại bỏ các tab biểu đồ AI kỹ thuật để Bác sĩ tập trung hoàn toàn vào việc nhận xét chuyên môn và chỉ định kế hoạch điều trị.
+### 🩺 Đánh Giá Chuyên Môn (Bác sĩ/KTV)
+- **Workflow Tối ưu:** Bác sĩ chọn video BN từ danh sách -> Hệ thống tự động chuyển sang Tab Đánh giá -> Nhận xét lâm sàng.
+- **Hợp nhất Dữ liệu:** Hiển thị song song kết quả khai báo của BN và kết quả phân tích AI để Bác sĩ đưa ra chỉ định chính xác nhất.
 
-### 📊 Phân Tích & Video (Dành cho Nghiên cứu viên)
-- **NCV Dashboard:** Truy cập toàn bộ dữ liệu AI, biểu đồ tọa độ, và video trích xuất khung xương để kiểm định mô hình.
-- **Export:** Công cụ xuất CSV và ZIP frame để phục vụ báo cáo khoa học.
-
-### 🛠️ Sidebar & Form (Hợp nhất)
-- **Thông tin BN:** Hiển thị trên cùng (Họ tên, Tuổi, Giới tính).
-- **Khai báo Triệu chứng:** Form phẳng ngay trong Sidebar giúp BN báo cáo mức độ đau (VAS) nhanh chóng.
-- **Chế độ Sáng/Tối:** Chuyển đổi Theme linh hoạt hỗ trợ tương phản tốt.
+### 📊 Phân Tích Kỹ Thuật (Nghiên cứu viên)
+- **NCV Dashboard:** Truy cập sâu vào cấu hình mô hình (Confidence, Skip Frames), xem tọa độ khớp và trích xuất dữ liệu frame.
+- **Export:** Công cụ xuất CSV và ZIP frame được tích hợp sẵn để phục vụ báo cáo khoa học.
 
 ---
 
-## 3. Các Điểm Nhấn Kỹ Thuật
-- **Persistence:** Lưu lịch sử tập luyện vào tệp JSON cục bộ để theo dõi dài hạn.
-- **Performance:** Cơ chế dọn rác (GC) chủ động để duy trì tính ổn định trên Streamlit Cloud.
-- **Aesthetics:** Gradient background, bo góc 15px-20px, và các micro-animations cho nút bấm.
+## 3. Các Điểm Nhấn Kỹ Thuật UI
+- **Persistence UI:** Lưu trạng thái đăng nhập và thông tin phiên làm việc qua Session State và JSON.
+- **Performance Aesthetics:** Sử dụng CSS Transitions cho các hiệu ứng hover, Glassmorphism cho Sidebar và các khối container.
+- **Responsive Layout:** Tối ưu hóa hiển thị trên màn hình lớn (Wide Mode) để bao quát toàn bộ 12 phân khu chức năng.
+
+---
+
+## 4. Hướng dẫn Thay đổi Theme
+Hệ thống tích hợp nút gạt (Toggle) ngay tại thanh điều hướng trên cùng:
+- **Dark Mode:** Phù hợp cho việc phân tích video và biểu đồ AI (giảm mỏi mắt).
+- **Light Mode:** Phù hợp cho môi trường văn phòng bác sĩ và bệnh nhân sử dụng ban ngày (độ tương phản cao).
 
 ---
 © 2025-2026 Rehab AI Monitor Team.
