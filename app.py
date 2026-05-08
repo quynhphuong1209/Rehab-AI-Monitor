@@ -3845,32 +3845,29 @@ def hien_thi_frames_day_du(key_suffix=""):
             """
             grid_html += frame_card
             
-            """
-            grid_html += frame_card
-            
         # APPEND SUMMARY BAR TO GRID HTML
         grid_html += f"""
         </div> <!-- End of grid-container -->
         <div style='margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 30px;'>
             <div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px;'>
                 <div style='text-align: center; background: rgba(56,189,248,0.1); padding: 15px; border-radius: 15px; border: 1px solid #38bdf8;'>
-                    <div style='font-size: 0.8rem; color: #888;'>📊 Tổng frame</div>
+                    <div style='font-size: 0.8rem; color: #888;'>[TỔNG FRAME]</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: #38bdf8;'>{total_frames}</div>
                 </div>
                 <div style='text-align: center; background: rgba(34,197,94,0.1); padding: 15px; border-radius: 15px; border: 1px solid #22c55e;'>
-                    <div style='font-size: 0.8rem; color: #888;'>✅ PASS</div>
+                    <div style='font-size: 0.8rem; color: #888;'>[PASS]</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: #22c55e;'>{pass_count}</div>
                 </div>
                 <div style='text-align: center; background: rgba(245,158,11,0.1); padding: 15px; border-radius: 15px; border: 1px solid #f59e0b;'>
-                    <div style='font-size: 0.8rem; color: #888;'>⚠️ NEARLY</div>
+                    <div style='font-size: 0.8rem; color: #888;'>[NEARLY]</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: #f59e0b;'>{nearly_count}</div>
                 </div>
                 <div style='text-align: center; background: rgba(239,68,68,0.1); padding: 15px; border-radius: 15px; border: 1px solid #ef4444;'>
-                    <div style='font-size: 0.8rem; color: #888;'>❌ FAIL</div>
+                    <div style='font-size: 0.8rem; color: #888;'>[FAIL]</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: #ef4444;'>{fail_count}</div>
                 </div>
                 <div style='text-align: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2);'>
-                    <div style='font-size: 0.8rem; color: #888;'>📄 Trang</div>
+                    <div style='font-size: 0.8rem; color: #888;'>[TRANG]</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: white;'>{st.session_state[page_state_key]}/{total_pages}</div>
                 </div>
             </div>
