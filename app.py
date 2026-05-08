@@ -2312,7 +2312,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                 st.info("💡 Video này đã được phân tích trước đó.")
                 col_load1, col_load2 = st.columns(2)
                 with col_load1:
-                    if st.button("🔄 TẢI LẠI KẾT QUẢ ĐÃ LƯU", width="stretch"):
+                    if st.button("🔄 TẢI LẠI KẾT QUẢ ĐÃ LƯU", width="stretch", key=f"btn_reload_cached_{key_suffix}"):
                         st.session_state.stats = v['metrics']
                         st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
                         st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
@@ -2338,7 +2338,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                         st.error("❌ Không tìm thấy file video.")
                 with col_v2:
                     st.info("💡 Bạn có thể thực hiện phân tích ngay bây giờ để xem kết quả khung xương và chỉ số lâm sàng.")
-                    if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary"):
+                    if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
                         st.session_state.processing = True
                         
                         # Mock progress
