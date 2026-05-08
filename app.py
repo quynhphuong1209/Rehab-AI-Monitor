@@ -3814,8 +3814,8 @@ def hien_thi_frames_day_du(key_suffix=""):
             color = "#22c55e" if is_p else ("#f59e0b" if is_n else "#ef4444")
             bg_alpha = "rgba(34, 197, 94, 0.1)" if is_p else ("rgba(245, 158, 11, 0.1)" if is_n else "rgba(239, 68, 68, 0.1)")
             
-            # Get small base64 thumbnail
-            target_w = 200 if quality_mode == "Tốc độ" else (400 if quality_mode == "Cân bằng" else 800)
+            # Get larger base64 thumbnail for 2-column grid
+            target_w = 400 if quality_mode == "Tốc độ" else (800 if quality_mode == "Cân bằng" else 1200)
             
             # Use cached thumbnail to get b64
             try:
@@ -3845,10 +3845,10 @@ def hien_thi_frames_day_du(key_suffix=""):
             """
             grid_html += frame_card
             
-    # Calculate height based on rows (4 columns) - Vertical videos need more height
-    num_rows = (len(page_indices) + 3) // 4
-    # Vertical frames can be tall, use 450px per row + buffer
-    calculated_height = num_rows * 450 + 100 
+    # Calculate height based on rows (2 columns now for LARGER images)
+    num_rows = (len(page_indices) + 1) // 2
+    # Vertical frames can be tall, use 700px per row + buffer
+    calculated_height = num_rows * 700 + 100 
     
     components.html(f"""
         <style>
@@ -3861,32 +3861,33 @@ def hien_thi_frames_day_du(key_suffix=""):
             }}
             .grid-container {{
                 display: grid; 
-                grid-template-columns: repeat(4, 1fr); 
-                gap: 15px;
+                grid-template-columns: repeat(2, 1fr); 
+                gap: 20px;
             }}
             img {{ 
                 width: 100%; 
                 height: auto; 
-                max-height: 400px; /* Giới hạn chiều cao để không quá dài */
+                max-height: 1000px; /* Tăng giới hạn để ảnh to và rõ */
                 object-fit: contain; 
                 background: #000;
                 display: block;
             }}
             .card {{
-                border-radius: 12px; 
+                border-radius: 15px; 
                 overflow: hidden; 
                 background: #1a1a2e;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.5);
                 transition: transform 0.2s;
+                border: 2px solid #2a5298;
             }}
             .card:hover {{
-                transform: translateY(-5px);
+                transform: scale(1.02);
             }}
         </style>
         <div class='grid-container'>
             {grid_html}
         </div>
-    """, height=min(calculated_height, 2000), scrolling=True)
+    """, height=min(calculated_height, 4000), scrolling=True)
     st.write("") # Spacer
 
     st.markdown("---")
