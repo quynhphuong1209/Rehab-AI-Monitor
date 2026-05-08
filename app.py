@@ -622,12 +622,12 @@ MAX_FILE_SIZE_MB = 500
 # ============================================
 # CẤU HÌNH XỬ LÝ - TỐI ƯU ĐỘ CHÍNH XÁC CAO
 # ============================================
-SKIP_FRAMES = 0    # Xử lý mọi khung hình để đảm bảo tốc độ khớp video gốc
-RESIZE_WIDTH = 640 # Tăng độ phân giải lên 640px để nhìn rõ hơn
+SKIP_FRAMES = 0    # Mặc định: Xử lý mọi khung hình
+RESIZE_WIDTH = 480 # Giảm nhẹ từ 640 xuống 480 để tăng tốc độ xử lý 1.5x
 OUTPUT_QUALITY = 50 
-MAX_FRAMES = 3000  # Nâng hạn mức để bắt trọn vẹn mọi khoảnh khắc
-THUMBNAIL_QUALITY = 90
-THUMBNAIL_WIDTH = 400
+MAX_FRAMES = 5000  # Nâng hạn mức lên 5000 frame (khoảng 3 phút ở 30fps)
+THUMBNAIL_QUALITY = 80
+THUMBNAIL_WIDTH = 320
 
 # ============================================
 # HÀM CHUYỂN ĐỔI MOV SANG MP4
@@ -1369,15 +1369,17 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     box_x, box_y = 15, 50
     box_w, box_h = 330, 160
     
-    # Tạo lớp overlay cho độ trong suốt
-    overlay = frame_output.copy()
-    cv2.rectangle(overlay, (box_x, box_y), (box_x + box_w, box_y + box_h), (40, 40, 40), -1) # Nền xám tối
-    cv2.addWeighted(overlay, 0.6, frame_output, 0.4, 0, frame_output)
-    cv2.rectangle(frame_output, (box_x, box_y), (box_x + box_w, box_y + box_h), (255, 255, 255), 2) # Viền trắng
+    # TỐI ƯU: Chỉ tạo overlay cho vùng Box thay vì toàn bộ frame
+    box_roi = frame_output[box_y:box_y+box_h, box_x:box_x+box_w]
+    overlay = box_roi.copy()
+    cv2.rectangle(overlay, (0, 0), (box_w, box_h), (40, 40, 40), -1)
+    cv2.addWeighted(overlay, 0.6, box_roi, 0.4, 0, box_roi)
+    frame_output[box_y:box_y+box_h, box_x:box_x+box_w] = box_roi
+    cv2.rectangle(frame_output, (box_x, box_y), (box_x + box_w, box_y + box_h), (255, 255, 255), 2)
     
     # Text thông tin trong Box
     status_text = "PASS" if tong_the else ("NEARLY" if gan_dung_tong_the else "FAIL")
-    CYAN = (255, 255, 0) # BGR Cyan
+    CYAN = (255, 255, 0)
     font = cv2.FONT_HERSHEY_SIMPLEX
     
     # Dòng 1: FRAME & STATUS
@@ -1404,10 +1406,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
         w_text = warnings_list[0][:40] + "..." if len(warnings_list[0]) > 40 else warnings_list[0]
         cv2.putText(frame_output, f"! {w_text}", (box_x + 15, box_y + 152), font, 0.4, (0, 255, 255), 1)
 
-    # === FOOTER CHUNG (LUÔN HIỆN Ở DƯỚI CÙNG) ===
-    hien_thi_footer_chung()
-    
-    # Đảm bảo trả về kiểu dữ liệu Python chuẩn (tránh lỗi JSON serialization với NumPy)
+    # Đảm bảo trả về kiểu dữ liệu Python chuẩn
     goc_vai = float(goc_vai)
     goc_khuyu = float(goc_khuyu)
     tong_the = bool(tong_the)
@@ -1447,6 +1446,9 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     processed_count = 0
     last_progress = 0
     writer = None
+    
+    # Lấy giá trị skip từ session_state nếu có (NCV chỉnh), nếu không dùng mặc định
+    skip_step = st.session_state.get('ncv_skip_frames', SKIP_FRAMES)
 
     try:
         while cap.isOpened():
@@ -1454,6 +1456,11 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             if not ret or (MAX_FRAMES and processed_count >= MAX_FRAMES): break
             
             frame_count += 1
+            
+            # LOGIC SKIP FRAME: Bỏ qua các frame không nằm trong bước nhảy để tăng tốc
+            if skip_step > 0 and frame_count % (skip_step + 1) != 1:
+                continue
+                
             processed_count += 1
             
             h_orig, w_orig = frame.shape[:2]
@@ -1461,13 +1468,15 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
                 h_orig, w_orig = frame.shape[:2]
             
+            # Cải tiến: Resize chỉ khi cần thiết và dùng phép nội suy nhanh hơn (INTER_NEAREST hoặc INTER_LINEAR)
             if w_orig != RESIZE_WIDTH:
                 scale = RESIZE_WIDTH / w_orig
                 new_h = int(h_orig * scale)
                 if new_h % 2 != 0: new_h -= 1
-                frame = cv2.resize(frame, (RESIZE_WIDTH, new_h))
+                frame = cv2.resize(frame, (RESIZE_WIDTH, new_h), interpolation=cv2.INTER_LINEAR)
                 
             try:
+                # Xử lý AI
                 xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(frame, model, chuan, frame_count, fps)
             except Exception as e:
                 print(f"Error processing frame {frame_count}: {e}")
@@ -1509,7 +1518,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             
             if callback and tong_frame > 0:
                 prog = min(frame_count/tong_frame, 1.0)
-                if prog - last_progress >= 0.05:
+                if prog - last_progress >= 0.02: # Cập nhật progress nhạy hơn (2% thay vì 5%)
                     callback(prog)
                     last_progress = prog
     finally:
@@ -1536,15 +1545,15 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     final_video_path = out_path
     final_h264 = out_path.replace('.mp4', '_f.mp4')
     try:
-        # Chuyển đổi sang H.264 tối ưu cho Web (Nhanh + Nhẹ + Streamable)
+        # Chuyển đổi sang H.264 tối ưu cực cao cho Web (Ultrafast + High Compression)
         cmd = [
             'ffmpeg', '-y', '-i', out_path, 
             '-vcodec', 'libx264', 
             '-pix_fmt', 'yuv420p', 
-            '-preset', 'veryfast', 
-            '-crf', '28',            # Nén mạnh hơn một chút để load nhanh
+            '-preset', 'ultrafast',  # Chuyển từ veryfast sang ultrafast
+            '-crf', '32',            # Tăng nén (CRF 28 -> 32) để file cực nhẹ, load web tức thì
             '-movflags', 'faststart', # Cho phép xem ngay khi đang tải
-            '-threads', '0',         # Sử dụng toàn bộ CPU để xử lý nhanh
+            '-threads', '0',         # Sử dụng toàn bộ CPU
             final_h264
         ]
         subprocess.run(cmd, capture_output=True)
@@ -4517,8 +4526,14 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("### ⚙️ CẤU HÌNH AI")
+            st.markdown("### ⚙️ CẤU HÌNH AI & TỐC ĐỘ")
             st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.5, key="ncv_confidence", help="Ngưỡng để AI chấp nhận một điểm khớp xương.")
+            st.selectbox("Tốc độ xử lý", 
+                         options=[0, 1, 2, 4], 
+                         index=0, 
+                         format_func=lambda x: "Mặc định (Mọi frame)" if x==0 else f"Nhanh (Bỏ qua {x} frame)",
+                         key="ncv_skip_frames",
+                         help="Bỏ qua một số khung hình để tăng tốc độ xử lý video dài.")
             st.slider("Độ nhạy chuyển động (Sensitivity)", 0.0, 1.0, 0.7, key="ncv_sensitivity", help="Ảnh hưởng đến việc tính toán vận tốc khớp.")
             
             st.markdown("### 📊 THỐNG KÊ HỆ THỐNG")
