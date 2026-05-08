@@ -117,14 +117,24 @@ def hien_thi_footer_chung():
     except:
         logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
+    is_light = st.session_state.get('theme') == 'light'
+    footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+    footer_text = "#444" if is_light else "#ccc"
+    border_color = "#0072ff" if is_light else "#00c6ff"
+    title_color = "#0072ff" if is_light else "#00c6ff"
+    label_color = "#222" if is_light else "#eee"
+    school_name_color = "#1a1a2e" if is_light else "#fff"
+    bottom_border = "rgba(0,0,0,0.05)" if is_light else "rgba(255,255,255,0.05)"
+    col_border = "rgba(0,0,0,0.1)" if is_light else "rgba(255,255,255,0.1)"
+
     footer_html = f"""
     <style>
         .main-footer {{
-            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+            background: {footer_bg};
             padding: 50px 20px;
-            color: #ccc;
+            color: {footer_text};
             font-family: 'Times New Roman', Times, serif;
-            border-top: 4px solid #00c6ff;
+            border-top: 4px solid {border_color};
             box-shadow: 0 -10px 25px rgba(0, 198, 255, 0.15);
             margin-top: 60px;
         }}
@@ -139,7 +149,7 @@ def hien_thi_footer_chung():
         .footer-col {{
             flex: 1;
             padding: 0 35px;
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid {col_border};
         }}
         .footer-col:last-child {{
             border-right: none;
@@ -150,10 +160,10 @@ def hien_thi_footer_chung():
         .footer-logo-img {{
             width: 110px;
             margin-bottom: 20px;
-            filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.3));
+            filter: {"none" if is_light else "drop-shadow(0 0 10px rgba(0, 198, 255, 0.3))"};
         }}
         .footer-title {{
-            color: #00c6ff;
+            color: {title_color};
             font-weight: bold;
             margin-bottom: 20px;
             font-size: 1.35rem;
@@ -171,30 +181,30 @@ def hien_thi_footer_chung():
         }}
         .info-label {{
             font-weight: bold;
-            color: #eee;
+            color: {label_color};
             min-width: 70px;
         }}
         .footer-bottom {{
             padding-top: 30px;
             margin-top: 40px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid {bottom_border};
             font-size: 1rem;
-            color: #777;
+            color: {"#666" if is_light else "#777"};
             text-align: center;
             letter-spacing: 1px;
         }}
-        a {{ color: #00c6ff; text-decoration: none; }}
+        a {{ color: {title_color}; text-decoration: none; }}
         a:hover {{ text-decoration: underline; }}
         .school-name {{
             font-weight: bold; 
-            color: #fff; 
+            color: {school_name_color}; 
             font-size: 1.25rem;
             line-height: 1.3;
             margin-bottom: 8px;
         }}
         .school-subname {{
             font-size: 1rem; 
-            color: #00c6ff;
+            color: {title_color};
             display: block;
             margin-bottom: 20px;
         }}
@@ -597,23 +607,48 @@ if st.session_state.get('theme') == 'light':
             color: #0072ff !important; 
             border: 1px solid #0072ff !important;
         }
-        /* Fix Sidebar Inputs */
-        [data-testid="stSidebar"] .stTextInput input, 
-        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"],
-        [data-testid="stSidebar"] .stNumberInput input {
+        /* Fix ALL Selectboxes, TextInputs, and TextAreas in Light Mode */
+        .stSelectbox div[data-baseweb="select"],
+        .stTextInput input, 
+        .stTextArea textarea,
+        .stNumberInput input {
             background-color: #ffffff !important;
             color: #000000 !important;
-            border: 1px solid #ddd !important;
+            border: 1px solid #ced4da !important;
         }
+        
+        .stSelectbox div[data-baseweb="select"] * {
+            color: #000000 !important;
+        }
+
+        /* Fix Sidebar specifically to be sure */
+        [data-testid="stSidebar"] section[data-testid="stSidebarContent"] {
+            background-color: #ffffff !important;
+        }
+
+        /* Fix Sidebar Labels */
+        [data-testid="stSidebar"] label {
+            color: #212529 !important;
+            font-weight: 600 !important;
+        }
+
+        /* Fix Dropdown menus globally */
+        div[data-baseweb="popover"] div { 
+            background-color: #ffffff !important; 
+            color: #000000 !important; 
+        }
+        
+        div[data-baseweb="popover"] li {
+            color: #000000 !important;
+        }
+
         /* Fix File Uploader */
         [data-testid="stFileUploader"] section {
             background-color: #f8f9fa !important;
-            border: 1px dashed #ccc !important;
+            border: 1px dashed #0072ff !important;
             color: #333 !important;
         }
         [data-testid="stFileUploader"] section div { color: #333 !important; }
-        /* Fix Dropdown menus */
-        div[data-baseweb="popover"] div { background-color: #ffffff !important; color: #000000 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -4034,9 +4069,9 @@ def hien_thi_frames_day_du(key_suffix=""):
                     <div style='font-size: 0.8rem; color: #888;'>❌ FAIL</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: #ef4444;'>{fail_count}</div>
                 </div>
-                <div style='text-align: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2);'>
+                <div style='text-align: center; background: {"rgba(0,0,0,0.03)" if is_light else "rgba(255,255,255,0.05)"}; padding: 15px; border-radius: 15px; border: 1px solid {"#ddd" if is_light else "rgba(255,255,255,0.2)"};'>
                     <div style='font-size: 0.8rem; color: #888;'>📄 TRANG</div>
-                    <div style='font-size: 1.4rem; font-weight: bold; color: white;'>{st.session_state[page_state_key]}/{total_pages}</div>
+                    <div style='font-size: 1.4rem; font-weight: bold; color: {"#111" if is_light else "white"};'>{st.session_state[page_state_key]}/{total_pages}</div>
                 </div>
             </div>
         </div>
