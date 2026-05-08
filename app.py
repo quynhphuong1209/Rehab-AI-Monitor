@@ -3831,33 +3831,62 @@ def hien_thi_frames_day_du(key_suffix=""):
                 b64_str = ""
 
             frame_card = f"""
-            <div style='border: 1px solid {color}; border-radius: 12px; overflow: hidden; background: #111;'>
-                <div style='background: {bg_alpha}; padding: 4px 8px; display: flex; justify-content: space-between; font-family: sans-serif;'>
-                    <span style='color: white; font-size: 0.7rem;'>#{f_data.get('index')}</span>
-                    <span style='color: {color}; font-size: 0.7rem; font-weight: bold;'>{status}</span>
+            <div class='card' style='border: 1px solid {color};'>
+                <div style='background: {bg_alpha}; padding: 6px 12px; display: flex; justify-content: space-between;'>
+                    <span style='color: white; font-size: 0.8rem; font-weight: bold;'>#{f_data.get('index')}</span>
+                    <span style='color: {color}; font-size: 0.8rem; font-weight: 800;'>{status}</span>
                 </div>
-                <img src='data:image/jpeg;base64,{b64_str}' style='width: 100%; display: block; min-height: 100px; background: #222;'>
-                <div style='padding: 5px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #888; background: rgba(0,0,0,0.5);'>
-                    <span>V: {f_data.get('goc_vai', 0):.0f}°</span>
-                    <span>K: {f_data.get('goc_khuyu', 0):.0f}°</span>
+                <img src='data:image/jpeg;base64,{b64_str}'>
+                <div style='padding: 8px 12px; display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; background: rgba(0,0,0,0.5);'>
+                    <span>Vai: {f_data.get('goc_vai', 0):.0f}°</span>
+                    <span>Khuỷu: {f_data.get('goc_khuyu', 0):.0f}°</span>
                 </div>
             </div>
             """
             grid_html += frame_card
             
-    grid_html += "</div>"
-    
-    # Calculate height based on rows (4 columns)
+    # Calculate height based on rows (4 columns) - Vertical videos need more height
     num_rows = (len(page_indices) + 3) // 4
-    calculated_height = num_rows * 220 + 20 # 220px per row + padding
+    # Vertical frames can be tall, use 450px per row + buffer
+    calculated_height = num_rows * 450 + 100 
     
     components.html(f"""
         <style>
-            body {{ background-color: transparent; color: white; font-family: sans-serif; margin: 0; padding: 0; }}
-            img {{ border-radius: 0; }}
+            body {{ 
+                background-color: transparent; 
+                color: white; 
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+                margin: 0; 
+                padding: 10px; 
+            }}
+            .grid-container {{
+                display: grid; 
+                grid-template-columns: repeat(4, 1fr); 
+                gap: 15px;
+            }}
+            img {{ 
+                width: 100%; 
+                height: auto; 
+                max-height: 400px; /* Giới hạn chiều cao để không quá dài */
+                object-fit: contain; 
+                background: #000;
+                display: block;
+            }}
+            .card {{
+                border-radius: 12px; 
+                overflow: hidden; 
+                background: #1a1a2e;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                transition: transform 0.2s;
+            }}
+            .card:hover {{
+                transform: translateY(-5px);
+            }}
         </style>
-        {grid_html}
-    """, height=calculated_height, scrolling=False)
+        <div class='grid-container'>
+            {grid_html}
+        </div>
+    """, height=min(calculated_height, 2000), scrolling=True)
     st.write("") # Spacer
 
     st.markdown("---")
