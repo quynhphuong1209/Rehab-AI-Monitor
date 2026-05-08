@@ -2447,7 +2447,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                                     vid['metrics'] = st.session_state.stats
                                     vid['all_frames_data_path'] = afd_p
                                     vid['df_path'] = out_p.replace('.mp4', '_data.csv')
-                                    vid['video_path'] = out_p
+                                    vid['processed_path'] = out_p
                                     vid['status'] = "Đã phân tích"
                                     df_a.to_csv(vid['df_path'], index=False)
                             save_data(VIDEOS_FILE, v_list)
@@ -2534,7 +2534,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                                         vid['metrics'] = st.session_state.stats
                                         vid['all_frames_data_path'] = all_frames_data
                                         vid['df_path'] = output_path.replace('.mp4', '_data.csv')
-                                        vid['video_path'] = output_path
+                                        vid['processed_path'] = output_path
                                         vid['status'] = "Đã phân tích"
                                         # Lưu CSV
                                         df.to_csv(vid['df_path'], index=False)
@@ -3368,10 +3368,14 @@ def hien_thi_form_danh_gia_bac_si():
 
     # Hiển thị video để bác sĩ xem lại
     # CHỈ HIỂN THỊ VIDEO TRÍCH XUẤT NẾU NCV ĐÃ GỬI, NẾU CHƯA THÌ HIỂN THỊ VIDEO GỐC
-    display_video_path = selected_video['video_path'] if has_ai_sent else selected_video.get('raw_video_path', selected_video['video_path'])
+    display_video_path = selected_video.get('processed_path') if has_ai_sent else selected_video['video_path']
     
+    # Nếu has_ai_sent là True nhưng processed_path lại None (lỗi dữ liệu cũ), fallback về video_path
+    if not display_video_path:
+        display_video_path = selected_video['video_path']
+
     if os.path.exists(display_video_path):
-        label_vid = "📺 XEM LẠI VIDEO TRÍCH XUẤT KHUNG XƯƠNG" if has_ai_sent else "📺 XEM LẠI VIDEO GỐC (BỆNH NHÂN GỬI)"
+        label_vid = "📺 XEM LẠI VIDEO TRÍCH XUẤT KHUNG XƯƠNG" if (has_ai_sent and selected_video.get('processed_path')) else "📺 XEM LẠI VIDEO GỐC (BỆNH NHÂN GỬI)"
         st.markdown(f"### {label_vid}")
         st.video(display_video_path)
     else:
@@ -4885,8 +4889,8 @@ def main():
                             "exercise": bai_tap['ten'],
                             "accuracy": 0,
                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
-                            "video_path": file_path,
-                            "raw_video_path": file_path,
+                            "video_path": file_path,        # Video gốc
+                            "processed_path": None,        # Video có khung xương (sau khi NCV gửi)
                             "status": "Chờ bác sĩ phân tích"
                         })
                         save_data(VIDEOS_FILE, video_list)
@@ -4920,10 +4924,18 @@ def main():
                             evals_db = load_data(EVALUATIONS_FILE)
                             v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('video_name') == v.get('video_name') for e in evals_db)
                             
-                            if user_role == "Bác sĩ / KTV PHCN" and not v_has_ai:
-                                v_display_path = v.get('raw_video_path', v['video_path'])
-                            else:
-                                v_display_path = v['video_path']
+                            # MẶC ĐỊNH LÀ VIDEO GỐC
+                            v_display_path = v['video_path']
+                            
+                            # Chỉ cho phép hiện video khung xương nếu:
+                            # 1. Là NCV (để họ làm việc)
+                            # 2. Hoặc NCV đã GỬI kết quả cho Bác sĩ/Bệnh nhân
+                            if user_role == "Nghiên cứu viên":
+                                if v.get('processed_path') and os.path.exists(v['processed_path']):
+                                    v_display_path = v['processed_path']
+                            elif v_has_ai:
+                                if v.get('processed_path') and os.path.exists(v['processed_path']):
+                                    v_display_path = v['processed_path']
 
                             with st.expander(f"🎬 {v['full_name']} - {v['exercise']} ({v['time']}) - {v['status']}"):
                                 col_v1, col_v2 = st.columns([2, 1])
