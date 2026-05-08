@@ -204,7 +204,7 @@ def hien_thi_footer_chung():
         </div>
     </div>
     """
-    components.html(footer_html, height=350, scrolling=False)
+    components.html(footer_html, height=400, scrolling=False)
 
 def load_data(file_path):
     if os.path.exists(file_path):
@@ -3955,23 +3955,23 @@ def hien_thi_frames_day_du(key_suffix=""):
         <div style='margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 30px;'>
             <div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px;'>
                 <div style='text-align: center; background: rgba(56,189,248,0.1); padding: 15px; border-radius: 15px; border: 1px solid #38bdf8;'>
-                    <div style='font-size: 0.8rem; color: #888;'>[TỔNG FRAME]</div>
+                    <div style='font-size: 0.8rem; color: #888;'>📊 TỔNG FRAME</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: #38bdf8;'>{total_frames}</div>
                 </div>
                 <div style='text-align: center; background: rgba(34,197,94,0.1); padding: 15px; border-radius: 15px; border: 1px solid #22c55e;'>
-                    <div style='font-size: 0.8rem; color: #888;'>[PASS]</div>
+                    <div style='font-size: 0.8rem; color: #888;'>✅ PASS</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: #22c55e;'>{pass_count}</div>
                 </div>
                 <div style='text-align: center; background: rgba(245,158,11,0.1); padding: 15px; border-radius: 15px; border: 1px solid #f59e0b;'>
-                    <div style='font-size: 0.8rem; color: #888;'>[NEARLY]</div>
+                    <div style='font-size: 0.8rem; color: #888;'>⚠️ NEARLY</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: #f59e0b;'>{nearly_count}</div>
                 </div>
                 <div style='text-align: center; background: rgba(239,68,68,0.1); padding: 15px; border-radius: 15px; border: 1px solid #ef4444;'>
-                    <div style='font-size: 0.8rem; color: #888;'>[FAIL]</div>
+                    <div style='font-size: 0.8rem; color: #888;'>❌ FAIL</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: #ef4444;'>{fail_count}</div>
                 </div>
                 <div style='text-align: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2);'>
-                    <div style='font-size: 0.8rem; color: #888;'>[TRANG]</div>
+                    <div style='font-size: 0.8rem; color: #888;'>📄 TRANG</div>
                     <div style='font-size: 1.4rem; font-weight: bold; color: white;'>{st.session_state[page_state_key]}/{total_pages}</div>
                 </div>
             </div>
@@ -3979,10 +3979,9 @@ def hien_thi_frames_day_du(key_suffix=""):
         
         """
     
-    import math
-    num_rows = math.ceil(len(page_indices) / 4)
-    # Calculate total height (frames + summary bar)
-    calculated_height = num_rows * 650 + 150 # 650px per row + 150px for summary/spacing
+    num_rows = len(page_indices)
+    # Calculate total height (frames + summary + footer)
+    calculated_height = num_rows * 650 + 600 # 650px per row + 600px for footer/summary
     
     components.html(f"""
         <style>
