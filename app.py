@@ -1071,13 +1071,13 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     # (Tạm thời tính nhanh để lấy màu vẽ skeleton)
     skeleton_color = GREEN
     
-    # 3. VẼ KHUNG XƯƠNG 33 ĐIỂM CHI TIẾT
+    # 3. VẼ KHUNG XƯƠNG (Sử dụng spec đơn giản để tránh lỗi vẽ hai đường)
     _mp_drawing.draw_landmarks(
         frame_output,
         ket_qua.pose_landmarks,
         _mp_pose.POSE_CONNECTIONS,
-        landmark_drawing_spec=_mp_drawing_styles.get_default_pose_landmarks_style(),
-        connection_drawing_spec=_mp_drawing.DrawingSpec(color=skeleton_color, thickness=2, circle_radius=1)
+        landmark_drawing_spec=_mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=1, circle_radius=2),
+        connection_drawing_spec=_mp_drawing.DrawingSpec(color=skeleton_color, thickness=2)
     )
     
     # LẤY TỌA ĐỘ CÁC KHỚP QUAN TRỌNG (ĐẢM BẢO KHỚP 100% VỚI FRAME)
