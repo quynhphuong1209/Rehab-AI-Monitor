@@ -3570,6 +3570,7 @@ def hien_thi_lich_nhac_nho():
     
     # LOAD DATA TỪ FILE
     schedules = load_data(REMINDERS_FILE)
+    users = load_users()
     if not isinstance(schedules, list): schedules = []
     
     # FILTER DATA
