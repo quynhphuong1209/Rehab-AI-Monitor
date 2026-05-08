@@ -3674,6 +3674,16 @@ def hien_thi_frames_day_du(key_suffix=""):
                         "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                     })
                     save_data(EVALUATIONS_FILE, evals)
+                    
+                    # CẬP NHẬT TRẠNG THÁI TRONG VIDEOS_FILE ĐỂ BÁC SĨ THẤY
+                    video_list = load_data(VIDEOS_FILE)
+                    for v in video_list:
+                        if v.get('video_path') == v_meta.get('video_path'):
+                            v['accuracy'] = round(float(ai_acc), 1)
+                            v['status'] = "Đã phân tích"
+                            v['metrics'] = st.session_state.get('stats') # Lưu luôn metrics để bsi xem
+                    save_data(VIDEOS_FILE, video_list)
+                    
                     st.success(f"✅ Đã gửi cho {v_meta['full_name']}!")
                     st.balloons()
 
@@ -4759,7 +4769,10 @@ def main():
                                     if user_role == "Bác sĩ / KTV PHCN" and not v_has_ai:
                                         st.write("**Độ chính xác AI:** ⏳ Chờ NCV phân tích")
                                     else:
-                                        acc_text = f"{v['accuracy']}%" if v['accuracy'] > 0 else "Chưa phân tích"
+                                        # Lấy accuracy mới nhất từ evals nếu có, nếu không lấy từ video
+                                        ai_eval_record = next((e for e in reversed(evals_db) if e.get('doctor_username') == "AI_Researcher" and e.get('video_name') == v.get('video_name')), None)
+                                        acc_val = ai_eval_record['ai_accuracy'] if ai_eval_record else v.get('accuracy', 0)
+                                        acc_text = f"{acc_val}%" if acc_val > 0 else "Chưa phân tích"
                                         st.write(f"**Độ chính xác AI:** {acc_text}")
                                         
                                     st.write(f"**Trạng thái:** {v['status']}")
