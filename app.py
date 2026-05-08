@@ -3480,17 +3480,33 @@ def hien_thi_ket_qua_cho_benh_nhan():
                 icon = "🤖" if is_ai else "👨‍⚕️"
                 
                 with st.expander(f"{icon} Đánh giá ngày {e['time']} - Bài tập: {e['exercise']}", expanded=True):
-                    c1, c2 = st.columns([1, 2])
+                    c1, c2 = st.columns([1, 2.5])
                     with c1:
-                        st.metric("📊 AI Accuracy", f"{e['ai_accuracy']}%")
-                        st.markdown(f"<h4 style='color: {title_color}; text-align: center;'>{e['doctor_result']}</h4>", unsafe_allow_html=True)
+                        st.markdown(f"""
+                        <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid {title_color}44;">
+                            <p style="margin:0; color:#888; font-size:0.8rem;">ĐỘ CHÍNH XÁC</p>
+                            <h2 style="margin:0; color:{title_color};">{e['ai_accuracy']}%</h2>
+                            <hr style="margin:10px 0; border:0; border-top:1px solid #333;">
+                            <h4 style="margin:0; color:{title_color};">{e['doctor_result']}</h4>
+                        </div>
+                        """, unsafe_allow_html=True)
                     with c2:
-                        st.markdown(f"**Nguồn đánh giá:** <span style='color: {title_color}; font-weight: bold;'>{e.get('doctor_name', 'Hệ thống AI')}</span>", unsafe_allow_html=True)
-                        st.markdown(f"**Lỗi sai:** {', '.join(e['errors']) if e['errors'] else 'Không phát hiện'}")
-                        st.markdown(f"**Nhận xét:** {e['comments']}")
+                        st.markdown(f"**Nguồn:** <span style='color: {title_color}; font-weight: bold;'>{e.get('doctor_name', 'Hệ thống AI')}</span>", unsafe_allow_html=True)
+                        
+                        # Chỉ hiển thị lỗi sai nếu không phải AI hoặc nếu có lỗi thực sự (không phải warning kỹ thuật)
+                        errors = [err for err in e['errors'] if "WARNING" not in err.upper()]
+                        if not is_ai and errors:
+                            st.markdown(f"**Lỗi sai:** {', '.join(errors)}")
+                        
+                        if is_ai:
+                            st.markdown(f"**Nhận xét:** {e['comments']}. Độ chính xác: {e['ai_accuracy']}%")
+                        else:
+                            st.markdown(f"**Nhận xét:** {e['comments']}")
+                            
                         st.markdown(f"**Kế hoạch:** {e['plan']}")
-                        status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã xem"
-                        st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic;">📩 {status_text}</p>', unsafe_allow_html=True)
+                        
+                        status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã phê duyệt"
+                        st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic; margin-top:10px;">📩 {status_text}</p>', unsafe_allow_html=True)
         
         with tab_charts:
             st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
@@ -4916,15 +4932,26 @@ def main():
                                             try: os.remove(v['video_path'])
                                             except: pass
                                         
+                                        # XÓA CẢ ĐÁNH GIÁ LIÊN QUAN (CASCADE DELETE)
+                                        evals_all = load_data(EVALUATIONS_FILE)
+                                        evals_filtered = [ev for ev in evals_all if not (ev['patient_username'] == v['username'] and ev['video_name'] == v['video_name'])]
+                                        save_data(EVALUATIONS_FILE, evals_filtered)
+                                        
                                         video_list.pop(idx)
                                         save_data(VIDEOS_FILE, video_list)
-                                        st.success("✅ Đã xóa thành công!")
+                                        st.success("✅ Đã xóa video và các đánh giá liên quan!")
                                         st.rerun()
                         with col_list2:
                             if st.button("❌", key=f"quick_x_video_{idx}", help="Xóa nhanh"):
                                 if os.path.exists(v['video_path']):
                                     try: os.remove(v['video_path'])
                                     except: pass
+                                
+                                # CASCADE DELETE
+                                evals_all = load_data(EVALUATIONS_FILE)
+                                evals_filtered = [ev for ev in evals_all if not (ev['patient_username'] == v['username'] and ev['video_name'] == v['video_name'])]
+                                save_data(EVALUATIONS_FILE, evals_filtered)
+                                
                                 video_list.pop(idx)
                                 save_data(VIDEOS_FILE, video_list)
                                 st.rerun()
