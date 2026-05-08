@@ -3796,60 +3796,57 @@ def hien_thi_frames_day_du(key_suffix=""):
     end_idx = min(start_idx + frames_per_page, total_filtered)
     page_indices = filtered_indices[start_idx:end_idx]
     
-    cols_per_row = 4
-    for i in range(0, len(page_indices), cols_per_row):
-        cols = st.columns(cols_per_row)
-        for j in range(cols_per_row):
-            idx = i + j
-            if idx < len(page_indices):
-                orig_idx = page_indices[idx]
-                f_data = all_frames_data[orig_idx]
-                f_path = f_data.get('path')
+    # Unified Grid Rendering with Base64 for Instant Loading
+    grid_html = "<div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;'>"
+    
+    with st.spinner("🚀 Đang tối ưu hóa hiển thị..."):
+        for orig_idx in page_indices:
+            f_data = all_frames_data[orig_idx]
+            f_path = f_data.get('path')
+            
+            if not f_path or not os.path.exists(f_path):
+                continue
                 
-                if not f_path or not os.path.exists(f_path):
-                    continue
-                
-                is_p = f_data.get('dung', False)
-                is_n = f_data.get('gan_dung', False)
-                status = "PASS" if is_p else ("NEAR" if is_n else "FAIL")
-                color = "#22c55e" if is_p else ("#f59e0b" if is_n else "#ef4444")
-                bg_alpha = "rgba(34, 197, 94, 0.2)" if is_p else ("rgba(245, 158, 11, 0.2)" if is_n else "rgba(239, 68, 68, 0.2)")
-                
-                with cols[j]:
-                    # Header bar
-                    st.markdown(f"""
-                    <div style='background: {bg_alpha}; border-radius: 12px 12px 0 0; border: 1px solid {color}; border-bottom: none; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;'>
-                        <span style='color: white; font-size: 0.8rem; font-weight: bold;'>#{f_data.get('index')}</span>
-                        <span style='color: {color}; font-size: 0.8rem; font-weight: 800;'>{status}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    # Image with optimized loading & robust fallback
-                    try:
-                        if quality_mode == "Tốc độ":
-                            thumb = get_thumbnail(f_path, width=240)
-                            if thumb is not None: st.image(thumb, use_container_width=True)
-                            else: st.image(f_path, use_container_width=True)
-                        elif quality_mode == "Cân bằng":
-                            thumb = get_thumbnail(f_path, width=480)
-                            if thumb is not None: st.image(thumb, use_container_width=True)
-                            else: st.image(f_path, use_container_width=True)
-                        else:
-                            st.image(f_path, use_container_width=True)
-                    except:
-                        # Cuối cùng: Thử load base64 nếu mọi cách trên đều lỗi
-                        b64 = get_base64_image(f_path)
-                        if b64:
-                            st.markdown(f'<img src="data:image/jpeg;base64,{b64}" style="width:100%; border-radius:0;">', unsafe_allow_html=True)
-                        else:
-                            st.error("🖼️ Lỗi load ảnh")
-                    # Footer info (Góc)
-                    st.markdown(f"""
-                    <div style='background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 0 0 12px 12px; border: 1px solid rgba(255,255,255,0.1); border-top: none; display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa;'>
-                        <span>Vai: {f_data.get('goc_vai', 0):.0f}°</span>
-                        <span>Khuỷu: {f_data.get('goc_khuyu', 0):.0f}°</span>
-                    </div>
-                    <div style='margin-bottom: 20px;'></div>
-                    """, unsafe_allow_html=True)
+            is_p = f_data.get('dung', False)
+            is_n = f_data.get('gan_dung', False)
+            status = "PASS" if is_p else ("NEAR" if is_n else "FAIL")
+            color = "#22c55e" if is_p else ("#f59e0b" if is_n else "#ef4444")
+            bg_alpha = "rgba(34, 197, 94, 0.1)" if is_p else ("rgba(245, 158, 11, 0.1)" if is_n else "rgba(239, 68, 68, 0.1)")
+            
+            # Get small base64 thumbnail
+            target_w = 200 if quality_mode == "Tốc độ" else (400 if quality_mode == "Cân bằng" else 800)
+            
+            # Use cached thumbnail to get b64
+            try:
+                img = get_thumbnail(f_path, width=target_w)
+                if img is not None:
+                    # Convert RGB to BGR for encoding (OpenCV expects BGR)
+                    img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                    _, buffer = cv2.imencode('.jpg', img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                    b64_str = base64.b64encode(buffer).decode()
+                else:
+                    b64_str = get_base64_image(f_path) or ""
+            except:
+                b64_str = ""
+
+            frame_card = f"""
+            <div style='border: 1px solid {color}; border-radius: 12px; overflow: hidden; background: #111;'>
+                <div style='background: {bg_alpha}; padding: 4px 8px; display: flex; justify-content: space-between; font-family: sans-serif;'>
+                    <span style='color: white; font-size: 0.7rem;'>#{f_data.get('index')}</span>
+                    <span style='color: {color}; font-size: 0.7rem; font-weight: bold;'>{status}</span>
+                </div>
+                <img src='data:image/jpeg;base64,{b64_str}' style='width: 100%; display: block; min-height: 100px; background: #222;'>
+                <div style='padding: 5px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #888; background: rgba(0,0,0,0.5);'>
+                    <span>V: {f_data.get('goc_vai', 0):.0f}°</span>
+                    <span>K: {f_data.get('goc_khuyu', 0):.0f}°</span>
+                </div>
+            </div>
+            """
+            grid_html += frame_card
+            
+    grid_html += "</div>"
+    st.markdown(grid_html, unsafe_allow_html=True)
+    st.write("") # Spacer
 
     st.markdown("---")
     st.markdown("---")
