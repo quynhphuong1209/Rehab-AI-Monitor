@@ -3780,11 +3780,49 @@ def hien_thi_frames_day_du(key_suffix=""):
                     """, unsafe_allow_html=True)
 
     st.markdown("---")
-    summary_cols = st.columns(4, gap='large')
-    summary_cols[0].metric("Tổng frame", total_frames)
-    summary_cols[1].metric("PASS", pass_count)
-    summary_cols[2].metric("FAIL", fail_count)
-    summary_cols[3].metric("Trang", f"{st.session_state[page_state_key]}/{total_pages}")
+    st.markdown("---")
+    # === THANH TỔNG KẾT THÔNG SỐ (SUMMARY BAR) ===
+    s_col1, s_col2, s_col3, s_col4, s_col5 = st.columns(5)
+    
+    with s_col1:
+        st.markdown(f"""
+        <div style='text-align: center; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);'>
+            <div style='font-size: 0.8rem; color: #888;'>📊 Tổng frame</div>
+            <div style='font-size: 1.5rem; font-weight: bold; color: #38bdf8;'>{total_frames}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with s_col2:
+        st.markdown(f"""
+        <div style='text-align: center; background: rgba(34, 197, 94, 0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(34, 197, 94, 0.2);'>
+            <div style='font-size: 0.8rem; color: #888;'>✅ PASS</div>
+            <div style='font-size: 1.5rem; font-weight: bold; color: #22c55e;'>{pass_count}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with s_col3:
+        st.markdown(f"""
+        <div style='text-align: center; background: rgba(245, 158, 11, 0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.2);'>
+            <div style='font-size: 0.8rem; color: #888;'>⚠️ NEARLY</div>
+            <div style='font-size: 1.5rem; font-weight: bold; color: #f59e0b;'>{nearly_count}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with s_col4:
+        st.markdown(f"""
+        <div style='text-align: center; background: rgba(239, 68, 68, 0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);'>
+            <div style='font-size: 0.8rem; color: #888;'>❌ FAIL</div>
+            <div style='font-size: 1.5rem; font-weight: bold; color: #ef4444;'>{fail_count}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with s_col5:
+        st.markdown(f"""
+        <div style='text-align: center; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);'>
+            <div style='font-size: 0.8rem; color: #888;'>📄 Trang</div>
+            <div style='font-size: 1.2rem; font-weight: bold; color: #fff;'>{st.session_state[page_state_key]}/{total_pages}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 # Callback xử lý đổi theme nhanh (Để ngoài hàm main để tránh lỗi WebSocket Cache)
