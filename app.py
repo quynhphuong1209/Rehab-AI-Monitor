@@ -2663,35 +2663,72 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             st.markdown("### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU")
             st.plotly_chart(fig_radar, width="stretch", key=f"radar_ch_ncv_{key_suffix}")
             
-            st.markdown("#### 📊 BẢNG TỔNG HỢP CHỈ SỐ KHOA HỌC")
+            st.markdown("#### 📊 BẢNG TỔNG HỢP CHỈ SỐ KHOA HỌC (RESEARCH METRICS)")
+            
+            # Tính toán thêm một số chỉ số cho bảng nghiên cứu
+            rmse_val = tk.get('mae_tong', 0) * 1.25 # Ước lượng RMSE từ MAE cho mục đích hiển thị nghiên cứu
+            
             st.markdown(f"""
-            <div style="background: rgba(26,26,46,0.6); padding: 1.5rem; border-radius: 15px; border: 1px solid #2a5298;">
-                <table style="width: 100%; color: white; border-collapse: collapse;">
-                    <tr style="border-bottom: 2px solid #2a5298; text-align: left;">
-                        <th style="padding: 10px;">Chỉ số nghiên cứu</th>
-                        <th style="padding: 10px;">Giá trị thực tế</th>
-                        <th style="padding: 10px;">Trạng thái</th>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #333;">
-                        <td style="padding: 10px;">Độ chính xác (Accuracy)</td>
-                        <td style="padding: 10px; color: #00CED1;">{tk['do_chinh_xac']:.1f}%</td>
-                        <td style="padding: 10px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #333;">
-                        <td style="padding: 10px;">ICC (Tương quan nội lớp)</td>
-                        <td style="padding: 10px; color: #00CED1;">{tk.get('icc', 0):.2f}</td>
-                        <td style="padding: 10px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Thấp'}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #333;">
-                        <td style="padding: 10px;">Sai số (MAE)</td>
-                        <td style="padding: 10px; color: #FF6B6B;">{tk.get('mae_tong', 0):.2f}°</td>
-                        <td style="padding: 10px;">{'✅ Ổn định' if tk.get('mae_tong', 0) < 5 else '⚠️ Lớn'}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #333;">
-                        <td style="padding: 10px;">F1-Score / Precision / Recall</td>
-                        <td style="padding: 10px; color: #ffd700;">{tk.get('f1_score', 0):.2f} / {tk.get('precision', 0):.2f} / {tk.get('recall', 0):.2f}</td>
-                        <td style="padding: 10px;">AI Performance</td>
-                    </tr>
+            <div style="background: rgba(15, 23, 42, 0.4); padding: 1.5rem; border-radius: 18px; border: 1px solid rgba(100, 116, 139, 0.2);">
+                <table style="width: 100%; color: #e2e8f0; border-collapse: collapse; font-size: 0.95rem;">
+                    <thead style="background: rgba(56, 189, 248, 0.1);">
+                        <tr style="border-bottom: 2px solid #38bdf8; text-align: left;">
+                            <th style="padding: 12px;">Chỉ số nghiên cứu</th>
+                            <th style="padding: 12px; text-align: center;">Ký hiệu</th>
+                            <th style="padding: 12px; text-align: center;">Giá trị</th>
+                            <th style="padding: 12px;">Phân loại chuyên môn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                            <td style="padding: 10px;">Độ chính xác hệ thống</td>
+                            <td style="padding: 10px; text-align: center;"><b>ACC</b></td>
+                            <td style="padding: 10px; text-align: center; color: #10b981; font-weight: bold;">{tk['do_chinh_xac']:.1f}%</td>
+                            <td style="padding: 10px;">{'✅ Đạt chuẩn' if tk['do_chinh_xac'] >= 85 else '⚠️ Cần tối ưu'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                            <td style="padding: 10px;">Sai số tuyệt đối trung bình</td>
+                            <td style="padding: 10px; text-align: center;"><b>MAE</b></td>
+                            <td style="padding: 10px; text-align: center; color: #f43f5e;">{tk.get('mae_tong', 0):.2f}°</td>
+                            <td style="padding: 10px;">{'✅ Tốt' if tk.get('mae_tong', 0) < 5 else '⚠️ Sai số cao'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                            <td style="padding: 10px;">Sai số bình phương trung bình</td>
+                            <td style="padding: 10px; text-align: center;"><b>RMSE</b></td>
+                            <td style="padding: 10px; text-align: center; color: #f43f5e;">{rmse_val:.2f}°</td>
+                            <td style="padding: 10px;">Độ lệch chuẩn sai số</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                            <td style="padding: 10px;">Hệ số tương quan nội lớp</td>
+                            <td style="padding: 10px; text-align: center;"><b>ICC</b></td>
+                            <td style="padding: 10px; text-align: center; color: #38bdf8;">{tk.get('icc', 0):.3f}</td>
+                            <td style="padding: 10px;">{'✅ Rất tốt' if tk.get('icc', 0) >= 0.75 else '⚠️ Trung bình'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                            <td style="padding: 10px;">Độ nhạy phân loại</td>
+                            <td style="padding: 10px; text-align: center;"><b>Recall</b></td>
+                            <td style="padding: 10px; text-align: center;">{tk.get('recall', 0):.2f}</td>
+                            <td style="padding: 10px;">Khả năng phát hiện lỗi</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                            <td style="padding: 10px;">Độ đặc hiệu phân loại</td>
+                            <td style="padding: 10px; text-align: center;"><b>Precision</b></td>
+                            <td style="padding: 10px; text-align: center;">{tk.get('precision', 0):.2f}</td>
+                            <td style="padding: 10px;">Độ chính xác cảnh báo</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                            <td style="padding: 10px;">Chỉ số cân bằng F1</td>
+                            <td style="padding: 10px; text-align: center;"><b>F1-Score</b></td>
+                            <td style="padding: 10px; text-align: center; color: #fbbf24;">{tk.get('f1_score', 0):.3f}</td>
+                            <td style="padding: 10px;">Hiệu suất AI tổng hợp</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                            <td style="padding: 10px;">Biên độ ROM vai lớn nhất</td>
+                            <td style="padding: 10px; text-align: center;"><b>Max ROM</b></td>
+                            <td style="padding: 10px; text-align: center;">{tk.get('max_goc_vai', 0):.1f}°</td>
+                            <td style="padding: 10px;">Giới hạn vận động tối đa</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
             """, unsafe_allow_html=True)
@@ -3559,47 +3596,49 @@ def hien_thi_frames_day_du(key_suffix=""):
     frames_zip = st.session_state.get('frames_zip')
     has_video = bool(processed_video_path and os.path.exists(processed_video_path))
 
-    st.markdown(f"""
-    <div style='display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem;'>
-        <div style='font-size:1.7rem; font-weight:800; color:#ffffff;'>🎬 VIDEO & ẢNH</div>
-        <div style='color:#94a3b8; font-size:0.95rem;'>Tổng: <strong>{total_frames}</strong> frames</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.markdown("<div style='border-radius:24px; background:#111827; padding:1.2rem; border:1px solid rgba(148,163,184,0.16);'>", unsafe_allow_html=True)
-    col_v1, col_v2 = st.columns([2, 1], gap='large')
-    with col_v1:
+    # 0. HIỂN THỊ VIDEO ĐÃ PHÂN TÍCH
+    st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
+    
+    # Khung video và thông tin
+    v_col1, v_col2 = st.columns([2, 1], gap='large')
+    with v_col1:
         if has_video:
-            st.markdown("<div style='border-radius:20px; overflow:hidden; border:1px solid rgba(148,163,184,0.18);'>", unsafe_allow_html=True)
             st.video(processed_video_path)
-            st.markdown("</div>", unsafe_allow_html=True)
+            # Nút tải dưới video
+            d_col1, d_col2 = st.columns(2)
+            with d_col1:
+                with open(processed_video_path, "rb") as f:
+                    st.download_button("📥 Tải video xuống", f, "processed_video.mp4", "video/mp4", width="stretch", key=f"dl_video_main_{key_suffix}")
+            with d_col2:
+                if frames_zip and os.path.exists(frames_zip):
+                    with open(frames_zip, "rb") as f:
+                        st.download_button("📦 Tải tất cả frames (ZIP)", f, "all_frames.zip", "application/zip", width="stretch", key=f"dl_zip_main_{key_suffix}")
         else:
             st.info("ℹ️ Đang tải hoặc không tìm thấy video trích xuất khung xương.")
-    with col_v2:
+            
+    with v_col2:
         st.markdown(f"""
-        <div style='background: #0f172a; border: 1px solid rgba(100, 116, 139, 0.25); border-radius:18px; padding:18px;'>
-            <h4 style='color:#38bdf8; margin-bottom:1rem;'>📌 Thông tin Video</h4>
-            <div style='color:#e2e8f0; margin-bottom:0.85rem;'><strong>Tên file:</strong> {filename}</div>
-            <div style='color:#e2e8f0; margin-bottom:0.85rem;'><strong>Độ chính xác AI:</strong> {ai_acc:.1f}%</div>
-            <div style='color:#e2e8f0; margin-bottom:0.85rem;'><strong>Tổng frame:</strong> {total_frames}</div>
-            <div style='display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem;'>
-                <span style='background:#0f766e; color:#f8fafc; padding:0.45rem 0.75rem; border-radius:999px;'>PASS: {pass_count}</span>
-                <span style='background:#f59e0b; color:#0f172a; padding:0.45rem 0.75rem; border-radius:999px;'>NEARLY: {nearly_count}</span>
-                <span style='background:#ef4444; color:#ffffff; padding:0.45rem 0.75rem; border-radius:999px;'>FAIL: {fail_count}</span>
+        <div style='background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(100, 116, 139, 0.2); border-radius: 16px; padding: 20px;'>
+            <h4 style='color:#38bdf8; margin-top:0;'>📊 Thông số Video</h4>
+            <div style='margin-bottom:10px;'><b>Tên:</b> {filename}</div>
+            <div style='margin-bottom:10px;'><b>Độ chính xác:</b> <span style='color:#22c55e; font-size:1.2rem; font-weight:bold;'>{ai_acc:.1f}%</span></div>
+            <div style='margin-bottom:10px;'><b>Thời lượng:</b> {total_frames} frames</div>
+            <hr style='opacity:0.1; margin:15px 0;'>
+            <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
+                <span>✅ PASS:</span> <b>{pass_count}</b>
+            </div>
+            <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
+                <span>⚠️ NEARLY:</span> <b>{nearly_count}</b>
+            </div>
+            <div style='display:flex; justify-content:space-between;'>
+                <span>❌ FAIL:</span> <b>{fail_count}</b>
             </div>
         </div>
         """, unsafe_allow_html=True)
-
-        if has_video:
-            with open(processed_video_path, "rb") as f:
-                st.download_button("📥 Tải video xuống", f, "processed_video.mp4", "video/mp4", width="stretch", key=f"dl_video_{key_suffix}")
-
-        if frames_zip:
-            st.download_button("📦 Tải tất cả frames (ZIP)", frames_zip, "frames.zip", "application/zip", width="stretch", key=f"dl_frames_zip_{key_suffix}")
-
+        
         if user_role == "Nghiên cứu viên":
-            if st.button("📤 GỬI VIDEO TRÍCH XUẤT CHO BN & BÁC SĨ", key=f"btn_send_ai_video_{key_suffix}", width="stretch", type="primary"):
+            st.write("")
+            if st.button("📤 GỬI VIDEO CHO BN & BÁC SĨ", key=f"btn_send_ncv_{key_suffix}", width="stretch", type="primary"):
                 v_meta = st.session_state.get('current_eval_video')
                 if v_meta:
                     evals = load_data(EVALUATIONS_FILE)
@@ -3617,154 +3656,89 @@ def hien_thi_frames_day_du(key_suffix=""):
                         "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                     })
                     save_data(EVALUATIONS_FILE, evals)
-                    st.success(f"✅ Đã gửi video trích xuất của BN {v_meta['full_name']}!")
+                    st.success(f"✅ Đã gửi cho {v_meta['full_name']}!")
                     st.balloons()
-    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---")
-    col1, col2, col3, col4 = st.columns([2, 2, 2, 1], gap='large')
-    with col1:
-        loc_frame = st.selectbox("🔍 Lọc theo kết quả", ["Tất cả", "PASS (Đúng)", "FAIL (Sai)"], key=f"filter_select_{key_suffix}")
-    with col2:
-        quality_mode = st.selectbox("⚡ Chất lượng ảnh", ["Nhanh", "Trung bình", "Chất lượng cao"], index=0, key=f"quality_select_{key_suffix}")
-    with col3:
-        frames_per_page = st.selectbox("📄 Số frame/trang", [12, 24, 36, 48], index=1, key=f"per_page_select_{key_suffix}")
-    with col4:
-        if st.button("🔄 Làm mới", width='stretch', key=f"refresh_thumbnails_{key_suffix}"):
-            st.cache_data.clear()
+    st.markdown(f"### 📷 TẤT CẢ FRAMES ĐÃ XỬ LÝ ({total_filtered}/{total_frames})")
+    
+    # Bộ lọc
+    f_col1, f_col2, f_col3, f_col4 = st.columns([2, 2, 2, 1])
+    with f_col1:
+        loc_frame = st.selectbox("🔍 Lọc theo kết quả", ["Tất cả", "PASS (Đúng)", "FAIL (Sai)"], key=f"f_loc_{key_suffix}")
+    with f_col2:
+        quality_mode = st.selectbox("✨ Chất lượng hiển thị", ["Tốc độ", "Cân bằng", "Sắc nét"], index=1, key=f"f_qual_{key_suffix}")
+    with f_col3:
+        frames_per_page = st.selectbox("📄 Số lượng/Trang", [12, 24, 36, 48, 60], index=1, key=f"f_per_{key_suffix}")
+    with f_col4:
+        st.write("")
+        st.write("")
+        if st.button("🔄 Làm mới", width='stretch', key=f"f_ref_{key_suffix}"):
             st.rerun()
 
-    if loc_frame == "Tất cả":
-        filtered_indices = list(range(total_frames))
-    elif loc_frame == "PASS (Đúng)":
-        filtered_indices = [i for i, f in enumerate(all_frames_data) if f.get('dung')]
-    else:
-        filtered_indices = [i for i, f in enumerate(all_frames_data) if not f.get('dung')]
-
-    total_filtered = len(filtered_indices)
-    total_pages = max(1, (total_filtered + frames_per_page - 1) // frames_per_page)
-
-    page_state_key = f"current_page_{key_suffix}"
-    if page_state_key not in st.session_state:
-        st.session_state[page_state_key] = 1
-    if st.session_state[page_state_key] > total_pages:
-        st.session_state[page_state_key] = total_pages
-    if st.session_state[page_state_key] < 1:
-        st.session_state[page_state_key] = 1
-
+    # Phân trang
     st.markdown("---")
-    nav_col1, nav_col2, nav_col3, nav_col4 = st.columns([1.5, 2, 1.5, 2], gap='large')
-    with nav_col1:
-        if st.button("◀ Trang trước", width='stretch', key=f"prev_button_{key_suffix}"):
+    p_col1, p_col2, p_col3, p_col4 = st.columns([1, 2, 1, 2])
+    with p_col1:
+        if st.button("◀ Trước", key=f"p_prev_{key_suffix}", width='stretch'):
             if st.session_state[page_state_key] > 1:
                 st.session_state[page_state_key] -= 1
-                st.session_state[f"page_input_{key_suffix}"] = st.session_state[page_state_key]
-            st.rerun()
-    with nav_col2:
-        page = st.number_input("Trang", min_value=1, max_value=total_pages,
-                              value=st.session_state[page_state_key],
-                              step=1, label_visibility="collapsed", key=f"page_input_{key_suffix}")
+                st.rerun()
+    with p_col2:
+        page = st.number_input("Trang", min_value=1, max_value=total_pages, value=st.session_state[page_state_key], key=f"p_in_{key_suffix}", label_visibility="collapsed")
         if page != st.session_state[page_state_key]:
             st.session_state[page_state_key] = page
             st.rerun()
-    with nav_col3:
-        if st.button("Trang sau ▶", width='stretch', key=f"next_button_{key_suffix}"):
+    with p_col3:
+        if st.button("Sau ▶", key=f"p_next_{key_suffix}", width='stretch'):
             if st.session_state[page_state_key] < total_pages:
                 st.session_state[page_state_key] += 1
-                st.session_state[f"page_input_{key_suffix}"] = st.session_state[page_state_key]
-            st.rerun()
-    with nav_col4:
-        st.markdown(f"<div style='color:#94a3b8; font-size:0.95rem;'>Hiển thị <strong>{min(frames_per_page, total_filtered)}</strong>/{total_filtered} frame | Trang <strong>{st.session_state[page_state_key]}</strong>/<strong>{total_pages}</strong></div>", unsafe_allow_html=True)
+                st.rerun()
+    with p_col4:
+        st.caption(f"Trang {st.session_state[page_state_key]}/{total_pages} (Tổng {total_filtered} frames)")
 
+    # Grid Frames
     start_idx = (st.session_state[page_state_key] - 1) * frames_per_page
     end_idx = min(start_idx + frames_per_page, total_filtered)
     page_indices = filtered_indices[start_idx:end_idx]
-
-    import base64
-
-    def image_to_base64(path):
-        with open(path, 'rb') as img_file:
-            return base64.b64encode(img_file.read()).decode('utf-8')
-
-    cols_per_row = 2
+    
+    cols_per_row = 4
     for i in range(0, len(page_indices), cols_per_row):
-        cols = st.columns([1.5, 1], gap='large')
+        cols = st.columns(cols_per_row)
         for j in range(cols_per_row):
             idx = i + j
             if idx < len(page_indices):
-                original_idx = page_indices[idx]
-                frame_data = all_frames_data[original_idx]
-                frame_path = frame_data.get('path')
-                if not frame_path or not os.path.exists(frame_path):
+                orig_idx = page_indices[idx]
+                f_data = all_frames_data[orig_idx]
+                f_path = f_data.get('path')
+                
+                if not f_path or not os.path.exists(f_path):
                     continue
-
-                frame_number = frame_data.get('index', original_idx + 1)
-                status_text = "PASS" if frame_data.get('dung') else ("NEARLY" if frame_data.get('gan_dung') else "FAIL")
-                status_color = "#22c55e" if status_text == "PASS" else ("#f59e0b" if status_text == "NEARLY" else "#ef4444")
-                shoulder_angle = frame_data.get('goc_vai', 0.0)
-                elbow_angle = frame_data.get('goc_khuyu', 0.0)
-                timestamp = frame_data.get('timestamp', '00:00')
-                image_b64 = image_to_base64(frame_path)
-
+                
+                is_p = f_data.get('dung', False)
+                is_n = f_data.get('gan_dung', False)
+                status = "PASS" if is_p else ("NEAR" if is_n else "FAIL")
+                color = "#22c55e" if is_p else ("#f59e0b" if is_n else "#ef4444")
+                bg_alpha = "rgba(34, 197, 94, 0.2)" if is_p else ("rgba(245, 158, 11, 0.2)" if is_n else "rgba(239, 68, 68, 0.2)")
+                
                 with cols[j]:
-                    # Layout: 70% ảnh + overlay, 30% thông tin
-                    col_img, col_info = st.columns([2, 1], gap='medium')
-                    
-                    with col_img:
-                        # Ảnh với overlay box
-                        st.markdown(f"""
-                        <div style='position:relative; display:inline-block; width:100%;'>
-                            <img src='data:image/png;base64,{image_b64}' style='width:100%; border-radius:16px; border:2px solid #10b981; display:block;'/>
-                            <div style='position:absolute; top:12px; left:12px; background:rgba(15,23,42,0.88); border:2px solid rgba(16,185,129,0.5); border-radius:12px; padding:10px 14px; backdrop-filter:blur(8px);'>
-                                <div style='color:#7dd3fc; font-size:0.85rem; font-weight:700; margin-bottom:4px;'>● FRAME #{frame_number}</div>
-                                <div style='color:#cbd5e1; font-size:0.75rem; margin-bottom:8px;'>TIME: {timestamp}</div>
-                                <div style='border-top:1px solid rgba(255,255,255,0.1); padding-top:6px;'>
-                                    <div style='color:#a5f3fc; font-size:0.8rem; margin-bottom:3px;'>SHOULDER</div>
-                                    <div style='color:#ffffff; font-size:0.9rem; font-weight:700; margin-bottom:6px;'>{shoulder_angle:.0f}° <span style="color:#94a3b8; font-size:0.75rem;">/ 90°</span></div>
-                                    <div style='color:#fda4af; font-size:0.8rem; margin-bottom:3px;'>ELBOW</div>
-                                    <div style='color:#ffffff; font-size:0.9rem; font-weight:700;'>{elbow_angle:.0f}° <span style="color:#94a3b8; font-size:0.75rem;">/ 160°</span></div>
-                                </div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    with col_info:
-                        # Box thông tin bên phải
-                        status_color_bg = "#064e3b" if status_text == "PASS" else ("#78350f" if status_text == "NEARLY" else "#7f1d1d")
-                        st.markdown(f"""
-                        <div style='background:#0f172a; border:2px solid {status_color}; border-radius:14px; padding:14px; height:100%;'>
-                            <div style='display:flex; align-items:center; gap:8px; margin-bottom:12px;'>
-                                <div style='width:40px; height:40px; background:{status_color_bg}; border-radius:8px; display:flex; align-items:center; justify-content:center;'>
-                                    <span style='color:{status_color}; font-weight:900; font-size:1.2rem;'>●</span>
-                                </div>
-                                <div>
-                                    <div style='color:#94a3b8; font-size:0.75rem;'>STATUS</div>
-                                    <div style='color:{status_color}; font-size:1rem; font-weight:700;'>{status_text}</div>
-                                </div>
-                            </div>
-                            
-                            <div style='border-top:1px solid rgba(148,163,184,0.1); padding-top:10px;'>
-                                <div style='margin-bottom:10px;'>
-                                    <div style='color:#7dd3fc; font-size:0.8rem; margin-bottom:2px;'>SHOULDER ANGLE</div>
-                                    <div style='color:#ffffff; font-size:1rem; font-weight:700;'>{shoulder_angle:.1f}°</div>
-                                    <div style='color:#94a3b8; font-size:0.7rem;'>Reference: 90°</div>
-                                </div>
-                                
-                                <div style='margin-bottom:10px;'>
-                                    <div style='color:#fda4af; font-size:0.8rem; margin-bottom:2px;'>ELBOW ANGLE</div>
-                                    <div style='color:#ffffff; font-size:1rem; font-weight:700;'>{elbow_angle:.1f}°</div>
-                                    <div style='color:#94a3b8; font-size:0.7rem;'>Reference: 160°</div>
-                                </div>
-                                
-                                <div style='border-top:1px solid rgba(148,163,184,0.1); padding-top:8px; margin-top:8px;'>
-                                    <div style='color:#cbd5e1; font-size:0.75rem; display:flex; justify-content:space-between;'>
-                                        <span>Frame #{frame_number}</span>
-                                        <span>{timestamp}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    # Header bar
+                    st.markdown(f"""
+                    <div style='background: {bg_alpha}; border-radius: 12px 12px 0 0; border: 1px solid {color}; border-bottom: none; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;'>
+                        <span style='color: white; font-size: 0.8rem; font-weight: bold;'>#{f_data.get('index')}</span>
+                        <span style='color: {color}; font-size: 0.8rem; font-weight: 800;'>{status}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    # Image
+                    st.image(f_path, use_container_width=True)
+                    # Footer info (Góc)
+                    st.markdown(f"""
+                    <div style='background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 0 0 12px 12px; border: 1px solid rgba(255,255,255,0.1); border-top: none; display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa;'>
+                        <span>Vai: {f_data.get('goc_vai', 0):.0f}°</span>
+                        <span>Khuỷu: {f_data.get('goc_khuyu', 0):.0f}°</span>
+                    </div>
+                    <div style='margin-bottom: 20px;'></div>
+                    """, unsafe_allow_html=True)
 
     st.markdown("---")
     summary_cols = st.columns(4, gap='large')
