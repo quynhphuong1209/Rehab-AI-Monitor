@@ -106,97 +106,152 @@ REMINDERS_FILE = "schedules.json"
 VIDEOS_FILE = "video_list.json"
 
 def hien_thi_footer_chung():
-    """Hiển thị chân trang (footer) chuyên nghiệp y xì mẫu yêu cầu"""
+    """Hiển thị chân trang (footer) 3 cột chuyên nghiệp với đầy đủ thông tin"""
     try:
         if os.path.exists("abc1.png"):
             with open("abc1.png", "rb") as img_file:
                 logo_b64 = base64.b64encode(img_file.read()).decode()
                 logo_src = f"data:image/png;base64,{logo_b64}"
         else:
-            logo_src = "https://upload.wikimedia.org/wikipedia/vi/f/f6/Logo_HUPH.png"
+            logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
     except:
-        logo_src = "https://upload.wikimedia.org/wikipedia/vi/f/f6/Logo_HUPH.png"
+        logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
     footer_html = f"""
     <style>
         .main-footer {{
             background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
-            padding: 40px 20px;
+            padding: 45px 20px;
             color: #ccc;
             font-family: 'Times New Roman', Times, serif;
-            text-align: center;
             border-top: 4px solid #00c6ff;
-            box-shadow: 0 -10px 20px rgba(0, 198, 255, 0.2);
+            box-shadow: 0 -10px 25px rgba(0, 198, 255, 0.15);
             margin-top: 60px;
         }}
         .footer-container {{
             display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            max-width: 1100px;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            max-width: 1300px;
             margin: 0 auto;
-            gap: 30px;
-            align-items: center;
+            gap: 0;
         }}
         .footer-col {{
             flex: 1;
-            min-width: 320px;
+            padding: 0 30px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }}
+        .footer-col:last-child {{
+            border-right: none;
+        }}
+        .logo-col {{
+            text-align: center;
         }}
         .footer-logo-img {{
-            width: 120px;
-            filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.4));
+            width: 100px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.3));
         }}
         .footer-title {{
             color: #00c6ff;
             font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
+            margin-bottom: 18px;
+            font-size: 1.15rem;
             text-transform: uppercase;
-        }}
-        .footer-info-item {{
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 8px;
-            font-size: 1.1rem;
+            gap: 10px;
         }}
-        .footer-bottom {{
-            padding-top: 20px;
-            margin-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 0.9rem;
-            color: #888;
-        }}
-        a {{ color: #00c6ff; text-decoration: none; }}
-        .school-name {{
-            margin-top: 15px; 
-            font-weight: bold; 
-            color: #fff; 
-            font-size: 1.2rem;
+        .info-row {{
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            display: flex;
+            gap: 8px;
             line-height: 1.4;
         }}
+        .info-label {{
+            font-weight: bold;
+            color: #eee;
+            min-width: 60px;
+        }}
+        .footer-bottom {{
+            padding-top: 25px;
+            margin-top: 35px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+            color: #666;
+            text-align: center;
+            letter-spacing: 1px;
+        }}
+        a {{ color: #00c6ff; text-decoration: none; }}
+        a:hover {{ text-decoration: underline; }}
+        .school-name {{
+            font-weight: bold; 
+            color: #fff; 
+            font-size: 1.1rem;
+            line-height: 1.3;
+            margin-bottom: 5px;
+        }}
         .school-subname {{
-            font-size: 1rem; 
+            font-size: 0.85rem; 
             color: #00c6ff;
             display: block;
-            margin-top: 5px;
+            margin-bottom: 15px;
         }}
     </style>
     <div class="main-footer">
         <div class="footer-container">
-            <div class="footer-col">
+            <!-- CỘT 1: THƯƠNG HIỆU -->
+            <div class="footer-col logo-col">
                 <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-                <p class="school-name">
-                    TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG<br>
-                    <span class="school-subname">HANOI UNIVERSITY OF PUBLIC HEALTH</span>
-                </p>
+                <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
+                <div class="school-subname">HANOI UNIVERSITY OF PUBLIC HEALTH</div>
+                <div style="font-size: 0.9rem; opacity: 0.8;">
+                    <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                    <p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
+                </div>
             </div>
+
+            <!-- CỘT 2: NGHIÊN CỨU VIÊN -->
             <div class="footer-col">
-                <div class="footer-title">📍 THÔNG TIN LIÊN HỆ</div>
-                <div class="footer-info-item">🌐 <b>Website:</b> <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></div>
-                <div class="footer-info-item">🏠 <b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
-                <div class="footer-info-item">📞 <b>ĐT:</b> 024.62662299 | 📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</div>
+                <div class="footer-title">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
+                <div class="info-row">
+                    <span class="info-label">Họ tên:</span>
+                    <span>Đinh Lê Quỳnh Phương</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Địa chỉ:</span>
+                    <span>Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span><a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">SĐT:</span>
+                    <span>0382665916</span>
+                </div>
+            </div>
+
+            <!-- CỘT 3: HỘI ĐỒNG ĐẠO ĐỨC -->
+            <div class="footer-col">
+                <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
+                <div class="info-row">
+                    <span class="info-label">Tên:</span>
+                    <span>HĐĐĐ Trường ĐH Y tế Công cộng</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Địa chỉ:</span>
+                    <span>Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span><a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">SĐT:</span>
+                    <span>024 62663024</span>
+                </div>
             </div>
         </div>
         <div class="footer-bottom">
@@ -204,7 +259,7 @@ def hien_thi_footer_chung():
         </div>
     </div>
     """
-    components.html(footer_html, height=400, scrolling=False)
+    components.html(footer_html, height=420, scrolling=False)
 
 def load_data(file_path):
     if os.path.exists(file_path):
