@@ -1179,10 +1179,10 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     
     # Vẽ text thông tin
     font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(frame_output, f"FRAME #{frame_count}", (25, 40), font, 0.7, CYAN, 2)
+    cv2.putText(frame_output, f"FRAME #{frame_idx}", (25, 40), font, 0.7, CYAN, 2)
     cv2.putText(frame_output, status_text, (box_w - 90, 40), font, 0.8, status_color, 3)
     
-    time_sec = frame_count / fps
+    time_sec = frame_idx / fps
     time_min = int(time_sec // 60)
     time_rem = int(time_sec % 60)
     cv2.putText(frame_output, f"TIME: {time_min:02d}:{time_rem:02d}", (25, 70), font, 0.6, CYAN, 1)
@@ -3535,29 +3535,30 @@ def hien_thi_lich_nhac_nho():
 def hien_thi_frames_day_du(key_suffix=""):
     """Hiển thị frames với Streamlit Fragment (Chỉ load lại vùng này, cực nhanh)"""
     user_role = st.session_state.user_info.get('role')
-    
+
     if not st.session_state.get('all_frames_data_path') or not os.path.exists(st.session_state.all_frames_data_path):
         st.info("📭 Không có dữ liệu khung hình để hiển thị.")
         return
-    
-    # Đọc dữ liệu từ file JSON thay vì RAM
+
     import json
     with open(st.session_state.all_frames_data_path, 'r', encoding='utf-8') as f:
         all_frames_data = json.load(f)
-    
+
     total_frames = len(all_frames_data)
-    
-    # Chuẩn bị dữ liệu
-    frame_paths = [f['path'] for f in all_frames_data]
-    dung_flags = [f.get('dung', False) for f in all_frames_data]
-    timestamps = [f.get('timestamp', '00:00') for f in all_frames_data]
-    goc_vai_list = [f.get('goc_vai') for f in all_frames_data]
-    goc_khuyu_list = [f.get('goc_khuyu') for f in all_frames_data]
-    frame_indices = [f.get('index', i) for i, f in enumerate(all_frames_data)]
-    
+    if total_frames == 0:
+        st.warning("⚠️ Dữ liệu khung hình trống. Vui lòng phân tích lại video.")
+        return
+
+    # Thống kê nhanh
+    pass_count = sum(1 for f in all_frames_data if f.get('dung'))
+    nearly_count = sum(1 for f in all_frames_data if f.get('gan_dung') and not f.get('dung'))
+    fail_count = total_frames - pass_count - nearly_count
+    tk = st.session_state.get('stats', {})
+    filename = st.session_state.get('uploaded_file_name') or os.path.basename(st.session_state.get('processed_video_path', '') or 'Video hệ thống')
+    ai_acc = tk.get('do_chinh_xac', 0.0)
+
     st.markdown(f"### 📸 TẤT CẢ FRAMES ĐÃ XỬ LÝ (Tổng: {total_frames} frames)")
-    
-    # 0. HIỂN THỊ VIDEO ĐÃ PHÂN TÍCH (THÊM THEO YÊU CẦU)
+
     st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
     col_v1, col_v2 = st.columns([2, 1])
     with col_v1:
@@ -3566,18 +3567,22 @@ def hien_thi_frames_day_du(key_suffix=""):
         else:
             st.info("ℹ️ Đang tải hoặc không tìm thấy video trích xuất khung xương.")
     with col_v2:
-        tk = st.session_state.get('stats', {})
-        st.info(f"""
-        **Thông số Video:**
-        - **Tên file:** {st.session_state.get('uploaded_file_name', 'Video hệ thống')}
-        - **Độ chính xác AI:** {tk.get('do_chinh_xac', 0):.1f}%
-        - **Tổng số frame:** {total_frames}
-        """)
+        st.markdown(f"""
+        <div style='background: rgba(5, 15, 40, 0.85); padding: 1rem; border-radius: 18px; border: 1px solid rgba(0, 198, 255, 0.4);'>
+            <h4 style='color:#00CED1; margin-bottom:0.75rem;'>📌 Thông tin Video</h4>
+            <p style='margin:4px 0; color:#fff;'><strong>Tên file:</strong> {filename}</p>
+            <p style='margin:4px 0; color:#fff;'><strong>Độ chính xác AI:</strong> {ai_acc:.1f}%</p>
+            <p style='margin:4px 0; color:#fff;'><strong>Tổng frame:</strong> {total_frames}</p>
+            <p style='margin:4px 0; color:#00FF7F;'><strong>PASS:</strong> {pass_count}</p>
+            <p style='margin:4px 0; color:#FFA500;'><strong>NEARLY:</strong> {nearly_count}</p>
+            <p style='margin:4px 0; color:#FF4444;'><strong>FAIL:</strong> {fail_count}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
         if st.session_state.get('processed_video_path') and os.path.exists(st.session_state.processed_video_path):
             with open(st.session_state.processed_video_path, "rb") as f:
                 st.download_button("📥 Tải video xuống", f, "processed_video.mp4", "video/mp4", width="stretch", key=f"dl_video_{key_suffix}")
-        
-        # NÚT GỬI TRONG TAB VIDEO (DÀNH CHO NCV)
+
         if user_role == "Nghiên cứu viên":
             if st.button("📤 GỬI VIDEO TRÍCH XUẤT CHO BN & BÁC SĨ", key=f"btn_send_ai_video_{key_suffix}", width="stretch", type="primary"):
                 v_meta = st.session_state.get('current_eval_video')
@@ -3588,10 +3593,10 @@ def hien_thi_frames_day_du(key_suffix=""):
                         "doctor_username": "AI_Researcher",
                         "video_name": v_meta.get('video_name', 'N/A'),
                         "exercise": v_meta['exercise'],
-                        "ai_accuracy": st.session_state.get('stats', {}).get('do_chinh_xac', 0),
+                        "ai_accuracy": ai_acc,
                         "doctor_result": "AI Video Sent",
                         "errors": [],
-                        "comments": f"NCV gửi video đã trích xuất khung xương để BN & Bác sĩ đối chiếu.",
+                        "comments": "NCV gửi video đã trích xuất khung xương để BN & Bác sĩ đối chiếu.",
                         "plan": "Vui lòng xem video trích xuất tại tab KẾT QUẢ.",
                         "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
                         "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
@@ -3602,7 +3607,6 @@ def hien_thi_frames_day_du(key_suffix=""):
 
     st.markdown("---")
     
-    # Bộ lọc
     col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
     with col1:
         loc_frame = st.selectbox("🔍 Lọc theo kết quả", ["Tất cả", "PASS (Đúng)", "FAIL (Sai)"], key=f"filter_select_{key_suffix}")
@@ -3616,41 +3620,34 @@ def hien_thi_frames_day_du(key_suffix=""):
         if st.button("🔄 Làm mới", width='stretch', key=f"refresh_thumbnails_{key_suffix}"):
             st.cache_data.clear()
             st.rerun()
-    
-    # Chất lượng theo chế độ
+
     if quality_mode == "Chất lượng cao":
-        thumb_quality = 85
         thumb_width = 380
     elif quality_mode == "Trung bình":
-        thumb_quality = 70
         thumb_width = 320
     else:
-        thumb_quality = 55
         thumb_width = 260
-    
-    # Lọc indices
+
     if loc_frame == "Tất cả":
         filtered_indices = list(range(total_frames))
     elif loc_frame == "PASS (Đúng)":
         filtered_indices = [i for i, f in enumerate(all_frames_data) if f.get('dung')]
     else:
         filtered_indices = [i for i, f in enumerate(all_frames_data) if not f.get('dung')]
-    
+
     total_filtered = len(filtered_indices)
     total_pages = max(1, (total_filtered + frames_per_page - 1) // frames_per_page)
-    
-    # Khởi tạo current_page
+
     if 'current_page' not in st.session_state:
         st.session_state.current_page = 1
     if st.session_state.current_page > total_pages:
         st.session_state.current_page = total_pages
     if st.session_state.current_page < 1:
         st.session_state.current_page = 1
-    
+
     st.markdown("---")
     col_prev, col_page, col_next, col_info = st.columns([1, 2, 1, 2])
-    
-    # LOGIC XỬ LÝ NÚT BẤM TRƯỚC KHI VẼ WIDGET
+
     if st.session_state.get('btn_prev'):
         if st.session_state.current_page > 1:
             st.session_state.current_page -= 1
@@ -3667,74 +3664,79 @@ def hien_thi_frames_day_du(key_suffix=""):
 
     st.markdown("---")
     col_prev, col_page, col_next, col_info = st.columns([1, 2, 1, 2])
-    
+
     with col_prev:
         if st.button("◀ Trang trước", width='stretch', key=f"prev_button_{key_suffix}"):
             st.session_state.btn_prev = True
             st.rerun()
-    
+
     with col_page:
-        page = st.number_input("Trang", min_value=1, max_value=total_pages, 
-                              value=st.session_state.current_page, 
+        page = st.number_input("Trang", min_value=1, max_value=total_pages,
+                              value=st.session_state.current_page,
                               step=1, label_visibility="collapsed", key=f"page_input_{key_suffix}")
         if page != st.session_state.current_page:
             st.session_state.current_page = page
             st.rerun()
-    
+
     with col_next:
         if st.button("Trang sau ▶", width='stretch', key=f"next_button_{key_suffix}"):
             st.session_state.btn_next = True
             st.rerun()
-    
+
     with col_info:
         st.caption(f"📊 Hiển thị {min(frames_per_page, total_filtered)}/{total_filtered} frame | Trang {st.session_state.current_page}/{total_pages}")
-    
-    # Lấy indices của trang hiện tại
+
     start_idx = (st.session_state.current_page - 1) * frames_per_page
     end_idx = min(start_idx + frames_per_page, total_filtered)
     page_indices = filtered_indices[start_idx:end_idx]
-    
-    # === XỬ LÝ THUMBNAIL CHO TRANG HIỆN TẠI ===
-    cols_per_row = 4
+
+    cols_per_row = 3
     for i in range(0, len(page_indices), cols_per_row):
         cols = st.columns(cols_per_row)
         for j in range(cols_per_row):
             idx = i + j
             if idx < len(page_indices):
                 original_idx = page_indices[idx]
-                path = frame_paths[original_idx]
-                if not os.path.exists(path):
-                    continue
-                
                 frame_data = all_frames_data[original_idx]
-                if frame_data.get('dung'):
-                    border_color = "#00FF00" # Xanh (Đúng)
-                elif frame_data.get('gan_dung'):
-                    border_color = "#FFA500" # Cam (Gần đúng)
-                else:
-                    border_color = "#FF4444" # Đỏ (Sai)
-                
+                frame_path = frame_data.get('path')
+                if not frame_path or not os.path.exists(frame_path):
+                    continue
+
+                status_text = "PASS" if frame_data.get('dung') else ("NEARLY" if frame_data.get('gan_dung') else "FAIL")
+                status_color = "#00FF00" if status_text == "PASS" else ("#FFA500" if status_text == "NEARLY" else "#FF4444")
+                shoulder_angle = frame_data.get('goc_vai', 0.0)
+                elbow_angle = frame_data.get('goc_khuyu', 0.0)
+                timestamp = frame_data.get('timestamp', '00:00')
+
                 with cols[j]:
                     st.markdown(f"""
-                    <div style="text-align:center; background: rgba(0,0,0,0.4); border-radius: 12px 12px 0 0; padding: 4px; border-top: 3px solid {border_color}; border-left: 3px solid {border_color}; border-right: 3px solid {border_color};">
-                        <span style="color:#aaa; font-size:0.8rem; font-weight:bold;">⏱️ Frame #{frame_data['index']}</span>
+                    <div style='background: rgba(0,0,0,0.42); border-radius: 18px; overflow: hidden; border: 2px solid {status_color}; margin-bottom: 8px;'>
+                        <div style='background: rgba(0,0,0,0.7); padding: 10px; display: flex; justify-content: space-between; align-items: center;'>
+                            <div style='text-align:left;'>
+                                <div style='color: #00CED1; font-weight: bold;'>FRAME #{frame_data.get('index')}</div>
+                                <div style='color: #ccc; font-size: 0.85rem;'>TIME: {timestamp}</div>
+                            </div>
+                            <div style='color: {status_color}; font-weight: bold; font-size: 0.95rem;'>{status_text}</div>
+                        </div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.image(path, width="stretch")
-    
-    # Thống kê
+                    st.image(frame_path, use_column_width=True)
+                    st.markdown(f"""
+                    <div style='background: rgba(10, 15, 40, 0.85); border-radius: 0 0 18px 18px; padding: 10px; border: 1px solid rgba(255,255,255,0.08);'>
+                        <div style='display:flex; justify-content:space-between; gap:8px;'>
+                            <span style='color:#00CED1; font-size:0.9rem;'>SHOULDER: <strong>{shoulder_angle:.1f}°</strong></span>
+                            <span style='color:#FF6B6B; font-size:0.9rem;'>ELBOW: <strong>{elbow_angle:.1f}°</strong></span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
     st.markdown("---")
-    col_stat1, col_stat2, col_stat3, col_stat4, col_stat5 = st.columns(5)
-    with col_stat1: st.metric("📊 Tổng số frames", total_frames)
-    # Tính toán chính xác (Đảm bảo không chồng lấn)
-    num_pass = sum(1 for f in all_frames_data if f.get('dung'))
-    num_nearly = sum(1 for f in all_frames_data if f.get('gan_dung') and not f.get('dung'))
-    num_fail = total_frames - num_pass - num_nearly
-    
-    with col_stat2: st.metric("✅ Số frame PASS", num_pass)
-    with col_stat3: st.metric("⚠️ Số frame GẦN ĐÚNG", num_nearly)
-    with col_stat4: st.metric("❌ Số frame FAIL", max(0, num_fail))
-    with col_stat5: st.metric("📄 Tổng số trang", total_pages)
+    stat_cols = st.columns(5)
+    stat_cols[0].metric("📊 Tổng frame", total_frames)
+    stat_cols[1].metric("✅ PASS", pass_count)
+    stat_cols[2].metric("⚠️ NEARLY", nearly_count)
+    stat_cols[3].metric("❌ FAIL", fail_count)
+    stat_cols[4].metric("📄 Trang", f"{st.session_state.current_page}/{total_pages}")
 
 
 # Callback xử lý đổi theme nhanh (Để ngoài hàm main để tránh lỗi WebSocket Cache)
@@ -4471,6 +4473,7 @@ def main():
                                 st.session_state.all_frames_paths = frame_paths
                                 st.session_state.temp_video_file = output_path
                                 st.session_state.processed_video_path = output_path
+                                st.session_state.uploaded_file_name = file_upload.name
                                 st.session_state.all_frames_data_path = all_frames_data
                                 
                                 # Lưu DataFrame ra CSV để load lại sau
