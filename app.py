@@ -3104,16 +3104,11 @@ def hien_thi_form_danh_gia_bac_si():
         for e in evals_data
     )
 
-    # Hiển thị video để bác sĩ xem lại
-    # CHỈ HIỂN THỊ VIDEO TRÍCH XUẤT NẾU NCV ĐÃ GỬI, NẾU CHƯA THÌ HIỂN THỊ VIDEO GỐC
-    display_video_path = selected_video.get('processed_path') if has_ai_sent else selected_video['video_path']
-    
-    # Nếu has_ai_sent là True nhưng processed_path lại None (lỗi dữ liệu cũ), fallback về video_path
-    if not display_video_path:
-        display_video_path = selected_video['video_path']
+    # BÁC SĨ LUÔN LUÔN XEM VIDEO GỐC ĐỂ ĐẢM BẢO GROUND TRUTH CHÍNH XÁC (Không bị AI chi phối)
+    display_video_path = selected_video['video_path']
 
     if os.path.exists(display_video_path):
-        label_vid = "📺 XEM LẠI VIDEO TRÍCH XUẤT KHUNG XƯƠNG" if (has_ai_sent and selected_video.get('processed_path')) else "📺 XEM LẠI VIDEO GỐC (BỆNH NHÂN GỬI)"
+        label_vid = "📺 XEM LẠI VIDEO GỐC (BỆNH NHÂN GỬI)"
         st.markdown(f"### {label_vid}")
         st.video(display_video_path)
     else:
@@ -4562,11 +4557,12 @@ def main():
                                         "exercise": bai_tap['ten'],
                                         "accuracy": round(metrics["ty_le_tong_the"], 1),
                                         "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
-                                        "video_path": output_path,
+                                        "video_path": video_path,        # Video gốc
+                                        "processed_path": output_path,   # Video có khung xương
                                         "metrics": st.session_state.stats,
                                         "df_path": df_csv_path,
                                         "all_frames_data_path": all_frames_data,
-                                        "status": "Chờ đánh giá"
+                                        "status": "Đã phân tích"
                                     })
                                     save_data(VIDEOS_FILE, video_list)
                                     st.info(f"📁 Video đã được lưu cho BN: {target_fn}")
@@ -4663,20 +4659,12 @@ def main():
                     for idx, v in enumerate(video_list):
                         col_list1, col_list2 = st.columns([12, 1])
                         with col_list1:
-                            # TÍNH TOÁN VIDEO HIỂN THỊ DỰA TRÊN QUYỀN VÀ TRẠNG THÁI GỬI
-                            evals_db = load_data(EVALUATIONS_FILE)
-                            v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('video_name') == v.get('video_name') for e in evals_db)
-                            
-                            # MẶC ĐỊNH LÀ VIDEO GỐC
+                            # LUÔN HIỂN THỊ VIDEO GỐC TRONG DANH SÁCH ĐỂ ĐỐI CHIẾU
                             v_display_path = v['video_path']
                             
-                            # Chỉ cho phép hiện video khung xương nếu:
-                            # 1. NCV đã GỬI kết quả cho Bác sĩ/Bệnh nhân
-                            if v_has_ai:
-                                if v.get('processed_path') and os.path.exists(v['processed_path']):
-                                    v_display_path = v['processed_path']
-                            
-                            # Lưu ý: NCV trong Home list luôn thấy video gốc để đối chiếu với Ground Truth
+                            # Xác định xem đã có kết quả AI chưa để hiển thị text
+                            evals_db = load_data(EVALUATIONS_FILE)
+                            v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('video_name') == v.get('video_name') for e in evals_db)
 
                             with st.expander(f"🎬 {v['full_name']} - {v['exercise']} ({v['time']}) - {v['status']}"):
                                 col_v1, col_v2 = st.columns([2, 1])
