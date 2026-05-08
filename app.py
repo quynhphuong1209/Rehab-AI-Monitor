@@ -3225,7 +3225,7 @@ def hien_thi_tab_thong_tin_nghien_cuu():
         <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 12px; border: 1px solid {accent_color}; border-top: 5px solid {accent_color};">
             <h4 style="margin-top:0; color:{accent_color};">Nghiên cứu viên chính</h4>
             <p style="margin:5px 0;"><b>Họ tên:</b> Đinh Lê Quỳnh Phương</p>
-            <p style="margin:5px 0;"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng</p>
+            <p style="margin:5px 0;"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
             <p style="margin:5px 0;"><b>Email:</b> 2211090031@studenthuph.edu.vn</p>
             <p style="margin:5px 0;"><b>SĐT:</b> 0382665916</p>
         </div>
@@ -3235,7 +3235,7 @@ def hien_thi_tab_thong_tin_nghien_cuu():
         <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 12px; border: 1px solid #ff4b4b; border-top: 5px solid #ff4b4b;">
             <h4 style="margin-top:0; color:#ff4b4b;">Hội đồng đạo đức</h4>
             <p style="margin:5px 0;"><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</p>
-            <p style="margin:5px 0;"><b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, HN</p>
+            <p style="margin:5px 0;"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
             <p style="margin:5px 0;"><b>Email:</b> irb@huph.edu.vn</p>
             <p style="margin:5px 0;"><b>SĐT:</b> 024 62663024</p>
         </div>
@@ -5188,7 +5188,7 @@ def main():
             <div class="footer-col">
                 <div class="footer-title">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
                 <div class="footer-info-item"><b>Họ tên:</b> Đinh Lê Quỳnh Phương</div>
-                <div class="footer-info-item"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng</div>
+                <div class="footer-info-item"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
                 <div class="footer-info-item"><b>Email:</b> <a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></div>
                 <div class="footer-info-item"><b>SĐT:</b> 0382665916</div>
             </div>
@@ -5197,7 +5197,7 @@ def main():
             <div class="footer-col">
                 <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
                 <div class="footer-info-item"><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</div>
-                <div class="footer-info-item"><b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, HN</div>
+                <div class="footer-info-item"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
                 <div class="footer-info-item"><b>Email:</b> <a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></div>
                 <div class="footer-info-item"><b>SĐT:</b> 024 62663024</div>
             </div>
