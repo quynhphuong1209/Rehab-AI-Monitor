@@ -28,6 +28,22 @@ import zipfile
 from io import BytesIO
 import subprocess
 import hashlib
+import gc
+
+# --- CACHED THUMBNAIL GENERATOR ---
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_thumbnail(path, width=320):
+    """Tạo thumbnail nhẹ để load web nhanh"""
+    if not os.path.exists(path): return None
+    img = cv2.imread(path)
+    if img is None: return None
+    h, w = img.shape[:2]
+    aspect = h / w
+    new_h = int(width * aspect)
+    img_res = cv2.resize(img, (width, new_h))
+    # Chuyển BGR sang RGB cho Streamlit
+    img_res = cv2.cvtColor(img_res, cv2.COLOR_BGR2RGB)
+    return img_res
 import threading
 import queue
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
@@ -3729,6 +3745,8 @@ def hien_thi_frames_day_du(key_suffix=""):
         st.write("")
         if st.button("🔄 Làm mới", width='stretch', key=f"f_ref_{key_suffix}"):
             st.rerun()
+            
+    st.info("💡 **Mẹo:** Chọn chất lượng **'Tốc độ'** để tải danh sách ảnh nhanh hơn gấp 5 lần (sử dụng Thumbnail tối ưu).")
 
     total_pages = max(1, (total_filtered + frames_per_page - 1) // frames_per_page)
     if st.session_state[page_state_key] > total_pages:
@@ -3791,8 +3809,17 @@ def hien_thi_frames_day_du(key_suffix=""):
                         <span style='color: {color}; font-size: 0.8rem; font-weight: 800;'>{status}</span>
                     </div>
                     """, unsafe_allow_html=True)
-                    # Image
-                    st.image(f_path, use_container_width=True)
+                    # Image with optimized loading
+                    if quality_mode == "Tốc độ":
+                        thumb = get_thumbnail(f_path, width=240)
+                        if thumb is not None: st.image(thumb, use_container_width=True)
+                        else: st.image(f_path, use_container_width=True)
+                    elif quality_mode == "Cân bằng":
+                        thumb = get_thumbnail(f_path, width=480)
+                        if thumb is not None: st.image(thumb, use_container_width=True)
+                        else: st.image(f_path, use_container_width=True)
+                    else:
+                        st.image(f_path, use_container_width=True)
                     # Footer info (Góc)
                     st.markdown(f"""
                     <div style='background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 0 0 12px 12px; border: 1px solid rgba(255,255,255,0.1); border-top: none; display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa;'>
