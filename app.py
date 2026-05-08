@@ -59,6 +59,13 @@ def init_mediapipe():
 warnings.filterwarnings("ignore")
 
 # ============================================
+# HỖ TRỢ MÚI GIỜ VIỆT NAM (ICT - UTC+7)
+# ============================================
+def get_vn_now():
+    """Lấy thời gian hiện tại theo múi giờ Việt Nam"""
+    return datetime.now() + timedelta(hours=7)
+
+# ============================================
 # QUẢN LÝ NGƯỜI DÙNG & BẢO MẬT
 # ============================================
 USER_DATA_FILE = "users.json"
@@ -641,7 +648,7 @@ def hien_thi_tab_phan_hoi():
                     new_comment = {
                         "name": user_name,
                         "message": user_msg,
-                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                     }
                     comments.insert(0, new_comment) # Đưa bình luận mới lên đầu
                     with open(feedback_file, 'w', encoding='utf-8') as f:
@@ -2377,12 +2384,14 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
                     try:
+                        start_time_auto = time.time()
                         ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), 'codman')
                         bt_auto = BAI_TAP[ex_key]
                         
                         def update_progress_auto(p):
+                            elapsed = time.time() - start_time_auto
                             progress_bar.progress(p)
-                            status_text.info(f"🔄 Đang tự động phân tích... {p*100:.0f}%")
+                            status_text.info(f"🔄 Đang tự động phân tích... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
                         
                         # Lấy cấu hình từ session state (NCV) nếu có, nếu không dùng mặc định
                         model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Full')
@@ -2392,6 +2401,8 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                             v['video_path'], bt_auto['chuan'], update_progress_auto,
                             model_type=model_type_ncv, min_confidence=conf_ncv
                         )
+                        
+                        process_time_auto = time.time() - start_time_auto
                         
                         if v_f > 0:
                             df_a = pd.DataFrame(a_data)
@@ -2418,7 +2429,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                                 "recall": met_a["recall"],
                                 "f1_score": met_a["f1_score"],
                                 "icc": met_a["icc"],
-                                "thoi_gian": 0,
+                                "thoi_gian": process_time_auto,
                                 "tong_frame": t_f,
                                 "warnings": a_w
                             }
@@ -2463,17 +2474,21 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                         status_text = st.empty()
                         
                         try:
+                            start_time_man = time.time()
                             # Lấy thông tin bài tập
                             ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), 'codman')
                             bt = BAI_TAP[ex_key]
                             
                             def update_progress(p):
+                                elapsed = time.time() - start_time_man
                                 progress_bar.progress(p)
-                                status_text.info(f"🔄 Đang xử lý... {p*100:.0f}%")
+                                status_text.info(f"🔄 Đang xử lý... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
                             
                             output_path, _, _, angle_data, total_frames, valid_frames, _, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
                                 v['video_path'], bt['chuan'], update_progress
                             )
+                            
+                            process_time_man = time.time() - start_time_man
                             
                             if valid_frames > 0:
                                 df = pd.DataFrame(angle_data)
@@ -2501,7 +2516,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                                     "recall": metrics["recall"],
                                     "f1_score": metrics["f1_score"],
                                     "icc": metrics["icc"],
-                                    "thoi_gian": 0, # Tạm tính
+                                    "thoi_gian": process_time_man,
                                     "tong_frame": total_frames,
                                     "warnings": all_warnings
                                 }
@@ -2704,7 +2719,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                             "comments": f"NCV gửi báo cáo tổng quan. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
                             "plan": "Bác sĩ vui lòng xem chi tiết tại tab PHÂN TÍCH.",
                             "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                            "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                            "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                         })
                         save_data(EVALUATIONS_FILE, evals)
                         st.success(f"✅ Đã gửi báo cáo tổng quan của BN {v_meta['full_name']}!")
@@ -2758,7 +2773,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                         "comments": f"NCV đã phân tích và gửi kết quả AI. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
                         "plan": "Chờ Bác sĩ/KTV đánh giá lâm sàng chi tiết.",
                         "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                     })
                     save_data(EVALUATIONS_FILE, evals)
                     st.success(f"✅ Đã gửi kết quả AI cho BN {v_meta['full_name']} & Bác sĩ!")
@@ -2793,7 +2808,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                         "comments": f"NCV gửi kết quả trích xuất ROM & Boxplot. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
                         "plan": "Bác sĩ vui lòng xem biểu đồ ROM để đánh giá độ ổn định.",
                         "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                     })
                     save_data(EVALUATIONS_FILE, evals)
                     st.success(f"✅ Đã gửi báo cáo AI cho BN {v_meta['full_name']} & Bác sĩ!")
@@ -2872,7 +2887,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                         "comments": f"NCV xác nhận nhận định lâm sàng từ AI. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
                         "plan": "Tiếp tục theo dõi quá trình phục hồi dựa trên các chỉ số AI.",
                         "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                     })
                     save_data(EVALUATIONS_FILE, evals)
                     st.success(f"✅ Đã gửi nhận định lâm sàng của BN {v_meta['full_name']}!")
@@ -3664,19 +3679,28 @@ def hien_thi_lich_nhac_nho():
         with all_lich_tabs[3]:
             st.subheader("➕ Thêm lịch nhắc nhở mới")
             
-            # Lấy danh sách bệnh nhân để chọn
-            users = load_users()
-            patients = [u for u in users if users[u].get('role') == "Bệnh nhân"]
-            
-            # Tự động chọn và ưu tiên bệnh nhân đang được đánh giá (nếu có)
+            # Tự động điền thông tin bệnh nhân từ video đang chọn
             current_eval = st.session_state.get('current_eval_video')
-            if current_eval and current_eval['username'] in patients:
-                p_id = current_eval['username']
-                patients.remove(p_id)
-                patients.insert(0, p_id)
             
-            selected_patient = st.selectbox("Chọn bệnh nhân:", patients, index=0, 
-                                          format_func=lambda x: f"🌟 {users[x].get('full_name', x)} (ĐANG XỬ LÝ)" if current_eval and x == current_eval['username'] else f"👤 {users[x].get('full_name', x)} ({x})")
+            if current_eval:
+                selected_patient = current_eval['username']
+                patient_name = users.get(selected_patient, {}).get('full_name', selected_patient)
+                st.markdown(f"""
+                <div style="background: rgba(0, 198, 255, 0.1); padding: 15px; border-radius: 12px; border-left: 5px solid #00c6ff; margin-bottom: 20px;">
+                    <p style="margin:0; color:#888; font-size:0.8rem;">👤 BỆNH NHÂN ĐƯỢC CHỌN:</p>
+                    <h4 style="margin:5px 0; color:#00c6ff;">{patient_name}</h4>
+                    <p style="margin:0; font-size:0.85rem; color:#aaa;">Tài khoản: {selected_patient}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                # Danh sách chỉ chứa bệnh nhân này (xóa hết gợi ý khác như yêu cầu)
+                patients = [selected_patient]
+            else:
+                st.warning("⚠️ Vui lòng chọn video bệnh nhân ở TRANG CHỦ trước khi thêm lịch nhắc nhở.")
+                # Nếu không chọn video, không cho phép thêm lịch
+                return
+
+            selected_patient = st.selectbox("Xác nhận bệnh nhân:", patients, index=0, 
+                                          format_func=lambda x: f"🌟 {users[x].get('full_name', x)}")
             
             loai = st.radio("Chọn loại:", ["Lịch hẹn khám", "Lịch tập luyện", "Lịch uống thuốc"], horizontal=True)
             
@@ -3799,7 +3823,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         - **Độ chính xác AI:** {tk.get('do_chinh_xac', 0):.1f}%
         - **Tổng số frame:** {total_frames}
         """)
-        if st.session_state.get('processed_video_path'):
+        if st.session_state.get('processed_video_path') and os.path.exists(st.session_state.processed_video_path):
             with open(st.session_state.processed_video_path, "rb") as f:
                 st.download_button("📥 Tải video xuống", f, "processed_video.mp4", "video/mp4", use_container_width=True, key=f"dl_video_{key_suffix}")
         
@@ -4111,7 +4135,7 @@ def hien_thi_dang_nhap_dang_ky():
                                     "email": reg_e,
                                     "full_name": reg_name,
                                     "role": reg_role,
-                                    "created_at": datetime.now().isoformat()
+                                    "created_at": get_vn_now().isoformat()
                                 }
                                 save_users(users)
                                 st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay.")
@@ -4238,7 +4262,7 @@ def hien_thi_tab_quan_tri_vien():
                                 "full_name": new_n,
                                 "role": new_r,
                                 "email": new_e,
-                                "created_at": datetime.now().isoformat()
+                                "created_at": get_vn_now().isoformat()
                             }
                             save_users(users)
                             st.success(f"✅ Đã tạo thành công tài khoản cho {new_n}!")
@@ -4424,7 +4448,7 @@ def main():
                             "exercise": BAI_TAP[ma_bai_tap]['ten'],
                             "symptoms": s_desc,
                             "vas": s_vas,
-                            "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                            "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                         })
                         save_data(SYMPTOMS_FILE, s_data)
                         st.success("✅ Đã gửi thành công!")
@@ -4597,8 +4621,9 @@ def main():
                             start_time = time.time()
                             
                             def update_progress(p):
+                                elapsed = time.time() - start_time
                                 progress_bar.progress(0.2 + p * 0.7)
-                                status_text.info(f"🔄 Đang xử lý frame... {p*100:.0f}%")
+                                status_text.info(f"🔄 Đang xử lý frame... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
                             
                             # Lấy cấu hình từ session state (NCV) nếu có, nếu không dùng mặc định
                             model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Full')
@@ -4695,7 +4720,7 @@ def main():
                                                 "comments": "Kết quả phân tích tự động từ Nghiên cứu viên.",
                                                 "plan": "Chờ bác sĩ đánh giá thêm",
                                                 "doctor_name": f"NCV: {ten_nguoi_dung}",
-                                                "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                                                "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                                             })
                                             save_data(EVALUATIONS_FILE, evals)
                                             st.success("✅ Đã gửi kết quả cho Bệnh nhân!")
@@ -4719,7 +4744,7 @@ def main():
                                         "video_name": file_upload.name,
                                         "exercise": bai_tap['ten'],
                                         "accuracy": round(metrics["ty_le_tong_the"], 1),
-                                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y"),
+                                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
                                         "video_path": output_path,
                                         "metrics": st.session_state.stats,
                                         "df_path": df_csv_path,
@@ -4733,7 +4758,7 @@ def main():
                                 # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
                                 history_file = "lich_su_tap_luyen.json"
                                 new_entry = {
-                                    "ngay": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                                    "ngay": get_vn_now().strftime("%d/%m/%Y %H:%M"),
                                     "bai_tap": bai_tap['ten'],
                                     "accuracy": round(metrics["ty_le_tong_the"], 1),
                                     "f1": round(metrics["f1_score"], 2),
@@ -4773,7 +4798,7 @@ def main():
                             os.makedirs(save_dir)
                         
                         # Tạo tên file duy nhất
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
                         filename = f"{st.session_state.user_info['username']}_{timestamp}_{file_upload.name}"
                         file_path = os.path.join(save_dir, filename)
                         
@@ -4789,7 +4814,7 @@ def main():
                             "video_name": file_upload.name,
                             "exercise": bai_tap['ten'],
                             "accuracy": 0,
-                            "time": datetime.now().strftime("%H:%M - %d/%m/%Y"),
+                            "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
                             "video_path": file_path,
                             "status": "Chờ bác sĩ phân tích"
                         })
