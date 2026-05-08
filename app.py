@@ -4490,7 +4490,7 @@ def main():
             
             if user_role == "Bệnh nhân":
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("📤 GỬI CHO BÁC SĨ, KTV & NCV", use_container_width=True, type="primary"):
+                if st.button("📤 GỬI THÔNG TIN CHO BÁC SĨ - KTV VÀ NCV", use_container_width=True, type="primary"):
                     if s_desc:
                         s_data = load_data(SYMPTOMS_FILE)
                         s_data.append({
@@ -4504,7 +4504,7 @@ def main():
                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                         })
                         save_data(SYMPTOMS_FILE, s_data)
-                        st.success("✅ Đã gửi thông tin cho BÁC SĨ, KTV và NCV thành công!")
+                        st.success("✅ Đã gửi thông tin cho BÁC SĨ - KTV và NCV thành công!")
                         st.balloons()
                     else:
                         st.warning("⚠️ Vui lòng nhập mô tả.")
@@ -4847,7 +4847,7 @@ def main():
                             status_text.empty()
 
                 if user_role == "Bệnh nhân":
-                    if st.button("📤 GỬI VIDEO CHO BÁC SĨ, KTV VÀ NCV", use_container_width=True, type="primary"):
+                    if st.button("📤 GỬI VIDEO CHO BÁC SĨ - KTV VÀ NCV", use_container_width=True, type="primary"):
                         # Tạo thư mục lưu trữ nếu chưa có
                         save_dir = "patient_uploads"
                         if not os.path.exists(save_dir):
@@ -4875,7 +4875,7 @@ def main():
                             "status": "Chờ bác sĩ phân tích"
                         })
                         save_data(VIDEOS_FILE, video_list)
-                        st.success("✅ Đã gửi video cho BÁC SĨ, KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
+                        st.success("✅ Đã gửi video cho BÁC SĨ - KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
                         st.balloons()
 
             # === HIỆN TRẠNG THÁI ĐANG XỬ LÝ HOẶC ĐÃ CÓ KẾT QUẢ ===
