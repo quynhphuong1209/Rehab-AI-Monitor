@@ -2707,17 +2707,20 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                 if st.button("📤 GỬI KẾT QUẢ TỔNG QUAN CHO BN & BÁC SĨ", key=f"btn_send_ai_overview_{key_suffix}", use_container_width=True, type="primary"):
                     v_meta = st.session_state.get('current_eval_video')
                     if v_meta:
+                        acc = tk['do_chinh_xac']
+                        clinical_res = "Đúng" if acc >= 85 else ("Gần đúng" if acc >= 60 else "Sai")
+                        
                         evals = load_data(EVALUATIONS_FILE)
                         evals.append({
                             "patient_username": v_meta['username'],
                             "doctor_username": "AI_Researcher",
                             "video_name": v_meta.get('video_name', 'N/A'),
                             "exercise": v_meta['exercise'],
-                            "ai_accuracy": tk['do_chinh_xac'],
-                            "doctor_result": "AI Auto (Overview)",
+                            "ai_accuracy": acc,
+                            "doctor_result": clinical_res,
                             "errors": tk.get('warnings', []),
-                            "comments": f"NCV gửi báo cáo tổng quan. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
-                            "plan": "Bác sĩ vui lòng xem chi tiết tại tab PHÂN TÍCH.",
+                            "comments": f"NCV gửi kết quả trích xuất ROM & Boxplot. Độ chính xác: {acc:.1f}%",
+                            "plan": "Bác sĩ vui lòng xem biểu đồ ROM để đánh giá độ ổn định.",
                             "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                         })
@@ -4758,17 +4761,20 @@ def main():
                                             chuyen_tab_bang_js("🎬 VIDEO & ẢNH")
                                     with c_nav3:
                                         if st.button("📤 GỬI KẾT QUẢ CHO BN", use_container_width=True, type="secondary"):
+                                            acc = round(metrics["ty_le_tong_the"], 1)
+                                            clinical_res = "Đúng" if acc >= 85 else ("Gần đúng" if acc >= 60 else "Sai")
+                                            
                                             evals = load_data(EVALUATIONS_FILE)
                                             evals.append({
                                                 "patient_username": st.session_state.get('last_uploaded_patient_username', 'unknown'),
                                                 "doctor_username": "AI_Researcher",
                                                 "video_name": file_upload.name,
                                                 "exercise": bai_tap['ten'],
-                                                "ai_accuracy": round(metrics["ty_le_tong_the"], 1),
-                                                "doctor_result": "AI Auto",
+                                                "ai_accuracy": acc,
+                                                "doctor_result": clinical_res,
                                                 "errors": all_warnings,
-                                                "comments": "Kết quả phân tích tự động từ Nghiên cứu viên.",
-                                                "plan": "Chờ bác sĩ đánh giá thêm",
+                                                "comments": f"NCV gửi kết quả trích xuất ROM & Boxplot. Độ chính xác: {acc}%",
+                                                "plan": "Bác sĩ vui lòng xem biểu đồ ROM để đánh giá độ ổn định.",
                                                 "doctor_name": f"NCV: {ten_nguoi_dung}",
                                                 "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                                             })
