@@ -652,6 +652,20 @@ if st.session_state.get('theme') == 'light':
             background-color: #f1f3f5 !important;
             color: #000000 !important;
         }
+
+        /* metric-card Light Mode styling */
+        .metric-card {
+            background-color: #ffffff !important;
+            border: 1px solid #ced4da !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
+        }
+        .metric-label {
+            color: #495057 !important;
+        }
+        .metric-value {
+            color: #0072ff !important;
+            text-shadow: none !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -2702,14 +2716,21 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     header_title = "📊 DASHBOARD PHÂN TÍCH NHANH" if "Lite" in model_type else "📊 DASHBOARD PHÂN TÍCH LÂM SÀNG"
     if "Heavy" in model_type: header_title = "🔬 PHÂN TÍCH NGHIÊN CỨU CHUYÊN SÂU"
 
+    is_light = st.session_state.theme == 'light'
+    banner_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+    banner_border = "#ced4da" if is_light else "#2a5298"
+    banner_shadow = "0 10px 30px rgba(0,0,0,0.05)" if is_light else "0 10px 30px rgba(0,0,0,0.5)"
+    title_text_color = "#0072ff" if is_light else "#ffd700"
+    desc_text_color = "#666" if is_light else "#aaa"
+
     st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+    <div style="background: {banner_bg}; 
                 border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
-                border: 1px solid #2a5298; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                border: 1px solid {banner_border}; box-shadow: {banner_shadow};">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h2 style="color: #ffd700; margin: 0; font-size: 1.8rem;">{header_title}</h2>
-                <p style="color: #aaa; margin: 0.5rem 0 0 0;">
+                <h2 style="color: {title_text_color}; margin: 0; font-size: 1.8rem;">{header_title}</h2>
+                <p style="color: {desc_text_color}; margin: 0.5rem 0 0 0;">
                     🏥 Bài tập: {bt['ten']} | ⚙️ Model: <span style="color:#00c6ff;">{model_type}</span>
                 </p>
             </div>
