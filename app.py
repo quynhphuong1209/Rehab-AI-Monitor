@@ -29,6 +29,7 @@ from io import BytesIO
 import subprocess
 import hashlib
 import gc
+import streamlit.components.v1 as components
 
 # --- CACHED THUMBNAIL GENERATOR ---
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -3845,7 +3846,18 @@ def hien_thi_frames_day_du(key_suffix=""):
             grid_html += frame_card
             
     grid_html += "</div>"
-    st.markdown(grid_html, unsafe_allow_html=True)
+    
+    # Calculate height based on rows (4 columns)
+    num_rows = (len(page_indices) + 3) // 4
+    calculated_height = num_rows * 220 + 20 # 220px per row + padding
+    
+    components.html(f"""
+        <style>
+            body {{ background-color: transparent; color: white; font-family: sans-serif; margin: 0; padding: 0; }}
+            img {{ border-radius: 0; }}
+        </style>
+        {grid_html}
+    """, height=calculated_height, scrolling=False)
     st.write("") # Spacer
 
     st.markdown("---")
