@@ -1165,6 +1165,27 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     ve_cung_tron_goc(frame_output, pts_vai[0], pts_vai[1], pts_vai[2], goc_vai, mau_vai, radius=35)
     ve_cung_tron_goc(frame_output, pts_khuyu[0], pts_khuyu[1], pts_khuyu[2], goc_khuyu, mau_khuyu, radius=30)
     
+    # === VẼ OVERLAY THÔNG TIN CHI TIẾT (FRAME BOX) ===
+    overlay = frame_output.copy()
+    box_w, box_h = 240, 140
+    cv2.rectangle(overlay, (5, 5), (box_w, box_h), (0, 0, 0), -1)
+    cv2.addWeighted(overlay, 0.6, frame_output, 0.4, 0, frame_output)
+    
+    # Màu sắc trạng thái
+    status_text = "PASS" if tong_the else ("NEARLY" if gan_dung_tong_the else "FAIL")
+    status_color = (0, 255, 0) if tong_the else (ORANGE_BGR if gan_dung_tong_the else (0, 0, 255))
+    
+    # Vẽ text thông tin
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.putText(frame_output, f"FRAME: #{frame_count}", (15, 25), font, 0.6, (255, 255, 255), 1)
+    cv2.putText(frame_output, f"TIME: {frame_count/fps:.2f}s", (15, 45), font, 0.5, (200, 200, 200), 1)
+    
+    cv2.putText(frame_output, f"SHOULDER: {goc_vai:.1f} / {chuan_vai}", (15, 75), font, 0.55, mau_vai, 2)
+    cv2.putText(frame_output, f"ELBOW:    {goc_khuyu:.1f} / {chuan_khuyu}", (15, 95), font, 0.55, mau_khuyu, 2)
+    
+    cv2.rectangle(frame_output, (15, 105), (box_w-15, 130), status_color, -1)
+    cv2.putText(frame_output, status_text, (80, 125), font, 0.7, (255, 255, 255), 2)
+
     warnings_list = get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, ss)
     
     # Đảm bảo trả về kiểu dữ liệu Python chuẩn (tránh lỗi JSON serialization với NumPy)
@@ -2368,18 +2389,34 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     tk = st.session_state.stats
     df = st.session_state.angle_df
     
-    # Chuẩn bị dữ liệu thống kê tổng hợp
+    # Chuẩn bị dữ liệu thống kê tổng hợp (Mở rộng cho NCV)
     fail_count_total = tk['tong_frame_hop_le'] - tk['frame_dung'] - tk['frame_gan_dung']
     stats_summary = pd.DataFrame({
-        "Hạng mục": ["Tổng thời gian xử lý", "Tổng số khung hình", "Số lần tập đúng (Pass)", "Số lần tập gần đúng", "Số lần tập sai (Fail)", "Góc vai trung bình", "Góc khuỷu trung bình"],
+        "Hạng mục": [
+            "Tổng số khung hình", 
+            "Số lần tập đúng (Pass)", 
+            "Số lần tập gần đúng", 
+            "Số lần tập sai (Fail)", 
+            "Góc vai trung bình (ROM)", 
+            "Góc khuỷu trung bình (ROM)",
+            "Độ lệch chuẩn (STD) Vai",
+            "Độ lệch chuẩn (STD) Khuỷu",
+            "Sai số tuyệt đối (MAE)",
+            "ICC (Độ tin cậy)",
+            "F1-Score (Học máy)"
+        ],
         "Giá trị": [
-            f"{tk['thoi_gian']:.1f}s", 
             str(tk['tong_frame']), 
             str(tk['frame_dung']), 
             str(tk['frame_gan_dung']), 
             f"{max(0, fail_count_total)}", 
             f"{tk['tb_goc_vai']:.1f}°", 
-            f"{tk['tb_goc_khuyu']:.1f}°"
+            f"{tk['tb_goc_khuyu']:.1f}°",
+            f"{tk.get('std_goc_vai', 0):.2f}",
+            f"{tk.get('std_goc_khuyu', 0):.2f}",
+            f"{tk.get('mae_tong', 0):.2f}°",
+            f"{tk.get('icc', 0):.2f}",
+            f"{tk.get('f1_score', 0):.2f}"
         ]
     })
 
@@ -2634,6 +2671,16 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                         <td style="padding: 10px;">ICC (Tương quan nội lớp)</td>
                         <td style="padding: 10px; color: #00CED1;">{tk.get('icc', 0):.2f}</td>
                         <td style="padding: 10px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Thấp'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #333;">
+                        <td style="padding: 10px;">Sai số (MAE)</td>
+                        <td style="padding: 10px; color: #FF6B6B;">{tk.get('mae_tong', 0):.2f}°</td>
+                        <td style="padding: 10px;">{'✅ Ổn định' if tk.get('mae_tong', 0) < 5 else '⚠️ Lớn'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #333;">
+                        <td style="padding: 10px;">F1-Score / Precision / Recall</td>
+                        <td style="padding: 10px; color: #ffd700;">{tk.get('f1_score', 0):.2f} / {tk.get('precision', 0):.2f} / {tk.get('recall', 0):.2f}</td>
+                        <td style="padding: 10px;">AI Performance</td>
                     </tr>
                 </table>
             </div>
