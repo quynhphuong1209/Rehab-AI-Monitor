@@ -1168,7 +1168,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     
     warnings_list = get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, ss)
     
-    return frame_output, goc_vai, goc_khuyu, tong_the, {"nearly_correct": gan_dung_tong_the, "elbow_correct": khuyu_dung, "shoulder_ref": chuan_vai, "elbow_ref": chuan_khuyu}, warnings_list
+    return frame_output, goc_vai, goc_khuyu, tong_the, {"nearly_correct": gan_dung_tong_the, "shoulder_correct": vai_dung, "elbow_correct": khuyu_dung, "shoulder_ref": chuan_vai, "elbow_ref": chuan_khuyu}, warnings_list
 
 
 # ============================================
