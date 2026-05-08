@@ -4861,93 +4861,89 @@ def main():
     f_border = "#0072ff" if is_light else "#00c6ff"
     f_title = "#0072ff" if is_light else "#00c6ff"
     f_shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(0, 198, 255, 0.2)"
+    f_card_bg = "rgba(255,255,255,0.03)" if not is_light else "rgba(0,0,0,0.02)"
 
     footer_html = f"""
     <style>
         .main-footer {{
             background: {f_bg};
-            padding: 50px 20px;
+            padding: 40px 20px;
             color: {f_text};
             font-family: 'Times New Roman', Times, serif;
             border-top: 4px solid {f_border};
             box-shadow: 0 -10px 25px {f_shadow};
             margin-top: 60px;
         }}
-        .footer-container {{
+        .footer-top {{
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid {f_border}33;
+        }}
+        .footer-logo-img {{
+            width: 80px;
+            filter: drop-shadow(0 0 8px rgba(0, 198, 255, 0.3));
+            margin-bottom: 15px;
+        }}
+        .school-name {{
+            font-weight: bold; 
+            color: {"#1a1a2e" if is_light else "#fff"}; 
+            font-size: 1.2rem;
+            line-height: 1.3;
+            margin: 0;
+        }}
+        .footer-grid {{
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between;
+            justify-content: center;
             max-width: 1200px;
             margin: 0 auto;
-            gap: 40px;
+            gap: 30px;
         }}
         .footer-col {{
             flex: 1;
-            min-width: 300px;
+            min-width: 320px;
+            max-width: 500px;
+            background: {f_card_bg};
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid {f_border};
             text-align: left;
-        }}
-        .footer-logo-img {{
-            width: 100px;
-            filter: drop-shadow(0 0 8px rgba(0, 198, 255, 0.3));
-            margin-bottom: 15px;
         }}
         .footer-title {{
             color: {f_title};
             font-weight: bold;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-size: 1rem;
             text-transform: uppercase;
-            border-bottom: 2px solid {f_border}33;
-            padding-bottom: 10px;
             letter-spacing: 1px;
         }}
         .footer-info-item {{
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 10px;
-            font-size: 0.95rem;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
             line-height: 1.4;
         }}
         .footer-bottom {{
             padding-top: 25px;
             margin-top: 40px;
             border-top: 1px solid {"rgba(0, 0, 0, 0.05)" if is_light else "rgba(255, 255, 255, 0.05)"};
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: {"#888" if is_light else "#666"};
             text-align: center;
         }}
-        a {{ color: {f_title}; text-decoration: none; transition: 0.3s; }}
-        a:hover {{ opacity: 0.8; text-decoration: underline; }}
-        .school-name {{
-            font-weight: bold; 
-            color: {"#1a1a2e" if is_light else "#fff"}; 
-            font-size: 1.1rem;
-            line-height: 1.3;
-            margin: 0;
-        }}
-        .school-subname {{
-            font-size: 0.85rem; 
-            color: #00c6ff;
-            display: block;
-            margin-top: 3px;
-        }}
+        .main-footer a {{ color: {f_title}; text-decoration: none; }}
+        .main-footer a:hover {{ text-decoration: underline; }}
     </style>
     <div class="main-footer">
-        <div class="footer-container">
-            <!-- PHẦN 1: ĐƠN VỊ CHỦ QUẢN -->
-            <div class="footer-col" style="text-align: center;">
-                <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-                <p class="school-name">
-                    TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG<br>
-                    <span class="school-subname">HANOI UNIVERSITY OF PUBLIC HEALTH</span>
-                </p>
-                <div style="margin-top: 20px; font-size: 0.9rem; opacity: 0.8;">
-                    <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-                    <p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
-                </div>
-            </div>
+        <!-- PHẦN 1: ĐƠN VỊ CHỦ QUẢN (CENTERED TOP) -->
+        <div class="footer-top">
+            <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
+            <p class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</p>
+            <p style="font-size: 0.85rem; color: #00c6ff; margin: 5px 0;">HANOI UNIVERSITY OF PUBLIC HEALTH</p>
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 10px;">📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội | 🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
+        </div>
 
+        <div class="footer-grid">
             <!-- PHẦN 2: NGHIÊN CỨU VIÊN CHÍNH -->
             <div class="footer-col">
                 <div class="footer-title">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
@@ -4966,12 +4962,13 @@ def main():
                 <div class="footer-info-item"><b>SĐT:</b> 024 62663024</div>
             </div>
         </div>
+
         <div class="footer-bottom">
             Đơn vị phát triển: <b>NHÓM NGHIÊN CỨU VIÊN TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</b> | © 2026 REHAB-AI-MONITOR
         </div>
     </div>
     """
-    st.markdown(footer_html, unsafe_allow_html=True)
+    st.components.v1.html(footer_html, height=550, scrolling=False)
 
 
 if __name__ == "__main__":
