@@ -204,7 +204,7 @@ def hien_thi_footer_chung():
         </div>
     </div>
     """
-    components.html(footer_html, height=400, scrolling=False)
+    components.html(footer_html, height=350, scrolling=False)
 
 def load_data(file_path):
     if os.path.exists(file_path):
@@ -3977,26 +3977,6 @@ def hien_thi_frames_day_du(key_suffix=""):
             </div>
         </div>
         
-        <div style='margin-top: 50px; padding: 40px 20px; color: #ccc; font-family: "Times New Roman", Times, serif; text-align: center; border-top: 4px solid #00c6ff; background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%); box-shadow: 0 -10px 20px rgba(0, 198, 255, 0.2);'>
-            <div style='display: flex; flex-wrap: wrap; justify-content: space-around; max-width: 1100px; margin: 0 auto; gap: 30px; align-items: center;'>
-                <div style='flex: 1; min-width: 320px;'>
-                    <img src="https://huph.edu.vn/uploads/logo/logo-huph.png" style='width: 120px; filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.4));' alt="HUPH Logo">
-                    <p style='margin-top: 15px; font-weight: bold; color: #fff; font-size: 1.2rem; line-height: 1.4;'>
-                        TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG<br>
-                        <span style='font-size: 1rem; color: #00c6ff; display: block; margin-top: 5px;'>HANOI UNIVERSITY OF PUBLIC HEALTH</span>
-                    </p>
-                </div>
-                <div style='flex: 1; min-width: 320px;'>
-                    <div style='color: #00c6ff; font-weight: bold; margin-bottom: 15px; font-size: 1.3rem; text-transform: uppercase;'>📍 THÔNG TIN LIÊN HỆ</div>
-                    <div style='display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; font-size: 1.1rem;'>🌐 <b>Website:</b> <a href="https://huph.edu.vn/" target="_blank" style='color: #00c6ff; text-decoration: none;'>huph.edu.vn</a></div>
-                    <div style='display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; font-size: 1.1rem;'>🏠 <b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
-                    <div style='display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; font-size: 1.1rem;'>📞 <b>ĐT:</b> 024.62662299 | 📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</div>
-                </div>
-            </div>
-            <div style='padding-top: 20px; margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.9rem; color: #888;'>
-                Đơn vị phát triển: <b>NHÓM NGHIÊN CỨU VIÊN TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</b> | © 2026 REHAB-AI-MONITOR
-            </div>
-        </div>
         """
     
     num_rows = len(page_indices)
