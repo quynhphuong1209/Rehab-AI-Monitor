@@ -3357,6 +3357,15 @@ def hien_thi_form_danh_gia_bac_si():
     </div>
     """, unsafe_allow_html=True)
 
+    # Kiểm tra xem NCV đã gửi kết quả cho VIDEO NÀY chưa
+    evals_data = load_data(EVALUATIONS_FILE)
+    has_ai_sent = any(
+        e.get('doctor_username') == "AI_Researcher" and 
+        e.get('patient_username') == selected_video['username'] and 
+        e.get('video_name') == selected_video.get('video_name') 
+        for e in evals_data
+    )
+
     # Hiển thị video để bác sĩ xem lại
     # CHỈ HIỂN THỊ VIDEO TRÍCH XUẤT NẾU NCV ĐÃ GỬI, NẾU CHƯA THÌ HIỂN THỊ VIDEO GỐC
     display_video_path = selected_video['video_path'] if has_ai_sent else selected_video.get('raw_video_path', selected_video['video_path'])
@@ -3376,14 +3385,6 @@ def hien_thi_form_danh_gia_bac_si():
             st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
             st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
 
-    # Kiểm tra xem NCV đã gửi kết quả cho VIDEO NÀY chưa
-    evals_data = load_data(EVALUATIONS_FILE)
-    has_ai_sent = any(
-        e.get('doctor_username') == "AI_Researcher" and 
-        e.get('patient_username') == selected_video['username'] and 
-        e.get('video_name') == selected_video.get('video_name') 
-        for e in evals_data
-    )
 
     tab_titles_eval = ["📝 ĐÁNH GIÁ CHUYÊN MÔN"]
     if has_ai_sent and st.session_state.user_info.get('role') in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
