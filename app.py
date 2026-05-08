@@ -619,6 +619,14 @@ if st.session_state.get('theme') == 'light':
             color: #000000 !important;
             border-color: #ced4da !important;
         }
+
+        /* Fix Placeholder text color for Light Mode */
+        .stTextInput input::placeholder, 
+        .stTextArea textarea::placeholder,
+        .stNumberInput input::placeholder {
+            color: #666666 !important;
+            opacity: 0.8 !important;
+        }
         
         /* Fix the actual dropdown list and items */
         div[data-baseweb="popover"] div, 
