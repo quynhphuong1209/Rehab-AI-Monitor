@@ -3440,7 +3440,7 @@ def hien_thi_form_danh_gia_bac_si():
             st.success("✅ Đã gửi đánh giá thành công!")
             st.balloons()
 
-    if has_ai_sent and st.session_state.user_info.get('role') == "Nghiên cứu viên":
+    if has_ai_sent and st.session_state.user_info.get('role') in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
         tab_ai_charts = tabs_eval[1]
         tab_ai_media = tabs_eval[2]
         
@@ -3464,11 +3464,8 @@ def hien_thi_ket_qua_cho_benh_nhan():
 
     if not has_doctor_eval or not has_ai_eval:
         st.info("🕒 Kết quả đánh giá chuyên môn của bạn đang được xử lý. Vui lòng quay lại sau khi cả Bác sĩ và Nhóm Nghiên cứu hoàn tất đánh giá.")
-        if st.session_state.has_data:
-            st.markdown("---")
-            st.markdown("### 📈 SƠ BỘ PHÂN TÍCH AI (DÀNH CHO BẠN)")
-            hien_thi_tab_phan_tich(key_suffix="pat_no_eval_full")
     else:
+
 
         tab_eval, tab_charts, tab_media = st.tabs([
             "📝 NHẬN XÉT CỦA BÁC SĨ & AI",
@@ -4997,7 +4994,6 @@ def main():
     if "📊 KẾT QUẢ AI" in tab_map:
         with tab_map["📊 KẾT QUẢ AI"]:
             # Hiển thị kết quả AI cho Bác sĩ (tương tự Bệnh nhân nhưng cho BN được chọn)
-            st.markdown("## 📊 KẾT QUẢ PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
             selected_video = st.session_state.get('current_eval_video')
             if not selected_video:
                 st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
@@ -5009,6 +5005,8 @@ def main():
                 if not has_ai_sent:
                     st.warning("🕒 Nghiên cứu viên chưa gửi kết quả phân tích AI cho bệnh nhân này.")
                 else:
+                    st.markdown("## 📊 KẾT QUẢ PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
+
                     tab_ai_1, tab_ai_2 = st.tabs(["📊 BIỂU ĐỒ CHI TIẾT", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"])
                     with tab_ai_1:
                         hien_thi_tab_phan_tich(key_suffix="doc_ai_tab")
