@@ -5102,82 +5102,104 @@ def main():
     <style>
         .main-footer {{
             background: {f_bg};
-            padding: 40px 20px;
+            padding: 50px 20px;
             color: {f_text};
             font-family: 'Times New Roman', Times, serif;
-            text-align: center;
             border-top: 4px solid {f_border};
-            box-shadow: 0 -10px 20px {f_shadow};
+            box-shadow: 0 -10px 25px {f_shadow};
             margin-top: 60px;
         }}
         .footer-container {{
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-around;
-            max-width: 1100px;
+            justify-content: space-between;
+            max-width: 1200px;
             margin: 0 auto;
-            gap: 30px;
-            align-items: center;
+            gap: 40px;
         }}
         .footer-col {{
             flex: 1;
-            min-width: 320px;
+            min-width: 300px;
+            text-align: left;
         }}
         .footer-logo-img {{
-            width: 120px;
-            filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.4));
+            width: 100px;
+            filter: drop-shadow(0 0 8px rgba(0, 198, 255, 0.3));
+            margin-bottom: 15px;
         }}
         .footer-title {{
             color: {f_title};
             font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
             text-transform: uppercase;
+            border-bottom: 2px solid {f_border}33;
+            padding-bottom: 10px;
+            letter-spacing: 1px;
         }}
         .footer-info-item {{
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 8px;
-            font-size: 1.1rem;
-        }}
-        .footer-bottom {{
-            padding-top: 20px;
-            margin-top: 20px;
-            border-top: 1px solid {"rgba(0, 0, 0, 0.05)" if is_light else "rgba(255, 255, 255, 0.05)"};
-            font-size: 0.9rem;
-            color: {"#666" if is_light else "#888"};
-        }}
-        a {{ color: {f_title}; text-decoration: none; }}
-        .school-name {{
-            margin-top: 15px; 
-            font-weight: bold; 
-            color: {"#1a1a2e" if is_light else "#fff"}; 
-            font-size: 1.2rem;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
             line-height: 1.4;
         }}
+        .footer-bottom {{
+            padding-top: 25px;
+            margin-top: 40px;
+            border-top: 1px solid {"rgba(0, 0, 0, 0.05)" if is_light else "rgba(255, 255, 255, 0.05)"};
+            font-size: 0.85rem;
+            color: {"#888" if is_light else "#666"};
+            text-align: center;
+        }}
+        a {{ color: {f_title}; text-decoration: none; transition: 0.3s; }}
+        a:hover {{ opacity: 0.8; text-decoration: underline; }}
+        .school-name {{
+            font-weight: bold; 
+            color: {"#1a1a2e" if is_light else "#fff"}; 
+            font-size: 1.1rem;
+            line-height: 1.3;
+            margin: 0;
+        }}
         .school-subname {{
-            font-size: 1rem; 
+            font-size: 0.85rem; 
             color: #00c6ff;
             display: block;
-            margin-top: 5px;
+            margin-top: 3px;
         }}
     </style>
     <div class="main-footer">
         <div class="footer-container">
-            <div class="footer-col">
+            <!-- PHẦN 1: ĐƠN VỊ CHỦ QUẢN -->
+            <div class="footer-col" style="text-align: center;">
                 <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
                 <p class="school-name">
                     TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG<br>
                     <span class="school-subname">HANOI UNIVERSITY OF PUBLIC HEALTH</span>
                 </p>
+                <div style="margin-top: 20px; font-size: 0.9rem; opacity: 0.8;">
+                    <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                    <p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
+                </div>
             </div>
+
+            <!-- PHẦN 2: NGHIÊN CỨU VIÊN CHÍNH -->
             <div class="footer-col">
-                <div class="footer-title">📍 THÔNG TIN LIÊN HỆ</div>
-                <div class="footer-info-item">🌐 <b>Website:</b> <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></div>
-                <div class="footer-info-item">🏠 <b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
-                <div class="footer-info-item">📞 <b>ĐT:</b> 024.62662299 | 📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</div>
+                <div class="footer-title">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
+                <div class="footer-info-item"><b>Họ tên:</b> Đinh Lê Quỳnh Phương</div>
+                <div class="footer-info-item"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng</div>
+                <div class="footer-info-item"><b>Email:</b> <a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></div>
+                <div class="footer-info-item"><b>SĐT:</b> 0382665916</div>
+            </div>
+
+            <!-- PHẦN 3: HỘI ĐỒNG ĐẠO ĐỨC -->
+            <div class="footer-col">
+                <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
+                <div class="footer-info-item"><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</div>
+                <div class="footer-info-item"><b>Địa chỉ:</b> Số 1A, Đức Thắng, Bắc Từ Liêm, HN</div>
+                <div class="footer-info-item"><b>Email:</b> <a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></div>
+                <div class="footer-info-item"><b>SĐT:</b> 024 62663024</div>
             </div>
         </div>
         <div class="footer-bottom">
