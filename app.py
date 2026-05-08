@@ -2572,30 +2572,33 @@ def hien_thi_tab_phan_tich(key_suffix=""):
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 2. HỆ THỐNG TAB NỘI BỘ
-    tab_list = ["🏠 TỔNG QUAN", "📈 PHÂN TÍCH KHỚP"]
+    # 2. HỆ THỐNG TAB NỘI BỘ (SẮP XẾP LẠI KHOA HỌC)
+    tab_list = ["🏠 TỔNG QUAN", "📈 BIỂU ĐỒ KHỚP"]
     if "Lite" not in model_type:
-        tab_list += ["📦 NÂNG CAO (BOXPLOT)", "🩺 NHẬN ĐỊNH LÂM SÀNG", "📁 XUẤT BÁO CÁO"]
+        tab_list += ["📦 BIÊN ĐỘ ROM"]
+    tab_list += ["🩺 NHẬN ĐỊNH LÂM SÀNG"]
+    if "Lite" not in model_type:
+        tab_list += ["🔬 CHỈ SỐ NGHIÊN CỨU"]
+    tab_list += ["📁 XUẤT BÁO CÁO"]
     
     inner_tabs = st.tabs(tab_list)
     t_map = {name: inner_tabs[i] for i, name in enumerate(tab_list)}
 
-    # Khởi tạo các biểu đồ dùng chung
+    # Khởi tạo các biểu đồ dùng chung (Tính toán một lần để tối ưu hiệu năng)
+    fig_pie = ve_bieu_do_tron_thong_ke(tk)
+    fig_vai = ve_bieu_do_goc_vai(df, bt)
+    fig_khuyu = ve_bieu_do_goc_khuyu(df, bt)
     fig_hist = ve_bieu_do_histogram(df, bt)
     fig_box = ve_bieu_do_boxplot_phan_loai(df)
+    fig_radar = ve_bieu_do_radar(tk)
 
     # === TAB 1: TỔNG QUAN ===
     if "🏠 TỔNG QUAN" in t_map:
         with t_map["🏠 TỔNG QUAN"]:
             col_pie, col_metrics = st.columns([1, 1])
-            
             with col_pie:
-                fig_pie = ve_bieu_do_tron_thong_ke(tk)
-                st.plotly_chart(fig_pie, use_container_width=True, key=f"pie_chart_{key_suffix}")
-                try:
-                    img_pie = fig_pie.to_image(format="png")
-                    st.download_button("📥 Tải ảnh biểu đồ tròn", img_pie, "phan_bo_ket_qua.png", "image/png", use_container_width=True, key=f"dl_pie_{key_suffix}")
-                except: pass
+                st.plotly_chart(fig_pie, use_container_width=True, key=f"pie_chart_fin_{key_suffix}")
+                st.caption("ℹ️ Phân bổ chất lượng thực hiện bài tập.")
             
             with col_metrics:
                 st.markdown("#### 📑 CHỈ SỐ HIỆU SUẤT")
@@ -2624,15 +2627,13 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                 </div>
                 """, unsafe_allow_html=True)
 
-            # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
             if user_role == "Nghiên cứu viên":
                 st.markdown("---")
-                if st.button("📤 GỬI KẾT QUẢ TỔNG QUAN CHO BN & BÁC SĨ", key=f"btn_send_ai_overview_{key_suffix}", use_container_width=True, type="primary"):
+                if st.button("📤 XÁC NHẬN & GỬI BÁO CÁO TỔNG HỢP", key=f"btn_send_final_{key_suffix}", use_container_width=True, type="primary"):
                     v_meta = st.session_state.get('current_eval_video')
                     if v_meta:
                         acc = tk['do_chinh_xac']
                         clinical_res = "Đúng" if acc >= 85 else ("Gần đúng" if acc >= 60 else "Sai")
-                        
                         evals = load_data(EVALUATIONS_FILE)
                         evals.append({
                             "patient_username": v_meta['username'],
@@ -2642,295 +2643,109 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                             "ai_accuracy": acc,
                             "doctor_result": clinical_res,
                             "errors": tk.get('warnings', []),
-                            "comments": f"NCV gửi kết quả trích xuất ROM & Boxplot. Độ chính xác: {acc:.1f}%",
-                            "plan": "Bác sĩ vui lòng xem biểu đồ ROM để đánh giá độ ổn định.",
+                            "comments": f"NCV gửi báo cáo tổng hợp. Độ chính xác: {acc:.1f}%",
+                            "plan": "Bác sĩ vui lòng xem biểu đồ ROM và chỉ số nghiên cứu.",
                             "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                         })
                         save_data(EVALUATIONS_FILE, evals)
-                        st.success(f"✅ Đã gửi báo cáo tổng quan của BN {v_meta['full_name']}!")
+                        st.success(f"✅ Đã gửi báo cáo cho BN {v_meta['full_name']}!")
                         st.balloons()
 
-    # === TAB 2: PHÂN TÍCH KHỚP ===
-    if "📈 PHÂN TÍCH KHỚP" in t_map:
-        with t_map["📈 PHÂN TÍCH KHỚP"]:
-            st.markdown("#### 📈 BIỂU ĐỒ GÓC VAI")
-            fig_vai = ve_bieu_do_goc_vai(df, bt)
-            st.plotly_chart(fig_vai, use_container_width=True, key=f"vai_chart_{key_suffix}")
-            col_m1, col_dl1 = st.columns([2, 1])
-            with col_m1:
-                st.metric("📏 Góc Vai TB", f"{tk['tb_goc_vai']:.1f}°", f"Chuẩn: {bt['chuan']['vai']}°")
-            with col_dl1:
-                try:
-                    st.download_button("📥 Tải ảnh biểu đồ Vai", fig_vai.to_image(format="png"), "bieu_do_vai.png", "image/png", use_container_width=True, key=f"dl_vai_{key_suffix}")
-                except: pass
-            
-            st.markdown("---")
-            st.markdown("#### 📊 BIỂU ĐỒ GÓC KHUỶU")
-            fig_khuyu = ve_bieu_do_goc_khuyu(df, bt)
-            st.plotly_chart(fig_khuyu, use_container_width=True, key=f"khuyu_chart_{key_suffix}")
-            col_m2, col_dl2 = st.columns([2, 1])
-            with col_m2:
-                st.metric("💪 Góc Khuỷu TB", f"{tk['tb_goc_khuyu']:.1f}°", f"Chuẩn: {bt['chuan']['khuyu']}°")
-            with col_dl2:
-                try:
-                    st.download_button("📥 Tải ảnh biểu đồ Khuỷu", fig_khuyu.to_image(format="png"), "bieu_do_khuyu.png", "image/png", use_container_width=True, key=f"dl_khuyu_{key_suffix}")
-                except: pass
-        
-        try:
-            st.download_button("📥 Tải ảnh biểu đồ Histogram", fig_hist.to_image(format="png"), "histogram_goc.png", "image/png")
-        except: pass
+    # === TAB 2: BIỂU ĐỒ KHỚP ===
+    if "📈 BIỂU ĐỒ KHỚP" in t_map:
+        with t_map["📈 BIỂU ĐỒ KHỚP"]:
+            st.markdown("#### 📐 BIÊN ĐỘ VẬN ĐỘNG (GÓC VAI & KHUỶU)")
+            st.plotly_chart(fig_vai, use_container_width=True, key=f"vai_ch_ncv_{key_suffix}")
+            st.plotly_chart(fig_khuyu, use_container_width=True, key=f"khuyu_ch_ncv_{key_suffix}")
+            st.plotly_chart(fig_hist, use_container_width=True, key=f"hist_ch_ncv_{key_suffix}")
+            st.info("ℹ️ Biểu đồ thể hiện sự thay đổi góc khớp theo thời gian thực (frames).")
 
-        # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
-        if user_role == "Nghiên cứu viên":
-            st.markdown("---")
-            if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key="btn_send_ai_joint", use_container_width=True, type="primary"):
-                v_meta = st.session_state.get('current_eval_video')
-                if v_meta:
-                    evals = load_data(EVALUATIONS_FILE)
-                    evals.append({
-                        "patient_username": v_meta['username'],
-                        "doctor_username": "AI_Researcher",
-                        "video_name": v_meta.get('video_name', 'N/A'),
-                        "exercise": v_meta['exercise'],
-                        "ai_accuracy": tk['do_chinh_xac'],
-                        "doctor_result": "AI Auto (NCV)",
-                        "errors": tk.get('warnings', []),
-                        "comments": f"NCV đã phân tích và gửi kết quả AI. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
-                        "plan": "Chờ Bác sĩ/KTV đánh giá lâm sàng chi tiết.",
-                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
-                    })
-                    save_data(EVALUATIONS_FILE, evals)
-                    st.success(f"✅ Đã gửi kết quả AI cho BN {v_meta['full_name']} & Bác sĩ!")
-                    st.balloons()
-
-    # === TAB 3: NÂNG CAO (BOXPLOT) ===
-    if "📦 NÂNG CAO (BOXPLOT)" in t_map:
-        with t_map["📦 NÂNG CAO (BOXPLOT)"]:
+    # === TAB 3: BIÊN ĐỘ ROM ===
+    if "📦 BIÊN ĐỘ ROM" in t_map:
+        with t_map["📦 BIÊN ĐỘ ROM"]:
             st.markdown("### 📦 PHÂN TÍCH BIÊN ĐỘ VẬN ĐỘNG (ROM)")
-            st.info("💡 Biểu đồ này giúp bác sĩ so sánh sự ổn định của góc khớp giữa các lần thực hiện đúng và sai.")
-            fig_box = ve_bieu_do_boxplot_phan_loai(df)
-            st.plotly_chart(fig_box, use_container_width=True, key=f"box_chart_{key_suffix}")
-            try:
-                st.download_button("📥 Tải ảnh biểu đồ Boxplot", fig_box.to_image(format="png"), "boxplot_rom.png", "image/png", key=f"dl_box_{key_suffix}")
-            except: pass
-
-        # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
-        if user_role == "Nghiên cứu viên":
-            st.markdown("---")
-            if st.button("📤 GỬI KẾT QUẢ NÀY CHO BN & BÁC SĨ", key=f"btn_send_ai_boxplot_{key_suffix}", use_container_width=True, type="primary"):
-                v_meta = st.session_state.get('current_eval_video')
-                if v_meta:
-                    evals = load_data(EVALUATIONS_FILE)
-                    evals.append({
-                        "patient_username": v_meta['username'],
-                        "doctor_username": "AI_Researcher",
-                        "video_name": v_meta.get('video_name', 'N/A'),
-                        "exercise": v_meta['exercise'],
-                        "ai_accuracy": tk['do_chinh_xac'],
-                        "doctor_result": "AI Auto (NCV)",
-                        "errors": tk.get('warnings', []),
-                        "comments": f"NCV gửi kết quả trích xuất ROM & Boxplot. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
-                        "plan": "Bác sĩ vui lòng xem biểu đồ ROM để đánh giá độ ổn định.",
-                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
-                    })
-                    save_data(EVALUATIONS_FILE, evals)
-                    st.success(f"✅ Đã gửi báo cáo AI cho BN {v_meta['full_name']} & Bác sĩ!")
-                    st.balloons()
+            st.plotly_chart(fig_box, use_container_width=True, key=f"box_ch_ncv_{key_suffix}")
+            st.info("💡 Biểu đồ Boxplot so sánh sự biến thiên và ổn định của góc khớp.")
 
     # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
     if "🩺 NHẬN ĐỊNH LÂM SÀNG" in t_map:
         with t_map["🩺 NHẬN ĐỊNH LÂM SÀNG"]:
             st.markdown("### 🩺 NHẬN ĐỊNH CHUYÊN MÔN")
             insights = lay_nhan_dinh_lam_sang(tk['tb_goc_vai'], tk['tb_goc_khuyu'], bt)
-        
-        if insights:
-            for item in insights:
-                st.markdown(f"""
-                <div style="background: rgba(255,165,0,0.1); border-left: 5px solid #FFA500; padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
-                    <h4 style="color: #FFA500; margin-top: 0;">⚠️ {item['loai']} ({item['chi_so']})</h4>
-                    <p style="color: #fff;"><strong>🔴 Cảnh báo lâm sàng:</strong> {item['canh_warning' if 'canh_warning' in item else 'canh_bao']}</p>
-                    <p style="color: #00CED1;"><strong>💡 Lời khuyên y tế:</strong> {item['loi_khuyen']}</p>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.success("✅ **NHẬN ĐỊNH:** Biên độ vận động của bệnh nhân nằm trong giới hạn an toàn. Động tác thực hiện ổn định, không phát hiện dấu hiệu bất thường về lâm sàng.")
+            if insights:
+                for item in insights:
+                    st.markdown(f"""
+                    <div style="background: rgba(255,165,0,0.1); border-left: 5px solid #FFA500; padding: 1rem; border-radius: 8px; margin-bottom: 10px;">
+                        <h4 style="color: #FFA500; margin-top: 0;">⚠️ {item['loai']} ({item['chi_so']})</h4>
+                        <p style="color: #fff; margin-bottom: 5px;"><strong>🔴 Cảnh báo:</strong> {item.get('canh_warning', item.get('canh_bao', ''))}</p>
+                        <p style="color: #00CED1; margin-bottom: 0;"><strong>💡 Lời khuyên:</strong> {item['loi_khuyen']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.success("✅ **NHẬN ĐỊNH:** Biên độ vận động của bệnh nhân nằm trong giới hạn an toàn.")
             
-        st.markdown("---")
-        
-        # 🤖 NHẬN ĐỊNH TỪ HỆ THỐNG HỌC MÁY (AI INSIGHTS)
-        st.markdown("#### 🤖 NHẬN ĐỊNH TỪ HỆ THỐNG HỌC MÁY")
-        
-        # Tính toán các chỉ số AI
-        stability_score = max(0, 100 - (tk.get('std_goc_vai', 0) + tk.get('std_goc_khuyu', 0)))
-        f1 = tk.get('f1_score', 0)
-        icc = tk.get('icc', 0)
-        
-        ai_col1, ai_col2 = st.columns([1, 2])
-        with ai_col1:
-            st.metric("🎯 AI Confidence", f"{f1*100:.1f}%", f"{'Tin cậy cao' if f1 > 0.8 else 'Cần kiểm tra'}")
-            st.metric("📉 Độ mượt động tác", f"{stability_score:.1f}/100")
+            st.markdown("---")
+            st.markdown("#### 🤖 PHÂN TÍCH TỪ MÔ HÌNH HỌC MÁY")
+            stab = 100 - (tk.get('std_goc_vai', 0) + tk.get('std_goc_khuyu', 0))
+            ai_c1, ai_c2 = st.columns([1, 2])
+            with ai_c1:
+                st.metric("🎯 F1-Score", f"{tk.get('f1_score', 0):.2f}")
+                st.metric("📉 Độ mượt", f"{max(0, stab):.1f}/100")
+            with ai_c2:
+                st.info(f"**ICC:** {tk.get('icc', 0):.2f} | **MAE:** {tk.get('mae_tong', 0):.1f}°\n\n{'✅ Đạt chuẩn NCKH' if tk.get('icc', 0) > 0.75 else '⚠️ Cần kiểm tra tín hiệu'}")
+
+    # === TAB 5: CHỈ SỐ NGHIÊN CỨU ===
+    if "🔬 CHỈ SỐ NGHIÊN CỨU" in t_map:
+        with t_map["🔬 CHỈ SỐ NGHIÊN CỨU"]:
+            st.markdown("### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU")
+            st.plotly_chart(fig_radar, use_container_width=True, key=f"radar_ch_ncv_{key_suffix}")
             
-        with ai_col2:
+            st.markdown("#### 📊 BẢNG TỔNG HỢP CHỈ SỐ KHOA HỌC")
             st.markdown(f"""
-            <div style="background: rgba(0,206,209,0.05); border-radius: 15px; padding: 1.2rem; border: 1px dashed #00CED1;">
-                <p style="color: #00CED1; font-weight: bold; margin-bottom: 5px;">🧬 PHÂN TÍCH TỪ MÔ HÌNH BLAZEPOSE:</p>
-                <ul style="color: #ccc; font-size: 0.9rem; margin-left: 15px;">
-                    <li><b>Độ ổn định tín hiệu:</b> { 'Rất tốt, độ nhiễu thấp.' if stability_score > 80 else 'Có hiện tượng nhiễu nhẹ (Jittering) trong quá trình vận động.' }</li>
-                    <li><b>Tính khách quan:</b> Chỉ số ICC ({icc:.2f}) cho thấy sự tương quan chặt chẽ giữa dữ liệu trích xuất và chuẩn lâm sàng.</li>
-                    <li><b>Phân loại tự động:</b> Mô hình AI đã phân tích thành công {tk['tong_frame_hop_le']} khung hình với độ chính xác {tk['do_chinh_xac']:.1f}%.</li>
-                </ul>
+            <div style="background: rgba(26,26,46,0.6); padding: 1.5rem; border-radius: 15px; border: 1px solid #2a5298;">
+                <table style="width: 100%; color: white; border-collapse: collapse;">
+                    <tr style="border-bottom: 2px solid #2a5298; text-align: left;">
+                        <th style="padding: 10px;">Chỉ số nghiên cứu</th>
+                        <th style="padding: 10px;">Giá trị thực tế</th>
+                        <th style="padding: 10px;">Trạng thái</th>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #333;">
+                        <td style="padding: 10px;">Độ chính xác (Accuracy)</td>
+                        <td style="padding: 10px; color: #00CED1;">{tk['do_chinh_xac']:.1f}%</td>
+                        <td style="padding: 10px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #333;">
+                        <td style="padding: 10px;">ICC (Tương quan nội lớp)</td>
+                        <td style="padding: 10px; color: #00CED1;">{tk.get('icc', 0):.2f}</td>
+                        <td style="padding: 10px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Thấp'}</td>
+                    </tr>
+                </table>
             </div>
             """, unsafe_allow_html=True)
 
-        st.markdown("---")
-        # CHUYỂN PHẦN NÀY VÀO TRONG TAB NHỎ THEO YÊU CẦU
-        st.markdown("### 🩺 NHẬN XÉT LÂM SÀNG TỪ BÁC SĨ (DÀNH CHO NCKH)")
-        evals = load_data(EVALUATIONS_FILE)
-        if evals:
-            # Lọc đánh giá cho bệnh nhân hiện tại nếu cần, hoặc hiển thị tất cả
-            st.dataframe(pd.DataFrame(evals), use_container_width=True)
-        else:
-            st.info("Chưa có dữ liệu đánh giá lâm sàng.")
-
-        # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
-        if user_role == "Nghiên cứu viên":
-            st.markdown("---")
-            if st.button("📤 XÁC NHẬN NHẬN ĐỊNH LÂM SÀNG & GỬI", key=f"btn_send_ai_clinical_{key_suffix}", use_container_width=True, type="primary"):
-                v_meta = st.session_state.get('current_eval_video')
-                if v_meta:
-                    evals = load_data(EVALUATIONS_FILE)
-                    evals.append({
-                        "patient_username": v_meta['username'],
-                        "doctor_username": "AI_Researcher",
-                        "video_name": v_meta.get('video_name', 'N/A'),
-                        "exercise": v_meta['exercise'],
-                        "ai_accuracy": tk['do_chinh_xac'],
-                        "doctor_result": "AI Auto (Clinical)",
-                        "errors": tk.get('warnings', []),
-                        "comments": f"NCV xác nhận nhận định lâm sàng từ AI. Độ chính xác: {tk['do_chinh_xac']:.1f}%",
-                        "plan": "Tiếp tục theo dõi quá trình phục hồi dựa trên các chỉ số AI.",
-                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
-                    })
-                    save_data(EVALUATIONS_FILE, evals)
-                    st.success(f"✅ Đã gửi nhận định lâm sàng của BN {v_meta['full_name']}!")
-                    st.balloons()
-
-        st.markdown("---")
-        st.markdown("### 🔬 ĐÁNH GIÁ CHỈ SỐ NGHIÊN CỨU (RESEARCH EVALUATION)")
-        st.info("💡 Biểu đồ Radar so sánh kết quả thực tế với mục tiêu đề tài nghiên cứu khoa học.")
-        
-        # 1. BIỂU ĐỒ RADAR PHÓNG TO (FULL WIDTH)
-        st.plotly_chart(ve_bieu_do_radar(tk), use_container_width=True, key=f"radar_chart_{key_suffix}")
-        
-        # 2. THÔNG TIN CHỈ SỐ VÀ BẢNG (DÒNG TIẾP THEO)
-        st.markdown("#### 📊 BẢNG TỔNG HỢP CHỈ SỐ KHOA HỌC")
-        st.markdown(f"""
-        <div style="background: rgba(26,26,46,0.6); padding: 1.5rem; border-radius: 15px; border: 1px solid #2a5298; margin-bottom: 20px;">
-            <table style="width: 100%; color: white; border-collapse: collapse;">
-                <tr style="border-bottom: 2px solid #2a5298; text-align: left;">
-                    <th style="padding: 10px;">Chỉ số nghiên cứu</th>
-                    <th style="padding: 10px;">Giá trị thực tế</th>
-                    <th style="padding: 10px;">Mục tiêu đề tài</th>
-                    <th style="padding: 10px;">Trạng thái</th>
-                </tr>
-                <tr style="border-bottom: 1px solid #333;">
-                    <td style="padding: 10px;">Độ chính xác (Accuracy)</td>
-                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk['do_chinh_xac']:.1f}%</td>
-                    <td style="padding: 10px;">≥ 90%</td>
-                    <td style="padding: 10px;">{'✅ Đạt' if tk['do_chinh_xac'] >= 90 else '⚠️ Cần cải thiện'}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #333;">
-                    <td style="padding: 10px;">F1-Score (Độ tin cậy)</td>
-                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk.get('f1_score', 0):.2f}</td>
-                    <td style="padding: 10px;">≥ 0.85</td>
-                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('f1_score', 0) >= 0.85 else '⚠️ Cần cải thiện'}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #333;">
-                    <td style="padding: 10px;">Sai số tuyệt đối (MAE)</td>
-                    <td style="padding: 10px; color: #FF6B6B; font-weight: bold;">{tk.get('mae_tong', 0):.1f}°</td>
-                    <td style="padding: 10px;">&lt; 5°</td>
-                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('mae_tong', 0) < 5 else '⚠️ Cần cải thiện'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px;">Tương quan nội lớp (ICC)</td>
-                    <td style="padding: 10px; color: #00CED1; font-weight: bold;">{tk.get('icc', 0):.2f}</td>
-                    <td style="padding: 10px;">≥ 0.75</td>
-                    <td style="padding: 10px;">{'✅ Đạt' if tk.get('icc', 0) >= 0.75 else '⚠️ Cần cải thiện'}</td>
-                </tr>
-            </table>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # 3. NÚT TẢI XUỐNG DƯỚI CÙNG
-        col_dl1, col_dl2 = st.columns(2)
-        with col_dl1:
-            try:
-                radar_img = ve_bieu_do_radar(tk).to_image(format="png", width=1000, height=800)
-                st.download_button("📥 Tải ảnh Biểu đồ Radar", radar_img, "bieu_do_radar.png", "image/png", use_container_width=True, key=f"dl_radar_{key_suffix}")
-            except:
-                st.info("💡 Cài đặt kaleido để tải ảnh biểu đồ")
-        with col_dl2:
-            st.download_button("📥 Tải Bảng chỉ số (CSV)", stats_summary.to_csv(index=False).encode('utf-8'), "chi_so_nghien_cuu.csv", "text/csv", use_container_width=True, key=f"dl_stats_{key_suffix}")
-
-    # === TAB 5: XUẤT BÁO CÁO ===
+    # === TAB 6: XUẤT BÁO CÁO (CONSOLIDATED) ===
     if "📁 XUẤT BÁO CÁO" in t_map:
         with t_map["📁 XUẤT BÁO CÁO"]:
-            st.markdown("### 📁 QUẢN LÝ DỮ LIỆU VÀ XUẤT BÁO CÁO")
-        
-        # Thống kê tổng hợp (Đã định nghĩa ở đầu hàm)
-        st.table(stats_summary)
-        
-        col_c, col_z = st.columns(2)
-        with col_c:
-            st.markdown("#### 📊 Dữ liệu thô (Raw Data)")
-            csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Tải file CSV kết quả", csv, f"rehab_data_{int(time.time())}.csv", "text/csv", use_container_width=True, key=f"dl_raw_{key_suffix}")
-        
-        with col_z:
-            st.markdown("#### 🖼️ Hình ảnh & Biểu đồ")
-            if st.button("📸 Tải xuống tất cả Biểu đồ (ZIP)", use_container_width=True, key=f"btn_zip_prep_{key_suffix}"):
-                try:
-                    import zipfile
-                    from io import BytesIO
-                    zip_buffer = BytesIO()
-                    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                        # Lưu các biểu đồ thành ảnh (cần kaleido)
-                        for name, fig in [("vai", ve_bieu_do_goc_vai(df, bt)), ("khuyu", ve_bieu_do_goc_khuyu(df, bt)), ("dist", ve_bieu_do_tron_thong_ke(tk))]:
-                            img_bytes = fig.to_image(format="png")
-                            zip_file.writestr(f"chart_{name}.png", img_bytes)
-                    
-                    zip_buffer.seek(0)
-                    st.download_button("✅ Click để tải ZIP", zip_buffer, "bieu_do_lam_sang.zip", "application/zip", use_container_width=True, key=f"dl_zip_{key_suffix}")
-                except Exception as e:
-                    st.error(f"❌ Lỗi: {e}. Vui lòng cài đặt: pip install -U kaleido")
-        
-        # === NÚT GỬI KẾT QUẢ CHO BN & BÁC SĨ (MỚI THÊM) ===
-        if user_role == "Nghiên cứu viên":
-            st.markdown("---")
-            if st.button("📤 GỬI BÁO CÁO TỔNG HỢP CHO BN & BÁC SĨ", key=f"btn_send_ai_export_{key_suffix}", use_container_width=True, type="primary"):
-                v_meta = st.session_state.get('current_eval_video')
-                if v_meta:
-                    evals = load_data(EVALUATIONS_FILE)
-                    evals.append({
-                        "patient_username": v_meta['username'],
-                        "doctor_username": "AI_Researcher",
-                        "video_name": v_meta.get('video_name', 'N/A'),
-                        "exercise": v_meta['exercise'],
-                        "ai_accuracy": tk['do_chinh_xac'],
-                        "doctor_result": "AI Auto (Full)",
-                        "errors": tk.get('warnings', []),
-                        "comments": f"NCV đã hoàn tất toàn bộ phân tích và xuất báo cáo. Độ chính xác cuối cùng: {tk['do_chinh_xac']:.1f}%",
-                        "plan": "Đề nghị Bác sĩ xem xét kết quả tổng hợp để kết luận quá trình tập luyện.",
-                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
-                    })
-                    save_data(EVALUATIONS_FILE, evals)
-                    st.success(f"✅ Đã gửi báo cáo tổng hợp của BN {v_meta['full_name']}!")
-                    st.balloons()
+            st.markdown("### 📁 XUẤT DỮ LIỆU & BIỂU ĐỒ")
+            st.write("Tải xuống tất cả tài nguyên phục vụ lưu trữ báo cáo NCKH.")
+            
+            c_dl1, c_dl2 = st.columns(2)
+            with c_dl1:
+                try: st.download_button("📥 Ảnh Biểu đồ Tròn", fig_pie.to_image(format="png"), "tron.png", "image/png", use_container_width=True, key=f"dl_f1_{key_suffix}")
+                except: pass
+                try: st.download_button("📥 Ảnh Biểu đồ Vai", fig_vai.to_image(format="png"), "vai.png", "image/png", use_container_width=True, key=f"dl_f2_{key_suffix}")
+                except: pass
+                try: st.download_button("📥 Ảnh Biểu đồ Khuỷu", fig_khuyu.to_image(format="png"), "khuyu.png", "image/png", use_container_width=True, key=f"dl_f3_{key_suffix}")
+                except: pass
+            with c_dl2:
+                try: st.download_button("📥 Ảnh Biểu đồ Boxplot", fig_box.to_image(format="png"), "boxplot.png", "image/png", use_container_width=True, key=f"dl_f4_{key_suffix}")
+                except: pass
+                try: st.download_button("📥 Ảnh Biểu đồ Radar", fig_radar.to_image(format="png"), "radar.png", "image/png", use_container_width=True, key=f"dl_f5_{key_suffix}")
+                except: pass
+                if 'angle_df' in st.session_state:
+                    csv_data = st.session_state.angle_df.to_csv(index=False).encode('utf-8')
+                    st.download_button("📊 Dữ liệu thô (CSV)", csv_data, "data.csv", "text/csv", use_container_width=True, key=f"dl_f6_{key_suffix}")
 def hien_thi_tab_huong_dan():
     st.markdown("## 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG")
     
