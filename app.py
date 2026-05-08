@@ -3439,7 +3439,7 @@ def hien_thi_form_danh_gia_bac_si():
                 "comments": nhan_xet,
                 "plan": ke_hoach,
                 "doctor_name": st.session_state.user_info.get('full_name', st.session_state.user_info['username']),
-                "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
             }
             evals.append(new_eval)
             save_data(EVALUATIONS_FILE, evals)
@@ -3530,7 +3530,7 @@ def hien_thi_tab_khai_bao_trieu_chung():
             age = st.number_input("Tuổi", 0, 120, 22)
         with col2:
             gender = st.selectbox("Giới tính", ["Nam", "Nữ", "Khác"])
-            date = st.date_input("Ngày khai báo", datetime.now())
+            date = st.date_input("Ngày khai báo", get_vn_now())
             
         symptoms = st.text_area("Mô tả cảm giác đau hoặc khó khăn khi vận động:", 
                               placeholder="VD: Đau nhói ở khớp vai khi giơ tay quá đầu, cứng khớp vào buổi sáng...",
@@ -3552,7 +3552,7 @@ def hien_thi_tab_khai_bao_trieu_chung():
                     "gender": gender,
                     "symptoms": symptoms,
                     "vas": muc_do_dau,
-                    "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                    "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                 })
                 save_data(SYMPTOMS_FILE, data)
                 st.success("✅ Đã gửi thông tin cho Bác sĩ thành công!")
@@ -3580,7 +3580,7 @@ def hien_thi_lich_nhac_nho():
     else:
         display_schedules = schedules
 
-    current_time = datetime.now()
+    current_time = get_vn_now()
     col1, col2, col3, col4 = st.columns(4)
     with col1: st.metric("📅 Hôm nay", current_time.strftime("%d/%m/%Y"))
     with col2: st.metric("⏰ Hiện tại", current_time.strftime("%H:%M:%S"))
@@ -3844,7 +3844,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                         "comments": f"NCV gửi video đã trích xuất khung xương để BN & Bác sĩ đối chiếu.",
                         "plan": "Vui lòng xem video trích xuất tại tab KẾT QUẢ.",
                         "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                        "time": datetime.now().strftime("%H:%M - %d/%m/%Y")
+                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                     })
                     save_data(EVALUATIONS_FILE, evals)
                     st.success(f"✅ Đã gửi video trích xuất của BN {v_meta['full_name']}!")
