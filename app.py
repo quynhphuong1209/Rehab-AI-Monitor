@@ -607,6 +607,25 @@ if st.session_state.get('theme') == 'light':
             color: #0072ff !important; 
             border: 1px solid #0072ff !important;
         }
+        /* GLOBAL LIGHT MODE OVERRIDES */
+        .stApp, [data-testid="stAppViewContainer"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        /* Fix Tabs for Light Mode */
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #f8f9fa !important;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #495057 !important;
+        }
+        .stTabs [aria-selected="true"] {
+            color: #0072ff !important;
+            font-weight: bold !important;
+        }
+
         /* Fix ALL Selectboxes, TextInputs, and TextAreas in Light Mode */
         .stSelectbox div[data-baseweb="select"],
         .stSelectbox div[data-baseweb="select"] *,
@@ -636,7 +655,7 @@ if st.session_state.get('theme') == 'light':
             color: #000000 !important;
         }
 
-        /* Fix Sidebar specifically to be sure */
+        /* Fix Sidebar specifically */
         [data-testid="stSidebar"] section[data-testid="stSidebarContent"] {
             background-color: #ffffff !important;
         }
@@ -1725,23 +1744,28 @@ def ve_bieu_do_goc_vai(df, bt):
     fig.add_hrect(y0=0, y1=chuan_vai-sai_so, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
     fig.add_hrect(y0=chuan_vai+sai_so, y1=180, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
     
+    is_light = st.session_state.theme == 'light'
+    chart_text_color = '#333' if is_light else 'white'
+    chart_grid_color = 'rgba(0,0,0,0.1)' if is_light else 'rgba(255,255,255,0.1)'
+    chart_bg = 'rgba(255,255,255,1)' if is_light else 'rgba(26,26,46,0.9)'
+    
     fig.update_layout(
         title=dict(
             text="<b>📈 BIỂU ĐỒ GÓC VAI THEO THỜI GIAN</b>",
-            font=dict(size=20, color='white', family='Arial Black'),
+            font=dict(size=20, color=chart_text_color, family='Arial Black'),
             x=0.5
         ),
-        xaxis=dict(title=dict(text="<b>Số Frame</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)'),
-        yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)',
+        xaxis=dict(title=dict(text="<b>Số Frame</b>", font=dict(size=14, color=chart_text_color)), gridcolor=chart_grid_color),
+        yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color=chart_text_color)), gridcolor=chart_grid_color,
                    range=[0, 180]),
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(26,26,46,0.9)',
+        paper_bgcolor=chart_bg,
         hovermode='x unified',
         legend=dict(
-            bgcolor='rgba(0,0,0,0.5)',
-            bordercolor='white',
+            bgcolor='rgba(255,255,255,0.8)' if is_light else 'rgba(0,0,0,0.5)',
+            bordercolor=chart_text_color,
             borderwidth=1,
-            font=dict(color='white', size=12)
+            font=dict(color=chart_text_color, size=12)
         ),
         margin=dict(l=50, r=50, t=70, b=50)
     )
@@ -1776,23 +1800,28 @@ def ve_bieu_do_goc_khuyu(df, bt):
     fig.add_hrect(y0=0, y1=chuan_khuyu-sai_so, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
     fig.add_hrect(y0=chuan_khuyu+sai_so, y1=180, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
     
+    is_light = st.session_state.theme == 'light'
+    chart_text_color = '#333' if is_light else 'white'
+    chart_grid_color = 'rgba(0,0,0,0.1)' if is_light else 'rgba(255,255,255,0.1)'
+    chart_bg = 'rgba(255,255,255,1)' if is_light else 'rgba(26,26,46,0.9)'
+    
     fig.update_layout(
         title=dict(
             text="<b>📈 BIỂU ĐỒ GÓC KHUỶU THEO THỜI GIAN</b>",
-            font=dict(size=20, color='white', family='Arial Black'),
+            font=dict(size=20, color=chart_text_color, family='Arial Black'),
             x=0.5
         ),
-        xaxis=dict(title=dict(text="<b>Số Frame</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)'),
-        yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color='white')), gridcolor='rgba(255,255,255,0.1)',
+        xaxis=dict(title=dict(text="<b>Số Frame</b>", font=dict(size=14, color=chart_text_color)), gridcolor=chart_grid_color),
+        yaxis=dict(title=dict(text="<b>Góc (độ)</b>", font=dict(size=14, color=chart_text_color)), gridcolor=chart_grid_color,
                    range=[0, 180]),
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(26,26,46,0.9)',
+        paper_bgcolor=chart_bg,
         hovermode='x unified',
         legend=dict(
-            bgcolor='rgba(0,0,0,0.5)',
-            bordercolor='white',
+            bgcolor='rgba(255,255,255,0.8)' if is_light else 'rgba(0,0,0,0.5)',
+            bordercolor=chart_text_color,
             borderwidth=1,
-            font=dict(color='white', size=12)
+            font=dict(color=chart_text_color, size=12)
         ),
         margin=dict(l=50, r=50, t=70, b=50)
     )
@@ -1824,25 +1853,30 @@ def ve_bieu_do_histogram(df, bt):
         hovertemplate='Góc: %{x:.1f}°<br>Tần suất: %{y}<extra></extra>'
     ), row=1, col=2)
     
+    is_light = st.session_state.theme == 'light'
+    chart_text_color = '#333' if is_light else 'white'
+    chart_grid_color = 'rgba(0,0,0,0.1)' if is_light else 'rgba(255,255,255,0.1)'
+    chart_bg = 'rgba(255,255,255,1)' if is_light else 'rgba(26,26,46,0.9)'
+    
     fig.update_layout(
         title=dict(
             text="<b>📊 PHÂN PHỐI GÓC KHỚP (HISTOGRAM)</b>",
-            font=dict(size=20, color='white', family='Arial Black'),
+            font=dict(size=20, color=chart_text_color, family='Arial Black'),
             x=0.5
         ),
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(26,26,46,0.9)',
+        paper_bgcolor=chart_bg,
         showlegend=False,
         height=500,
         bargap=0.05
     )
     
-    fig.update_xaxes(title=dict(text="<b>Góc (độ)</b>", font=dict(size=12, color='white')), 
-                     gridcolor='rgba(255,255,255,0.1)', row=1, col=1)
-    fig.update_xaxes(title=dict(text="<b>Góc (độ)</b>", font=dict(size=12, color='white')),
-                     gridcolor='rgba(255,255,255,0.1)', row=1, col=2)
-    fig.update_yaxes(title=dict(text="<b>Tần suất</b>", font=dict(size=12, color='white')),
-                     gridcolor='rgba(255,255,255,0.1)', row=1, col=1)
+    fig.update_xaxes(title=dict(text="<b>Góc (độ)</b>", font=dict(size=12, color=chart_text_color)), 
+                     gridcolor=chart_grid_color, row=1, col=1)
+    fig.update_xaxes(title=dict(text="<b>Góc (độ)</b>", font=dict(size=12, color=chart_text_color)),
+                     gridcolor=chart_grid_color, row=1, col=2)
+    fig.update_yaxes(title=dict(text="<b>Tần suất</b>", font=dict(size=12, color=chart_text_color)),
+                     gridcolor=chart_grid_color, row=1, col=1)
     
     return fig
 
@@ -1866,15 +1900,18 @@ def ve_bieu_do_tron_thong_ke(tk):
         hovertemplate="<b>%{label}</b><br>Số lượng: %{value} frames<br>Tỷ lệ: %{percent}<extra></extra>"
     )])
     
+    is_light = st.session_state.theme == 'light'
+    chart_text_color = '#333' if is_light else 'white'
+    
     fig.update_layout(
         title=dict(
             text="<b>📊 PHÂN BỔ KẾT QUẢ TẬP LUYỆN</b>",
-            font=dict(size=18, color='white'),
+            font=dict(size=18, color=chart_text_color),
             x=0.5
         ),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='white'),
+        font=dict(color=chart_text_color),
         legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5),
         height=450,
         margin=dict(t=80, b=50, l=20, r=20)
@@ -1919,21 +1956,25 @@ def ve_bieu_do_boxplot_phan_loai(df):
                 showlegend=False
             ), row=1, col=2)
             
+    is_light = st.session_state.theme == 'light'
+    chart_text_color = '#333' if is_light else 'white'
+    chart_grid_color = 'rgba(0,0,0,0.1)' if is_light else 'rgba(255,255,255,0.1)'
+
     fig.update_layout(
         title=dict(
             text="<b>📦 PHÂN TÍCH BIÊN ĐỘ THEO NHÓM KẾT QUẢ</b>",
-            font=dict(size=18, color='white'),
+            font=dict(size=18, color=chart_text_color),
             x=0.5
         ),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='white'),
+        font=dict(color=chart_text_color),
         height=500,
         legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
         margin=dict(t=80, b=100)
     )
     
-    fig.update_yaxes(title_text="Góc (độ)", gridcolor='rgba(255,255,255,0.1)')
+    fig.update_yaxes(title_text="Góc (độ)", gridcolor=chart_grid_color)
     
     return fig
 
