@@ -3660,12 +3660,27 @@ def hien_thi_frames_day_du(key_suffix=""):
                     st.balloons()
 
     st.markdown("---")
-    st.markdown(f"### 📷 TẤT CẢ FRAMES ĐÃ XỬ LÝ ({total_filtered}/{total_frames})")
     
-    # Bộ lọc
+    # === BỘ LỌC VÀ PHÂN TRANG ===
+    page_state_key = f"frame_page_{key_suffix}"
+    if page_state_key not in st.session_state:
+        st.session_state[page_state_key] = 1
+
+    # Lọc frames theo yêu cầu người dùng
     f_col1, f_col2, f_col3, f_col4 = st.columns([2, 2, 2, 1])
     with f_col1:
         loc_frame = st.selectbox("🔍 Lọc theo kết quả", ["Tất cả", "PASS (Đúng)", "FAIL (Sai)"], key=f"f_loc_{key_suffix}")
+    
+    filtered_indices = []
+    if loc_frame == "PASS (Đúng)":
+        filtered_indices = [i for i, f in enumerate(all_frames_data) if f.get('dung')]
+    elif loc_frame == "FAIL (Sai)":
+        filtered_indices = [i for i, f in enumerate(all_frames_data) if not f.get('dung') and not f.get('gan_dung')]
+    else: # Tất cả
+        filtered_indices = list(range(len(all_frames_data)))
+    
+    total_filtered = len(filtered_indices)
+    
     with f_col2:
         quality_mode = st.selectbox("✨ Chất lượng hiển thị", ["Tốc độ", "Cân bằng", "Sắc nét"], index=1, key=f"f_qual_{key_suffix}")
     with f_col3:
@@ -3676,8 +3691,13 @@ def hien_thi_frames_day_du(key_suffix=""):
         if st.button("🔄 Làm mới", width='stretch', key=f"f_ref_{key_suffix}"):
             st.rerun()
 
-    # Phân trang
-    st.markdown("---")
+    total_pages = max(1, (total_filtered + frames_per_page - 1) // frames_per_page)
+    if st.session_state[page_state_key] > total_pages:
+        st.session_state[page_state_key] = total_pages
+
+    st.markdown(f"### 📷 DANH SÁCH KHUNG HÌNH ({total_filtered}/{total_frames})")
+    
+    # Thanh điều hướng trang
     p_col1, p_col2, p_col3, p_col4 = st.columns([1, 2, 1, 2])
     with p_col1:
         if st.button("◀ Trước", key=f"p_prev_{key_suffix}", width='stretch'):
