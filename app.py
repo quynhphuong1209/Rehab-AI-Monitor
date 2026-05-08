@@ -3358,9 +3358,13 @@ def hien_thi_form_danh_gia_bac_si():
     """, unsafe_allow_html=True)
 
     # Hiển thị video để bác sĩ xem lại
-    if os.path.exists(selected_video['video_path']):
-        st.markdown("### 📺 XEM LẠI VIDEO TRÍCH XUẤT")
-        st.video(selected_video['video_path'])
+    # CHỈ HIỂN THỊ VIDEO TRÍCH XUẤT NẾU NCV ĐÃ GỬI, NẾU CHƯA THÌ HIỂN THỊ VIDEO GỐC
+    display_video_path = selected_video['video_path'] if has_ai_sent else selected_video.get('raw_video_path', selected_video['video_path'])
+    
+    if os.path.exists(display_video_path):
+        label_vid = "📺 XEM LẠI VIDEO TRÍCH XUẤT KHUNG XƯƠNG" if has_ai_sent else "📺 XEM LẠI VIDEO GỐC (BỆNH NHÂN GỬI)"
+        st.markdown(f"### {label_vid}")
+        st.video(display_video_path)
     else:
         st.error("❌ Không tìm thấy file video trên hệ thống.")
 
@@ -4881,6 +4885,7 @@ def main():
                             "accuracy": 0,
                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
                             "video_path": file_path,
+                            "raw_video_path": file_path,
                             "status": "Chờ bác sĩ phân tích"
                         })
                         save_data(VIDEOS_FILE, video_list)
@@ -4910,17 +4915,31 @@ def main():
                     for idx, v in enumerate(video_list):
                         col_list1, col_list2 = st.columns([12, 1])
                         with col_list1:
+                            # TÍNH TOÁN VIDEO HIỂN THỊ DỰA TRÊN QUYỀN VÀ TRẠNG THÁI GỬI
+                            evals_db = load_data(EVALUATIONS_FILE)
+                            v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('video_name') == v.get('video_name') for e in evals_db)
+                            
+                            if user_role == "Bác sĩ / KTV PHCN" and not v_has_ai:
+                                v_display_path = v.get('raw_video_path', v['video_path'])
+                            else:
+                                v_display_path = v['video_path']
+
                             with st.expander(f"🎬 {v['full_name']} - {v['exercise']} ({v['time']}) - {v['status']}"):
                                 col_v1, col_v2 = st.columns([2, 1])
                                 with col_v1:
-                                    if os.path.exists(v['video_path']):
-                                        st.video(v['video_path'])
+                                    if os.path.exists(v_display_path):
+                                        st.video(v_display_path)
                                     else:
                                         st.error("File video không tồn tại trên hệ thống.")
                                 with col_v2:
                                     st.write(f"**Người tập:** {v['full_name']}")
-                                    acc_text = f"{v['accuracy']}%" if v['accuracy'] > 0 else "Chưa phân tích"
-                                    st.write(f"**Độ chính xác AI:** {acc_text}")
+                                    
+                                    if user_role == "Bác sĩ / KTV PHCN" and not v_has_ai:
+                                        st.write("**Độ chính xác AI:** ⏳ Chờ NCV phân tích")
+                                    else:
+                                        acc_text = f"{v['accuracy']}%" if v['accuracy'] > 0 else "Chưa phân tích"
+                                        st.write(f"**Độ chính xác AI:** {acc_text}")
+                                        
                                     st.write(f"**Trạng thái:** {v['status']}")
                                     
                                     # Đổi nhãn nút theo vai trò
