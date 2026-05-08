@@ -1168,7 +1168,15 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     
     warnings_list = get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, ss)
     
-    return frame_output, goc_vai, goc_khuyu, tong_the, {"nearly_correct": gan_dung_tong_the, "shoulder_correct": vai_dung, "elbow_correct": khuyu_dung, "shoulder_ref": chuan_vai, "elbow_ref": chuan_khuyu}, warnings_list
+    # Đảm bảo trả về kiểu dữ liệu Python chuẩn (tránh lỗi JSON serialization với NumPy)
+    goc_vai = float(goc_vai)
+    goc_khuyu = float(goc_khuyu)
+    tong_the = bool(tong_the)
+    vai_dung = bool(vai_dung)
+    khuyu_dung = bool(khuyu_dung)
+    gan_dung_tong_the = bool(gan_dung_tong_the)
+    
+    return frame_output, goc_vai, goc_khuyu, tong_the, {"nearly_correct": gan_dung_tong_the, "shoulder_correct": vai_dung, "elbow_correct": khuyu_dung, "shoulder_ref": float(chuan_vai), "elbow_ref": float(chuan_khuyu)}, warnings_list
 
 
 # ============================================
