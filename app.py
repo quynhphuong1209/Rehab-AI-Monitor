@@ -3847,8 +3847,8 @@ def hien_thi_frames_day_du(key_suffix=""):
             
     # Calculate height based on rows (1 column for MAXIMUM size)
     num_rows = len(page_indices)
-    # Vertical frames in 1 column can be very tall, use 900px per row + buffer
-    calculated_height = num_rows * 900 + 100 
+    # Refined height to reduce bottom gap (800px per row is usually enough for large vertical frames)
+    calculated_height = num_rows * 820 + 50 
     
     components.html(f"""
         <style>
