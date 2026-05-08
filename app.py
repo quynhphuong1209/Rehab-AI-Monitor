@@ -626,9 +626,11 @@ if st.session_state.get('theme') == 'light':
             font-weight: bold !important;
         }
 
-        /* Fix ALL Selectboxes, TextInputs, and TextAreas in Light Mode */
+        /* Fix ALL Selectboxes, MultiSelect, TextInputs, and TextAreas in Light Mode */
         .stSelectbox div[data-baseweb="select"],
         .stSelectbox div[data-baseweb="select"] *,
+        .stMultiSelect div[data-baseweb="select"],
+        .stMultiSelect div[data-baseweb="select"] *,
         .stTextInput input, 
         .stTextArea textarea,
         .stNumberInput input,
@@ -637,6 +639,16 @@ if st.session_state.get('theme') == 'light':
             background-color: #ffffff !important;
             color: #000000 !important;
             border-color: #ced4da !important;
+        }
+
+        /* Fix MultiSelect Tags (selected items) */
+        span[data-baseweb="tag"] {
+            background-color: #e9ecef !important;
+            color: #000000 !important;
+            border: 1px solid #0072ff !important;
+        }
+        span[data-baseweb="tag"] * {
+            color: #000000 !important;
         }
 
         /* Fix Placeholder text color for Light Mode */
