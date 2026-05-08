@@ -4858,128 +4858,123 @@ def main():
     is_light = st.session_state.get('theme') == 'light'
     f_bg = "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
     f_text = "#444" if is_light else "#ccc"
-    f_border = "#0072ff" if is_light else "#00c6ff"
-    f_title = "#0072ff" if is_light else "#00c6ff"
-    f_shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(0, 198, 255, 0.2)"
-    f_card_bg = "rgba(255,255,255,0.03)" if not is_light else "rgba(0,0,0,0.02)"
-
+    f_border_main = "#0072ff" if is_light else "#00c6ff"
+    
     footer_html = f"""
     <style>
         .main-footer {{
             background: {f_bg};
-            padding: 30px 20px;
+            padding: 40px 20px;
             color: {f_text};
             font-family: 'Times New Roman', Times, serif;
-            border-top: 4px solid {f_border};
-            box-shadow: 0 -10px 25px {f_shadow};
-            margin-top: 50px;
+            border-top: 3px solid {f_border_main};
+            margin-top: 60px;
         }}
-        .footer-container {{
-            display: flex;
-            flex-wrap: nowrap;
-            justify-content: space-between;
-            align-items: stretch;
-            max-width: 1300px;
-            margin: 0 auto;
-            gap: 20px;
-        }}
-        .footer-col {{
-            flex: 1;
-            background: {f_card_bg};
-            padding: 15px;
-            border-radius: 12px;
-            border-bottom: 3px solid {f_border};
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-        }}
-        .footer-col-center {{
-            flex: 0.8;
+        .footer-top-section {{
             text-align: center;
-            justify-content: center;
-            border-bottom: none;
-            border-top: 3px solid {f_border};
+            margin-bottom: 30px;
         }}
         .footer-logo-img {{
-            width: 70px;
+            width: 80px;
             margin-bottom: 10px;
-            filter: drop-shadow(0 0 5px {f_border}55);
         }}
-        .school-name {{
+        .school-name-footer {{
             font-weight: bold; 
             color: {"#1a1a2e" if is_light else "#fff"}; 
-            font-size: 1rem;
-            line-height: 1.2;
+            font-size: 1.2rem;
             margin: 0;
         }}
-        .footer-title {{
-            color: {f_title};
-            font-weight: bold;
-            margin-bottom: 12px;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-left: 3px solid {f_border};
-            padding-left: 10px;
+        .footer-box-container {{
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex-wrap: wrap;
         }}
-        .footer-info-item {{
-            margin-bottom: 6px;
-            font-size: 0.85rem;
-            line-height: 1.3;
-        }}
-        .footer-bottom {{
-            padding-top: 15px;
-            margin-top: 25px;
-            border-top: 1px solid {f_border}22;
-            font-size: 0.75rem;
-            color: {"#888" if is_light else "#666"};
+        .footer-card {{
+            flex: 1;
+            min-width: 350px;
+            max-width: 550px;
+            padding: 25px;
+            border-radius: 10px;
+            background: {"rgba(0,0,0,0.02)" if is_light else "rgba(255,255,255,0.03)"};
             text-align: center;
+            border: 2px solid transparent;
         }}
-        .main-footer a {{ color: {f_title}; text-decoration: none; }}
-        .main-footer a:hover {{ text-decoration: underline; }}
-        @media (max-width: 992px) {{
-            .footer-container {{ flex-wrap: wrap; }}
-            .footer-col {{ min-width: 100%; }}
+        .card-researcher {{
+            border-color: #00c6ff;
+        }}
+        .card-ethics {{
+            border-color: #ff4b4b;
+        }}
+        .card-title-researcher {{
+            color: #00c6ff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }}
+        .card-title-ethics {{
+            color: #ff4b4b;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }}
+        .card-info {{
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }}
+        .footer-bottom-text {{
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }}
+        .main-footer a {{
+            color: inherit;
+            text-decoration: none;
+        }}
+        .main-footer a:hover {{
+            text-decoration: underline;
         }}
     </style>
     <div class="main-footer">
-        <div class="footer-container">
-            <!-- CỘT 1: ĐƠN VỊ CHỦ QUẢN -->
-            <div class="footer-col footer-col-center">
-                <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-                <p class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</p>
-                <p style="font-size: 0.8rem; color: #00c6ff; margin: 3px 0;">HANOI UNIVERSITY OF PUBLIC HEALTH</p>
-                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 8px;">
-                    <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, HN</p>
-                    <p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
-                </div>
+        <div class="footer-top-section">
+            <img src="{logo_src}" class="footer-logo-img">
+            <p class="school-name-footer">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</p>
+            <p style="color: #00c6ff; font-size: 0.9rem; margin-top: 5px;">HANOI UNIVERSITY OF PUBLIC HEALTH</p>
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 10px;">📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội | 🌐 <a href="https://huph.edu.vn/">huph.edu.vn</a></p>
+        </div>
+
+        <div class="footer-box-container">
+            <!-- BOX 1: NGHIÊN CỨU VIÊN CHÍNH -->
+            <div class="footer-card card-researcher">
+                <div class="card-title-researcher">Nghiên cứu viên chính</div>
+                <div class="card-info"><b>Họ tên:</b> Đinh Lê Quỳnh Phương</div>
+                <div class="card-info"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
+                <div class="card-info"><b>Email:</b> <a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></div>
+                <div class="card-info"><b>SĐT:</b> 0382665916</div>
             </div>
 
-            <!-- CỘT 2: NGHIÊN CỨU VIÊN CHÍNH -->
-            <div class="footer-col">
-                <div class="footer-title">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
-                <div class="footer-info-item"><b>Họ tên:</b> Đinh Lê Quỳnh Phương</div>
-                <div class="footer-info-item"><b>Địa chỉ:</b> Trường ĐH Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
-                <div class="footer-info-item"><b>Email:</b> <a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></div>
-                <div class="footer-info-item"><b>SĐT:</b> 0382665916</div>
-            </div>
-
-            <!-- CỘT 3: HỘI ĐỒNG ĐẠO ĐỨC -->
-            <div class="footer-col">
-                <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
-                <div class="footer-info-item"><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</div>
-                <div class="footer-info-item"><b>Địa chỉ:</b> Trường ĐH Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
-                <div class="footer-info-item"><b>Email:</b> <a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></div>
-                <div class="footer-info-item"><b>SĐT:</b> 024 62663024</div>
+            <!-- BOX 2: HỘI ĐỒNG ĐẠO ĐỨC -->
+            <div class="footer-card card-ethics">
+                <div class="card-title-ethics">Hội đồng đạo đức</div>
+                <div class="card-info"><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</div>
+                <div class="card-info"><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</div>
+                <div class="card-info"><b>Email:</b> <a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></div>
+                <div class="card-info"><b>SĐT:</b> 024 62663024</div>
             </div>
         </div>
 
-        <div class="footer-bottom">
+        <div class="footer-bottom-text">
             Đơn vị phát triển: <b>NHÓM NGHIÊN CỨU VIÊN TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</b> | © 2026 REHAB-AI-MONITOR
         </div>
     </div>
     """
-    st.components.v1.html(footer_html, height=400, scrolling=False)
+    st.components.v1.html(footer_html, height=550, scrolling=False)
 
 
 if __name__ == "__main__":
