@@ -3979,9 +3979,10 @@ def hien_thi_frames_day_du(key_suffix=""):
         
         """
     
-    num_rows = len(page_indices)
-    # Calculate total height (frames + summary + footer)
-    calculated_height = num_rows * 650 + 600 # 650px per row + 600px for footer/summary
+    import math
+    num_rows = math.ceil(len(page_indices) / 4)
+    # Calculate total height (frames + summary bar)
+    calculated_height = num_rows * 650 + 150 # 650px per row + 150px for summary/spacing
     
     components.html(f"""
         <style>
