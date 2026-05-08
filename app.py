@@ -286,7 +286,7 @@ st.markdown("""
     /* ĐẨY GIAO DIỆN LÊN CAO TỐI ĐA */
     .block-container {
         padding-top: 2rem !important;
-        padding-bottom: 0rem !important;
+        padding-bottom: 10rem !important; /* Thêm khoảng trống cuối trang để kéo xuống hết cỡ */
     }
     
     .top-auth-container {
@@ -5208,7 +5208,7 @@ def main():
     </div>
     """
     import streamlit.components.v1 as components
-    components.html(footer_html, height=350)
+    components.html(footer_html, height=500)
 
 
 if __name__ == "__main__":
