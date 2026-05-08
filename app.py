@@ -3688,11 +3688,13 @@ def hien_thi_frames_day_du(key_suffix=""):
     # Lọc frames theo yêu cầu người dùng
     f_col1, f_col2, f_col3, f_col4 = st.columns([2, 2, 2, 1])
     with f_col1:
-        loc_frame = st.selectbox("🔍 Lọc theo kết quả", ["Tất cả", "PASS (Đúng)", "FAIL (Sai)"], key=f"f_loc_{key_suffix}")
+        loc_frame = st.selectbox("🔍 Lọc theo kết quả", ["Tất cả", "PASS (Đúng)", "NEARLY (Gần đúng)", "FAIL (Sai)"], key=f"f_loc_{key_suffix}")
     
     filtered_indices = []
     if loc_frame == "PASS (Đúng)":
         filtered_indices = [i for i, f in enumerate(all_frames_data) if f.get('dung')]
+    elif loc_frame == "NEARLY (Gần đúng)":
+        filtered_indices = [i for i, f in enumerate(all_frames_data) if f.get('gan_dung') and not f.get('dung')]
     elif loc_frame == "FAIL (Sai)":
         filtered_indices = [i for i, f in enumerate(all_frames_data) if not f.get('dung') and not f.get('gan_dung')]
     else: # Tất cả
@@ -3730,10 +3732,8 @@ def hien_thi_frames_day_du(key_suffix=""):
         st.button("◀ Trước", key=f"p_prev_{key_suffix}", width='stretch', on_click=go_prev)
         
     with p_col2:
-        page_val = st.number_input("Trang", min_value=1, max_value=total_pages, value=st.session_state[page_state_key], key=f"p_in_{key_suffix}", label_visibility="collapsed")
-        if page_val != st.session_state[page_state_key]:
-            st.session_state[page_state_key] = page_val
-            st.rerun()
+        # Sử dụng chính page_state_key cho key của number_input để đồng bộ 100%
+        st.number_input("Trang", min_value=1, max_value=total_pages, key=page_state_key, label_visibility="collapsed")
             
     with p_col3:
         st.button("Sau ▶", key=f"p_next_{key_suffix}", width='stretch', on_click=go_next)
