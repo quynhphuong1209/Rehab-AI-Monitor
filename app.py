@@ -3911,7 +3911,7 @@ def hien_thi_frames_day_du(key_suffix=""):
             body {{ 
                 background-color: transparent; 
                 color: white; 
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+                font-family: "Times New Roman", Times, serif; 
                 margin: 0; 
                 padding: 10px; 
             }}
