@@ -984,7 +984,6 @@ def ve_cung_tron_goc(image, point1, center, point3, angle, color, radius=40):
 # ============================================
 # MEDIAPIPE VỚI GPU
 # ============================================
-@st.cache_resource
 def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
     """Khởi tạo MediaPipe Pose với cấu hình linh hoạt"""
     # pyrefly: ignore [missing-import]
@@ -1209,74 +1208,79 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     last_progress = 0
     writer = None
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret or (MAX_FRAMES and processed_count >= MAX_FRAMES): break
-        
-        frame_count += 1
-        processed_count += 1
-        
-        h_orig, w_orig = frame.shape[:2]
-        if w_orig > h_orig:
-            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+    try:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret or (MAX_FRAMES and processed_count >= MAX_FRAMES): break
+            
+            frame_count += 1
+            processed_count += 1
+            
             h_orig, w_orig = frame.shape[:2]
-        
-        if w_orig != RESIZE_WIDTH:
-            scale = RESIZE_WIDTH / w_orig
-            new_h = int(h_orig * scale)
-            if new_h % 2 != 0: new_h -= 1
-            frame = cv2.resize(frame, (RESIZE_WIDTH, new_h))
+            if w_orig > h_orig:
+                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+                h_orig, w_orig = frame.shape[:2]
             
-        xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(frame, model, chuan, frame_count, fps)
-        
-        if writer is None:
-            curr_h, curr_w = xu_ly.shape[:2]
-            writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (curr_w, curr_h))
+            if w_orig != RESIZE_WIDTH:
+                scale = RESIZE_WIDTH / w_orig
+                new_h = int(h_orig * scale)
+                if new_h % 2 != 0: new_h -= 1
+                frame = cv2.resize(frame, (RESIZE_WIDTH, new_h))
+                
+            try:
+                xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(frame, model, chuan, frame_count, fps)
+            except Exception as e:
+                print(f"Error processing frame {frame_count}: {e}")
+                continue
+                
+            if writer is None:
+                curr_h, curr_w = xu_ly.shape[:2]
+                writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (curr_w, curr_h))
+                
+            writer.write(xu_ly)
             
-        writer.write(xu_ly)
-        
-        frame_path = os.path.join(thu_muc_frame, f"f_{processed_count:06d}.jpg")
-        cv2.imwrite(frame_path, xu_ly, [cv2.IMWRITE_JPEG_QUALITY, 50])
-        danh_sach_frame_paths.append(frame_path)
-        
-        ts_frame = frame_count / fps
-        time_str = f"{int(ts_frame // 60):02d}:{int(ts_frame % 60):02d}"
-        
-        if warnings_list: all_warnings.extend(warnings_list)
-        
-        d_frame = {
-            'index': frame_count, 'timestamp': time_str, 'path': frame_path,
-            'goc_vai': goc_v, 'goc_khuyu': goc_k, 'dung': dung,
-            'gan_dung': eval_info['nearly_correct'] if eval_info else False,
-            'eval_info': eval_info if eval_info else {}
-        }
-        danh_sach_frame_data.append(d_frame)
-        
-        if goc_v is not None:
-            du_lieu_goc.append({
-                'frame': frame_count, 'timestamp': time_str, 'timestamp_seconds': ts_frame,
+            frame_path = os.path.join(thu_muc_frame, f"f_{processed_count:06d}.jpg")
+            cv2.imwrite(frame_path, xu_ly, [cv2.IMWRITE_JPEG_QUALITY, 50])
+            danh_sach_frame_paths.append(frame_path)
+            
+            ts_frame = frame_count / fps
+            time_str = f"{int(ts_frame // 60):02d}:{int(ts_frame % 60):02d}"
+            
+            if warnings_list: all_warnings.extend(warnings_list)
+            
+            d_frame = {
+                'index': frame_count, 'timestamp': time_str, 'path': frame_path,
                 'goc_vai': goc_v, 'goc_khuyu': goc_k, 'dung': dung,
                 'gan_dung': eval_info['nearly_correct'] if eval_info else False,
-                'vai_dung': eval_info['shoulder_correct'] if eval_info else False,
-                'khuyu_dung': eval_info['elbow_correct'] if eval_info else False,
-                'vai_chuan': eval_info['shoulder_ref'] if eval_info else 0,
-                'khuyu_chuan': eval_info['elbow_ref'] if eval_info else 0
-            })
-        
-        if callback and tong_frame > 0:
-            prog = min(frame_count/tong_frame, 1.0)
-            if prog - last_progress >= 0.05:
-                callback(prog); last_progress = prog
-        
-        del frame; del xu_ly
-        if processed_count % 30 == 0: gc.collect()
-    
-    cap.release()
-    if writer: writer.release()
-    if model: 
-        try: model.close()
-        except: pass
-    
+                'eval_info': eval_info if eval_info else {}
+            }
+            danh_sach_frame_data.append(d_frame)
+            
+            if goc_v is not None:
+                du_lieu_goc.append({
+                    'frame': frame_count, 'timestamp': time_str, 'timestamp_seconds': ts_frame,
+                    'goc_vai': goc_v, 'goc_khuyu': goc_k, 'dung': dung,
+                    'gan_dung': eval_info['nearly_correct'] if eval_info else False,
+                    'vai_dung': eval_info['shoulder_correct'] if eval_info else False,
+                    'khuyu_dung': eval_info['elbow_correct'] if eval_info else False,
+                    'vai_chuan': eval_info['shoulder_ref'] if eval_info else 0,
+                    'khuyu_chuan': eval_info['elbow_ref'] if eval_info else 0
+                })
+            
+            if callback and tong_frame > 0:
+                prog = min(frame_count/tong_frame, 1.0)
+                if prog - last_progress >= 0.05:
+                    callback(prog)
+                    last_progress = prog
+    finally:
+        if cap: cap.release()
+        if writer: writer.release()
+        if model: 
+            try: model.close()
+            except: pass
+        gc.collect()
+
+    # SAU KHI XỬ LÝ XONG, TIẾN HÀNH ZIP VÀ LƯU JSON
     zip_path = os.path.join(tempfile.gettempdir(), f"f_{timestamp}.zip")
     try:
         import zipfile
@@ -1292,6 +1296,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     final_video_path = out_path
     final_h264 = out_path.replace('.mp4', '_f.mp4')
     try:
+        # Chuyển đổi sang H.264 để xem được trên trình duyệt
         cmd = ['ffmpeg', '-y', '-i', out_path, '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '24', final_h264]
         subprocess.run(cmd, capture_output=True)
         if os.path.exists(final_h264): final_video_path = final_h264
