@@ -3708,20 +3708,27 @@ def hien_thi_frames_day_du(key_suffix=""):
 
                 with cols[j]:
                     st.markdown(f"""
-                    <div style='border-radius:24px; overflow:hidden; border:1px solid rgba(148,163,184,0.18); background:#0f172a;'>
-                        <div style='position:relative; width:100%;'>
-                            <img src='data:image/png;base64,{image_b64}' style='width:100%; display:block;'/>
-                            <div style='position:absolute; top:12px; left:12px; right:12px; padding:12px 14px; border-radius:14px; background:rgba(15,23,42,0.88); border:1px solid rgba(255,255,255,0.14); box-shadow:0 10px 30px rgba(0,0,0,0.25);'>
-                                <div style='display:flex; justify-content:space-between; align-items:center; gap:0.75rem;'>
-                                    <div>
-                                        <div style='font-size:0.9rem; color:#7dd3fc; font-weight:700;'>FRAME #{frame_number}</div>
-                                        <div style='font-size:0.76rem; color:#cbd5e1; margin-top:3px;'>TIME: {timestamp}</div>
-                                    </div>
-                                    <div style='font-size:0.85rem; font-weight:800; color:{status_color};'>{status_text}</div>
+                    <div style='border-radius:18px; overflow:hidden; border:2px solid #10b981; background:#0f172a; box-shadow:0 8px 20px rgba(0,0,0,0.4);'>
+                        <div style='background:#10b981; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;'>
+                            <div style='font-size:0.82rem; color:#ffffff; font-weight:600; letter-spacing:0.04em;'>● Frame #{frame_number}</div>
+                            <div style='font-size:0.78rem; color:#ffffff; font-weight:600;'>{status_text}</div>
+                        </div>
+                        <div style='position:relative; background:#1e293b;'>
+                            <img src='data:image/png;base64,{image_b64}' style='width:100%; display:block; border-bottom:1px solid rgba(148,163,184,0.12);'/>
+                            <div style='position:absolute; top:8px; left:8px; background:rgba(15,23,42,0.85); border:1px solid rgba(16,185,129,0.4); border-radius:10px; padding:8px 12px;'>
+                                <div style='color:#a5f3fc; font-size:0.76rem; font-weight:700;'>FRAME #1</div>
+                                <div style='color:#cbd5e1; font-size:0.7rem; margin-top:2px;'>TIME: {timestamp}</div>
+                            </div>
+                        </div>
+                        <div style='padding:10px 12px; background:#0f172a; border-top:1px solid rgba(148,163,184,0.12);'>
+                            <div style='display:flex; flex-direction:column; gap:6px;'>
+                                <div style='display:flex; justify-content:space-between; font-size:0.78rem;'>
+                                    <span style='color:#7dd3fc;'>SHOULDER:</span>
+                                    <span style='color:#a5f3fc; font-weight:700;'>{shoulder_angle:.0f}°</span>
                                 </div>
-                                <div style='display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-top:10px;'>
-                                    <div style='color:#a5f3fc; font-size:0.82rem;'>SHOULDER: <strong>{shoulder_angle:.1f}°</strong></div>
-                                    <div style='color:#f4bd82; font-size:0.82rem;'>ELBOW: <strong>{elbow_angle:.1f}°</strong></div>
+                                <div style='display:flex; justify-content:space-between; font-size:0.78rem;'>
+                                    <span style='color:#fda4af;'>ELBOW:</span>
+                                    <span style='color:#f87171; font-weight:700;'>{elbow_angle:.0f}°</span>
                                 </div>
                             </div>
                         </div>
