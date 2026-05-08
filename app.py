@@ -1346,8 +1346,17 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     final_video_path = out_path
     final_h264 = out_path.replace('.mp4', '_f.mp4')
     try:
-        # Chuyển đổi sang H.264 để xem được trên trình duyệt
-        cmd = ['ffmpeg', '-y', '-i', out_path, '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '24', final_h264]
+        # Chuyển đổi sang H.264 tối ưu cho Web (Nhanh + Nhẹ + Streamable)
+        cmd = [
+            'ffmpeg', '-y', '-i', out_path, 
+            '-vcodec', 'libx264', 
+            '-pix_fmt', 'yuv420p', 
+            '-preset', 'veryfast', 
+            '-crf', '28',            # Nén mạnh hơn một chút để load nhanh
+            '-movflags', 'faststart', # Cho phép xem ngay khi đang tải
+            '-threads', '0',         # Sử dụng toàn bộ CPU để xử lý nhanh
+            final_h264
+        ]
         subprocess.run(cmd, capture_output=True)
         if os.path.exists(final_h264): final_video_path = final_h264
     except: pass
