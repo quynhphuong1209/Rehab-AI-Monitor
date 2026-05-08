@@ -3847,8 +3847,8 @@ def hien_thi_frames_day_du(key_suffix=""):
             
     # Calculate height based on rows (1 column for MAXIMUM size)
     num_rows = len(page_indices)
-    # Refined height to reduce bottom gap (800px per row is usually enough for large vertical frames)
-    calculated_height = num_rows * 820 + 50 
+    # Refined height to eliminate bottom gap (680px is optimal for most vertical views)
+    calculated_height = num_rows * 680 + 20 
     
     components.html(f"""
         <style>
@@ -3888,7 +3888,6 @@ def hien_thi_frames_day_du(key_suffix=""):
     """, height=min(calculated_height, 20000), scrolling=True)
     st.write("") # Spacer
 
-    st.markdown("---")
     st.markdown("---")
     # === THANH TỔNG KẾT THÔNG SỐ (SUMMARY BAR) ===
     s_col1, s_col2, s_col3, s_col4, s_col5 = st.columns(5)
