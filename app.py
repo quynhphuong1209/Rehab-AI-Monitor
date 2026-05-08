@@ -193,8 +193,7 @@ def chuyen_tab_bang_js(ten_tab):
         }}
     </script>
     """
-    import streamlit.components.v1 as components
-    components.html(js_code, height=0, width=0)
+    st.markdown(js_code, unsafe_allow_html=True)
 
 # ============================================
 # CẤU HÌNH TRANG
@@ -587,7 +586,9 @@ def hien_thi_tab_tien_trien():
         
         # 3. Bảng lịch sử chi tiết
         st.markdown("#### 📑 NHẬT KÝ TẬP LUYỆN CHI TIẾT")
-        st.dataframe(df_hist[['ngay', 'bai_tap', 'accuracy', 'f1']], width="stretch")
+        df_show = df_hist[['ngay', 'bai_tap', 'accuracy', 'f1']].copy()
+        df_show['accuracy'] = df_show['accuracy'].apply(lambda x: f"{x:.1f}%")
+        st.dataframe(df_show, width="stretch")
         
         # 4. Nút xóa lịch sử (để làm mới nếu cần)
         if st.button("🗑️ Xóa toàn bộ lịch sử", type="secondary"):
@@ -2358,7 +2359,15 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     fail_count_total = tk['tong_frame_hop_le'] - tk['frame_dung'] - tk['frame_gan_dung']
     stats_summary = pd.DataFrame({
         "Hạng mục": ["Tổng thời gian xử lý", "Tổng số khung hình", "Số lần tập đúng (Pass)", "Số lần tập gần đúng", "Số lần tập sai (Fail)", "Góc vai trung bình", "Góc khuỷu trung bình"],
-        "Giá trị": [f"{tk['thoi_gian']:.1f}s", tk['tong_frame'], tk['frame_dung'], tk['frame_gan_dung'], f"{max(0, fail_count_total)}", f"{tk['tb_goc_vai']:.1f}°", f"{tk['tb_goc_khuyu']:.1f}°"]
+        "Giá trị": [
+            f"{tk['thoi_gian']:.1f}s", 
+            str(tk['tong_frame']), 
+            str(tk['frame_dung']), 
+            str(tk['frame_gan_dung']), 
+            f"{max(0, fail_count_total)}", 
+            f"{tk['tb_goc_vai']:.1f}°", 
+            f"{tk['tb_goc_khuyu']:.1f}°"
+        ]
     })
 
     # Lấy thông tin mô hình hiện tại
