@@ -4196,7 +4196,7 @@ def hien_thi_tab_quan_tri_vien():
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    tab_u1, tab_u2 = st.tabs(["👥 DANH SÁCH NGƯỜI DÙNG", "➕ TẠO TÀI KHOẢN MỚI"])
+    tab_u1, tab_u2, tab_u3 = st.tabs(["👥 DANH SÁCH NGƯỜI DÙNG", "➕ TẠO TÀI KHOẢN MỚI", "🧹 DỌN DẸP HỆ THỐNG"])
     
     with tab_u1:
         st.markdown("### 👥 Quản lý tài khoản")
@@ -4277,6 +4277,46 @@ def hien_thi_tab_quan_tri_vien():
                 </p>
             </div>
             """, unsafe_allow_html=True)
+    with tab_u3:
+        st.markdown("### 🧹 Dọn dẹp dữ liệu hệ thống")
+        st.warning("⚠️ CẢNH BÁO: Thao tác này sẽ xóa vĩnh viễn dữ liệu. Hãy cẩn thận!")
+        
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            if st.button("🗑️ XÓA TẤT CẢ LỊCH SỬ ĐÁNH GIÁ & TRIỆU CHỨNG", use_container_width=True):
+                save_data(EVALUATIONS_FILE, [])
+                save_data(SYMPTOMS_FILE, [])
+                st.success("✅ Đã xóa sạch lịch sử đánh giá và triệu chứng!")
+                st.rerun()
+            
+            if st.button("🗑️ XÓA TẤT CẢ LỊCH NHẮC NHỞ", use_container_width=True):
+                save_data(REMINDERS_FILE, [])
+                st.success("✅ Đã xóa sạch lịch nhắc nhở!")
+                st.rerun()
+
+        with col_c2:
+            if st.button("🗑️ XÓA DANH SÁCH VIDEO & FILE TẠM", use_container_width=True):
+                save_data(VIDEOS_FILE, [])
+                # Xóa file trong patient_uploads nếu cần (tùy chọn)
+                st.success("✅ Đã xóa danh sách video hệ thống!")
+                st.rerun()
+            
+            if st.button("💥 RESET TOÀN BỘ HỆ THỐNG (CLEAR ALL)", type="primary", use_container_width=True):
+                save_data(EVALUATIONS_FILE, [])
+                save_data(SYMPTOMS_FILE, [])
+                save_data(REMINDERS_FILE, [])
+                save_data(VIDEOS_FILE, [])
+                if os.path.exists("lich_su_tap_luyen.json"):
+                    save_data("lich_su_tap_luyen.json", [])
+                
+                # Xóa sạch session
+                for key in list(st.session_state.keys()):
+                    if key not in ['logged_in', 'user_info', 'theme']:
+                        del st.session_state[key]
+                
+                st.success("🔥 ĐÃ RESET TOÀN BỘ DỮ LIỆU SẠCH SẼ!")
+                st.balloons()
+                st.rerun()
 
 # ============================================
 # HÀM HIỂN THỊ TAB ĐỔI MẬT KHẨU
@@ -4349,8 +4389,9 @@ def main():
             if st.button("🚪 Thoát", use_container_width=True, key="logout_top"):
                 if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
                     st.logout()
-                st.session_state.logged_in = False
-                st.session_state.user_info = None
+                # Xóa sạch session state khi đăng xuất để tránh lộ dữ liệu hoặc cache rác
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
