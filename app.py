@@ -3055,8 +3055,11 @@ def hien_thi_form_danh_gia_bac_si():
 
         with st.form("doctor_eval_form"):
             st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
+            # Tạo danh sách options động từ BAI_TAP để đồng bộ với default
+            exercise_options = [f"{i+1}. {BAI_TAP[k]['ten']}" for i, k in enumerate(BAI_TAP.keys())]
+            
             bt_chosen = st.multiselect("Động tác bệnh nhân thực hiện:", 
-                                      ["1. Bài tập con lắc Codman", "2. Bài tập vận động với gậy", "3. Bài tập với dây kháng lực"],
+                                      exercise_options,
                                       default=[f"{i+1}. {selected_video['exercise']}" for i, k in enumerate(BAI_TAP.keys()) if BAI_TAP[k]['ten'] == selected_video['exercise']])
 
             st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC (GROUND TRUTH)")
