@@ -3159,7 +3159,11 @@ def hien_thi_form_danh_gia_bac_si():
                                         ["Vị trí tay chưa đúng", "Biên độ chưa đạt", "Tốc độ quá nhanh/chậm", "Sai tư thế thân người"])
 
             st.markdown("### V. NHẬN XÉT CỦA BÁC SĨ/KTV PHCN")
-            nhan_xet = st.text_area("Nhập nhận xét chuyên môn:", height=150)
+            col_rem1, col_rem2 = st.columns(2)
+            with col_rem1:
+                nhan_xet = st.text_area("Nhập nhận xét cho BỆNH NHÂN:", height=150)
+            with col_rem2:
+                nhan_xet_ncv = st.text_area("Ghi chú riêng cho NGHIÊN CỨU VIÊN (NCV):", height=150, help="Thông tin này chỉ hiển thị cho NCV, không hiện cho Bệnh nhân.")
 
             st.markdown("### VI. KẾ HOẠCH TIẾP THEO")
             ke_hoach = st.radio("Chỉ định:", ["Tiếp tục bài tập hiện tại", "Chuyển sang bài tập mới", "Hẹn khám lại trực tiếp"])
@@ -3177,6 +3181,7 @@ def hien_thi_form_danh_gia_bac_si():
                 "doctor_result": ket_qua,
                 "errors": loi_sai,
                 "comments": nhan_xet,
+                "comments_ncv": nhan_xet_ncv,
                 "plan": ke_hoach,
                 "doctor_name": st.session_state.user_info.get('full_name', st.session_state.user_info['username']),
                 "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
@@ -4699,7 +4704,9 @@ def main():
                                         with st.expander("🩺 ĐÁNH GIÁ CHUYÊN MÔN (GROUND TRUTH)", expanded=True):
                                             st.success(f"**Bác sĩ:** {doc_eval.get('doctor_name', 'Bác sĩ')}")
                                             st.write(f"**Kết quả:** {doc_eval['doctor_result']}")
-                                            st.write(f"**Nhận xét:** {doc_eval['comments']}")
+                                            if doc_eval.get('comments_ncv'):
+                                                st.markdown(f"<div style='background: rgba(0,198,255,0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00c6ff;'><b>💬 Ghi chú cho NCV:</b> {doc_eval['comments_ncv']}</div>", unsafe_allow_html=True)
+                                            st.write(f"**Nhận xét cho BN:** {doc_eval['comments']}")
                                             st.write(f"**Kế hoạch:** {doc_eval['plan']}")
                                     elif user_role == "Nghiên cứu viên":
                                         st.warning("⏳ Đang chờ Bác sĩ / KTV đánh giá chuyên môn.")
