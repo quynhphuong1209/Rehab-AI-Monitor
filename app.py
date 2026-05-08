@@ -3717,20 +3717,27 @@ def hien_thi_frames_day_du(key_suffix=""):
     st.markdown(f"### 📷 DANH SÁCH KHUNG HÌNH ({total_filtered}/{total_frames})")
     
     # Thanh điều hướng trang
+    def go_prev():
+        if st.session_state[page_state_key] > 1:
+            st.session_state[page_state_key] -= 1
+            
+    def go_next():
+        if st.session_state[page_state_key] < total_pages:
+            st.session_state[page_state_key] += 1
+
     p_col1, p_col2, p_col3, p_col4 = st.columns([1, 2, 1, 2])
     with p_col1:
-        if st.button("◀ Trước", key=f"p_prev_{key_suffix}", width='stretch'):
-            if st.session_state[page_state_key] > 1:
-                st.session_state[page_state_key] -= 1
+        st.button("◀ Trước", key=f"p_prev_{key_suffix}", width='stretch', on_click=go_prev)
+        
     with p_col2:
-        page = st.number_input("Trang", min_value=1, max_value=total_pages, value=st.session_state[page_state_key], key=f"p_in_{key_suffix}", label_visibility="collapsed")
-        if page != st.session_state[page_state_key]:
-            st.session_state[page_state_key] = page
+        page_val = st.number_input("Trang", min_value=1, max_value=total_pages, value=st.session_state[page_state_key], key=f"p_in_{key_suffix}", label_visibility="collapsed")
+        if page_val != st.session_state[page_state_key]:
+            st.session_state[page_state_key] = page_val
             st.rerun()
+            
     with p_col3:
-        if st.button("Sau ▶", key=f"p_next_{key_suffix}", width='stretch'):
-            if st.session_state[page_state_key] < total_pages:
-                st.session_state[page_state_key] += 1
+        st.button("Sau ▶", key=f"p_next_{key_suffix}", width='stretch', on_click=go_next)
+        
     with p_col4:
         st.caption(f"Trang {st.session_state[page_state_key]}/{total_pages} (Tổng {total_filtered} frames)")
 
