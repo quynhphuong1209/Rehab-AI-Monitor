@@ -121,7 +121,7 @@ def hien_thi_footer_chung():
     <style>
         .main-footer {{
             background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
-            padding: 45px 20px;
+            padding: 50px 20px;
             color: #ccc;
             font-family: 'Times New Roman', Times, serif;
             border-top: 4px solid #00c6ff;
@@ -138,7 +138,7 @@ def hien_thi_footer_chung():
         }}
         .footer-col {{
             flex: 1;
-            padding: 0 30px;
+            padding: 0 35px;
             border-right: 1px solid rgba(255, 255, 255, 0.1);
         }}
         .footer-col:last-child {{
@@ -148,38 +148,38 @@ def hien_thi_footer_chung():
             text-align: center;
         }}
         .footer-logo-img {{
-            width: 100px;
-            margin-bottom: 15px;
+            width: 110px;
+            margin-bottom: 20px;
             filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.3));
         }}
         .footer-title {{
             color: #00c6ff;
             font-weight: bold;
-            margin-bottom: 18px;
-            font-size: 1.15rem;
+            margin-bottom: 20px;
+            font-size: 1.35rem;
             text-transform: uppercase;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }}
         .info-row {{
-            margin-bottom: 10px;
-            font-size: 0.95rem;
+            margin-bottom: 12px;
+            font-size: 1.15rem;
             display: flex;
-            gap: 8px;
-            line-height: 1.4;
+            gap: 10px;
+            line-height: 1.5;
         }}
         .info-label {{
             font-weight: bold;
             color: #eee;
-            min-width: 60px;
+            min-width: 70px;
         }}
         .footer-bottom {{
-            padding-top: 25px;
-            margin-top: 35px;
+            padding-top: 30px;
+            margin-top: 40px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 0.85rem;
-            color: #666;
+            font-size: 1rem;
+            color: #777;
             text-align: center;
             letter-spacing: 1px;
         }}
@@ -188,15 +188,15 @@ def hien_thi_footer_chung():
         .school-name {{
             font-weight: bold; 
             color: #fff; 
-            font-size: 1.1rem;
+            font-size: 1.25rem;
             line-height: 1.3;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }}
         .school-subname {{
-            font-size: 0.85rem; 
+            font-size: 1rem; 
             color: #00c6ff;
             display: block;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }}
     </style>
     <div class="main-footer">
@@ -206,7 +206,7 @@ def hien_thi_footer_chung():
                 <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
                 <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
                 <div class="school-subname">HANOI UNIVERSITY OF PUBLIC HEALTH</div>
-                <div style="font-size: 0.9rem; opacity: 0.8;">
+                <div style="font-size: 1.1rem; opacity: 0.9;">
                     <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
                     <p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
                 </div>
@@ -259,7 +259,7 @@ def hien_thi_footer_chung():
         </div>
     </div>
     """
-    components.html(footer_html, height=420, scrolling=False)
+    components.html(footer_html, height=500, scrolling=False)
 
 def load_data(file_path):
     if os.path.exists(file_path):
