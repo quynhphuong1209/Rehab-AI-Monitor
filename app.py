@@ -3561,7 +3561,7 @@ def hien_thi_frames_day_du(key_suffix=""):
 
     st.markdown(f"""
     <div style='display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem;'>
-        <div style='font-size:1.7rem; font-weight:800; color:#ffffff;'>🎬 VIDEO ĐÃ PHÂN TÍCH</div>
+        <div style='font-size:1.7rem; font-weight:800; color:#ffffff;'>🎬 VIDEO & ẢNH</div>
         <div style='color:#94a3b8; font-size:0.95rem;'>Tổng: <strong>{total_frames}</strong> frames</div>
     </div>
     """, unsafe_allow_html=True)
@@ -3571,20 +3571,22 @@ def hien_thi_frames_day_du(key_suffix=""):
     col_v1, col_v2 = st.columns([2, 1], gap='large')
     with col_v1:
         if has_video:
+            st.markdown("<div style='border-radius:20px; overflow:hidden; border:1px solid rgba(148,163,184,0.18);'>", unsafe_allow_html=True)
             st.video(processed_video_path)
+            st.markdown("</div>", unsafe_allow_html=True)
         else:
             st.info("ℹ️ Đang tải hoặc không tìm thấy video trích xuất khung xương.")
     with col_v2:
         st.markdown(f"""
-        <div style='background: #0f172a; border: 1px solid rgba(100, 116, 139, 0.25); border-radius:18px; padding:16px;'>
-            <h4 style='color:#38bdf8; margin-bottom:0.8rem;'>📌 Thông tin Video</h4>
-            <div style='color:#e2e8f0; margin-bottom:0.55rem;'><strong>Tên file:</strong> {filename}</div>
-            <div style='color:#e2e8f0; margin-bottom:0.55rem;'><strong>Độ chính xác AI:</strong> {ai_acc:.1f}%</div>
-            <div style='color:#e2e8f0; margin-bottom:0.55rem;'><strong>Tổng frame:</strong> {total_frames}</div>
-            <div style='display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.9rem;'>
-                <span style='background:#0f766e; color:#f8fafc; padding:0.45rem 0.7rem; border-radius:999px;'>PASS: {pass_count}</span>
-                <span style='background:#92400e; color:#f8fafc; padding:0.45rem 0.7rem; border-radius:999px;'>NEARLY: {nearly_count}</span>
-                <span style='background:#881337; color:#f8fafc; padding:0.45rem 0.7rem; border-radius:999px;'>FAIL: {fail_count}</span>
+        <div style='background: #0f172a; border: 1px solid rgba(100, 116, 139, 0.25); border-radius:18px; padding:18px;'>
+            <h4 style='color:#38bdf8; margin-bottom:1rem;'>📌 Thông tin Video</h4>
+            <div style='color:#e2e8f0; margin-bottom:0.85rem;'><strong>Tên file:</strong> {filename}</div>
+            <div style='color:#e2e8f0; margin-bottom:0.85rem;'><strong>Độ chính xác AI:</strong> {ai_acc:.1f}%</div>
+            <div style='color:#e2e8f0; margin-bottom:0.85rem;'><strong>Tổng frame:</strong> {total_frames}</div>
+            <div style='display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem;'>
+                <span style='background:#0f766e; color:#f8fafc; padding:0.45rem 0.75rem; border-radius:999px;'>PASS: {pass_count}</span>
+                <span style='background:#f59e0b; color:#0f172a; padding:0.45rem 0.75rem; border-radius:999px;'>NEARLY: {nearly_count}</span>
+                <span style='background:#ef4444; color:#ffffff; padding:0.45rem 0.75rem; border-radius:999px;'>FAIL: {fail_count}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -3642,40 +3644,47 @@ def hien_thi_frames_day_du(key_suffix=""):
     total_filtered = len(filtered_indices)
     total_pages = max(1, (total_filtered + frames_per_page - 1) // frames_per_page)
 
-    if 'current_page' not in st.session_state:
-        st.session_state.current_page = 1
-    if st.session_state.current_page > total_pages:
-        st.session_state.current_page = total_pages
-    if st.session_state.current_page < 1:
-        st.session_state.current_page = 1
+    page_state_key = f"current_page_{key_suffix}"
+    if page_state_key not in st.session_state:
+        st.session_state[page_state_key] = 1
+    if st.session_state[page_state_key] > total_pages:
+        st.session_state[page_state_key] = total_pages
+    if st.session_state[page_state_key] < 1:
+        st.session_state[page_state_key] = 1
 
     st.markdown("---")
     nav_col1, nav_col2, nav_col3, nav_col4 = st.columns([1.5, 2, 1.5, 2], gap='large')
     with nav_col1:
         if st.button("◀ Trang trước", width='stretch', key=f"prev_button_{key_suffix}"):
-            if st.session_state.current_page > 1:
-                st.session_state.current_page -= 1
-                st.session_state.page_input = st.session_state.current_page
+            if st.session_state[page_state_key] > 1:
+                st.session_state[page_state_key] -= 1
+                st.session_state[f"page_input_{key_suffix}"] = st.session_state[page_state_key]
             st.rerun()
     with nav_col2:
         page = st.number_input("Trang", min_value=1, max_value=total_pages,
-                              value=st.session_state.current_page,
+                              value=st.session_state[page_state_key],
                               step=1, label_visibility="collapsed", key=f"page_input_{key_suffix}")
-        if page != st.session_state.current_page:
-            st.session_state.current_page = page
+        if page != st.session_state[page_state_key]:
+            st.session_state[page_state_key] = page
             st.rerun()
     with nav_col3:
         if st.button("Trang sau ▶", width='stretch', key=f"next_button_{key_suffix}"):
-            if st.session_state.current_page < total_pages:
-                st.session_state.current_page += 1
-                st.session_state.page_input = st.session_state.current_page
+            if st.session_state[page_state_key] < total_pages:
+                st.session_state[page_state_key] += 1
+                st.session_state[f"page_input_{key_suffix}"] = st.session_state[page_state_key]
             st.rerun()
     with nav_col4:
-        st.markdown(f"<div style='color:#94a3b8; font-size:0.95rem;'>Hiển thị <strong>{min(frames_per_page, total_filtered)}</strong>/{total_filtered} frame | Trang <strong>{st.session_state.current_page}</strong>/<strong>{total_pages}</strong></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='color:#94a3b8; font-size:0.95rem;'>Hiển thị <strong>{min(frames_per_page, total_filtered)}</strong>/{total_filtered} frame | Trang <strong>{st.session_state[page_state_key]}</strong>/<strong>{total_pages}</strong></div>", unsafe_allow_html=True)
 
-    start_idx = (st.session_state.current_page - 1) * frames_per_page
+    start_idx = (st.session_state[page_state_key] - 1) * frames_per_page
     end_idx = min(start_idx + frames_per_page, total_filtered)
     page_indices = filtered_indices[start_idx:end_idx]
+
+    import base64
+
+    def image_to_base64(path):
+        with open(path, 'rb') as img_file:
+            return base64.b64encode(img_file.read()).decode('utf-8')
 
     cols_per_row = 4
     for i in range(0, len(page_indices), cols_per_row):
@@ -3695,25 +3704,26 @@ def hien_thi_frames_day_du(key_suffix=""):
                 shoulder_angle = frame_data.get('goc_vai', 0.0)
                 elbow_angle = frame_data.get('goc_khuyu', 0.0)
                 timestamp = frame_data.get('timestamp', '00:00')
+                image_b64 = image_to_base64(frame_path)
 
                 with cols[j]:
                     st.markdown(f"""
-                    <div style='border-radius:20px; overflow:hidden; border:1px solid rgba(148,163,184,0.18); background:#111827;'>
-                        <div style='position: relative; background: rgba(15,23,42,0.95); padding:12px 14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(148,163,184,0.12);'>
-                            <div>
-                                <div style='font-size:0.95rem; color:#94a3b8; letter-spacing:0.04em;'>FRAME #{frame_number}</div>
-                                <div style='font-size:0.82rem; color:#cbd5e1;'>TIME: {timestamp}</div>
+                    <div style='border-radius:24px; overflow:hidden; border:1px solid rgba(148,163,184,0.18); background:#0f172a;'>
+                        <div style='position:relative; width:100%;'>
+                            <img src='data:image/png;base64,{image_b64}' style='width:100%; display:block;'/>
+                            <div style='position:absolute; top:12px; left:12px; right:12px; padding:12px 14px; border-radius:14px; background:rgba(15,23,42,0.88); border:1px solid rgba(255,255,255,0.14); box-shadow:0 10px 30px rgba(0,0,0,0.25);'>
+                                <div style='display:flex; justify-content:space-between; align-items:center; gap:0.75rem;'>
+                                    <div>
+                                        <div style='font-size:0.9rem; color:#7dd3fc; font-weight:700;'>FRAME #{frame_number}</div>
+                                        <div style='font-size:0.76rem; color:#cbd5e1; margin-top:3px;'>TIME: {timestamp}</div>
+                                    </div>
+                                    <div style='font-size:0.85rem; font-weight:800; color:{status_color};'>{status_text}</div>
+                                </div>
+                                <div style='display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-top:10px;'>
+                                    <div style='color:#a5f3fc; font-size:0.82rem;'>SHOULDER: <strong>{shoulder_angle:.1f}°</strong></div>
+                                    <div style='color:#f4bd82; font-size:0.82rem;'>ELBOW: <strong>{elbow_angle:.1f}°</strong></div>
+                                </div>
                             </div>
-                            <div style='font-weight:700; color:{status_color}; font-size:0.95rem;'>{status_text}</div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.image(frame_path, use_column_width=True)
-                    st.markdown(f"""
-                    <div style='background:#0f172a; padding:10px 12px 14px 12px; border-radius:0 0 18px 18px; border:1px solid rgba(148,163,184,0.12); border-top:0;'>
-                        <div style='display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;'>
-                            <span style='color:#7dd3fc; font-size:0.9rem;'>SHOULDER: <strong>{shoulder_angle:.1f}°</strong></span>
-                            <span style='color:#fda4af; font-size:0.9rem;'>ELBOW: <strong>{elbow_angle:.1f}°</strong></span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -3723,7 +3733,7 @@ def hien_thi_frames_day_du(key_suffix=""):
     summary_cols[0].metric("Tổng frame", total_frames)
     summary_cols[1].metric("PASS", pass_count)
     summary_cols[2].metric("FAIL", fail_count)
-    summary_cols[3].metric("Trang", f"{st.session_state.current_page}/{total_pages}")
+    summary_cols[3].metric("Trang", f"{st.session_state[page_state_key]}/{total_pages}")
 
 
 # Callback xử lý đổi theme nhanh (Để ngoài hàm main để tránh lỗi WebSocket Cache)
