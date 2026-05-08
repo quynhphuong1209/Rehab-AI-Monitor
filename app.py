@@ -3372,10 +3372,14 @@ def hien_thi_form_danh_gia_bac_si():
             st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
             st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
 
-    # Kiểm tra xem NCV đã gửi kết quả chưa
+    # Kiểm tra xem NCV đã gửi kết quả cho VIDEO NÀY chưa
     evals_data = load_data(EVALUATIONS_FILE)
-    patient_evals = [e for e in evals_data if e['patient_username'] == selected_video['username']]
-    has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in patient_evals)
+    has_ai_sent = any(
+        e.get('doctor_username') == "AI_Researcher" and 
+        e.get('patient_username') == selected_video['username'] and 
+        e.get('video_name') == selected_video.get('video_name') 
+        for e in evals_data
+    )
 
     tab_titles_eval = ["📝 ĐÁNH GIÁ CHUYÊN MÔN"]
     if has_ai_sent and st.session_state.user_info.get('role') in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
@@ -4554,7 +4558,12 @@ def main():
         has_ai_main = False
         if selected_video_main:
             evals_main = load_data(EVALUATIONS_FILE)
-            has_ai_main = any(e.get('doctor_username') == "AI_Researcher" and e['patient_username'] == selected_video_main['username'] for e in evals_main)
+            has_ai_main = any(
+                e.get('doctor_username') == "AI_Researcher" and 
+                e['patient_username'] == selected_video_main['username'] and
+                e.get('video_name') == selected_video_main.get('video_name')
+                for e in evals_main
+            )
             
         tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN"]
         if has_ai_main:
