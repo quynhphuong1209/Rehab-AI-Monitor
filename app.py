@@ -530,6 +530,13 @@ if st.session_state.get('theme') == 'dark':
         /* Khai báo hệ màu tối cho toàn bộ trình duyệt */
         html, body {
             color-scheme: dark !important;
+            caret-color: white !important; /* Đảm bảo con trỏ luôn sáng */
+        }
+        
+        /* Chỉnh màu khi bôi đen văn bản */
+        ::selection {
+            background-color: #2a5298 !important;
+            color: white !important;
         }
 
         /* Ép nền ứng dụng */
@@ -567,12 +574,16 @@ if st.session_state.get('theme') == 'dark':
         }
         
         /* Fix lỗi ô nhập số (Number Input) bị mảng trắng */
-        .stNumberInput [data-baseweb="input"] {
+        .stNumberInput div, .stNumberInput [data-baseweb="input"], .stNumberInput input {
             background-color: #1a1a2e !important;
+            color: white !important;
         }
         .stNumberInput button {
             background-color: #2a5298 !important;
             color: white !important;
+        }
+        .stNumberInput div[data-baseweb="input"] > div {
+            background-color: transparent !important;
         }
 
         /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
