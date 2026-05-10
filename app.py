@@ -544,17 +544,55 @@ if st.session_state.get('theme') == 'dark':
         }
         
         /* Đảm bảo văn bản luôn trắng trong chế độ tối */
-        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div {
-            color: white !important;
+        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div, small {
+            color: #ffffff !important;
+            text-shadow: none !important;
         }
         
-        /* Giữ cho input có độ tương phản - Nhắm mục tiêu cực mạnh */
+        /* Ép màu các ô nhập liệu & ô chọn (Selectbox/Input) */
         .stTextInput input, .stTextArea textarea, .stNumberInput input, 
         div[data-baseweb="input"], div[data-baseweb="input"] *,
-        div[data-testid="stTextInput"] div, div[data-testid="stTextArea"] div {
+        div[data-testid="stTextInput"] div, div[data-testid="stTextArea"] div,
+        div[data-baseweb="select"], div[data-baseweb="select"] *,
+        .stSelectbox div, .stMultiSelect div {
             background-color: #1a1a2e !important;
             color: white !important;
             border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Ép màu Expander (Cực kỳ quan trọng cho NCKH tab) */
+        .stExpander, [data-testid="stExpander"], .st-emotion-cache-1839j81 {
+            background-color: #16213e !important;
+            border: 1px solid rgba(0, 198, 255, 0.2) !important;
+            color: white !important;
+        }
+        .stExpander summary, .stExpander summary * {
+            background-color: #1a1a2e !important;
+            color: #00c6ff !important;
+            font-weight: bold !important;
+        }
+        
+        /* Ép màu Sidebar triệt để */
+        [data-testid="stSidebar"] {
+            background-color: #0d0d1a !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        [data-testid="stSidebar"] * {
+            color: white !important;
+        }
+
+        /* Fix lỗi chữ mờ (Antialiasing) */
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        /* Fix các khối info-box, metric-card bị trắng */
+        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card, .step-box {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            color: white !important;
+            border: 1px solid rgba(0, 198, 255, 0.3) !important;
         }
         
         /* Fix placeholder color in Dark Mode */
