@@ -730,27 +730,24 @@ if st.session_state.get('theme') == 'dark':
         /* ============================================================ */
         
         /* ============================================================ */
-        /* CHIẾN DỊCH "TẨY SẠCH TOÀN DIỆN" - KHÔNG CÒN MỘT VẾT VIỀN THỪA */
+        /* BẢN KHÔI PHỤC BANNER VÀ TAB - CHỈ XÓA VIỀN THỪA CÓ CHỌN LỌC */
         /* ============================================================ */
         
-        /* 1. Lệnh cấm viền và nền trên TOÀN BỘ các thành phần văn bản và nhãn */
-        * {
-            box-shadow: none !important;
-            outline: none !important;
-        }
-        
-        /* Ép các nhãn và vùng chứa chữ phải sạch bóng */
-        [data-testid="stMarkdownContainer"] *, 
-        [data-testid="stWidgetLabel"], 
-        [data-testid="stWidgetLabel"] *,
-        label, p, span, small {
-            border: none !important;
-            background: transparent !important;
+        /* 1. Chỉ xóa viền và nền của các nhãn Widget (Họ tên, Tuổi,...) */
+        div[data-testid="stWidgetLabel"], 
+        div[data-testid="stWidgetLabel"] *,
+        span[data-baseweb="tag"],
+        [data-baseweb="tag"] * {
             background-color: transparent !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
         }
 
-        /* 2. KHÔI PHỤC DUY NHẤT VIỀN CHO Ô NHẬP LIỆU (ĐỂ CÓ THỂ NHẬN DIỆN) */
-        /* Chúng ta chỉ nhắm vào lớp vỏ bọc ngoài cùng của ô nhập liệu */
+        /* 2. Giữ nguyên màu nền cho các khối Markdown (Banner, Thông báo) */
+        /* Không áp dụng lệnh transparent cho stMarkdownContainer chung */
+
+        /* 3. Đảm bảo các ô nhập liệu có khung viền chuẩn */
         div[data-baseweb="input"], 
         div[data-baseweb="select"], 
         div[data-baseweb="textarea"] {
@@ -759,21 +756,9 @@ if st.session_state.get('theme') == 'dark':
             border-radius: 4px !important;
         }
 
-        /* Xóa sạch các viền bên trong ô chọn (Multiselect/Selectbox) */
-        div[data-baseweb="select"] > div, 
-        div[data-baseweb="select"] span,
-        [data-baseweb="tag"] {
-            border: none !important;
-            background-color: transparent !important;
-        }
-
-        /* Đảm bảo Sidebar sạch bóng hoàn toàn */
-        [data-testid="stSidebarContent"] * {
-            border: none !important;
-        }
-        [data-testid="stSidebarContent"] div[data-baseweb="input"],
-        [data-testid="stSidebarContent"] div[data-baseweb="select"] {
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        /* 4. Đảm bảo chữ trắng sạch sẽ cho các vùng văn bản chính */
+        .stMarkdown p, .stMarkdown span, label {
+            color: white !important;
         }
 
         /* Sidebar tối giản */
