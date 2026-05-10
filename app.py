@@ -725,23 +725,18 @@ if st.session_state.get('theme') == 'dark':
             border: 1px solid #00c6ff !important;
         }
         
-        /* Fix triệt để mảng trắng trong File Uploader và MultiSelect */
-        [data-testid="stFileUploader"] div, 
-        .stMultiSelect div[data-baseweb="select"],
-        span[data-baseweb="tag"],
-        div[data-testid="stMarkdownContainer"] {
-            color: white !important;
+        /* XÓA BỎ HOÀN TOÀN "HÌNH BÓNG" (BACKGROUND) CỦA NHÃN CHỮ */
+        label, .stMarkdown p, .stMarkdown span, div[data-testid="stWidgetLabel"] p {
+            background-color: transparent !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
         }
 
-        /* LÀM NỔI BẬT CÁC THẺ TRONG MULTISELECT ĐỂ TRÁNH CẢM GIÁC "LOAD LÂU" */
-        span[data-baseweb="tag"] {
-            background-color: #2a5298 !important;
-            border: 1px solid #00c6ff !important;
-            color: white !important;
-            border-radius: 4px !important;
-        }
-        span[data-baseweb="tag"] * {
-            color: white !important;
+        /* Đảm bảo chữ nhãn luôn trắng và sạch */
+        [data-testid="stWidgetLabel"] {
+            background-color: transparent !important;
         }
 
         /* ĐẢM BẢO VÒNG XOAY LOADING (SPINNER) LUÔN TRẮNG */
