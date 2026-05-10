@@ -533,6 +533,11 @@ if st.session_state.get('theme') == 'dark':
             caret-color: white !important; /* Đảm bảo con trỏ luôn sáng */
         }
         
+        /* ÉP CON TRỎ GÕ CHỮ TRÊN TẤT CẢ PHẦN TỬ */
+        * {
+            caret-color: white !important;
+        }
+        
         /* Chỉnh màu khi bôi đen văn bản */
         ::selection {
             background-color: #2a5298 !important;
@@ -640,15 +645,32 @@ if st.session_state.get('theme') == 'dark':
         }
         
         /* Fix bất kỳ button nào bị trắng nền đột xuất */
-        .stButton button, [data-testid="stBaseButton-secondary"] {
+        .stButton button, .stDownloadButton button, [data-testid="stBaseButton-secondary"],
+        [data-testid="stFormSubmitButton"] button, [data-testid="stBaseButton-primary"],
+        [data-testid="stBaseButton-headerNoPadding"], [data-testid="stBaseButton-header"] {
             background-color: #1a1a2e !important;
             color: white !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: none !important;
+        }
+
+        /* Đặc biệt ép màu cho nút Primary để không bị biến sắc */
+        [data-testid="stBaseButton-primary"], button[kind="primary"] {
+            background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%) !important;
+            color: white !important;
+            border: none !important;
         }
         
         /* Fix placeholder color in Dark Mode */
         ::placeholder {
             color: rgba(255, 255, 255, 0.4) !important;
+        }
+
+        /* ÉP TRẠNG THÁI HOVER ĐỂ KHÔNG BỊ TRẮNG */
+        button:hover {
+            background-color: #2a5298 !important;
+            color: #ffd700 !important;
+            border-color: #ffd700 !important;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -1051,7 +1073,7 @@ def hien_thi_tab_phan_hoi():
             default_name = st.session_state.user_info.get('username', '') if st.session_state.user_info else ''
             user_name = st.text_input("Tên của bạn", value=default_name)
             user_msg = st.text_area("Nội dung góp ý/thảo luận")
-            submitted = st.form_submit_button("Gửi bình luận", width="stretch")
+            submitted = st.form_submit_button("Gửi bình luận", width="stretch", type="primary")
             
             if submitted:
                 if user_name and user_msg:
@@ -3684,7 +3706,7 @@ def hien_thi_form_danh_gia_bac_si():
             st.markdown("### VI. KẾ HOẠCH TIẾP THEO")
             ke_hoach = st.radio("Chỉ định:", ["Tiếp tục bài tập hiện tại", "Chuyển sang bài tập mới", "Hẹn khám lại trực tiếp"])
 
-            submitted = st.form_submit_button("🚀 GỬI ĐÁNH GIÁ CHO BỆNH NHÂN & NGHIÊN CỨU VIÊN", width="stretch")
+            submitted = st.form_submit_button("🚀 GỬI ĐÁNH GIÁ CHO BỆNH NHÂN & NGHIÊN CỨU VIÊN", width="stretch", type="primary")
             
         if submitted:
             evals = load_data(EVALUATIONS_FILE)
