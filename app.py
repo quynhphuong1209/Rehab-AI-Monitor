@@ -4237,14 +4237,15 @@ def update_theme_callback():
 # GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
 # ============================================
 def hien_thi_dang_nhap_dang_ky():
-    # Định nghĩa màu sắc tiêu đề theo theme
-    header_color = "#ffd700" # Vàng gold giữ nguyên
-    sub_color = "#aaa" if st.session_state.get('theme') == 'dark' else "#555"
+    # Định nghĩa màu sắc tiêu đề theo theme để tránh lỗi nền trắng chữ trắng
+    is_light = st.session_state.get('theme') == 'light'
+    header_color = "#FFD700" 
+    sub_color = "#ffffff" if not is_light else "#333333"
     
     st.markdown(f"""
-    <div style="text-align: center; padding: 1rem 0 2rem 0;">
-        <h1 style="color: {header_color}; font-size: 2.8rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🏥 Rehab AI Monitor</h1>
-        <p style="color: {sub_color}; font-size: 1.2rem; font-style: italic;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
+    <div style="text-align: center; padding: 1.5rem 0 2.5rem 0;">
+        <h1 style="color: {header_color}; font-family: 'Times New Roman', Times, serif !important; font-weight: bold; font-size: 3.2rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem;">🏥 Rehab AI Monitor</h1>
+        <p style="color: {sub_color}; font-family: 'Times New Roman', Times, serif !important; font-size: 1.3rem; font-style: italic; opacity: 0.9;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -4642,12 +4643,25 @@ def main():
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="main-header">
-        <h1>🏥 Hệ thống giám sát tập luyện Phục hồi chức năng từ xa</h1>
-        <p>Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
-        <div class="research-badge"><span>📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC CẤP TRƯỜNG - NĂM HỌC 2025-2026</span></div>
-        <p style="font-size: 0.8rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng</p>
+    # TOP HEADER - Đã được tối ưu cho cả Light và Dark mode
+    is_light = st.session_state.get('theme') == 'light'
+    header_h1_color = "#FFD700"
+    header_p_color = "#ffffff" if not is_light else "#333333"
+    badge_bg = "rgba(255, 215, 0, 0.1)"
+    badge_border = "#FFD700"
+    
+    st.markdown(f"""
+    <div class="main-header" style="text-align: center; margin-bottom: 2rem; background: transparent !important; border: none !important; box-shadow: none !important;">
+        <h1 style="color: {header_h1_color}; font-family: 'Times New Roman', Times, serif !important; font-weight: bold; font-size: 3rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🏥 Rehab AI Monitor</h1>
+        <p style="color: {header_p_color}; font-family: 'Times New Roman', Times, serif !important; font-style: italic; font-size: 1.25rem;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
+        <div class="research-badge" style="margin-top: 1rem;">
+            <span style="background: {badge_bg}; color: {header_h1_color}; padding: 6px 18px; border-radius: 20px; border: 1px solid {badge_border}; font-size: 0.9rem; font-weight: bold; font-family: 'Times New Roman', Times, serif !important;">
+                📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC CẤP TRƯỜNG - NĂM HỌC 2025-2026
+            </span>
+        </div>
+        <p style="font-size: 0.9rem; color: {'#ccc' if not is_light else '#666'}; margin-top: 0.8rem; font-family: 'Times New Roman', Times, serif !important;">
+            Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng
+        </p>
     </div>
     """, unsafe_allow_html=True)
     
