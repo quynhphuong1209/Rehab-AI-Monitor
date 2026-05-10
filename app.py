@@ -725,24 +725,48 @@ if st.session_state.get('theme') == 'dark':
             border: 1px solid #00c6ff !important;
         }
         
-        /* QUÉT SẠCH HOÀN TOÀN CÁC VỆT TRẮNG/BÓNG MỜ QUANH CHỮ */
-        div[data-testid="stWidgetLabel"], 
-        div[data-testid="stWidgetLabel"] *, 
-        span[data-baseweb="tag"],
-        .stMarkdown p, .stMarkdown span,
-        label, p, span {
+        /* ============================================================ */
+        /* KHÔI PHỤC BẢN GỐC SẠCH SẼ (TRẢ LẠI GIAO DIỆN NHƯ ẢNH CUỐI) */
+        /* ============================================================ */
+        
+        /* 1. Thiết lập màu chữ trắng và nền trong suốt cho toàn bộ nhãn */
+        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div, small, [data-testid="stWidgetLabel"] p {
+            color: #ffffff !important;
             background-color: transparent !important;
             background: transparent !important;
+            text-shadow: none !important;
             border: none !important;
             box-shadow: none !important;
-            text-shadow: none !important;
         }
 
-        /* Đảm bảo các ô nhập liệu vẫn giữ được nền tối của chúng, không bị ảnh hưởng bởi lệnh trên */
-        div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
+        /* 2. Khôi phục các ô nhập liệu về nền tối chuyên nghiệp */
+        div[data-baseweb="input"], 
+        div[data-baseweb="select"], 
+        div[data-baseweb="textarea"],
+        .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox div, .stMultiSelect div {
             background-color: #1a1a2e !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 10px !important;
+            border-radius: 4px !important;
+            color: white !important;
+        }
+
+        /* 3. Đảm bảo Sidebar sạch bóng vệt trắng */
+        [data-testid="stSidebarContent"] {
+            background-color: #1a1a2e !important;
+        }
+        [data-testid="stSidebarContent"] * {
+            background-color: transparent !important;
+        }
+        [data-testid="stSidebarContent"] div[data-baseweb="input"],
+        [data-testid="stSidebarContent"] div[data-baseweb="select"] {
+            background-color: #0d0d1a !important; /* Sidebar tối hơn một chút cho chuyên nghiệp */
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* Đảm bảo vòng xoay loading luôn trắng */
+        div[data-testid="stLoading"] svg, .stSpinner svg {
+            stroke: white !important;
+            fill: white !important;
         }
 
         /* ĐẢM BẢO VÒNG XOAY LOADING (SPINNER) LUÔN TRẮNG */
