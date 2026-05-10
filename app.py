@@ -172,13 +172,13 @@ def hien_thi_footer_chung():
             align-items: center;
             gap: 12px;
         }}
-        .info-row {
+        .info-row {{
             margin-bottom: 12px;
             font-size: 1.15rem;
             display: flex;
             gap: 10px;
             line-height: 1.5;
-        }
+        }}
         .info-label {{
             font-weight: bold;
             color: {label_color};
