@@ -638,10 +638,40 @@ if st.session_state.get('theme') == 'dark':
         }
 
         /* Fix các khối info-box, metric-card bị trắng */
-        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card, .step-box, .stAlert {
+        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card, .step-box, .stAlert,
+        [data-testid="stMetric"], [data-testid="stTable"], [data-testid="stDataFrame"] {
             background-color: rgba(255, 255, 255, 0.05) !important;
             color: white !important;
             border: 1px solid rgba(0, 198, 255, 0.3) !important;
+        }
+
+        /* ÉP MÀU CHO BẢNG (TABLE) */
+        table, th, td {
+            background-color: #1a1a2e !important;
+            color: white !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        thead th {
+            background-color: #2a5298 !important;
+        }
+
+        /* ÉP MÀU CHO RADIO, CHECKBOX, SLIDER */
+        [data-testid="stRadio"] label, [data-testid="stCheckbox"] label, [data-testid="stSlider"] label {
+            color: white !important;
+        }
+        div[role="radiogroup"] div, div[role="checkbox"] {
+            color: white !important;
+        }
+        /* Slider track and thumb */
+        div[data-baseweb="slider"] > div {
+            background-color: #2a5298 !important;
+        }
+
+        /* ÉP MÀU CHO CÁC THÔNG BÁO (SUCCESS, ERROR, INFO) */
+        [data-testid="stNotificationContentSuccess"], [data-testid="stNotificationContentError"], 
+        [data-testid="stNotificationContentInfo"], [data-testid="stNotificationContentWarning"] {
+            background-color: #1a1a2e !important;
+            color: white !important;
         }
         
         /* Fix bất kỳ button nào bị trắng nền đột xuất */
