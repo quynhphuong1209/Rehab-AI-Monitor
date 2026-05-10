@@ -581,7 +581,8 @@ if st.session_state.get('theme') == 'dark':
         div[data-testid="stTextArea"] > div,
         div[data-testid="stSelectbox"] > div,
         div[data-testid="stNumberInput"] > div,
-        div[data-testid="stMultiSelect"] > div {
+        div[data-testid="stMultiSelect"] > div,
+        [data-testid="stExpander"] {
             border: none !important;
             background-color: transparent !important;
             box-shadow: none !important;
