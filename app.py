@@ -576,16 +576,18 @@ if st.session_state.get('theme') == 'dark':
             border-radius: 12px !important;
         }
 
-        /* KHỬ VIỀN KHUNG BAO NGOÀI CỦA STREAMLIT (XÓA LỚP CHỮ NHẬT THỪA) */
+        /* TRUY QUÉT VÀ TRIỆT TIÊU TOÀN BỘ VIỀN CHỮ NHẬT ĐA TẦNG (EXPANDER & INPUTS) */
+        [data-testid="stExpander"], 
+        [data-testid="stExpander"] *,
         div[data-testid="stTextInput"] > div,
         div[data-testid="stTextArea"] > div,
         div[data-testid="stSelectbox"] > div,
         div[data-testid="stNumberInput"] > div,
-        div[data-testid="stMultiSelect"] > div,
-        [data-testid="stExpander"] {
+        div[data-testid="stMultiSelect"] > div {
             border: none !important;
             background-color: transparent !important;
             box-shadow: none !important;
+            outline: none !important;
         }
 
         /* CHỈ ĐỊNH PHONG CÁCH CHO Ô NHẬP LIỆU LÕI (INPUT CORE) */
