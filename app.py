@@ -730,46 +730,49 @@ if st.session_state.get('theme') == 'dark':
         /* ============================================================ */
         
         /* ============================================================ */
-        /* CHIẾN DỊCH "XÓA SẠCH LỚP THỪA" - TRIỆT TIÊU MỌI VIỀN TRẮNG LẠ */
+        /* CHIẾN DỊCH "TẨY SẠCH TOÀN DIỆN" - KHÔNG CÒN MỘT VẾT VIỀN THỪA */
         /* ============================================================ */
         
-        /* 1. Xóa sạch viền và nền của TẤT CẢ các loại nhãn, tiêu đề, và văn bản */
-        [data-testid="stMarkdownContainer"] *, 
-        [data-testid="stWidgetLabel"], 
-        [data-testid="stWidgetLabel"] *,
-        [data-baseweb="tag"],
-        [data-baseweb="tag"] *,
-        label, p, span, small {
-            background: transparent !important;
-            background-color: transparent !important;
-            border: none !important;
+        /* 1. Lệnh cấm viền và nền trên TOÀN BỘ các thành phần văn bản và nhãn */
+        * {
             box-shadow: none !important;
             outline: none !important;
         }
+        
+        /* Ép các nhãn và vùng chứa chữ phải sạch bóng */
+        [data-testid="stMarkdownContainer"] *, 
+        [data-testid="stWidgetLabel"], 
+        [data-testid="stWidgetLabel"] *,
+        label, p, span, small {
+            border: none !important;
+            background: transparent !important;
+            background-color: transparent !important;
+        }
 
-        /* 2. Chỉ định rõ khung viền cho ô nhập liệu (để không bị xóa nhầm) */
+        /* 2. KHÔI PHỤC DUY NHẤT VIỀN CHO Ô NHẬP LIỆU (ĐỂ CÓ THỂ NHẬN DIỆN) */
+        /* Chúng ta chỉ nhắm vào lớp vỏ bọc ngoài cùng của ô nhập liệu */
         div[data-baseweb="input"], 
         div[data-baseweb="select"], 
-        div[data-baseweb="textarea"],
-        .stSelectbox div, .stMultiSelect div, .stTextInput input, .stTextArea textarea {
+        div[data-baseweb="textarea"] {
             background-color: #1a1a2e !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Đây là viền duy nhất được giữ lại */
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
             border-radius: 4px !important;
         }
 
-        /* 3. Xử lý triệt để "vệt trắng thừa" ở các ô chọn (Multiselect) */
-        .stMultiSelect span, .stMultiSelect div {
-            border: none !important;
-            box-shadow: none !important;
-        }
-        
-        /* Đảm bảo Sidebar không còn bất kỳ vệt màu lạ nào */
-        [data-testid="stSidebarContent"] * {
+        /* Xóa sạch các viền bên trong ô chọn (Multiselect/Selectbox) */
+        div[data-baseweb="select"] > div, 
+        div[data-baseweb="select"] span,
+        [data-baseweb="tag"] {
             border: none !important;
             background-color: transparent !important;
         }
-        /* Giữ viền cho ô nhập trong sidebar */
-        [data-testid="stSidebarContent"] div[data-baseweb="input"] {
+
+        /* Đảm bảo Sidebar sạch bóng hoàn toàn */
+        [data-testid="stSidebarContent"] * {
+            border: none !important;
+        }
+        [data-testid="stSidebarContent"] div[data-baseweb="input"],
+        [data-testid="stSidebarContent"] div[data-baseweb="select"] {
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
 
