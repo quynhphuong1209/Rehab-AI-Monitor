@@ -566,7 +566,7 @@ if st.session_state.get('theme') == 'dark':
             text-shadow: none !important;
         }
         
-        /* ĐỒNG BỘ HÓA TẤT CẢ Ô VUÔNG THEO PHONG CÁCH BANNER (CHUYÊN NGHIỆP) */
+        /* ĐỒNG BỘ HÓA HÌNH DÁNG (KHÔNG ĐỔI MÀU) THEO BANNER */
         div[data-baseweb="input"], 
         div[data-baseweb="select"], 
         div[data-baseweb="textarea"],
@@ -576,9 +576,9 @@ if st.session_state.get('theme') == 'dark':
         div[data-testid="stMultiSelect"] div,
         div[data-testid="stNumberInput"] div,
         .stTextInput input, .stTextArea textarea, .stNumberInput input {
-            background-color: rgba(0, 206, 209, 0.1) !important;
-            border: 1px solid #00CED1 !important;
-            border-radius: 10px !important;
+            background-color: #1a1a2e !important; /* Giữ màu tối cũ */
+            border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Giữ viền cũ */
+            border-radius: 10px !important; /* ÁP DỤNG HÌNH DÁNG BO GÓC 10PX */
             color: white !important;
             caret-color: white !important;
         }
@@ -587,6 +587,7 @@ if st.session_state.get('theme') == 'dark':
         .stNumberInput button {
             background-color: #2a5298 !important;
             color: white !important;
+            border-radius: 5px !important;
         }
 
         /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
