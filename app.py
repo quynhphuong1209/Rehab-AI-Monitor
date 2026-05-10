@@ -714,31 +714,41 @@ if st.session_state.get('theme') == 'dark':
             border: none !important;
         }
 
-        /* ÉP MÀU CHO DANH SÁCH FILE ĐÃ UPLOAD (CỰC KỲ MẠNH) */
+        /* ÉP MÀU CHO DANH SÁCH FILE ĐÃ UPLOAD (TỐI ƯU CỰC MẠNH) */
         [data-testid="stFileUploader"] ul, 
         [data-testid="stFileUploader"] ul li,
         [data-testid="stFileUploader"] div[data-testid="stFileUploaderFile"],
         [data-testid="stFileUploader"] div[data-testid="stFileUploaderFile"] > div,
-        [data-testid="stFileUploader"] div[data-baseweb="block"] {
+        [data-testid="stFileUploader"] div[data-baseweb="block"],
+        [data-testid="stFileUploaderFile"] {
             background-color: #1a1a2e !important;
             color: white !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border: 1px solid #00c6ff !important;
         }
         
         /* Fix triệt để mảng trắng trong File Uploader và MultiSelect */
         [data-testid="stFileUploader"] div, 
         .stMultiSelect div[data-baseweb="select"],
-        span[data-baseweb="tag"] {
-            background-color: #1a1a2e !important;
+        span[data-baseweb="tag"],
+        div[data-testid="stMarkdownContainer"] {
             color: white !important;
         }
 
-        /* Fix màu chữ trong thẻ (tags) của MultiSelect */
+        /* LÀM NỔI BẬT CÁC THẺ TRONG MULTISELECT ĐỂ TRÁNH CẢM GIÁC "LOAD LÂU" */
         span[data-baseweb="tag"] {
+            background-color: #2a5298 !important;
             border: 1px solid #00c6ff !important;
+            color: white !important;
+            border-radius: 4px !important;
         }
         span[data-baseweb="tag"] * {
             color: white !important;
+        }
+
+        /* ĐẢM BẢO VÒNG XOAY LOADING (SPINNER) LUÔN TRẮNG */
+        div[data-testid="stLoading"] svg, .stSpinner svg {
+            stroke: white !important;
+            fill: white !important;
         }
 
         [data-testid="stFileUploader"] ul li * {
