@@ -729,26 +729,31 @@ if st.session_state.get('theme') == 'dark':
         /* BẢN KHÔI PHỤC SỰ ỔN ĐỊNH - XÓA BỎ CSS GÂY LỖI TREO THANH CHỌN */
         /* ============================================================ */
         
-        /* XÓA BỎ HOÀN TOÀN CÁC "LỚP TRÒN/KHUNG" BAO QUANH CHỮ (QUAN TRỌNG) */
-        span[data-baseweb="tag"], 
-        div[data-testid="stWidgetLabel"], 
-        div[data-testid="stWidgetLabel"] *,
-        div[data-baseweb="tag"],
-        .stMarkdown p, .stMarkdown span,
-        label, p, span {
+        /* LỆNH QUÉT SẠCH TRIỆT ĐỂ 100% - KHÔNG CÒN BẤT KỲ KHUNG VIỀN LẠ NÀO */
+        [data-baseweb="tag"], 
+        [data-baseweb="tag"] *,
+        [data-testid="stWidgetLabel"],
+        [data-testid="stWidgetLabel"] *,
+        span, div[role="button"], div[data-baseweb="select"] > div {
             background-color: transparent !important;
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
             border-radius: 0 !important;
-            padding: 0 !important;
         }
 
-        /* Giữ cho các ô nhập liệu vẫn có viền nhưng nhãn của chúng thì không */
-        div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
-            background-color: #1a1a2e !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        /* Chỉ giữ lại khung viền duy nhất cho ô nhập liệu để người dùng nhận diện */
+        div[data-baseweb="input"], 
+        div[data-baseweb="select"], 
+        div[data-baseweb="textarea"],
+        .stSelectbox, .stMultiSelect, .stTextInput, .stTextArea {
             border-radius: 4px !important;
+        }
+        
+        /* Đảm bảo chữ trong ô chọn (Multiselect) không bị dính khung trắng */
+        .stMultiSelect span {
+            background: transparent !important;
+            border: none !important;
         }
 
         /* Sidebar tối giản */
