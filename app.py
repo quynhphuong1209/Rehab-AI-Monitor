@@ -726,23 +726,17 @@ if st.session_state.get('theme') == 'dark':
         }
         
         /* ============================================================ */
-        /* KHÔI PHỤC BẢN GỐC SẠCH SẼ (TRẢ LẠI GIAO DIỆN NHƯ ẢNH CUỐI) */
+        /* BẢN KHÔI PHỤC SỰ ỔN ĐỊNH - XÓA BỎ CSS GÂY LỖI TREO THANH CHỌN */
         /* ============================================================ */
         
-        /* 1. Thiết lập màu chữ trắng và nền trong suốt cho toàn bộ nhãn */
-        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div, small, [data-testid="stWidgetLabel"] p {
+        /* Chữ trắng sạch sẽ, không có vệt bóng */
+        .stMarkdown, p, span, label, h1, h2, h3, h4, li, [data-testid="stWidgetLabel"] p {
             color: #ffffff !important;
             background-color: transparent !important;
-            background: transparent !important;
-            text-shadow: none !important;
-            border: none !important;
-            box-shadow: none !important;
         }
 
-        /* 2. Khôi phục các ô nhập liệu về nền tối chuyên nghiệp */
-        div[data-baseweb="input"], 
-        div[data-baseweb="select"], 
-        div[data-baseweb="textarea"],
+        /* Ô nhập liệu nền tối ổn định */
+        div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"],
         .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox div, .stMultiSelect div {
             background-color: #1a1a2e !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -750,23 +744,15 @@ if st.session_state.get('theme') == 'dark':
             color: white !important;
         }
 
-        /* 3. Đảm bảo Sidebar sạch bóng vệt trắng */
-        [data-testid="stSidebarContent"] {
-            background-color: #1a1a2e !important;
-        }
-        [data-testid="stSidebarContent"] * {
-            background-color: transparent !important;
-        }
-        [data-testid="stSidebarContent"] div[data-baseweb="input"],
-        [data-testid="stSidebarContent"] div[data-baseweb="select"] {
-            background-color: #0d0d1a !important; /* Sidebar tối hơn một chút cho chuyên nghiệp */
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        /* Sửa lỗi thanh chọn bị "load lâu" bằng cách để Streamlit tự quản lý tag */
+        span[data-baseweb="tag"] {
+            background-color: #2a5298 !important;
+            color: white !important;
         }
 
-        /* Đảm bảo vòng xoay loading luôn trắng */
-        div[data-testid="stLoading"] svg, .stSpinner svg {
-            stroke: white !important;
-            fill: white !important;
+        /* Sidebar tối giản */
+        [data-testid="stSidebarContent"] {
+            background-color: #1a1a2e !important;
         }
 
         /* ĐẢM BẢO VÒNG XOAY LOADING (SPINNER) LUÔN TRẮNG */
