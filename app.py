@@ -527,6 +527,11 @@ st.markdown("""
 if st.session_state.get('theme') == 'dark':
     st.markdown("""
     <style>
+        /* Khai báo hệ màu tối cho toàn bộ trình duyệt */
+        html, body {
+            color-scheme: dark !important;
+        }
+
         /* Ép nền ứng dụng */
         .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainViewContainer"] {
             background-color: #0d0d1a !important;
@@ -558,6 +563,22 @@ if st.session_state.get('theme') == 'dark':
             background-color: #1a1a2e !important;
             color: white !important;
             border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
+        div[data-baseweb="popover"], div[role="listbox"], ul[data-baseweb="menu"], 
+        div[data-baseweb="popover"] *, [data-baseweb="menu-item"] {
+            background-color: #1a1a2e !important;
+            color: white !important;
+        }
+        [data-baseweb="menu-item"]:hover {
+            background-color: #2a5298 !important;
+        }
+        
+        /* Loại bỏ các mảng trắng nền của BaseWeb Popover */
+        div[data-baseweb="popover"] > div {
+            background-color: #1a1a2e !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
 
         /* Ép màu Expander (Cực kỳ quan trọng cho NCKH tab) */
