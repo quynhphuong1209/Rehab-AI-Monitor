@@ -568,6 +568,14 @@ if st.session_state.get('theme') == 'dark':
         
         /* ĐỒNG BỘ HÓA HÌNH DÁNG (KHÔNG ĐỔI MÀU) THEO BANNER */
         /* CHỈ BO GÓC Ô NHẬP LIỆU - KHÔNG BO GÓC NHÃN TIÊU ĐỀ */
+        /* KHỬ VIỀN KHUNG BAO NGOÀI CỦA CÁC Ô THÔNG BÁO (INFO, SUCCESS, WARNING) */
+        [data-testid="stNotification"], 
+        [data-testid="stNotification"] > div {
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 12px !important;
+        }
+
         /* KHỬ VIỀN KHUNG BAO NGOÀI CỦA STREAMLIT (XÓA LỚP CHỮ NHẬT THỪA) */
         div[data-testid="stTextInput"] > div,
         div[data-testid="stTextArea"] > div,
