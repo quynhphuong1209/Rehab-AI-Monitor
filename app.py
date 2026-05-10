@@ -666,6 +666,24 @@ if st.session_state.get('theme') == 'dark':
             color: rgba(255, 255, 255, 0.4) !important;
         }
 
+        /* ÉP MÀU CHO KHU VỰC UPLOAD FILE (QUAN TRỌNG) */
+        [data-testid="stFileUploader"] section {
+            background-color: #1a1a2e !important;
+            border: 1px dashed #00c6ff !important;
+            color: white !important;
+        }
+        [data-testid="stFileUploader"] section div, 
+        [data-testid="stFileUploader"] section span,
+        [data-testid="stFileUploader"] section small {
+            color: #ccc !important;
+        }
+        /* Nút bấm bên trong uploader */
+        [data-testid="stFileUploader"] button {
+            background-color: #2a5298 !important;
+            color: white !important;
+            border: none !important;
+        }
+
         /* ÉP TRẠNG THÁI HOVER ĐỂ KHÔNG BỊ TRẮNG */
         button:hover {
             background-color: #2a5298 !important;
