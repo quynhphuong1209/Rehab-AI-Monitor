@@ -4675,7 +4675,7 @@ def hien_thi_dang_nhap_dang_ky():
                     reg_p = st.text_input("🔑 Mật khẩu *", type="password", placeholder="Tối thiểu 6 ký tự", key="reg_p")
                     reg_cp = st.text_input("✅ Xác nhận mật khẩu *", type="password", placeholder="Nhập lại mật khẩu", key="reg_cp")
                     st.info("💡 Các tài khoản Bác sĩ và Nghiên cứu viên đã được khởi tạo theo danh sách. Để cấp thêm tài khoản mới, vui lòng liên hệ Quản trị viên.")
-                    reg_role = st.selectbox("🎭 Vai trò người dùng *", ["Bệnh nhân"], key="reg_role", disabled=True)
+                    reg_role = "Bệnh nhân" # Gán mặc định không cần hiển thị
                     
                     if st.button("🚀 ĐĂNG KÝ TRUY CẬP", width="stretch", type="primary"):
                         if not reg_u or not reg_e or len(reg_p) < 6:
