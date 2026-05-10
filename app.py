@@ -567,20 +567,27 @@ if st.session_state.get('theme') == 'dark':
         }
         
         /* ĐỒNG BỘ HÓA HÌNH DÁNG (KHÔNG ĐỔI MÀU) THEO BANNER */
+        /* CHỈ BO GÓC Ô NHẬP LIỆU - KHÔNG BO GÓC NHÃN TIÊU ĐỀ */
+        /* CHỈ ĐỊNH PHONG CÁCH CHO Ô NHẬP LIỆU (INPUT FIELDS) */
         div[data-baseweb="input"], 
         div[data-baseweb="select"], 
         div[data-baseweb="textarea"],
-        div[data-testid="stTextInput"] div, 
-        div[data-testid="stTextArea"] div,
-        div[data-testid="stSelectbox"] div,
-        div[data-testid="stMultiSelect"] div,
-        div[data-testid="stNumberInput"] div,
-        .stTextInput input, .stTextArea textarea, .stNumberInput input {
-            background-color: #1a1a2e !important; /* Giữ màu tối cũ */
-            border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Giữ viền cũ */
-            border-radius: 10px !important; /* ÁP DỤNG HÌNH DÁNG BO GÓC 10PX */
+        div[data-baseweb="checkbox"] {
+            background-color: #1a1a2e !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 10px !important;
             color: white !important;
-            caret-color: white !important;
+        }
+
+        /* KHỬ HOÀN TOÀN VIỀN/NỀN TRÊN CÁC CHỮ TIÊU ĐỀ (LABELS) */
+        [data-testid="stWidgetLabel"], 
+        [data-testid="stWidgetLabel"] *,
+        div[class*="StyledWidgetLabel"] {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin-bottom: 5px !important;
         }
 
         /* Nút tăng giảm của ô nhập số */
