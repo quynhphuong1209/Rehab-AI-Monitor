@@ -3273,6 +3273,25 @@ def hien_thi_tab_nckh():
             st.metric("Precision", "≥ 0.85")
             st.metric("Recall", "≥ 0.85")
 
+    with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
+        st.markdown("""
+        - **Về khoa học và đào tạo:** Xây dựng mô hình nhận diện động tác PHCN, tạo bộ dữ liệu chuẩn hóa, là tài liệu thực hành cho sinh viên ngành Khoa học dữ liệu y sinh.
+        - **Về phát triển kinh tế:** Giảm chi phí đi lại, giảm tải cho nhân viên y tế, tối ưu nguồn lực bệnh viện.
+        - **Về xã hội:** Tăng khả năng tiếp cận dịch vụ PHCN, thúc đẩy chuyển đổi số y tế, xây dựng hệ thống chăm sóc sức khỏe thông minh.
+        """)
+
+    with st.expander("📚 TÀI LIỆU THAM KHẢO", expanded=False):
+        st.markdown("""
+        1. WHO. Rehabilitation 2030: A call for action.
+        2. Cieza A, et al. Global estimates of the need for rehabilitation. Lancet. 2021.
+        3. Lugaresi C, et al. MediaPipe: A Framework for Building Perception Pipelines. arXiv. 2019.
+        4. Cao Z, et al. OpenPose: Realtime Multi-Person 2D Pose Estimation. arXiv. 2019.
+        5. Hellstén T, et al. Reliability and validity of computer vision-based markerless human pose estimation. Healthc Technol Lett. 2025.
+        6. Ino T, et al. Validity and Reliability of OpenPose-Based Motion Analysis. J Sports Sci Med. 2024.
+        7. Aguilar-Ortega R, et al. UCO Physical Rehabilitation: New Dataset and Study. Sensors. 2023.
+        8. Nguyễn Thị Ngọc Lan, et al. Thực trạng nhu cầu phục hồi chức năng tại Việt Nam. Tạp chí Y học Việt Nam. 2024.
+        """)
+
 def hien_thi_tab_thong_tin_nghien_cuu():
     is_light = st.session_state.theme == 'light'
     card_bg = "#f8f9fa" if is_light else "rgba(255, 255, 255, 0.05)"
