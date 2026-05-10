@@ -725,18 +725,24 @@ if st.session_state.get('theme') == 'dark':
             border: 1px solid #00c6ff !important;
         }
         
-        /* XÓA BỎ HOÀN TOÀN "HÌNH BÓNG" (BACKGROUND) CỦA NHÃN CHỮ */
-        label, .stMarkdown p, .stMarkdown span, div[data-testid="stWidgetLabel"] p {
+        /* QUÉT SẠCH HOÀN TOÀN CÁC VỆT TRẮNG/BÓNG MỜ QUANH CHỮ */
+        div[data-testid="stWidgetLabel"], 
+        div[data-testid="stWidgetLabel"] *, 
+        span[data-baseweb="tag"],
+        .stMarkdown p, .stMarkdown span,
+        label, p, span {
             background-color: transparent !important;
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            padding: 0 !important;
+            text-shadow: none !important;
         }
 
-        /* Đảm bảo chữ nhãn luôn trắng và sạch */
-        [data-testid="stWidgetLabel"] {
-            background-color: transparent !important;
+        /* Đảm bảo các ô nhập liệu vẫn giữ được nền tối của chúng, không bị ảnh hưởng bởi lệnh trên */
+        div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
+            background-color: #1a1a2e !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 10px !important;
         }
 
         /* ĐẢM BẢO VÒNG XOAY LOADING (SPINNER) LUÔN TRẮNG */
