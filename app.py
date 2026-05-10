@@ -684,6 +684,21 @@ if st.session_state.get('theme') == 'dark':
             border: none !important;
         }
 
+        /* ÉP MÀU CHO DANH SÁCH FILE ĐÃ UPLOAD (FILE LIST) */
+        [data-testid="stFileUploader"] ul {
+            background-color: transparent !important;
+        }
+        [data-testid="stFileUploader"] ul li {
+            background-color: #1a1a2e !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            border-radius: 8px !important;
+            margin-bottom: 5px !important;
+        }
+        [data-testid="stFileUploader"] ul li * {
+            color: white !important;
+        }
+
         /* ÉP TRẠNG THÁI HOVER ĐỂ KHÔNG BỊ TRẮNG */
         button:hover {
             background-color: #2a5298 !important;
