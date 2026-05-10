@@ -566,29 +566,27 @@ if st.session_state.get('theme') == 'dark':
             text-shadow: none !important;
         }
         
-        /* Ép màu các ô nhập liệu & ô chọn (Selectbox/Input) */
-        .stTextInput input, .stTextArea textarea, .stNumberInput input, 
-        div[data-baseweb="input"], div[data-baseweb="input"] *,
-        div[data-testid="stTextInput"] div, div[data-testid="stTextArea"] div,
-        div[data-baseweb="select"], div[data-baseweb="select"] *,
-        .stSelectbox div, .stMultiSelect div, .stNumberInput div {
-            background-color: #1a1a2e !important;
+        /* ĐỒNG BỘ HÓA TẤT CẢ Ô VUÔNG THEO PHONG CÁCH BANNER (CHUYÊN NGHIỆP) */
+        div[data-baseweb="input"], 
+        div[data-baseweb="select"], 
+        div[data-baseweb="textarea"],
+        div[data-testid="stTextInput"] div, 
+        div[data-testid="stTextArea"] div,
+        div[data-testid="stSelectbox"] div,
+        div[data-testid="stMultiSelect"] div,
+        div[data-testid="stNumberInput"] div,
+        .stTextInput input, .stTextArea textarea, .stNumberInput input {
+            background-color: rgba(0, 206, 209, 0.1) !important;
+            border: 1px solid #00CED1 !important;
+            border-radius: 10px !important;
             color: white !important;
-            border-color: rgba(255, 255, 255, 0.2) !important;
-            caret-color: white !important; /* HIỂN THỊ CON TRỎ GÕ CHỮ */
+            caret-color: white !important;
         }
-        
-        /* Fix lỗi ô nhập số (Number Input) bị mảng trắng */
-        .stNumberInput div, .stNumberInput [data-baseweb="input"], .stNumberInput input {
-            background-color: #1a1a2e !important;
-            color: white !important;
-        }
+
+        /* Nút tăng giảm của ô nhập số */
         .stNumberInput button {
             background-color: #2a5298 !important;
             color: white !important;
-        }
-        .stNumberInput div[data-baseweb="input"] > div {
-            background-color: transparent !important;
         }
 
         /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
