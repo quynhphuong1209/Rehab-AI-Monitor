@@ -559,11 +559,23 @@ if st.session_state.get('theme') == 'dark':
         div[data-baseweb="input"], div[data-baseweb="input"] *,
         div[data-testid="stTextInput"] div, div[data-testid="stTextArea"] div,
         div[data-baseweb="select"], div[data-baseweb="select"] *,
-        .stSelectbox div, .stMultiSelect div {
+        .stSelectbox div, .stMultiSelect div, .stNumberInput div {
             background-color: #1a1a2e !important;
             color: white !important;
             border-color: rgba(255, 255, 255, 0.2) !important;
+            caret-color: white !important; /* HIỂN THỊ CON TRỎ GÕ CHỮ */
         }
+        
+        /* Fix lỗi ô nhập số (Number Input) bị mảng trắng */
+        .stNumberInput [data-baseweb="input"] {
+            background-color: #1a1a2e !important;
+        }
+        .stNumberInput button {
+            background-color: #2a5298 !important;
+            color: white !important;
+        }
+
+        /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
 
         /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
         div[data-baseweb="popover"], div[role="listbox"], ul[data-baseweb="menu"], 
@@ -610,10 +622,17 @@ if st.session_state.get('theme') == 'dark':
         }
 
         /* Fix các khối info-box, metric-card bị trắng */
-        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card, .step-box {
+        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card, .step-box, .stAlert {
             background-color: rgba(255, 255, 255, 0.05) !important;
             color: white !important;
             border: 1px solid rgba(0, 198, 255, 0.3) !important;
+        }
+        
+        /* Fix bất kỳ button nào bị trắng nền đột xuất */
+        .stButton button, [data-testid="stBaseButton-secondary"] {
+            background-color: #1a1a2e !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
         }
         
         /* Fix placeholder color in Dark Mode */
