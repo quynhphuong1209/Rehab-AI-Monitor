@@ -172,13 +172,13 @@ def hien_thi_footer_chung():
             align-items: center;
             gap: 12px;
         }}
-        .info-row {{
+        .info-row {
             margin-bottom: 12px;
             font-size: 1.15rem;
             display: flex;
             gap: 10px;
             line-height: 1.5;
-        }}
+        }
         .info-label {{
             font-weight: bold;
             color: {label_color};
@@ -576,9 +576,19 @@ if st.session_state.get('theme') == 'dark':
             border-radius: 12px !important;
         }
 
-        /* TRUY QUÉT VÀ TRIỆT TIÊU TOÀN BỘ VIỀN CHỮ NHẬT ĐA TẦNG (EXPANDER & INPUTS) */
-        [data-testid="stExpander"], 
-        [data-testid="stExpander"] *,
+        /* PHỤC HỒI KHUÔN HÌNH CHUẨN (BO GÓC & VIỀN MẢNH) */
+        [data-testid="stExpander"] {
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 12px !important;
+            background-color: rgba(255, 255, 255, 0.02) !important;
+            margin-bottom: 1rem !important;
+        }
+        [data-testid="stExpander"] summary {
+            border: none !important;
+            padding: 10px 15px !important;
+        }
+
+        /* KHỬ VIỀN KHUNG BAO NGOÀI CỦA STREAMLIT (XÓA LỚP CHỮ NHẬT THỪA) */
         div[data-testid="stTextInput"] > div,
         div[data-testid="stTextArea"] > div,
         div[data-testid="stSelectbox"] > div,
@@ -587,7 +597,6 @@ if st.session_state.get('theme') == 'dark':
             border: none !important;
             background-color: transparent !important;
             box-shadow: none !important;
-            outline: none !important;
         }
 
         /* CHỈ ĐỊNH PHONG CÁCH CHO Ô NHẬP LIỆU LÕI (INPUT CORE) */
@@ -639,6 +648,43 @@ if st.session_state.get('theme') == 'dark':
         }
 
         /* Ép màu Expander (Cực kỳ quan trọng cho NCKH tab) */
+
+        /* ĐỊNH NGHĨA KHUÔN HÌNH CHUẨN CHO CÁC THẺ (CARDS) */
+        .metric-card {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 15px !important;
+            padding: 20px !important;
+            text-align: center !important;
+            margin-bottom: 15px !important;
+        }
+        
+        .stApp[data-test-script-state="running"] .metric-card,
+        body.light .metric-card {
+            background-color: white !important;
+            border: 1px solid #eee !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+        }
+
+        .metric-value {
+            font-size: 1.8rem !important;
+            font-weight: 800 !important;
+            margin-bottom: 5px !important;
+            color: #ffd700 !important;
+        }
+        
+        body.light .metric-value {
+            color: #0072ff !important;
+        }
+
+        .metric-label {
+            font-size: 0.9rem !important;
+            color: #aaa !important;
+        }
+        
+        body.light .metric-label {
+            color: #666 !important;
+        }
         .stExpander, [data-testid="stExpander"], .st-emotion-cache-1839j81 {
             background-color: #16213e !important;
             border: 1px solid rgba(0, 198, 255, 0.2) !important;
@@ -4040,11 +4086,30 @@ def hien_thi_lich_nhac_nho():
         display_schedules = schedules
 
     current_time = get_vn_now()
+    is_light = st.session_state.theme == 'light'
+    m_bg = "white" if is_light else "rgba(255,255,255,0.05)"
+    m_border = "1px solid #eee" if is_light else "1px solid rgba(255,255,255,0.1)"
+    m_text = "#0072ff" if is_light else "#ffd700"
+    m_label = "#666" if is_light else "#aaa"
+
     col1, col2, col3, col4 = st.columns(4)
-    with col1: st.metric("📅 Hôm nay", current_time.strftime("%d/%m/%Y"))
-    with col2: st.metric("⏰ Hiện tại", current_time.strftime("%H:%M:%S"))
-    with col3: st.metric("📆 Thứ", current_time.strftime("%A"))
-    with col4: st.metric("📊 Tổng lịch", len(display_schedules))
+    
+    metrics_data = [
+        ("📅 Hôm nay", current_time.strftime("%d/%m/%Y")),
+        ("⏰ Hiện tại", current_time.strftime("%H:%M:%S")),
+        ("📆 Thứ", current_time.strftime("%A")),
+        ("📊 Tổng lịch", len(display_schedules))
+    ]
+    
+    cols = [col1, col2, col3, col4]
+    for i, (label, val) in enumerate(metrics_data):
+        with cols[i]:
+            st.markdown(f"""
+                <div style="background: {m_bg}; border: {m_border}; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <div style="color: {m_label}; font-size: 0.9rem; font-weight: 500; margin-bottom: 5px;">{label}</div>
+                    <div style="color: {m_text}; font-size: 1.8rem; font-weight: 800;">{val}</div>
+                </div>
+            """, unsafe_allow_html=True)
     
     st.markdown("---")
     if user_role == "Bệnh nhân":
