@@ -729,31 +729,48 @@ if st.session_state.get('theme') == 'dark':
         /* BẢN KHÔI PHỤC SỰ ỔN ĐỊNH - XÓA BỎ CSS GÂY LỖI TREO THANH CHỌN */
         /* ============================================================ */
         
-        /* LỆNH QUÉT SẠCH TRIỆT ĐỂ 100% - KHÔNG CÒN BẤT KỲ KHUNG VIỀN LẠ NÀO */
-        [data-baseweb="tag"], 
-        [data-baseweb="tag"] *,
-        [data-testid="stWidgetLabel"],
+        /* ============================================================ */
+        /* CHIẾN DỊCH "XÓA SẠCH LỚP THỪA" - TRIỆT TIÊU MỌI VIỀN TRẮNG LẠ */
+        /* ============================================================ */
+        
+        /* 1. Xóa sạch viền và nền của TẤT CẢ các loại nhãn, tiêu đề, và văn bản */
+        [data-testid="stMarkdownContainer"] *, 
+        [data-testid="stWidgetLabel"], 
         [data-testid="stWidgetLabel"] *,
-        span, div[role="button"], div[data-baseweb="select"] > div {
-            background-color: transparent !important;
+        [data-baseweb="tag"],
+        [data-baseweb="tag"] *,
+        label, p, span, small {
             background: transparent !important;
+            background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            border-radius: 0 !important;
+            outline: none !important;
         }
 
-        /* Chỉ giữ lại khung viền duy nhất cho ô nhập liệu để người dùng nhận diện */
+        /* 2. Chỉ định rõ khung viền cho ô nhập liệu (để không bị xóa nhầm) */
         div[data-baseweb="input"], 
         div[data-baseweb="select"], 
         div[data-baseweb="textarea"],
-        .stSelectbox, .stMultiSelect, .stTextInput, .stTextArea {
+        .stSelectbox div, .stMultiSelect div, .stTextInput input, .stTextArea textarea {
+            background-color: #1a1a2e !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Đây là viền duy nhất được giữ lại */
             border-radius: 4px !important;
         }
-        
-        /* Đảm bảo chữ trong ô chọn (Multiselect) không bị dính khung trắng */
-        .stMultiSelect span {
-            background: transparent !important;
+
+        /* 3. Xử lý triệt để "vệt trắng thừa" ở các ô chọn (Multiselect) */
+        .stMultiSelect span, .stMultiSelect div {
             border: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* Đảm bảo Sidebar không còn bất kỳ vệt màu lạ nào */
+        [data-testid="stSidebarContent"] * {
+            border: none !important;
+            background-color: transparent !important;
+        }
+        /* Giữ viền cho ô nhập trong sidebar */
+        [data-testid="stSidebarContent"] div[data-baseweb="input"] {
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
 
         /* Sidebar tối giản */
