@@ -2166,17 +2166,19 @@ def ve_bieu_do_tron_thong_ke(tk):
     
     colors = ['#00FF00', '#FFA500', '#FF4444'] # Xanh, Cam, Đỏ
     
+    is_light = st.session_state.theme == 'light'
+    chart_text_color = '#333' if is_light else 'white'
+    
     fig = go.Figure(data=[go.Pie(
         labels=labels, 
         values=values, 
         hole=.4,
         marker=dict(colors=colors, line=dict(color='#1a1a2e', width=2)),
         textinfo='percent+label',
+        insidetextfont=dict(color='white' if not is_light else '#333'), # Ép màu chữ bên trong
+        outsidetextfont=dict(color='white' if not is_light else '#333'), # Ép màu chữ bên ngoài
         hovertemplate="<b>%{label}</b><br>Số lượng: %{value} frames<br>Tỷ lệ: %{percent}<extra></extra>"
     )])
-    
-    is_light = st.session_state.theme == 'light'
-    chart_text_color = '#333' if is_light else 'white'
     
     fig.update_layout(
         title=dict(
@@ -2187,7 +2189,14 @@ def ve_bieu_do_tron_thong_ke(tk):
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color=chart_text_color),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5),
+        legend=dict(
+            orientation="h", 
+            yanchor="bottom", 
+            y=-0.1, 
+            xanchor="center", 
+            x=0.5,
+            font=dict(color=chart_text_color) # Ép màu chữ chú thích
+        ),
         height=450,
         margin=dict(t=80, b=50, l=20, r=20)
     )
@@ -2245,7 +2254,14 @@ def ve_bieu_do_boxplot_phan_loai(df):
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color=chart_text_color),
         height=500,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+        legend=dict(
+            orientation="h", 
+            yanchor="bottom", 
+            y=-0.2, 
+            xanchor="center", 
+            x=0.5,
+            font=dict(color=chart_text_color) # Ép màu chữ chú thích
+        ),
         margin=dict(t=80, b=100)
     )
     
