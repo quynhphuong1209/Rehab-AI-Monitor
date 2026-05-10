@@ -522,6 +522,48 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# === CSS CHO CHẾ ĐỘ TỐI (DARK MODE FORCED) ===
+# Ép giao diện luôn tối kể cả khi Chrome/Hệ thống đang ở chế độ Sáng
+if st.session_state.get('theme') == 'dark':
+    st.markdown("""
+    <style>
+        /* Ép nền ứng dụng */
+        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainViewContainer"] {
+            background-color: #0d0d1a !important;
+            color: white !important;
+        }
+        
+        /* Ép nền Sidebar */
+        [data-testid="stSidebar"], [data-testid="stSidebarContent"] {
+            background-color: #1a1a2e !important;
+        }
+        
+        /* Ép nền Header */
+        [data-testid="stHeader"] {
+            background-color: rgba(0,0,0,0) !important;
+        }
+        
+        /* Đảm bảo văn bản luôn trắng trong chế độ tối */
+        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div {
+            color: white !important;
+        }
+        
+        /* Giữ cho input có độ tương phản - Nhắm mục tiêu cực mạnh */
+        .stTextInput input, .stTextArea textarea, .stNumberInput input, 
+        div[data-baseweb="input"], div[data-baseweb="input"] *,
+        div[data-testid="stTextInput"] div, div[data-testid="stTextArea"] div {
+            background-color: #1a1a2e !important;
+            color: white !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        /* Fix placeholder color in Dark Mode */
+        ::placeholder {
+            color: rgba(255, 255, 255, 0.4) !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
 # === CSS CHO CHẾ ĐỘ SÁNG (LIGHT MODE OVERRIDE) ===
 if st.session_state.get('theme') == 'light':
     st.markdown("""
@@ -4237,13 +4279,22 @@ def update_theme_callback():
 # GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
 # ============================================
 def hien_thi_dang_nhap_dang_ky():
+    # Thêm nút chuyển đổi Theme ngay tại trang đăng nhập để người dùng test
+    col_t1, col_t2 = st.columns([4, 1])
+    with col_t2:
+        current_theme = st.session_state.get('theme', 'dark')
+        t_label = "🌙 Tối" if current_theme == 'dark' else "☀️ Sáng"
+        st.toggle(t_label, value=(current_theme == 'dark'), 
+                  key="theme_toggle_login", 
+                  on_change=lambda: st.session_state.update({"theme": "dark" if st.session_state.theme_toggle_login else "light"}))
+
     # Định nghĩa màu sắc tiêu đề theo theme để tránh lỗi nền trắng chữ trắng
     is_light = st.session_state.get('theme') == 'light'
     header_color = "#FFD700" 
     sub_color = "#ffffff" if not is_light else "#333333"
     
     st.markdown(f"""
-    <div style="text-align: center; padding: 1.5rem 0 2.5rem 0;">
+    <div style="text-align: center; padding: 0.5rem 0 2rem 0;">
         <h1 style="color: {header_color}; font-family: 'Times New Roman', Times, serif !important; font-weight: bold; font-size: 3.2rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem;">🏥 Rehab AI Monitor</h1>
         <p style="color: {sub_color}; font-family: 'Times New Roman', Times, serif !important; font-size: 1.3rem; font-style: italic; opacity: 0.9;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
     </div>
