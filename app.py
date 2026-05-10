@@ -729,25 +729,26 @@ if st.session_state.get('theme') == 'dark':
         /* BẢN KHÔI PHỤC SỰ ỔN ĐỊNH - XÓA BỎ CSS GÂY LỖI TREO THANH CHỌN */
         /* ============================================================ */
         
-        /* Chữ trắng sạch sẽ, không có vệt bóng */
-        .stMarkdown, p, span, label, h1, h2, h3, h4, li, [data-testid="stWidgetLabel"] p {
-            color: #ffffff !important;
+        /* XÓA BỎ HOÀN TOÀN CÁC "LỚP TRÒN/KHUNG" BAO QUANH CHỮ (QUAN TRỌNG) */
+        span[data-baseweb="tag"], 
+        div[data-testid="stWidgetLabel"], 
+        div[data-testid="stWidgetLabel"] *,
+        div[data-baseweb="tag"],
+        .stMarkdown p, .stMarkdown span,
+        label, p, span {
             background-color: transparent !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
         }
 
-        /* Ô nhập liệu nền tối ổn định */
-        div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"],
-        .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox div, .stMultiSelect div {
+        /* Giữ cho các ô nhập liệu vẫn có viền nhưng nhãn của chúng thì không */
+        div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
             background-color: #1a1a2e !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             border-radius: 4px !important;
-            color: white !important;
-        }
-
-        /* Sửa lỗi thanh chọn bị "load lâu" bằng cách để Streamlit tự quản lý tag */
-        span[data-baseweb="tag"] {
-            background-color: #2a5298 !important;
-            color: white !important;
         }
 
         /* Sidebar tối giản */
