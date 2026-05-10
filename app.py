@@ -568,11 +568,23 @@ if st.session_state.get('theme') == 'dark':
         
         /* ĐỒNG BỘ HÓA HÌNH DÁNG (KHÔNG ĐỔI MÀU) THEO BANNER */
         /* CHỈ BO GÓC Ô NHẬP LIỆU - KHÔNG BO GÓC NHÃN TIÊU ĐỀ */
-        /* CHỈ ĐỊNH PHONG CÁCH CHO Ô NHẬP LIỆU (INPUT FIELDS) */
+        /* KHỬ VIỀN KHUNG BAO NGOÀI CỦA STREAMLIT (XÓA LỚP CHỮ NHẬT THỪA) */
+        div[data-testid="stTextInput"] > div,
+        div[data-testid="stTextArea"] > div,
+        div[data-testid="stSelectbox"] > div,
+        div[data-testid="stNumberInput"] > div,
+        div[data-testid="stMultiSelect"] > div {
+            border: none !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+        }
+
+        /* CHỈ ĐỊNH PHONG CÁCH CHO Ô NHẬP LIỆU LÕI (INPUT CORE) */
         div[data-baseweb="input"], 
         div[data-baseweb="select"], 
         div[data-baseweb="textarea"],
-        div[data-baseweb="checkbox"] {
+        div[data-baseweb="checkbox"],
+        div[data-baseweb="base-input"] {
             background-color: #1a1a2e !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             border-radius: 10px !important;
