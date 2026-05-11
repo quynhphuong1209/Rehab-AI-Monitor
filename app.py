@@ -128,8 +128,9 @@ def hien_thi_footer_chung():
     
     footer_html = f"""<style>
 .main-footer {{background:{footer_bg};padding:60px 20px 40px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:3px solid {border_color};box-shadow:0 -15px 35px rgba(0, 114, 255, 0.1);margin-top:80px;position:relative;overflow:hidden}}
-.footer-container {{display:flex;flex-wrap:nowrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:20px}}
-.footer-col {{flex:1;min-width:200px;padding:0 5px}}
+.footer-container {{display:flex;flex-wrap:nowrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:0}}
+.footer-col {{flex:1;min-width:200px;padding:0 30px;border-right:1px solid {col_border}}}
+.footer-col:last-child {{border-right:none}}
 .footer-col.medium {{flex:1.2;min-width:250px}}
 .footer-col.wide {{flex:2.5;min-width:600px}}
 .footer-title {{color:{title_color};font-weight:bold;margin-bottom:20px;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:10px;border-bottom:2px solid {col_border};padding-bottom:10px}}
