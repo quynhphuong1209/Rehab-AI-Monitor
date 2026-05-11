@@ -147,84 +147,77 @@ def hien_thi_footer_chung():
 a {{color:{title_color};text-decoration:none}}
 </style>
 <div class="main-footer">
-    <div class="footer-container">
-        <!-- CỘT 1: TRƯỜNG -->
-        <div class="footer-col">
-            <div class="school-logo-section">
-                <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-                <div class="school-name-text">TRƯỜNG ĐẠI HỌC<br>Y TẾ CÔNG CỘNG</div>
-            </div>
-            <div style="font-size:0.9rem;opacity:0.8;text-align:center">
-                <p>📍 1A Đức Thắng, Bắc Từ Liêm, HN</p>
-                <p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
-            </div>
-        </div>
-
-        <!-- CỘT 2: CHỦ NHIỆM ĐỀ TÀI -->
-        <div class="footer-col medium">
-            <div class="footer-title">👤 CHỦ NHIỆM ĐỀ TÀI</div>
-            <div class="info-row"><span class="info-label">Họ tên:</span><span><b>Đinh Lê Quỳnh Phương</b></span></div>
-            <div class="info-row"><span class="info-label">MSSV:</span><span>2211090031</span></div>
-            <div class="info-row"><span class="info-label">Lớp:</span><span>CNCQ KHDL1-1A</span></div>
-            <div class="info-row"><span class="info-label">Email:</span><span><a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></span></div>
-            <div class="info-row" style="margin-top:10px"><span class="info-label">Đơn vị:</span><span>Khoa KHDL Y sinh</span></div>
-        </div>
-
-        <!-- CỘT 3: NHÓM THỰC HIỆN & GVHD -->
-        <div class="footer-col wide">
-            <div class="footer-title">👥 NHÓM THỰC HIỆN & GVHD</div>
-            <div style="margin-bottom:20px;background:rgba(0,114,255,0.05);padding:15px;border-radius:12px;border-left:5px solid {title_color}">
-                <div style="font-size:0.85rem;margin-bottom:3px;opacity:0.8">GIẢNG VIÊN HƯỚNG DẪN:</div>
-                <div style="font-size:1.2rem;font-weight:bold;color:{title_color}">TS. Trần Hồng Việt</div>
-                <div style="font-size:0.95rem;opacity:0.9">Khoa học dữ liệu - Đại học Y tế Công cộng</div>
-                <div style="font-size:0.95rem"><a href="mailto:thviet79@gmail.com">📧 thviet79@gmail.com</a></div>
-            </div>
-            <div class="execution-grid">
-                <div class="execution-item">
-                    <span class="execution-name">1. Kim Mạnh Hưng</span>
-                    <span class="execution-info">MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A</span>
-                    <a href="mailto:2211090016@studenthuph.edu.vn" class="execution-email">📧 2211090016@studenthuph.edu.vn</a>
-                </div>
-                <div class="execution-item">
-                    <span class="execution-name">2. Nguyễn Hải An</span>
-                    <span class="execution-info">MSSV: 2211090001 | Lớp: CNCQ KHDL1-1A</span>
-                    <a href="mailto:2211090001@studenthuph.edu.vn" class="execution-email">📧 2211090001@studenthuph.edu.vn</a>
-                </div>
-                <div class="execution-item">
-                    <span class="execution-name">3. Phan Vân Anh</span>
-                    <span class="execution-info">MSSV: 2211090004 | Lớp: CNCQ KHDL1-1A</span>
-                    <a href="mailto:2211090004@studenthuph.edu.vn" class="execution-email">📧 2211090004@studenthuph.edu.vn</a>
-                </div>
-                <div class="execution-item">
-                    <span class="execution-name">4. Nguyễn Thị Thanh Nga</span>
-                    <span class="execution-info">MSSV: 2211090027 | Lớp: CNCQ KHDL1-1A</span>
-                    <a href="mailto:2211090027@studenthuph.edu.vn" class="execution-email">📧 2211090027@studenthuph.edu.vn</a>
-                </div>
-                <div class="execution-item">
-                    <span class="execution-name">5. Nguyễn Thị Thơm</span>
-                    <span class="execution-info">MSSV: 2216030122 | Lớp: CNCQ KTPHCN3-1A</span>
-                    <a href="mailto:2216030122@studenthuph.edu.vn" class="execution-email">📧 2216030122@studenthuph.edu.vn</a>
-                </div>
-                <div class="execution-item">
-                    <span class="execution-name">6. Nguyễn Thị Thu Hương</span>
-                    <span class="execution-info">MSSV: 2317010071 | Lớp: CNCQ YTCC22-1A</span>
-                    <a href="mailto:2317010071@studenthuph.edu.vn" class="execution-email">📧 2317010071@studenthuph.edu.vn</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- CỘT 4: PHÁP LÝ -->
-        <div class="footer-col">
-            <div class="footer-title">⚖️ HĐ ĐẠO ĐỨC</div>
-            <div style="font-size:0.85rem;line-height:1.5">
-                <p><b>Trường ĐH Y tế Công cộng</b></p>
-                <p>📍 Đức Thắng, Bắc Từ Liêm, HN</p>
-                <p>📧 <a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></p>
-                <p>📞 024 62663024</p>
-            </div>
-        </div>
-    </div>
-    <div class="footer-bottom">Đề tài NCKH cấp Trường | <b>REHAB-AI-MONITOR</b> | © 2026 NHÓM NGHIÊN CỨU TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
+<div class="footer-container">
+<div class="footer-col">
+<div class="school-logo-section">
+<img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
+<div class="school-name-text">TRƯỜNG ĐẠI HỌC<br>Y TẾ CÔNG CỘNG</div>
+</div>
+<div style="font-size:0.9rem;opacity:0.8;text-align:center">
+<p>📍 1A Đức Thắng, Bắc Từ Liêm, HN</p>
+<p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
+</div>
+</div>
+<div class="footer-col medium">
+<div class="footer-title">👤 CHỦ NHIỆM ĐỀ TÀI</div>
+<div class="info-row"><span class="info-label">Họ tên:</span><span><b>Đinh Lê Quỳnh Phương</b></span></div>
+<div class="info-row"><span class="info-label">MSSV:</span><span>2211090031</span></div>
+<div class="info-row"><span class="info-label">Lớp:</span><span>CNCQ KHDL1-1A</span></div>
+<div class="info-row"><span class="info-label">Email:</span><span><a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></span></div>
+<div class="info-row" style="margin-top:10px"><span class="info-label">Đơn vị:</span><span>Khoa KHDL Y sinh</span></div>
+</div>
+<div class="footer-col wide">
+<div class="footer-title">👥 NHÓM THỰC HIỆN & GVHD</div>
+<div style="margin-bottom:20px;background:rgba(0,114,255,0.05);padding:15px;border-radius:12px;border-left:5px solid {title_color}">
+<div style="font-size:0.85rem;margin-bottom:3px;opacity:0.8">GIẢNG VIÊN HƯỚNG DẪN:</div>
+<div style="font-size:1.2rem;font-weight:bold;color:{title_color}">TS. Trần Hồng Việt</div>
+<div style="font-size:0.95rem;opacity:0.9">Khoa học dữ liệu - Đại học Y tế Công cộng</div>
+<div style="font-size:0.95rem"><a href="mailto:thviet79@gmail.com">📧 thviet79@gmail.com</a></div>
+</div>
+<div class="execution-grid">
+<div class="execution-item">
+<span class="execution-name">1. Kim Mạnh Hưng</span>
+<span class="execution-info">MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A</span>
+<a href="mailto:2211090016@studenthuph.edu.vn" class="execution-email">📧 2211090016@studenthuph.edu.vn</a>
+</div>
+<div class="execution-item">
+<span class="execution-name">2. Nguyễn Hải An</span>
+<span class="execution-info">MSSV: 2211090001 | Lớp: CNCQ KHDL1-1A</span>
+<a href="mailto:2211090001@studenthuph.edu.vn" class="execution-email">📧 2211090001@studenthuph.edu.vn</a>
+</div>
+<div class="execution-item">
+<span class="execution-name">3. Phan Vân Anh</span>
+<span class="execution-info">MSSV: 2211090004 | Lớp: CNCQ KHDL1-1A</span>
+<a href="mailto:2211090004@studenthuph.edu.vn" class="execution-email">📧 2211090004@studenthuph.edu.vn</a>
+</div>
+<div class="execution-item">
+<span class="execution-name">4. Nguyễn Thị Thanh Nga</span>
+<span class="execution-info">MSSV: 2211090027 | Lớp: CNCQ KHDL1-1A</span>
+<a href="mailto:2211090027@studenthuph.edu.vn" class="execution-email">📧 2211090027@studenthuph.edu.vn</a>
+</div>
+<div class="execution-item">
+<span class="execution-name">5. Nguyễn Thị Thơm</span>
+<span class="execution-info">MSSV: 2216030122 | Lớp: CNCQ KTPHCN3-1A</span>
+<a href="mailto:2216030122@studenthuph.edu.vn" class="execution-email">📧 2216030122@studenthuph.edu.vn</a>
+</div>
+<div class="execution-item">
+<span class="execution-name">6. Nguyễn Thị Thu Hương</span>
+<span class="execution-info">MSSV: 2317010071 | Lớp: CNCQ YTCC22-1A</span>
+<a href="mailto:2317010071@studenthuph.edu.vn" class="execution-email">📧 2317010071@studenthuph.edu.vn</a>
+</div>
+</div>
+</div>
+<div class="footer-col">
+<div class="footer-title">⚖️ HĐ ĐẠO ĐỨC</div>
+<div style="font-size:0.85rem;line-height:1.5">
+<p><b>Trường ĐH Y tế Công cộng</b></p>
+<p>📍 Đức Thắng, Bắc Từ Liêm, HN</p>
+<p>📧 <a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></p>
+<p>📞 024 62663024</p>
+</div>
+</div>
+</div>
+<div class="footer-bottom">Đề tài NCKH cấp Trường | <b>REHAB-AI-MONITOR</b> | © 2026 NHÓM NGHIÊN CỨU TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
 </div>"""
     st.markdown(footer_html, unsafe_allow_html=True)
 
