@@ -318,37 +318,37 @@ def hien_thi_footer_chung():
                             <span class="member-name">Kim Mạnh Hưng</span>
                             <span class="member-id">2211090016</span>
                             <span class="member-class">CNCQ KHDL1-1A</span>
-                            <a href="mailto:2211090016@studenthuph.edu.vn" class="member-email">✉️ 2211090016@...</a>
+                            <a href="mailto:2211090016@studenthuph.edu.vn" class="member-email">✉️ 2211090016@studenthuph.edu.vn</a>
                         </div>
                         <div class="member-item">
                             <span class="member-name">Nguyễn Hải An</span>
                             <span class="member-id">2211090001</span>
                             <span class="member-class">CNCQ KHDL1-1A</span>
-                            <a href="mailto:2211090001@studenthuph.edu.vn" class="member-email">✉️ 2211090001@...</a>
+                            <a href="mailto:2211090001@studenthuph.edu.vn" class="member-email">✉️ 2211090001@studenthuph.edu.vn</a>
                         </div>
                         <div class="member-item">
                             <span class="member-name">Phan Vân Anh</span>
                             <span class="member-id">2211090004</span>
                             <span class="member-class">CNCQ KHDL1-1A</span>
-                            <a href="mailto:2211090004@studenthuph.edu.vn" class="member-email">✉️ 2211090004@...</a>
+                            <a href="mailto:2211090004@studenthuph.edu.vn" class="member-email">✉️ 2211090004@studenthuph.edu.vn</a>
                         </div>
                         <div class="member-item">
                             <span class="member-name">Nguyễn Thị Thanh Nga</span>
                             <span class="member-id">2211090027</span>
                             <span class="member-class">CNCQ KHDL1-1A</span>
-                            <a href="mailto:2211090027@studenthuph.edu.vn" class="member-email">✉️ 2211090027@...</a>
+                            <a href="mailto:2211090027@studenthuph.edu.vn" class="member-email">✉️ 2211090027@studenthuph.edu.vn</a>
                         </div>
                         <div class="member-item">
                             <span class="member-name">Nguyễn Thị Thơm</span>
                             <span class="member-id">2216030122</span>
                             <span class="member-class">CNCQ KTPHCN3-1A</span>
-                            <a href="mailto:2216030122@studenthuph.edu.vn" class="member-email">✉️ 2216030122@...</a>
+                            <a href="mailto:2216030122@studenthuph.edu.vn" class="member-email">✉️ 2216030122@studenthuph.edu.vn</a>
                         </div>
                         <div class="member-item">
                             <span class="member-name">Nguyễn Thị Thu Hương</span>
                             <span class="member-id">2317010071</span>
                             <span class="member-class">CNCQ YTCC22-1A</span>
-                            <a href="mailto:2317010071@studenthuph.edu.vn" class="member-email">✉️ 2317010071@...</a>
+                            <a href="mailto:2317010071@studenthuph.edu.vn" class="member-email">✉️ 2317010071@studenthuph.edu.vn</a>
                         </div>
                     </div>
                 </div>
