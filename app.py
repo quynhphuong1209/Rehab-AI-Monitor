@@ -313,7 +313,6 @@ def hien_thi_footer_chung():
                         <div style="font-size: 1.1rem; font-weight: bold;">TS. Trần Hồng Việt</div>
                         <div style="font-size: 0.9rem;"><a href="mailto:thviet79@gmail.com">✉️ thviet79@gmail.com</a></div>
                     </div>
-                    
                     <div class="member-grid">
                         <div class="member-item">
                             <span class="member-name">Kim Mạnh Hưng</span>
