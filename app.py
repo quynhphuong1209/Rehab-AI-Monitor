@@ -120,7 +120,7 @@ def hien_thi_footer_chung():
         logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
     is_light = st.session_state.get('theme') == 'light'
-    footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+    footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #000000 0%, #000000 100%)"
     footer_text = "#444" if is_light else "#ccc"
     border_color = "#0072ff" if is_light else "#00c6ff"
     title_color = "#0072ff" if is_light else "#00c6ff"
@@ -635,9 +635,8 @@ st.markdown("""
 if st.session_state.get('theme') == 'dark':
     st.markdown("""
     <style>
-        /* Khai báo hệ màu tối cho toàn bộ trình duyệt */
+        /* Khai báo hệ màu tối cho toàn bộ trình duyệt - Đã loại bỏ color-scheme để k ảnh hưởng Chrome */
         html, body {
-            color-scheme: dark !important;
             caret-color: white !important; /* Đảm bảo con trỏ luôn sáng */
         }
         
@@ -654,13 +653,13 @@ if st.session_state.get('theme') == 'dark':
 
         /* Ép nền ứng dụng */
         .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainViewContainer"] {
-            background-color: #0d0d1a !important;
+            background-color: #000000 !important;
             color: white !important;
         }
         
         /* Ép nền Sidebar */
         [data-testid="stSidebar"], [data-testid="stSidebarContent"] {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
         }
         
         /* Ép nền Header */
@@ -713,7 +712,7 @@ if st.session_state.get('theme') == 'dark':
         div[data-baseweb="textarea"],
         div[data-baseweb="checkbox"],
         div[data-baseweb="base-input"] {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             border-radius: 10px !important;
             color: white !important;
@@ -742,7 +741,7 @@ if st.session_state.get('theme') == 'dark':
         /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
         div[data-baseweb="popover"], div[role="listbox"], ul[data-baseweb="menu"], 
         div[data-baseweb="popover"] *, [data-baseweb="menu-item"] {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             color: white !important;
         }
         [data-baseweb="menu-item"]:hover {
@@ -751,7 +750,7 @@ if st.session_state.get('theme') == 'dark':
         
         /* Loại bỏ các mảng trắng nền của BaseWeb Popover */
         div[data-baseweb="popover"] > div {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
 
@@ -794,19 +793,19 @@ if st.session_state.get('theme') == 'dark':
             color: #666 !important;
         }
         .stExpander, [data-testid="stExpander"], .st-emotion-cache-1839j81 {
-            background-color: #16213e !important;
+            background-color: #000000 !important;
             border: 1px solid rgba(0, 198, 255, 0.2) !important;
             color: white !important;
         }
         .stExpander summary, .stExpander summary * {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             color: #00c6ff !important;
             font-weight: bold !important;
         }
         
         /* Ép màu Sidebar triệt để */
         [data-testid="stSidebar"] {
-            background-color: #0d0d1a !important;
+            background-color: #000000 !important;
             border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
         [data-testid="stSidebar"] * {
@@ -830,7 +829,7 @@ if st.session_state.get('theme') == 'dark':
 
         /* ÉP MÀU CHO BẢNG (TABLE) */
         table, th, td {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             color: white !important;
             border-color: rgba(255, 255, 255, 0.1) !important;
         }
@@ -853,7 +852,7 @@ if st.session_state.get('theme') == 'dark':
         /* ÉP MÀU CHO CÁC THÔNG BÁO (SUCCESS, ERROR, INFO) */
         [data-testid="stNotificationContentSuccess"], [data-testid="stNotificationContentError"], 
         [data-testid="stNotificationContentInfo"], [data-testid="stNotificationContentWarning"] {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             color: white !important;
         }
         
@@ -861,7 +860,7 @@ if st.session_state.get('theme') == 'dark':
         .stButton button, .stDownloadButton button, [data-testid="stBaseButton-secondary"],
         [data-testid="stFormSubmitButton"] button, [data-testid="stBaseButton-primary"],
         [data-testid="stBaseButton-headerNoPadding"], [data-testid="stBaseButton-header"] {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             color: white !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             box-shadow: none !important;
@@ -881,7 +880,7 @@ if st.session_state.get('theme') == 'dark':
 
         /* ÉP MÀU CHO KHU VỰC UPLOAD FILE (QUAN TRỌNG) */
         [data-testid="stFileUploader"] section {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             border: 1px dashed #00c6ff !important;
             color: white !important;
         }
@@ -904,7 +903,7 @@ if st.session_state.get('theme') == 'dark':
         [data-testid="stFileUploader"] div[data-testid="stFileUploaderFile"] > div,
         [data-testid="stFileUploader"] div[data-baseweb="block"],
         [data-testid="stFileUploaderFile"] {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             color: white !important;
             border: 1px solid #00c6ff !important;
         }
@@ -935,7 +934,7 @@ if st.session_state.get('theme') == 'dark':
         div[data-baseweb="input"], 
         div[data-baseweb="select"], 
         div[data-baseweb="textarea"] {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             border-radius: 4px !important;
         }
@@ -947,7 +946,7 @@ if st.session_state.get('theme') == 'dark':
 
         /* Sidebar tối giản */
         [data-testid="stSidebarContent"] {
-            background-color: #1a1a2e !important;
+            background-color: #000000 !important;
         }
 
         /* ĐẢM BẢO VÒNG XOAY LOADING (SPINNER) LUÔN TRẮNG */
