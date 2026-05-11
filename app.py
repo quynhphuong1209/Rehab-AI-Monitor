@@ -297,9 +297,8 @@ def load_users():
         },
         "doctor1": {
             "password": hash_password("bs123@"),
-            "full_name": "Trần Hồng Việt",
-            "role": "Bác sĩ / KTV PHCN",
-            "email": "viet.th@huph.edu.vn"
+            "full_name": "Doctor 1",
+            "role": "Bác sĩ / KTV PHCN"
         },
         "Kim Mạnh Hưng": {"password": hash_password("ncv123@"), "full_name": "Kim Mạnh Hưng", "role": "Nghiên cứu viên", "email": "hung.km@huph.edu.vn"},
         "Nguyễn Hải An": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Hải An", "role": "Nghiên cứu viên", "email": "an.nh@huph.edu.vn"},
@@ -3751,7 +3750,7 @@ def hien_thi_tab_thanh_vien():
     st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
     st.markdown("""
     <div class="lecturer-card">
-        <div class="lecturer-name">TS. Trần Hồng Việt</div>
+        <div class="lecturer-name">Doctor 1</div>
         <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
         <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
     </div>
@@ -5173,7 +5172,7 @@ def main():
 
         
         st.markdown("---")
-        st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt")
+        st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** Doctor 1")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
     # Định nghĩa các tab dựa trên vai trò
