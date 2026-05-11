@@ -106,7 +106,9 @@ REMINDERS_FILE = "schedules.json"
 VIDEOS_FILE = "video_list.json"
 
 def hien_thi_footer_chung():
-    """Hiển thị chân trang (footer) 3 cột chuyên nghiệp với đầy đủ thông tin"""
+    """Hiển thị chân trang (footer) 3 cột chuyên nghiệp cho dự án Rehab-AI-Monitor"""
+    import base64
+    import textwrap
     try:
         if os.path.exists("abc1.png"):
             with open("abc1.png", "rb") as img_file:
@@ -124,152 +126,163 @@ def hien_thi_footer_chung():
     title_color = "#0072ff" if is_light else "#00c6ff"
     label_color = "#222" if is_light else "#eee"
     school_name_color = "#1a1a2e" if is_light else "#fff"
-    bottom_border = "rgba(0,0,0,0.05)" if is_light else "rgba(255,255,255,0.05)"
     col_border = "rgba(0,0,0,0.1)" if is_light else "rgba(255,255,255,0.1)"
 
-    footer_html = f"""
-    <style>
-        .main-footer {{
-            background: {footer_bg};
-            padding: 50px 20px;
-            color: {footer_text};
-            font-family: 'Times New Roman', Times, serif;
-            border-top: 4px solid {border_color};
-            box-shadow: 0 -10px 25px rgba(0, 198, 255, 0.15);
-            margin-top: 60px;
-        }}
-        .footer-container {{
-            display: flex;
-            flex-wrap: nowrap;
-            justify-content: space-between;
-            max-width: 1300px;
-            margin: 0 auto;
-            gap: 0;
-        }}
-        .footer-col {{
-            flex: 1;
-            padding: 0 35px;
-            border-right: 1px solid {col_border};
-        }}
-        .footer-col:last-child {{
-            border-right: none;
-        }}
-        .logo-col {{
-            text-align: center;
-        }}
-        .footer-logo-img {{
-            width: 110px;
-            margin-bottom: 20px;
-            filter: {"none" if is_light else "drop-shadow(0 0 10px rgba(0, 198, 255, 0.3))"};
-        }}
-        .footer-title {{
-            color: {title_color};
-            font-weight: bold;
-            margin-bottom: 20px;
-            font-size: 1.35rem;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }}
-        .info-row {{
-            margin-bottom: 12px;
-            font-size: 1.15rem;
-            display: flex;
-            gap: 10px;
-            line-height: 1.5;
-        }}
-        .info-label {{
-            font-weight: bold;
-            color: {label_color};
-            min-width: 70px;
-        }}
-        .footer-bottom {{
-            padding-top: 30px;
-            margin-top: 40px;
-            border-top: 1px solid {bottom_border};
-            font-size: 1rem;
-            color: {"#666" if is_light else "#777"};
-            text-align: center;
-            letter-spacing: 1px;
-        }}
-        a {{ color: {title_color}; text-decoration: none; }}
-        a:hover {{ text-decoration: underline; }}
-        .school-name {{
-            font-weight: bold; 
-            color: {school_name_color}; 
-            font-size: 1.25rem;
-            line-height: 1.3;
-            margin-bottom: 8px;
-        }}
-        .school-subname {{
-            font-size: 1rem; 
-            color: {title_color};
-            display: block;
-            margin-bottom: 20px;
-        }}
-    </style>
-    <div class="main-footer">
-        <div class="footer-container">
-            <!-- CỘT 1: THƯƠNG HIỆU -->
-            <div class="footer-col logo-col">
-                <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-                <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
-                <div class="school-subname">HANOI UNIVERSITY OF PUBLIC HEALTH</div>
-                <div style="font-size: 1.1rem; opacity: 0.9;">
-                    <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-                    <p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
+    footer_html = textwrap.dedent(f"""
+        <style>
+            .main-footer {{
+                background: {footer_bg};
+                padding: 50px 20px;
+                color: {footer_text};
+                font-family: 'Times New Roman', Times, serif !important;
+                border-top: 4px solid {border_color};
+                box-shadow: 0 -10px 25px rgba(0, 198, 255, 0.15);
+                margin-top: 60px;
+            }}
+            .footer-container {{
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                max-width: 1300px;
+                margin: 0 auto;
+                gap: 20px;
+            }}
+            .footer-col {{
+                flex: 1;
+                min-width: 300px;
+                padding: 0 35px;
+                border-right: 1px solid {col_border};
+            }}
+            .footer-col:last-child {{
+                border-right: none;
+            }}
+            .logo-col {{
+                text-align: center;
+            }}
+            .footer-logo-img {{
+                width: 100px;
+                margin-bottom: 20px;
+                filter: {"none" if is_light else "drop-shadow(0 0 10px rgba(0, 198, 255, 0.3))"};
+            }}
+            .footer-title {{
+                color: {title_color};
+                font-weight: bold;
+                margin-bottom: 20px;
+                font-size: 1.25rem;
+                text-transform: uppercase;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }}
+            .info-row {{
+                margin-bottom: 12px;
+                font-size: 1.05rem;
+                display: flex;
+                gap: 10px;
+                line-height: 1.5;
+            }}
+            .info-label {{
+                font-weight: bold;
+                color: {label_color};
+                min-width: 70px;
+            }}
+            .footer-bottom {{
+                padding-top: 30px;
+                margin-top: 40px;
+                border-top: 1px solid rgba(0,0,0,0.05);
+                font-size: 0.95rem;
+                color: {"#666" if is_light else "#777"};
+                text-align: center;
+            }}
+            .school-name {{
+                font-weight: bold; 
+                color: {school_name_color}; 
+                font-size: 1.15rem;
+                line-height: 1.3;
+                margin-bottom: 8px;
+            }}
+        </style>
+        <div class="main-footer">
+            <div class="footer-container">
+                <!-- CỘT 1: THƯƠNG HIỆU -->
+                <div class="footer-col logo-col">
+                    <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
+                    <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
+                    <div style="font-size: 1rem; opacity: 0.8;">
+                        <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                        <p>🌐 <a href="https://huph.edu.vn/" target="_blank" style="color:{title_color}; text-decoration:none;">huph.edu.vn</a></p>
+                    </div>
+                </div>
+
+                <!-- CỘT 2: NGHIÊN CỨU VIÊN -->
+                <div class="footer-col">
+                    <div class="footer-title">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
+                    <div class="info-row">
+                        <span class="info-label">Họ tên:</span>
+                        <span><b>Đinh Lê Quỳnh Phương</b> (2211090031)</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Địa chỉ:</span>
+                        <span>Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span><a href="mailto:2211090031@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090031@studenthuph.edu.vn</a></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">SĐT:</span>
+                        <span>0382665916</span>
+                    </div>
+                </div>
+
+                <!-- CỘT 3: ĐẠI HỌC Y TẾ CÔNG CỘNG (NHÓM NGHIÊN CỨU) -->
+                <div class="footer-col">
+                    <div class="footer-title">👥 ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
+                    <div class="info-row">
+                        <span class="info-label">GVHD:</span>
+                        <span style="font-weight: bold;">TS. Trần Hồng Việt</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span><a href="mailto:thviet79@gmail.com" style="color:{title_color}; text-decoration:none;">thviet79@gmail.com</a></span>
+                    </div>
+                    <div style="font-size: 0.85rem; margin-top: 15px; border-top: 1px solid {col_border}; padding-top: 10px;">
+                        <p style="margin-bottom: 5px;">1. <b>Kim Mạnh Hưng</b> (2211090016) - CNCQ KHDL1-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2211090016@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090016@studenthuph.edu.vn</a></span></p>
+                        <p style="margin-bottom: 5px;">2. <b>Nguyễn Hải An</b> (2211090001) - CNCQ KHDL1-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2211090001@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090001@studenthuph.edu.vn</a></span></p>
+                        <p style="margin-bottom: 5px;">3. <b>Phan Vân Anh</b> (2211090004) - CNCQ KHDL1-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2211090004@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090004@studenthuph.edu.vn</a></span></p>
+                        <p style="margin-bottom: 5px;">4. <b>Nguyễn Thị Thanh Nga</b> (2211090027) - CNCQ KHDL1-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2211090027@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090027@studenthuph.edu.vn</a></span></p>
+                        <p style="margin-bottom: 5px;">5. <b>Nguyễn Thị Thơm</b> (2216030122) - CNCQ KTPHCN3-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2216030122@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2216030122@studenthuph.edu.vn</a></span></p>
+                        <p style="margin-bottom: 5px;">6. <b>Nguyễn Thị Thu Hương</b> (2317010071) - CNCQ YTCC22-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2317010071@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2317010071@studenthuph.edu.vn</a></span></p>
+                    </div>
+                </div>
+
+                <!-- CỘT 4: HỘI ĐỒNG ĐẠO ĐỨC -->
+                <div class="footer-col">
+                    <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
+                    <div class="info-row">
+                        <span class="info-label">Tên:</span>
+                        <span>HĐĐĐ Trường ĐH Y tế Công cộng</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Địa chỉ:</span>
+                        <span>Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span><a href="mailto:irb@huph.edu.vn" style="color:{title_color}; text-decoration:none;">irb@huph.edu.vn</a></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">SĐT:</span>
+                        <span>024 62663024</span>
+                    </div>
                 </div>
             </div>
-
-            <!-- CỘT 2: NGHIÊN CỨU VIÊN -->
-            <div class="footer-col">
-                <div class="footer-title">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
-                <div class="info-row">
-                    <span class="info-label">Họ tên:</span>
-                    <span>Đinh Lê Quỳnh Phương</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Địa chỉ:</span>
-                    <span>Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Email:</span>
-                    <span><a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">SĐT:</span>
-                    <span>0382665916</span>
-                </div>
-            </div>
-
-            <!-- CỘT 3: HỘI ĐỒNG ĐẠO ĐỨC -->
-            <div class="footer-col">
-                <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
-                <div class="info-row">
-                    <span class="info-label">Tên:</span>
-                    <span>HĐĐĐ Trường ĐH Y tế Công cộng</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Địa chỉ:</span>
-                    <span>Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Email:</span>
-                    <span><a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">SĐT:</span>
-                    <span>024 62663024</span>
-                </div>
+            <div class="footer-bottom">
+                Đơn vị phát triển: <b>NHÓM NGHIÊN CỨU VIÊN HUPH</b> | © 2026 REHAB-AI-MONITOR
             </div>
         </div>
-        <div class="footer-bottom">
-            Đơn vị phát triển: <b>NHÓM NGHIÊN CỨU VIÊN TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</b> | © 2026 REHAB-AI-MONITOR
-        </div>
-    </div>
-    """
-    components.html(footer_html, height=500, scrolling=False)
+    """)
+    st.markdown(footer_html, unsafe_allow_html=True)
 
 def load_data(file_path):
     if os.path.exists(file_path):
@@ -293,20 +306,28 @@ def load_users():
             "password": hash_password("bong0912@"),
             "full_name": "Đinh Lê Quỳnh Phương",
             "role": "Quản trị viên",
-            "email": "quynhphuong@studenthuph.edu.vn"
+            "email": "2211090031@studenthuph.edu.vn",
+            "mssv": "2211090031"
         },
         "doctor1": {
             "password": hash_password("bs123@"),
             "full_name": "Doctor 1",
             "role": "Bác sĩ / KTV PHCN"
         },
-        "Kim Mạnh Hưng": {"password": hash_password("ncv123@"), "full_name": "Kim Mạnh Hưng", "role": "Nghiên cứu viên", "email": "hung.km@huph.edu.vn"},
-        "Nguyễn Hải An": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Hải An", "role": "Nghiên cứu viên", "email": "an.nh@huph.edu.vn"},
-        "Nguyễn Thị Thanh Nga": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thanh Nga", "role": "Nghiên cứu viên", "email": "nga.ntt@huph.edu.vn"},
-        "Phan Vân Anh": {"password": hash_password("ncv123@"), "full_name": "Phan Vân Anh", "role": "Nghiên cứu viên", "email": "anh.pv@huph.edu.vn"},
-        "Nguyễn Thị Thơm": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thơm", "role": "Nghiên cứu viên", "email": "thom.nt@huph.edu.vn"},
-        "Nguyễn Thị Thu Hương": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thu Hương", "role": "Nghiên cứu viên", "email": "huong.ntt@huph.edu.vn"},
-        "Đinh Lê Quỳnh Phương (NCV)": {"password": hash_password("ncv123@"), "full_name": "Đinh Lê Quỳnh Phương", "role": "Nghiên cứu viên", "email": "phuong.dlq@huph.edu.vn"}
+        "Kim Mạnh Hưng": {"password": hash_password("ncv123@"), "full_name": "Kim Mạnh Hưng", "role": "Nghiên cứu viên", "email": "2211090016@studenthuph.edu.vn", "mssv": "2211090016"},
+        "Nguyễn Hải An": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Hải An", "role": "Nghiên cứu viên", "email": "2211090001@studenthuph.edu.vn", "mssv": "2211090001"},
+        "Nguyễn Thị Thanh Nga": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thanh Nga", "role": "Nghiên cứu viên", "email": "2211090027@studenthuph.edu.vn", "mssv": "2211090027"},
+        "Phan Vân Anh": {"password": hash_password("ncv123@"), "full_name": "Phan Vân Anh", "role": "Nghiên cứu viên", "email": "2211090004@studenthuph.edu.vn", "mssv": "2211090004"},
+        "Nguyễn Thị Thơm": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thơm", "role": "Nghiên cứu viên", "email": "2216030122@studenthuph.edu.vn", "mssv": "2216030122"},
+        "Nguyễn Thị Thu Hương": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thu Hương", "role": "Nghiên cứu viên", "email": "2317010071@studenthuph.edu.vn", "mssv": "2317010071"},
+        "2211090016": {"password": hash_password("ncv123@"), "full_name": "Kim Mạnh Hưng", "role": "Nghiên cứu viên", "email": "2211090016@studenthuph.edu.vn", "mssv": "2211090016"},
+        "2211090001": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Hải An", "role": "Nghiên cứu viên", "email": "2211090001@studenthuph.edu.vn", "mssv": "2211090001"},
+        "2211090027": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thanh Nga", "role": "Nghiên cứu viên", "email": "2211090027@studenthuph.edu.vn", "mssv": "2211090027"},
+        "2211090004": {"password": hash_password("ncv123@"), "full_name": "Phan Vân Anh", "role": "Nghiên cứu viên", "email": "2211090004@studenthuph.edu.vn", "mssv": "2211090004"},
+        "2216030122": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thơm", "role": "Nghiên cứu viên", "email": "2216030122@studenthuph.edu.vn", "mssv": "2216030122"},
+        "2317010071": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thu Hương", "role": "Nghiên cứu viên", "email": "2317010071@studenthuph.edu.vn", "mssv": "2317010071"},
+        "2211090031": {"password": hash_password("ncv123@"), "full_name": "Đinh Lê Quỳnh Phương", "role": "Nghiên cứu viên", "email": "2211090031@studenthuph.edu.vn", "mssv": "2211090031"},
+        "Đinh Lê Quỳnh Phương (NCV)": {"password": hash_password("ncv123@"), "full_name": "Đinh Lê Quỳnh Phương", "role": "Nghiên cứu viên", "email": "2211090031@studenthuph.edu.vn", "mssv": "2211090031"}
     }
     
     # Cập nhật hoặc thêm mới các tài khoản cố định (Luôn đảm bảo vai trò và pass đúng)
