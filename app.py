@@ -212,7 +212,7 @@ a {{color:{title_color};text-decoration:none}}
 </div>
 </div>
 <div class="footer-col">
-<div class="footer-title">⚖️ HĐ ĐẠO ĐỨC</div>
+<div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
 <div style="font-size:0.85rem;line-height:1.5">
 <p><b>Trường ĐH Y tế Công cộng</b></p>
 <p>📍 Đức Thắng, Bắc Từ Liêm, HN</p>
