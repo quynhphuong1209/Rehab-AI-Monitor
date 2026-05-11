@@ -163,12 +163,11 @@ a {{color:{title_color};text-decoration:none}}
 <div class="footer-title">👤 CHỦ NHIỆM ĐỀ TÀI</div>
 <div class="info-row"><span class="info-label">Họ tên:</span><span><b>Đinh Lê Quỳnh Phương</b></span></div>
 <div class="info-row"><span class="info-label">MSSV:</span><span>2211090031</span></div>
-<div class="info-row"><span class="info-label">Lớp:</span><span>CNCQ KHDL1-1A</span></div>
 <div style="margin-bottom:10px;font-size:0.95rem;line-height:1.4">
 <div class="info-label">Email:</div>
 <div style="word-break:break-all"><a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></div>
 </div>
-<div class="info-row" style="margin-top:10px"><span class="info-label">Đơn vị:</span><span>Khoa KHDL Y sinh</span></div>
+<div class="info-row" style="margin-top:10px"><span class="info-label">Lớp:</span><span>CNCQ KHDL1-1A</span></div>
 </div>
 <div class="footer-col wide">
 <div class="footer-title">👥 NHÓM THỰC HIỆN & GVHD</div>
