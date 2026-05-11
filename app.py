@@ -133,7 +133,7 @@ def hien_thi_footer_chung():
 .footer-col:last-child {{border-right:none}}
 .footer-col.medium {{flex:1.2;min-width:250px}}
 .footer-col.wide {{flex:2.5;min-width:600px}}
-.footer-title {{color:{title_color};font-weight:bold;margin-bottom:20px;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:10px;border-bottom:2px solid {col_border};padding-bottom:10px}}
+.footer-title {{color:{title_color} !important;font-weight:bold;margin-bottom:20px;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:10px;border-bottom:2px solid {col_border};padding-bottom:10px}}
 .info-row {{margin-bottom:10px;font-size:0.95rem;display:grid;grid-template-columns:85px 1fr;line-height:1.4}}
 .info-label {{font-weight:bold;opacity:0.9}}
 .execution-grid {{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:15px}}
