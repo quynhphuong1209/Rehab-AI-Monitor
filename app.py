@@ -311,7 +311,9 @@ def hien_thi_footer_chung():
                     <div style="margin-bottom: 20px; background: rgba(0,114,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid {title_color};">
                         <div style="font-size: 0.9rem; margin-bottom: 5px; opacity: 0.8;">GIẢNG VIÊN HƯỚNG DẪN:</div>
                         <div style="font-size: 1.1rem; font-weight: bold;">TS. Trần Hồng Việt</div>
-                        <div style="font-size: 0.9rem;"><a href="mailto:thviet79@gmail.com">✉️ thviet79@gmail.com</a></div>
+                        <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 2px;">Giảng viên Khoa học dữ liệu</div>
+                        <div style="font-size: 0.85rem; opacity: 0.9;">Trường Đại học Y tế Công cộng</div>
+                        <div style="font-size: 0.9rem; margin-top: 5px;"><a href="mailto:thviet79@gmail.com">✉️ thviet79@gmail.com</a></div>
                     </div>
                     <div class="member-grid">
                         <div class="member-item">
