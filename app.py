@@ -122,7 +122,7 @@ def hien_thi_footer_chung():
     footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
     footer_text = "#444" if is_light else "#ccc"
     border_color = "#0072ff" if is_light else "#00c6ff"
-    title_color = "#0072ff" if is_light else "#00c6ff"
+    title_color = "#0072ff" # Màu xanh đậm nổi bật cho cả 2 chế độ
     school_name_color = "#1a1a2e" if is_light else "#fff"
     col_border = "rgba(0,0,0,0.1)" if is_light else "rgba(255,255,255,0.1)"
     
