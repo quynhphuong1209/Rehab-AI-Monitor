@@ -307,7 +307,7 @@ def load_users():
         "Phan Vân Anh": {"password": hash_password("ncv123@"), "full_name": "Phan Vân Anh", "role": "Nghiên cứu viên", "email": "anh.pv@huph.edu.vn"},
         "Nguyễn Thị Thơm": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thơm", "role": "Nghiên cứu viên", "email": "thom.nt@huph.edu.vn"},
         "Nguyễn Thị Thu Hương": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thu Hương", "role": "Nghiên cứu viên", "email": "huong.ntt@huph.edu.vn"},
-        "Quỳnh Phương (NCV)": {"password": hash_password("ncv123@"), "full_name": "Đinh Lê Quỳnh Phương", "role": "Nghiên cứu viên", "email": "phuong.dlq@huph.edu.vn"}
+        "Đinh Lê Quỳnh Phương (NCV)": {"password": hash_password("ncv123@"), "full_name": "Đinh Lê Quỳnh Phương", "role": "Nghiên cứu viên", "email": "phuong.dlq@huph.edu.vn"}
     }
     
     # Cập nhật hoặc thêm mới các tài khoản cố định (Luôn đảm bảo vai trò và pass đúng)
