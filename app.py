@@ -281,7 +281,6 @@ def hien_thi_footer_chung():
                         <p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
                     </div>
                 </div>
-
                 <!-- CỘT 2: NGHIÊN CỨU VIÊN CHÍNH -->
                 <div class="footer-col medium">
                     <div class="footer-title">👤 CHỦ NHIỆM ĐỀ TÀI</div>
@@ -306,7 +305,6 @@ def hien_thi_footer_chung():
                         <span class="info-value">Khoa Khoa học dữ liệu Y sinh</span>
                     </div>
                 </div>
-
                 <!-- CỘT 3: NHÓM NGHIÊN CỨU (WIDE) -->
                 <div class="footer-col wide">
                     <div class="footer-title">👥 NHÓM NGHIÊN CỨU & GVHD</div>
@@ -355,7 +353,6 @@ def hien_thi_footer_chung():
                         </div>
                     </div>
                 </div>
-
                 <!-- CỘT 4: PHÁP LÝ -->
                 <div class="footer-col">
                     <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
