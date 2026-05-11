@@ -142,24 +142,24 @@ def hien_thi_footer_chung():
             }}
             .footer-container {{
                 display: flex;
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
                 justify-content: space-between;
-                max-width: 1500px;
+                max-width: 1550px;
                 margin: 0 auto;
-                gap: 40px;
+                gap: 20px;
             }}
             .footer-col {{
                 flex: 1;
-                min-width: 260px;
-                padding: 0 10px;
+                min-width: 220px;
+                padding: 0 5px;
             }}
             .footer-col.medium {{
-                flex: 1.2;
-                min-width: 320px;
+                flex: 1.1;
+                min-width: 260px;
             }}
             .footer-col.wide {{
-                flex: 2.2;
-                min-width: 500px;
+                flex: 1.8;
+                min-width: 420px;
             }}
             .footer-title {{
                 color: {title_color};
