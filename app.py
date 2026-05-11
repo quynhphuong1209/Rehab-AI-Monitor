@@ -144,18 +144,22 @@ def hien_thi_footer_chung():
                 display: flex;
                 flex-wrap: wrap;
                 justify-content: space-between;
-                max-width: 1400px;
+                max-width: 1500px;
                 margin: 0 auto;
-                gap: 30px;
+                gap: 40px;
             }}
             .footer-col {{
                 flex: 1;
-                min-width: 280px;
-                padding: 0 20px;
+                min-width: 260px;
+                padding: 0 10px;
+            }}
+            .footer-col.medium {{
+                flex: 1.2;
+                min-width: 320px;
             }}
             .footer-col.wide {{
-                flex: 1.5;
-                min-width: 400px;
+                flex: 2.2;
+                min-width: 500px;
             }}
             .footer-title {{
                 color: {title_color};
@@ -279,7 +283,7 @@ def hien_thi_footer_chung():
                 </div>
 
                 <!-- CỘT 2: NGHIÊN CỨU VIÊN CHÍNH -->
-                <div class="footer-col">
+                <div class="footer-col medium">
                     <div class="footer-title">👤 CHỦ NHIỆM ĐỀ TÀI</div>
                     <div class="info-row">
                         <span class="info-label">Họ tên:</span>
