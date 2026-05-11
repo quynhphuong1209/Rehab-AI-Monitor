@@ -372,16 +372,6 @@ def hien_thi_footer_chung():
             </div>
         </div>
     """)
-    st.markdown(footer_html, unsafe_allow_html=True)nfo-label">SĐT:</span>
-                        <span>024 62663024</span>
-                    </div>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                Đơn vị phát triển: <b>NHÓM NGHIÊN CỨU VIÊN HUPH</b> | © 2026 REHAB-AI-MONITOR
-            </div>
-        </div>
-    """)
     st.markdown(footer_html, unsafe_allow_html=True)
 
 def load_data(file_path):
