@@ -17,7 +17,8 @@ Hệ thống đã đạt đến độ hoàn thiện cao nhất (Production-ready
 - **Angular Comparison:** Thuật toán tính toán góc Vai và Khuỷu tay dựa trên lượng giác học (Arc-cosine) để so sánh với biên độ vận động chuẩn (ROM - Range of Motion).
 
 ### 2.2. Cơ chế Lưu trữ và Theo dõi Tiến triển (Persistence)
-- **JSON Unified Database:** Hệ thống sử dụng cấu trúc JSON để lưu trữ bền vững triệu chứng bệnh nhân, đánh giá của bác sĩ và kết quả AI.
+- **JSON Unified Database:** Hệ thống sử dụng 6 tệp tin JSON chuyên biệt (`users.json`, `patient_symptoms.json`, `doctor_evaluations.json`, `schedules.json`, `video_list.json`, `lich_su_tap_luyen.json`) để lưu trữ bền vững triệu chứng bệnh nhân, đánh giá của bác sĩ và kết quả AI.
+- **Python 3.10 Compatibility:** Hệ thống được tối ưu hóa cho Python 3.10, sử dụng các thư viện build sẵn (.whl) cho MediaPipe và NumPy 1.26.4 để đảm bảo hiệu suất xử lý khung xương ổn định nhất trên Windows/Linux.
 - **Longitudinal Analytics:** Tự động tổng hợp dữ liệu để vẽ biểu đồ tiến triển, giúp bác sĩ nhận diện sự cải thiện biên độ vận động qua từng phiên tập.
 
 ### 2.3. Tối ưu hóa Trải nghiệm Người dùng (UX Enhancement)
@@ -44,8 +45,8 @@ Hệ thống đã đạt đến độ hoàn thiện cao nhất (Production-ready
 
 ## 5. KẾT QUẢ ĐẠT ĐƯỢC (v3.0 Finalized)
 - **Giao diện chuẩn y khoa:** Sử dụng font 'Times New Roman' và bố cục Card hiện đại, tăng 50% hiệu suất thao tác của bác sĩ.
-- **Quy trình bảo mật NCKH:** Tích hợp trang thông tin đạo đức nghiên cứu, bảo mật dữ liệu bệnh nhân theo chuẩn NCKH.
-- **Tính thực tiễn cao:** Đã được tinh chỉnh để sẵn sàng ứng dụng thử nghiệm tại Bệnh viện Đa khoa Phạm Ngọc Thạch.
+- **Quy trình bảo mật NCKH:** Tích hợp trang thông tin đạo đức nghiên cứu, bảo mật dữ liệu bệnh nhân theo chuẩn NCKH. Hệ thống tài khoản được phân quyền chặt chẽ (Admin, Doctor, Researcher, Patient).
+- **Tính thực tiễn cao:** Đã được tinh chỉnh bởi Chủ nhiệm đề tài **Đinh Lê Quỳnh Phương** và cố vấn chuyên môn để sẵn sàng ứng dụng thử nghiệm tại Bệnh viện Đa khoa Phạm Ngọc Thạch.
 
 ---
 

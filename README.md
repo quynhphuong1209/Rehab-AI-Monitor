@@ -27,12 +27,14 @@ Hệ thống tự động thay đổi cấu trúc dựa trên vai trò người 
 
 ## 🛠️ Công nghệ sử dụng
 - **AI Core:** MediaPipe (Pose), OpenCV, FFmpeg (Xử lý đa định dạng video MOV/MP4)
+- **Runtime:** Python 3.10 (Khuyến nghị để đảm bảo tương thích MediaPipe & Docker)
 - **Framework:** Streamlit (Custom CSS/JS & WebRTC)
 - **Data:** Pandas, NumPy, JSON Persistence (Lưu trữ bền vững)
 - **Visualization:** Plotly Professional Charts (Heatmaps, Progress Charts)
 
 ## 🚀 Chạy ứng dụng
 ```bash
+# Yêu cầu Python 3.10
 pip install -r requirements.txt
 streamlit run app.py
 ```

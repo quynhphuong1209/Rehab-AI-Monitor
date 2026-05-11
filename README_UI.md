@@ -11,7 +11,7 @@ Tài liệu này mô tả chi tiết về cấu trúc mã nguồn, thiết kế 
     - **WebRTC:** Xử lý luồng Camera thời gian thực.
     - **JavaScript Injection:** Thực hiện tự động hóa UI (Auto-Tab Switching).
     - **Plotly Engine:** Trực quan hóa dữ liệu lâm sàng và AI.
-- **Tối ưu:** Cơ chế đồng bộ Theme (Light/Dark Mode) đảm bảo không có artifacts và độ tương phản chuẩn y tế.
+- **Tối ưu:** Cơ chế đồng bộ Theme (Light/Dark Mode) đảm bảo không có artifacts và độ tương phản chuẩn y tế. Hệ thống ép font chữ **Times New Roman** thông qua CSS Inject để tạo môi trường học thuật và lâm sàng chuyên nghiệp.
 
 ---
 
@@ -19,8 +19,8 @@ Tài liệu này mô tả chi tiết về cấu trúc mã nguồn, thiết kế 
 Ứng dụng được thiết kế tối ưu hóa theo mô hình Role-based UI (Giao diện theo vai trò):
 
 ### 🏥 Thẩm mỹ Lâm sàng (Clinical Aesthetics)
-- **Typography:** Sử dụng font chữ 'Times New Roman' cho toàn bộ hệ thống, mang lại cảm giác tin cậy, chuyên nghiệp trong môi trường y tế.
-- **Theme Sync:** Hệ thống tự động điều chỉnh màu sắc Input, Card, và Sidebar khi chuyển đổi giữa Light và Dark mode, đảm bảo tính nhất quán (Pixel-perfect consistency).
+- **Typography:** Sử dụng font chữ 'Times New Roman' cho toàn bộ hệ thống (tiêu đề, nội dung, footer), mang lại cảm giác tin cậy, chuyên nghiệp trong môi trường y tế.
+- **Theme Sync:** Hệ thống tự động điều chỉnh màu sắc Input, Card, Sidebar và các thông báo (Success/Info/Warning) khi chuyển đổi giữa Light và Dark mode, đảm bảo tính nhất quán tuyệt đối (Pixel-perfect consistency).
 
 ### 🏠 Trang Chủ & Dashboard
 - **Thiết kế:** Bố cục card-based với các thẻ thông tin bài tập (Thời gian, Số lần, Thông số chuẩn).
