@@ -213,7 +213,6 @@ def hien_thi_footer_chung():
                         <p>🌐 <a href="https://huph.edu.vn/" target="_blank" style="color:{title_color}; text-decoration:none;">huph.edu.vn</a></p>
                     </div>
                 </div>
-
                 <!-- CỘT 2: NGHIÊN CỨU VIÊN -->
                 <div class="footer-col">
                     <div class="footer-title">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
@@ -234,7 +233,6 @@ def hien_thi_footer_chung():
                         <span>0382665916</span>
                     </div>
                 </div>
-
                 <!-- CỘT 3: ĐẠI HỌC Y TẾ CÔNG CỘNG (NHÓM NGHIÊN CỨU) -->
                 <div class="footer-col">
                     <div class="footer-title">👥 ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
@@ -255,7 +253,6 @@ def hien_thi_footer_chung():
                         <p style="margin-bottom: 5px;">6. <b>Nguyễn Thị Thu Hương</b> (2317010071) - CNCQ YTCC22-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2317010071@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2317010071@studenthuph.edu.vn</a></span></p>
                     </div>
                 </div>
-
                 <!-- CỘT 4: HỘI ĐỒNG ĐẠO ĐỨC -->
                 <div class="footer-col">
                     <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
