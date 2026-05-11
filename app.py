@@ -344,7 +344,7 @@ def hien_thi_footer_chung():
                 </div>
             </div>
             <div class="footer-bottom">
-                Đề tài NCKH cấp Trường | <b>REHAB-AI-MONITOR</b> | © 2026 NHÓM NGHIÊN CỨU HUPH
+                Đề tài NCKH cấp Trường | <b>REHAB-AI-MONITOR</b> | © 2026 NHÓM NGHIÊN CỨU TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG
             </div>
         </div>
     """)
