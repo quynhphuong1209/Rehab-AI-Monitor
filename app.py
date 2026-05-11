@@ -127,149 +127,248 @@ def hien_thi_footer_chung():
     label_color = "#222" if is_light else "#eee"
     school_name_color = "#1a1a2e" if is_light else "#fff"
     col_border = "rgba(0,0,0,0.1)" if is_light else "rgba(255,255,255,0.1)"
-
     footer_html = textwrap.dedent(f"""
         <style>
             .main-footer {{
                 background: {footer_bg};
-                padding: 50px 20px;
+                padding: 60px 20px 40px;
                 color: {footer_text};
                 font-family: 'Times New Roman', Times, serif !important;
-                border-top: 4px solid {border_color};
-                box-shadow: 0 -10px 25px rgba(0, 198, 255, 0.15);
-                margin-top: 60px;
+                border-top: 3px solid {border_color};
+                box-shadow: 0 -15px 35px rgba(0, 114, 255, 0.1);
+                margin-top: 80px;
+                position: relative;
+                overflow: hidden;
             }}
             .footer-container {{
                 display: flex;
                 flex-wrap: wrap;
                 justify-content: space-between;
-                max-width: 1300px;
+                max-width: 1400px;
                 margin: 0 auto;
-                gap: 20px;
+                gap: 30px;
             }}
             .footer-col {{
                 flex: 1;
-                min-width: 300px;
-                padding: 0 35px;
-                border-right: 1px solid {col_border};
+                min-width: 280px;
+                padding: 0 20px;
             }}
-            .footer-col:last-child {{
-                border-right: none;
-            }}
-            .logo-col {{
-                text-align: center;
-            }}
-            .footer-logo-img {{
-                width: 100px;
-                margin-bottom: 20px;
-                filter: {"none" if is_light else "drop-shadow(0 0 10px rgba(0, 198, 255, 0.3))"};
+            .footer-col.wide {{
+                flex: 1.5;
+                min-width: 400px;
             }}
             .footer-title {{
                 color: {title_color};
                 font-weight: bold;
-                margin-bottom: 20px;
-                font-size: 1.25rem;
+                margin-bottom: 25px;
+                font-size: 1.2rem;
+                letter-spacing: 1px;
                 text-transform: uppercase;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 10px;
+                border-bottom: 2px solid {col_border};
+                padding-bottom: 10px;
             }}
             .info-row {{
                 margin-bottom: 12px;
-                font-size: 1.05rem;
-                display: flex;
-                gap: 10px;
-                line-height: 1.5;
+                font-size: 1rem;
+                display: grid;
+                grid-template-columns: 80px 1fr;
+                line-height: 1.4;
             }}
             .info-label {{
                 font-weight: bold;
                 color: {label_color};
-                min-width: 70px;
+                opacity: 0.9;
+            }}
+            .info-value {{
+                color: {footer_text};
+            }}
+            .member-grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+                margin-top: 15px;
+            }}
+            .member-item {{
+                background: rgba(255,255,255,0.03);
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid {col_border};
+                transition: transform 0.2s;
+            }}
+            .member-item:hover {{
+                transform: translateY(-2px);
+                background: rgba(255,255,255,0.05);
+                border-color: {title_color};
+            }}
+            .member-name {{
+                font-weight: bold;
+                display: block;
+                font-size: 0.95rem;
+                margin-bottom: 2px;
+            }}
+            .member-id {{
+                font-size: 0.8rem;
+                opacity: 0.7;
+            }}
+            .member-class {{
+                font-size: 0.75rem;
+                display: block;
+                margin-top: 2px;
+                color: {title_color};
+            }}
+            .member-email {{
+                font-size: 0.75rem;
+                display: block;
+                margin-top: 4px;
+                text-decoration: none;
+                color: {footer_text};
+                opacity: 0.6;
+            }}
+            .member-email:hover {{
+                opacity: 1;
+                color: {title_color};
             }}
             .footer-bottom {{
                 padding-top: 30px;
-                margin-top: 40px;
-                border-top: 1px solid rgba(0,0,0,0.05);
-                font-size: 0.95rem;
-                color: {"#666" if is_light else "#777"};
+                margin-top: 50px;
+                border-top: 1px solid {col_border};
+                font-size: 0.9rem;
+                color: {"#666" if is_light else "#888"};
                 text-align: center;
+                letter-spacing: 0.5px;
             }}
-            .school-name {{
-                font-weight: bold; 
-                color: {school_name_color}; 
-                font-size: 1.15rem;
+            .school-logo-section {{
+                text-align: center;
+                margin-bottom: 20px;
+            }}
+            .footer-logo-img {{
+                width: 90px;
+                margin-bottom: 15px;
+                filter: {"none" if is_light else "drop-shadow(0 0 8px rgba(0, 198, 255, 0.4))"};
+            }}
+            .school-name-text {{
+                font-weight: bold;
+                color: {school_name_color};
+                font-size: 1.1rem;
                 line-height: 1.3;
-                margin-bottom: 8px;
+            }}
+            a {{
+                color: {title_color};
+                text-decoration: none;
+                transition: opacity 0.2s;
+            }}
+            a:hover {{
+                opacity: 0.8;
             }}
         </style>
         <div class="main-footer">
             <div class="footer-container">
-                <!-- CỘT 1: THƯƠNG HIỆU -->
-                <div class="footer-col logo-col">
-                    <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-                    <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
-                    <div style="font-size: 1rem; opacity: 0.8;">
-                        <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-                        <p>🌐 <a href="https://huph.edu.vn/" target="_blank" style="color:{title_color}; text-decoration:none;">huph.edu.vn</a></p>
+                <!-- CỘT 1: THÀNH PHẦN CHÍNH -->
+                <div class="footer-col">
+                    <div class="school-logo-section">
+                        <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
+                        <div class="school-name-text">TRƯỜNG ĐẠI HỌC<br>Y TẾ CÔNG CỘNG</div>
+                    </div>
+                    <div style="font-size: 0.95rem; opacity: 0.8; text-align: center;">
+                        <p>📍 1A Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                        <p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
                     </div>
                 </div>
-                <!-- CỘT 2: NGHIÊN CỨU VIÊN -->
+
+                <!-- CỘT 2: NGHIÊN CỨU VIÊN CHÍNH -->
                 <div class="footer-col">
-                    <div class="footer-title">👤 NGHIÊN CỨU VIÊN CHÍNH</div>
+                    <div class="footer-title">👤 CHỦ NHIỆM ĐỀ TÀI</div>
                     <div class="info-row">
                         <span class="info-label">Họ tên:</span>
-                        <span><b>Đinh Lê Quỳnh Phương</b> (2211090031)</span>
+                        <span class="info-value"><b>Đinh Lê Quỳnh Phương</b></span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Địa chỉ:</span>
-                        <span>Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</span>
+                        <span class="info-label">MSSV:</span>
+                        <span class="info-value">2211090031</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Email:</span>
-                        <span><a href="mailto:2211090031@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090031@studenthuph.edu.vn</a></span>
+                        <span class="info-value"><a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">SĐT:</span>
-                        <span>0382665916</span>
+                        <span class="info-value">0382665916</span>
+                    </div>
+                    <div class="info-row" style="margin-top: 15px;">
+                        <span class="info-label">Đơn vị:</span>
+                        <span class="info-value">Khoa Khoa học dữ liệu Y sinh</span>
                     </div>
                 </div>
-                <!-- CỘT 3: ĐẠI HỌC Y TẾ CÔNG CỘNG (NHÓM NGHIÊN CỨU) -->
-                <div class="footer-col">
-                    <div class="footer-title">👥 ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
-                    <div class="info-row">
-                        <span class="info-label">GVHD:</span>
-                        <span style="font-weight: bold;">TS. Trần Hồng Việt</span>
+
+                <!-- CỘT 3: NHÓM NGHIÊN CỨU (WIDE) -->
+                <div class="footer-col wide">
+                    <div class="footer-title">👥 NHÓM NGHIÊN CỨU & GVHD</div>
+                    <div style="margin-bottom: 20px; background: rgba(0,114,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid {title_color};">
+                        <div style="font-size: 0.9rem; margin-bottom: 5px; opacity: 0.8;">GIẢNG VIÊN HƯỚNG DẪN:</div>
+                        <div style="font-size: 1.1rem; font-weight: bold;">TS. Trần Hồng Việt</div>
+                        <div style="font-size: 0.9rem;"><a href="mailto:thviet79@gmail.com">✉️ thviet79@gmail.com</a></div>
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">Email:</span>
-                        <span><a href="mailto:thviet79@gmail.com" style="color:{title_color}; text-decoration:none;">thviet79@gmail.com</a></span>
-                    </div>
-                    <div style="font-size: 0.85rem; margin-top: 15px; border-top: 1px solid {col_border}; padding-top: 10px;">
-                        <p style="margin-bottom: 5px;">1. <b>Kim Mạnh Hưng</b> (2211090016) - CNCQ KHDL1-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2211090016@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090016@studenthuph.edu.vn</a></span></p>
-                        <p style="margin-bottom: 5px;">2. <b>Nguyễn Hải An</b> (2211090001) - CNCQ KHDL1-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2211090001@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090001@studenthuph.edu.vn</a></span></p>
-                        <p style="margin-bottom: 5px;">3. <b>Phan Vân Anh</b> (2211090004) - CNCQ KHDL1-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2211090004@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090004@studenthuph.edu.vn</a></span></p>
-                        <p style="margin-bottom: 5px;">4. <b>Nguyễn Thị Thanh Nga</b> (2211090027) - CNCQ KHDL1-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2211090027@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2211090027@studenthuph.edu.vn</a></span></p>
-                        <p style="margin-bottom: 5px;">5. <b>Nguyễn Thị Thơm</b> (2216030122) - CNCQ KTPHCN3-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2216030122@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2216030122@studenthuph.edu.vn</a></span></p>
-                        <p style="margin-bottom: 5px;">6. <b>Nguyễn Thị Thu Hương</b> (2317010071) - CNCQ YTCC22-1A <br><span style="opacity:0.8; font-size:0.8rem;">✉️ <a href="mailto:2317010071@studenthuph.edu.vn" style="color:{title_color}; text-decoration:none;">2317010071@studenthuph.edu.vn</a></span></p>
+                    
+                    <div class="member-grid">
+                        <div class="member-item">
+                            <span class="member-name">Kim Mạnh Hưng</span>
+                            <span class="member-id">2211090016</span>
+                            <span class="member-class">CNCQ KHDL1-1A</span>
+                            <a href="mailto:2211090016@studenthuph.edu.vn" class="member-email">✉️ 2211090016@...</a>
+                        </div>
+                        <div class="member-item">
+                            <span class="member-name">Nguyễn Hải An</span>
+                            <span class="member-id">2211090001</span>
+                            <span class="member-class">CNCQ KHDL1-1A</span>
+                            <a href="mailto:2211090001@studenthuph.edu.vn" class="member-email">✉️ 2211090001@...</a>
+                        </div>
+                        <div class="member-item">
+                            <span class="member-name">Phan Vân Anh</span>
+                            <span class="member-id">2211090004</span>
+                            <span class="member-class">CNCQ KHDL1-1A</span>
+                            <a href="mailto:2211090004@studenthuph.edu.vn" class="member-email">✉️ 2211090004@...</a>
+                        </div>
+                        <div class="member-item">
+                            <span class="member-name">Nguyễn Thị Thanh Nga</span>
+                            <span class="member-id">2211090027</span>
+                            <span class="member-class">CNCQ KHDL1-1A</span>
+                            <a href="mailto:2211090027@studenthuph.edu.vn" class="member-email">✉️ 2211090027@...</a>
+                        </div>
+                        <div class="member-item">
+                            <span class="member-name">Nguyễn Thị Thơm</span>
+                            <span class="member-id">2216030122</span>
+                            <span class="member-class">CNCQ KTPHCN3-1A</span>
+                            <a href="mailto:2216030122@studenthuph.edu.vn" class="member-email">✉️ 2216030122@...</a>
+                        </div>
+                        <div class="member-item">
+                            <span class="member-name">Nguyễn Thị Thu Hương</span>
+                            <span class="member-id">2317010071</span>
+                            <span class="member-class">CNCQ YTCC22-1A</span>
+                            <a href="mailto:2317010071@studenthuph.edu.vn" class="member-email">✉️ 2317010071@...</a>
+                        </div>
                     </div>
                 </div>
-                <!-- CỘT 4: HỘI ĐỒNG ĐẠO ĐỨC -->
+
+                <!-- CỘT 4: PHÁP LÝ -->
                 <div class="footer-col">
                     <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
-                    <div class="info-row">
-                        <span class="info-label">Tên:</span>
-                        <span>HĐĐĐ Trường ĐH Y tế Công cộng</span>
+                    <div style="font-size: 0.95rem; line-height: 1.6;">
+                        <p><b>HĐĐĐ Trường ĐH Y tế Công cộng</b></p>
+                        <p>📍 1A Đức Thắng, Bắc Từ Liêm, HN</p>
+                        <p>📧 <a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></p>
+                        <p>📞 024 62663024</p>
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">Địa chỉ:</span>
-                        <span>Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Email:</span>
-                        <span><a href="mailto:irb@huph.edu.vn" style="color:{title_color}; text-decoration:none;">irb@huph.edu.vn</a></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">SĐT:</span>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                Đề tài NCKH cấp Trường | <b>REHAB-AI-MONITOR</b> | © 2026 NHÓM NGHIÊN CỨU HUPH
+            </div>
+        </div>
+    """)
+    st.markdown(footer_html, unsafe_allow_html=True)nfo-label">SĐT:</span>
                         <span>024 62663024</span>
                     </div>
                 </div>
