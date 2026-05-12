@@ -413,10 +413,8 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* XÓA TRIỆT ĐỂ CHỮ RÁC ICON SIDEBAR */
+    /* XÓA TRIỆT ĐỂ CHỮ RÁC VÀ ICON GỐC TRONG NÚT SIDEBAR */
     [data-testid="stSidebarCollapseButton"] {
-        color: transparent !important;
-        font-size: 0 !important;
         background: rgba(0, 198, 255, 0.1) !important;
         border-radius: 8px !important;
         width: 40px !important;
@@ -424,14 +422,21 @@ st.markdown("""
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        border: 1px solid rgba(0, 198, 255, 0.2) !important;
-    }
-    
-    [data-testid="stSidebarCollapseButton"] svg {
-        display: none !important;
+        border: 1px solid rgba(0, 198, 255, 0.3) !important;
+        position: relative !important;
+        color: transparent !important;
     }
 
-    /* KHI SIDEBAR ĐANG MỞ (NÚT << Ở BÊN PHẢI) */
+    /* Ẩn mọi thứ bên trong nút (text, span, svg) */
+    [data-testid="stSidebarCollapseButton"] * {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        font-size: 0 !important;
+    }
+
+    /* KHI SIDEBAR ĐANG MỞ -> HIỂN THỊ << */
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
         position: absolute !important;
         right: 10px !important;
@@ -439,13 +444,18 @@ st.markdown("""
     }
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]::after {
         content: "<<" !important;
-        font-size: 20px !important;
+        position: absolute !important;
+        font-size: 18px !important;
         color: #00c6ff !important;
         font-weight: bold !important;
         visibility: visible !important;
+        display: block !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
     }
 
-    /* KHI SIDEBAR ĐANG ĐÓNG (NÚT >> Ở GÓC TRÁI MÀN HÌNH) */
+    /* KHI SIDEBAR ĐANG ĐÓNG -> HIỂN THỊ >> */
     header [data-testid="stSidebarCollapseButton"] {
         position: fixed !important;
         left: 10px !important;
@@ -454,10 +464,15 @@ st.markdown("""
     }
     header [data-testid="stSidebarCollapseButton"]::after {
         content: ">>" !important;
-        font-size: 20px !important;
+        position: absolute !important;
+        font-size: 18px !important;
         color: #00c6ff !important;
         font-weight: bold !important;
         visibility: visible !important;
+        display: block !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
     }
 
     /* XÓA TRIỆT ĐỂ CHỮ double_arrow_right */
