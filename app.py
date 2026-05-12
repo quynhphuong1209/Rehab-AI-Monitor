@@ -5464,6 +5464,7 @@ def main():
         # Kiểm tra BN được chọn có kết quả AI chưa để hiện Tab Kết quả AI
         selected_video_main = st.session_state.get('current_eval_video')
         has_ai_main = False
+        has_video_output = False
         if selected_video_main:
             evals_main = load_data(EVALUATIONS_FILE)
             # Kiểm tra xem AI đã gửi kết quả phân tích chưa
