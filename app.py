@@ -5329,6 +5329,10 @@ def main():
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
     # Định nghĩa các tab dựa trên vai trò
+    # Tải dữ liệu NCKH để kiểm tra điều kiện hiển thị tab
+    res_data_list = load_data(RESEARCH_DATA_FILE)
+    if not isinstance(res_data_list, list): res_data_list = []
+
     if user_role == "Quản trị viên":
         tab_titles = ["🏠 TRANG CHỦ", "🛠️ QUẢN TRỊ VIÊN", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bác sĩ / KTV PHCN":
@@ -5349,9 +5353,19 @@ def main():
             tab_titles.append("📊 KẾT QUẢ AI")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = ["🏠 TRANG CHỦ", "📄 PHIẾU NCKH", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        # Chỉ hiện phiếu NCKH nếu Bác sĩ đã bấm gửi (có dữ liệu cho BN này)
+        has_r = any(d.get('subject_code') == username for d in res_data_list)
+        tab_titles = ["🏠 TRANG CHỦ"]
+        if has_r:
+            tab_titles.append("📄 PHIẾU NCKH")
+        tab_titles += ["📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📄 PHIẾU NCKH", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        # Chỉ hiện phiếu NCKH nếu hệ thống đã có dữ liệu nghiên cứu
+        has_r = len(res_data_list) > 0
+        tab_titles = ["🏠 TRANG CHỦ"]
+        if has_r:
+            tab_titles.append("📄 PHIẾU NCKH")
+        tab_titles += ["📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     
