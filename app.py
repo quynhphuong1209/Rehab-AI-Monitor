@@ -2325,9 +2325,9 @@ def ve_bieu_do_goc_khuyu(df, bt):
 def ve_bieu_do_histogram(df, bt):
     """Vẽ biểu đồ histogram phân phối góc"""
     if df is None or df.empty: return go.Figure()
-    fig = make_subplots(rows=1, cols=2, 
+    fig = make_subplots(rows=2, cols=1, 
                         subplot_titles=("<b>Phân phối góc vai</b>", "<b>Phân phối góc khuỷu</b>"),
-                        shared_yaxes=True)
+                        vertical_spacing=0.15)
     
     fig.add_trace(go.Histogram(
         x=df['goc_vai'],
@@ -2345,7 +2345,7 @@ def ve_bieu_do_histogram(df, bt):
         opacity=0.8,
         name='Góc khuỷu',
         hovertemplate='Góc: %{x:.1f}°<br>Tần suất: %{y}<extra></extra>'
-    ), row=1, col=2)
+    ), row=2, col=1)
     
     is_light = st.session_state.theme == 'light'
     chart_text_color = '#333' if is_light else 'white'
@@ -2361,16 +2361,18 @@ def ve_bieu_do_histogram(df, bt):
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor=chart_bg,
         showlegend=False,
-        height=500,
+        height=700,
         bargap=0.05
     )
     
     fig.update_xaxes(title=dict(text="<b>Góc (độ)</b>", font=dict(size=12, color=chart_text_color)), 
                      gridcolor=chart_grid_color, row=1, col=1)
     fig.update_xaxes(title=dict(text="<b>Góc (độ)</b>", font=dict(size=12, color=chart_text_color)),
-                     gridcolor=chart_grid_color, row=1, col=2)
+                     gridcolor=chart_grid_color, row=2, col=1)
     fig.update_yaxes(title=dict(text="<b>Tần suất</b>", font=dict(size=12, color=chart_text_color)),
                      gridcolor=chart_grid_color, row=1, col=1)
+    fig.update_yaxes(title=dict(text="<b>Tần suất</b>", font=dict(size=12, color=chart_text_color)),
+                     gridcolor=chart_grid_color, row=2, col=1)
     
     return fig
 
@@ -2433,7 +2435,7 @@ def ve_bieu_do_boxplot_phan_loai(df):
     
     plot_df['Phân loại'] = plot_df.apply(classify, axis=1)
     
-    fig = make_subplots(rows=1, cols=2, subplot_titles=("<b>Góc Vai theo nhóm</b>", "<b>Góc Khuỷu theo nhóm</b>"))
+    fig = make_subplots(rows=2, cols=1, subplot_titles=("<b>Góc Vai theo nhóm</b>", "<b>Góc Khuỷu theo nhóm</b>"), vertical_spacing=0.15)
     
     colors = {'ĐÚNG (Pass)': '#00FF00', 'GẦN ĐÚNG (Nearly)': '#FFA500', 'SAI (Fail)': '#FF4444'}
     
@@ -2458,7 +2460,7 @@ def ve_bieu_do_boxplot_phan_loai(df):
                 boxmean='sd',
                 legendgroup=label,
                 showlegend=False
-            ), row=1, col=2)
+            ), row=2, col=1)
             
     is_light = st.session_state.theme == 'light'
     chart_text_color = '#333' if is_light else 'white'
@@ -2473,7 +2475,7 @@ def ve_bieu_do_boxplot_phan_loai(df):
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color=chart_text_color),
-        height=500,
+        height=800,
         legend=dict(
             orientation="h", 
             yanchor="bottom", 
