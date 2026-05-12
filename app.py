@@ -5697,7 +5697,17 @@ def main():
                         import pandas as pd
                         df_stat = pd.DataFrame(list(ex_counts.items()), columns=['Bài tập', 'Số lượt'])
                         fig = px.pie(df_stat, values='Số lượt', names='Bài tập', hole=0.4)
-                        fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+                        
+                        # Điều chỉnh màu sắc cho phù hợp với chế độ Sáng/Tối
+                        is_light_chart = st.session_state.get('theme', 'dark') == 'light'
+                        font_c = "#000" if is_light_chart else "#fff"
+                        
+                        fig.update_layout(
+                            margin=dict(t=0, b=0, l=0, r=0),
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            font=dict(color=font_c)
+                        )
                         st.plotly_chart(fig, use_container_width=True)
 
             if user_role != "Quản trị viên":
