@@ -5781,7 +5781,7 @@ def main():
                                         
                                         
                                         if user_role == "Bác sĩ / KTV PHCN":
-                                            st.session_state.trigger_tab_switch = "ĐÁNH GIÁ PHCN"
+                                            st.session_state.trigger_tab_switch = "📝 ĐÁNH GIÁ PHCN"
                                         else: # Nghiên cứu viên
                                             st.session_state.trigger_tab_switch = "PHÂN TÍCH"
                                         st.rerun()
