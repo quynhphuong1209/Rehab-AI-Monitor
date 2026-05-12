@@ -5543,6 +5543,18 @@ def main():
                 else:
                     st.info("Chưa có BN gửi thông tin triệu chứng.")
             
+            elif user_role == "Quản trị viên":
+                st.markdown("### 🛠️ ĐIỀU HƯỚNG QUẢN TRỊ")
+                st.info("💡 Chi tiết các chức năng:")
+                st.markdown("""
+                - **🏠 TRANG CHỦ**: Xem tổng quan và thống kê hệ thống.
+                - **🛠️ QUẢN TRỊ VIÊN**: Cấp tài khoản mới và xóa dữ liệu.
+                - **📖 HƯỚNG DẪN**: Quy trình sử dụng.
+                - **🏥 KIẾN THỨC PHCN**: Tài liệu chuyên môn.
+                - **🌐 CÔNG NGHỆ**: Giới thiệu AI.
+                - **📚 ĐỀ TÀI NCKH**: Thông tin đề tài.
+                - **👥 THÀNH VIÊN**: Nhóm phát triển.
+                """)
             else: # Vai trò Bệnh nhân
                 st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
                 ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
@@ -5653,10 +5665,46 @@ def main():
                     bai_tap = BAI_TAP[ma_bai_tap]
                 st.markdown("---")
 
-            is_light = st.session_state.theme == 'light'
-            info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
-            info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
-            info_text = "#000" if is_light else "#fff"
+            if user_role == "Quản trị viên":
+                st.markdown("## 📊 TỔNG QUAN HỆ THỐNG")
+                st.info("Chào mừng Quản trị viên. Dưới đây là bảng thống kê tổng quan về tình hình lựa chọn bài tập của bệnh nhân trên hệ thống.")
+                
+                s_data = load_data(SYMPTOMS_FILE)
+                v_data = load_data(VIDEOS_FILE)
+                
+                ex_counts = {}
+                for s in s_data:
+                    ex = s.get('exercise', 'Không xác định')
+                    ex_counts[ex] = ex_counts.get(ex, 0) + 1
+                for v in v_data:
+                    ex = v.get('exercise', 'Không xác định')
+                    ex_counts[ex] = ex_counts.get(ex, 0) + 1
+                    
+                total_selections = sum(ex_counts.values())
+                
+                if total_selections == 0:
+                    st.warning("📭 Chưa có dữ liệu bệnh nhân tương tác chọn bài tập.")
+                else:
+                    st.markdown("### 🎯 THỐNG KÊ LƯỢT BỆNH NHÂN CHỌN ĐỘNG TÁC")
+                    col_st1, col_st2 = st.columns([1, 2])
+                    with col_st1:
+                        st.metric("Tổng số lượt tương tác (Khai báo + Video)", total_selections)
+                        for ex, count in ex_counts.items():
+                            percent = (count / total_selections) * 100
+                            st.markdown(f"**{ex}**: {count} lượt ({percent:.1f}%)")
+                    with col_st2:
+                        import plotly.express as px
+                        import pandas as pd
+                        df_stat = pd.DataFrame(list(ex_counts.items()), columns=['Bài tập', 'Số lượt'])
+                        fig = px.pie(df_stat, values='Số lượt', names='Bài tập', hole=0.4)
+                        fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+                        st.plotly_chart(fig, use_container_width=True)
+
+            if user_role != "Quản trị viên":
+                is_light = st.session_state.theme == 'light'
+                info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
+                info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
+                info_text = "#000" if is_light else "#fff"
 
             # 1. HÀNG ĐẦU: THÔNG TIN VÀ CHỈ SỐ
             col1, col2 = st.columns([2, 1])
