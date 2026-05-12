@@ -10,9 +10,10 @@
 
 Hệ thống giúp tự động hóa việc giám sát và đánh giá các bài tập phục hồi chức năng (PHCN) cho bệnh nhân viêm quanh khớp vai, đảm bảo bệnh nhân tập luyện đúng kỹ thuật ngay cả khi ở nhà thông qua phân tích AI thời gian thực.
 
-## ✨ Tính năng nổi bật (v3.0 Finalized)
+## ✨ Tính năng nổi bật (v3.1 Updated)
 - 💎 **Thẩm mỹ Lâm sàng:** Giao diện sử dụng font chữ 'Times New Roman' chuẩn mực, thiết kế card-based hiện đại với hiệu ứng Glassmorphism.
 - 🌓 **Đồng bộ Theme:** Hỗ trợ hoàn hảo chế độ Sáng (Light) và Tối (Dark) với sự chuyển đổi mượt mà, không lỗi tương phản.
+- 📱 **Mobile-First Optimization:** Hệ thống Tab được tối ưu hóa toàn diện cho di động, đảm bảo chữ không bị tràn, hiển thị đầy đủ và hỗ trợ cuộn ngang chuyên nghiệp.
 - 🩺 **Luồng liên lạc khép kín:** Bệnh nhân khai báo triệu chứng (VAS) -> Chuyên gia nhận xét lâm sàng -> Kết nối kết quả AI.
 - 🚀 **Điều hướng Auto-Tab:** Tự động chuyển Tab thông minh khi chọn video để đánh giá, tối ưu hóa thao tác người dùng.
 - 🦾 **Phân tích khung xương AI:** Tích hợp MediaPipe Pose Estimation (Heavy/Full/Lite) với độ chính xác cao.
@@ -40,7 +41,7 @@ streamlit run app.py
 ```
 
 ## 👩‍⚕️ Nhóm nghiên cứu
-- **Giảng viên hướng dẫn:** Doctor 1
+- **Giảng viên hướng dẫn:** TS. Trần Hồng Việt
 - **Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương
 - **Thành viên nhóm NCKH:** Kim Mạnh Hưng, Nguyễn Hải An, Nguyễn Thị Thanh Nga, Phan Vân Anh, Nguyễn Thị Thơm, Nguyễn Thị Thu Hương
 - **Đơn vị:** Đại học Y tế Công cộng - Bệnh viện Đa khoa Phạm Ngọc Thạch.
