@@ -5424,12 +5424,7 @@ def main():
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        # Chỉ hiện phiếu NCKH nếu hệ thống đã có dữ liệu nghiên cứu
-        has_r = len(res_data_list) > 0
-        tab_titles = ["🏠 TRANG CHỦ"]
-        if has_r:
-            tab_titles.append("📄 PHIẾU NCKH")
-        tab_titles += ["📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     
@@ -6050,6 +6045,12 @@ def main():
     if "💬 PHẢN HỒI" in tab_map:
         with tab_map["💬 PHẢN HỒI"]:
             hien_thi_tab_phan_hoi()
+
+    if "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
+        with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]:
+            st.markdown("## 📊 TỔNG HỢP KẾT QUẢ ĐÁNH GIÁ (NCV)")
+            st.info("💡 Đây là dữ liệu tổng hợp từ Bác sĩ & KTV để phục vụ nghiên cứu.")
+            hien_thi_tab_phieu_nckh()
 
     if "📄 PHIẾU NCKH" in tab_map:
         with tab_map["📄 PHIẾU NCKH"]:
