@@ -5212,6 +5212,10 @@ def main():
     
     user_role = st.session_state.user_info.get('role', 'Bệnh nhân')
     
+    # --- KHỞI TẠO MẶC ĐỊNH ĐỂ TRÁNH LỖI UNBOUNDLOCALERROR ---
+    ma_bai_tap = list(BAI_TAP.keys())[0]
+    bai_tap = BAI_TAP[ma_bai_tap]
+    
     with st.sidebar:
         st.markdown(f"### 🎭 VAI TRÒ: {user_role.upper()}")
         
@@ -5389,6 +5393,14 @@ def main():
     # ==================== TAB 1: TRANG CHỦ ====================
     if "🏠 TRANG CHỦ" in tab_map:
         with tab_map["🏠 TRANG CHỦ"]:
+            # Nếu là Bác sĩ, cho phép chọn bài tập ngay tại đây vì Sidebar đã dọn dẹp
+            if user_role == "Bác sĩ / KTV PHCN":
+                c_bt1, c_bt2 = st.columns([2, 1])
+                with c_bt1:
+                    ma_bai_tap = st.selectbox("🎯 CHỌN BÀI TẬP ĐANG THEO DÕI", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="doc_home_exercise")
+                    bai_tap = BAI_TAP[ma_bai_tap]
+                st.markdown("---")
+
             is_light = st.session_state.theme == 'light'
             info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
             info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
