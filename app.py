@@ -3081,9 +3081,15 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             st.info("ℹ️ Chưa có video nào để phân tích. Vui lòng upload video ở tab TRANG CHỦ hoặc chờ bệnh nhân gửi video.")
             return
     
-    bt = st.session_state.exercise
-    tk = st.session_state.stats
-    df = st.session_state.angle_df
+    bt = st.session_state.get('exercise', BAI_TAP['codman'])
+    if bt is None: bt = BAI_TAP['codman']
+    tk = st.session_state.get('stats')
+    df = st.session_state.get('angle_df')
+    
+    if tk is None or df is None:
+        st.warning("⚠️ Dữ liệu phân tích chi tiết không khả dụng hoặc chưa được tải.")
+        st.info("💡 Vui lòng đảm bảo Nghiên cứu viên đã hoàn tất việc trích xuất khung xương cho video này.")
+        return
     
     # Chuẩn bị dữ liệu thống kê tổng hợp (Mở rộng cho NCV)
     fail_count_total = tk['tong_frame_hop_le'] - tk['frame_dung'] - tk['frame_gan_dung']
@@ -6012,6 +6018,9 @@ def main():
                     st.session_state.all_frames_data_path = v_data.get('all_frames_data_path')
                     st.session_state.uploaded_file_name = v_data.get('video_name')
                     st.session_state.has_data = True
+                    # Load bài tập để tránh lỗi NoneType khi hiển thị biểu đồ
+                    ex_name = v_data.get('exercise', 'codman')
+                    st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
                     if v_data.get('df_path') and os.path.exists(v_data['df_path']):
                         try: st.session_state.angle_df = pd.read_csv(v_data['df_path'])
                         except: pass
