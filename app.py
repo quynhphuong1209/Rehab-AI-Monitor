@@ -4319,7 +4319,12 @@ def hien_thi_tab_phieu_nckh():
             ])
             department = st.radio("Khoa điều trị:", ["Khoa PHCN – Y học cổ truyền (1)", "Khác (99)"], horizontal=True)
             treatment_type = st.radio("Hình thức điều trị:", ["Nội trú (1)", "Ngoại trú (2)"], horizontal=True)
-            diagnosis = st.radio("Chẩn đoán:", ["Viêm quanh khớp vai (được bác sĩ xác định dựa Xquang hoặc MRI) (1)"])
+            diagnosis = st.radio("Chẩn đoán:", [
+                "Viêm quanh khớp vai thể giả liệt (1)", 
+                "Viêm quanh khớp vai thể đông cứng (2)", 
+                "Viêm quanh khớp vai thể đơn thuần (3)", 
+                "Viêm quanh khớp cấp (4)"
+            ])
             lesion_side = st.radio("Vị trí vai tổn thương:", ["Vai trái (1)", "Vai phải (2)"], horizontal=True)
             duration = st.radio("Thời gian mắc bệnh:", ["< 1 tháng (1)", "1 – 3 tháng (2)", ">= 3 tháng (3)"], horizontal=True)
 
