@@ -4272,6 +4272,7 @@ def hien_thi_tab_phieu_nckh():
     p_record = next((s for s in reversed(symptoms_data) if s['username'] == patient_username), None)
     
     # Giá trị mặc định hoặc từ record
+    d_sub_code = p_record.get('patient_id', patient_username) if p_record else patient_username
     d_age = p_record.get('age', 25) if p_record else 25
     d_gender_idx = 0
     if p_record:
@@ -4292,7 +4293,7 @@ def hien_thi_tab_phieu_nckh():
         with col1:
             interviewer = st.text_input("Họ và tên người phỏng vấn:", value=st.session_state.user_info.get('full_name', '') if user_role != "Bệnh nhân" else "Tự khai báo")
             interview_date = st.date_input("Ngày phỏng vấn:", value=get_vn_now())
-            subject_code = st.text_input("Mã đối tượng (Mã BN):", value=patient_username)
+            subject_code = st.text_input("Mã đối tượng (Mã BN):", value=d_sub_code)
             age = st.number_input("Tuổi:", min_value=0, max_value=120, value=d_age)
             gender = st.radio("Giới tính:", ["Nam (1)", "Nữ (2)"], horizontal=True, index=d_gender_idx)
             region = st.radio("Khu vực:", ["Nội thành (1)", "Ngoại thành (2)"], horizontal=True)
@@ -5274,11 +5275,12 @@ def main():
             if user_role == "Bệnh nhân":
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("📤 GỬI THÔNG TIN CHO BÁC SĨ - KTV VÀ NCV", width="stretch", type="primary"):
-                    if s_desc:
+                    if ten_nguoi_dung and ma_nguoi_dung and gioi_tinh != "" and s_desc and ma_bai_tap:
                         s_data = load_data(SYMPTOMS_FILE)
                         s_data.append({
                             "username": st.session_state.user_info['username'],
-                            "full_name": ten_nguoi_dung if ten_nguoi_dung else st.session_state.user_info.get('full_name', ''),
+                            "full_name": ten_nguoi_dung,
+                            "patient_id": ma_nguoi_dung,
                             "age": tuoi,
                             "gender": gioi_tinh,
                             "exercise": BAI_TAP[ma_bai_tap]['ten'],
@@ -5287,10 +5289,10 @@ def main():
                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                         })
                         save_data(SYMPTOMS_FILE, s_data)
-                        st.success("✅ Đã gửi thông tin cho BÁC SĨ - KTV và NCV thành công!")
+                        st.success("✅ Đã gửi thông tin đầy đủ cho BÁC SĨ - KTV và NCV thành công!")
                         st.balloons()
                     else:
-                        st.warning("⚠️ Vui lòng nhập mô tả.")
+                        st.warning("⚠️ Vui lòng điền đầy đủ các thông tin: Họ tên, Mã định danh, Giới tính, Bài tập và Mô tả triệu chứng.")
             
             if user_role == "Bác sĩ / KTV PHCN":
                 st.markdown("---")
