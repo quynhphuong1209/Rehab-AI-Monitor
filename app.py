@@ -3964,6 +3964,7 @@ def hien_thi_ket_qua_cho_benh_nhan():
             
             # --- HIỂN THỊ THÊM KẾT QUẢ NCKH (NẾU CÓ) ---
             res_data = load_data(RESEARCH_DATA_FILE)
+            username = st.session_state.user_info['username']
             my_res = [d for d in res_data if d.get('patient_username') == username or d.get('subject_code') == username]
             if my_res:
                 st.markdown("---")
