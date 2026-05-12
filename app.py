@@ -3805,47 +3805,128 @@ def hien_thi_form_danh_gia_bac_si():
     st.markdown("## 📝 PHIẾU ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC (GROUND TRUTH)")
     
     selected_video = st.session_state.get('current_eval_video')
-    if not selected_video:
-        st.warning("⚠️ Vui lòng chọn một video từ danh sách ở TRANG CHỦ để bắt đầu đánh giá.")
-        return
-
-    # KIỂM TRA XEM ĐÃ CÓ ĐÁNH GIÁ CHO VIDEO NÀY CHƯA
     evals = load_data(EVALUATIONS_FILE)
-    existing_eval = next((e for e in evals if 
-                         e.get('patient_username') == selected_video['username'] and 
-                         e.get('video_name') == selected_video.get('video_name') and
-                         e.get('doctor_username') == st.session_state.user_info['username']), None)
+    my_history = [e for e in evals if e.get('doctor_username') == st.session_state.user_info['username']]
 
-    if existing_eval and not st.session_state.get('re_eval_mode'):
-        st.markdown(f"### ✅ BẠN ĐÃ HOÀN THÀNH ĐÁNH GIÁ CHO VIDEO NÀY")
-        st.info("💡 Dưới đây là thông tin bạn đã gửi cho bệnh nhân. Bạn có thể nhấn 'Đánh giá lại' nếu muốn thay đổi.")
+    if not selected_video:
+        st.info("💡 Chọn một video ở TRANG CHỦ để bắt đầu đánh giá mới. Danh sách các đánh giá cũ hiển thị ở phía dưới.")
+    else:
+        existing_eval = next((e for e in my_history if 
+                             e.get('patient_username') == selected_video['username'] and 
+                             e.get('video_name') == selected_video.get('video_name')), None)
+
+        if existing_eval and not st.session_state.get('re_eval_mode'):
+            st.success(f"✅ BẠN ĐÃ ĐÁNH GIÁ VIDEO: {selected_video['full_name']}")
+            c1, c2 = st.columns([1, 2])
+            with c1:
+                st.metric("Kết quả", existing_eval['doctor_result'])
+                st.write(f"**Thời gian:** {existing_eval['time']}")
+            with c2:
+                st.info(f"**Nhận xét cho BN:** {existing_eval['comments']}")
+                st.warning(f"**Ghi chú cho NCV:** {existing_eval.get('comments_ncv', 'N/A')}")
+            
+            if st.button("🔄 Đánh giá lại bài tập này"):
+                st.session_state.re_eval_mode = True
+                st.rerun()
+            st.markdown("---")
         
-        c1, c2 = st.columns([1, 2])
-        with c1:
-            st.metric("Kết quả", existing_eval['doctor_result'])
-            st.write(f"**Thời gian:** {existing_eval['time']}")
-        with c2:
-            st.success(f"**Nhận xét:** {existing_eval['comments']}")
-            st.write(f"**Kế hoạch:** {existing_eval['plan']}")
-            if existing_eval.get('errors'):
-                st.warning(f"**Các lỗi ghi nhận:** {', '.join(existing_eval['errors'])}")
-        
-        if st.button("🔄 Đánh giá lại động tác này"):
-            st.session_state.re_eval_mode = True
-            st.rerun()
-        return
+        else:
+            if st.session_state.get('re_eval_mode'):
+                if st.button("⬅️ Quay lại xem tóm tắt"):
+                    st.session_state.re_eval_mode = False
+                    st.rerun()
 
-    # Nếu đang ở chế độ đánh giá (mới hoặc đánh giá lại)
-    if st.session_state.get('re_eval_mode'):
-        if st.button("⬅️ Quay lại bản xem trước"):
-            st.session_state.re_eval_mode = False
-            st.rerun()
+            st.markdown(f"#### 🎬 Đang đánh giá: {selected_video['full_name']} - {selected_video['exercise']}")
 
-    st.markdown(f"""
-    <div style="background: rgba(0,206,209,0.1); padding: 1rem; border-radius: 10px; border: 1px solid #00CED1; margin-bottom: 1rem;">
-        <strong>🎬 Đang đánh giá video:</strong> {selected_video['full_name']} - {selected_video['exercise']} ({selected_video['time']})
-    </div>
-    """, unsafe_allow_html=True)
+            # Video Player
+            if os.path.exists(selected_video['video_path']):
+                st.video(selected_video['video_path'])
+            
+            # Triệu chứng
+            s_data = load_data(SYMPTOMS_FILE)
+            p_s = next((s for s in reversed(s_data) if s['username'] == selected_video['username']), None)
+            if p_s:
+                with st.expander("🩺 TRIỆU CHỨNG BN KHAI BÁO", expanded=False):
+                    st.write(f"• **Mô tả:** {p_s['symptoms']}")
+                    st.write(f"• **Mức độ đau:** {p_s.get('vas', 'N/A')}/10")
+
+            with st.form("doctor_eval_form_final_v6"):
+                st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC")
+                c1, c2 = st.columns(2)
+                with c1:
+                    k_qua = st.radio("Kết quả đánh giá:", ["Đúng", "Sai", "Gần đúng"])
+                with c2:
+                    l_sai = st.multiselect("Lỗi sai (nếu có):", ["Vị trí tay chưa đúng", "Biên độ chưa đạt", "Tốc độ quá nhanh/chậm", "Sai tư thế thân người"])
+
+                st.markdown("### V. NHẬN XÉT & GHI CHÚ")
+                n_xet = st.text_area("Gửi cho Bệnh nhân:", height=100)
+                n_xet_ncv = st.text_area("Ghi chú cho Nghiên cứu viên:", height=100)
+                k_hoach = st.radio("Kế hoạch tiếp theo:", ["Tiếp tục bài tập hiện tại", "Chuyển sang bài tập mới", "Hẹn khám lại trực tiếp"])
+
+                submitted = st.form_submit_button("🚀 GỬI ĐÁNH GIÁ", type="primary")
+            
+            if submitted:
+                new_e = {
+                    "patient_username": selected_video['username'],
+                    "doctor_username": st.session_state.user_info['username'],
+                    "video_name": selected_video['video_name'],
+                    "exercise": selected_video['exercise'],
+                    "doctor_result": k_qua,
+                    "errors": l_sai,
+                    "comments": n_xet,
+                    "comments_ncv": n_xet_ncv,
+                    "plan": k_hoach,
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                # Cập nhật hoặc thêm mới
+                evals = [e for e in evals if not (e.get('patient_username') == new_e['patient_username'] and e.get('video_name') == new_e['video_name'] and e.get('doctor_username') == new_e['doctor_username'])]
+                evals.append(new_e)
+                save_data(EVALUATIONS_FILE, evals)
+                st.session_state.re_eval_mode = False
+                st.success("✅ Đã gửi đánh giá thành công!")
+                st.rerun()
+
+    # 2. PHẦN NHẬT KÝ LỊCH SỬ (DƯỚI CÙNG - LUÔN HIỆN)
+    st.markdown("---")
+    st.markdown("### 📜 NHẬT KÝ ĐÁNH GIÁ LÂM SÀNG")
+    if not my_history:
+        st.info("📭 Bạn chưa có bản ghi đánh giá lâm sàng nào.")
+    else:
+        for h in reversed(my_history):
+            with st.expander(f"🕒 {h['time']} - BN: {h['patient_username']} - KQ: {h['doctor_result']}"):
+                col_h1, col_h2 = st.columns(2)
+                with col_h1:
+                    st.write(f"**Bài tập:** {h['exercise']}")
+                    st.write(f"**Kết quả:** {h['doctor_result']}")
+                    if h.get('errors'):
+                        st.write(f"**Lỗi:** {', '.join(h['errors'])}")
+                with col_h2:
+                    st.success(f"**Nhận xét BN:** {h['comments']}")
+                    st.info(f"**Ghi chú NCV:** {h.get('comments_ncv', 'Không có')}")
+                    st.write(f"**Chỉ định:** {h['plan']}")
+            evals_data = load_data(EVALUATIONS_FILE)
+            has_ai_sent = any(
+                e.get('doctor_username') == "AI_Researcher" and 
+                e.get('patient_username') == selected_video['username'] and 
+                e.get('video_name') == selected_video.get('video_name') 
+                for e in evals_data
+            )
+            
+            display_video_path = selected_video['video_path']
+            if os.path.exists(display_video_path):
+                st.markdown(f"### 📺 XEM LẠI VIDEO GỐC")
+                st.video(display_video_path)
+            
+            # Hiển thị triệu chứng của bệnh nhân này
+            symptoms_data = load_data(SYMPTOMS_FILE)
+            patient_symptom = next((s for s in reversed(symptoms_data) if s['username'] == selected_video['username']), None)
+            if patient_symptom:
+                with st.expander("🩺 TRIỆU CHỨNG BN KHAI BÁO", expanded=True):
+                    st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
+                    st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
+
+            # Form nhập liệu
+            # ... (Tiếp tục với code form bên dưới)
 
     # Kiểm tra xem NCV đã gửi kết quả cho VIDEO NÀY chưa
     evals_data = load_data(EVALUATIONS_FILE)
