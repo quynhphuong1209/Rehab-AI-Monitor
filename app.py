@@ -104,6 +104,7 @@ SYMPTOMS_FILE = "patient_symptoms.json"
 EVALUATIONS_FILE = "doctor_evaluations.json"
 REMINDERS_FILE = "schedules.json"
 VIDEOS_FILE = "video_list.json"
+RESEARCH_DATA_FILE = "research_data.json"
 
 def hien_thi_footer_chung():
     """Hiển thị chân trang (footer) chuyên nghiệp cho dự án Rehab-AI-Monitor"""
@@ -4253,6 +4254,130 @@ def hien_thi_lich_nhac_nho():
                         st.rerun()
 
 # ============================================
+# HÀM HIỂN THỊ PHIẾU ĐÁNH GIÁ NCKH (MỚI)
+# ============================================
+def hien_thi_tab_phieu_nckh():
+    st.markdown("## 📄 PHIẾU ĐÁNH GIÁ KỸ THUẬT TẬP LUYỆN")
+    st.markdown("*(Bộ công cụ thu thập dữ liệu Nghiên cứu khoa học)*")
+    st.info("💡 Phiếu này dùng để thu thập dữ liệu phục vụ nghiên cứu mô hình trí tuệ nhân tạo (AI) trong nhận diện động tác phục hồi chức năng.")
+    
+    user_role = st.session_state.user_info.get('role', 'Bệnh nhân')
+    selected_video = st.session_state.get('current_eval_video')
+    
+    with st.form("research_evaluation_form_v2"):
+        # I. THÔNG TIN CHUNG
+        st.markdown("### I. THÔNG TIN CHUNG VÀ ĐẶC ĐIỂM LÂM SÀNG")
+        col1, col2 = st.columns(2)
+        with col1:
+            interviewer = st.text_input("Họ và tên người phỏng vấn:", value=st.session_state.user_info.get('full_name', '') if user_role != "Bệnh nhân" else "Tự khai báo")
+            interview_date = st.date_input("Ngày phỏng vấn:", value=get_vn_now())
+            subject_code = st.text_input("Mã đối tượng (Mã BN):", value=selected_video['username'] if selected_video else st.session_state.user_info['username'])
+            age = st.number_input("Tuổi:", min_value=0, max_value=120, value=25)
+            gender = st.radio("Giới tính:", ["Nam (1)", "Nữ (2)"], horizontal=True)
+            region = st.radio("Khu vực:", ["Nội thành (1)", "Ngoại thành (2)"], horizontal=True)
+        with col2:
+            job = st.selectbox("Nghề nghiệp:", [
+                "Nông dân (1)", "Công nhân (2)", "Cán bộ - viên chức (3)", 
+                "Buôn bán (4)", "Nội trợ (5)", "Lao động tự do (6)", "Nghỉ hưu (7)"
+            ])
+            education = st.selectbox("Trình độ học vấn:", [
+                "Mù chữ (1)", "Tiểu học (2)", "Trung học cơ sở (3)", 
+                "Trung học phổ thông (4)", "Cao đẳng – đại học (5)"
+            ])
+            department = st.radio("Khoa điều trị:", ["Khoa PHCN – Y học cổ truyền (1)", "Khác (99)"], horizontal=True)
+            treatment_type = st.radio("Hình thức điều trị:", ["Nội trú (1)", "Ngoại trú (2)"], horizontal=True)
+            diagnosis = st.radio("Chẩn đoán:", ["Viêm quanh khớp vai (được bác sĩ xác định dựa Xquang hoặc MRI) (1)"])
+            lesion_side = st.radio("Vị trí vai tổn thương:", ["Vai trái (1)", "Vai phải (2)"], horizontal=True)
+            duration = st.radio("Thời gian mắc bệnh:", ["< 1 tháng (1)", "1 – 3 tháng (2)", ">= 3 tháng (3)"], horizontal=True)
+
+        # II. THÔNG TIN PHỤC HỒI
+        st.markdown("### II. THÔNG TIN PHỤC HỒI")
+        col3, col4 = st.columns(2)
+        with col3:
+            training_side = st.radio("Bên tập luyện:", ["Vai trái", "Vai phải"], horizontal=True)
+            pain_level = st.radio("Mức độ đau (VAS 0–10):", ["Nhẹ (0–3)", "Trung bình (4–6)", "Nặng (7–10)"], horizontal=True)
+        with col4:
+            disease_severity = st.radio("Mức độ bệnh:", ["Nhẹ", "Trung bình", "Nặng"], horizontal=True)
+
+        # III. NỘI DUNG TẬP LUYỆN
+        st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
+        ex_options = [BAI_TAP[k]['ten'] for k in BAI_TAP]
+        default_ex = [selected_video['exercise']] if selected_video and selected_video['exercise'] in ex_options else []
+        exercise_list = st.multiselect("Bài tập được ghi hình:", options=ex_options, default=default_ex)
+
+        # IV. ĐÁNH GIÁ KỸ THUẬT (GROUND TRUTH)
+        st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC (GROUND TRUTH)")
+        if user_role == "Bệnh nhân":
+            st.info("💡 Phần này sẽ do Bác sĩ / KTV PHCN hoặc Nghiên cứu viên đánh giá sau khi xem video.")
+        
+        col5, col6 = st.columns(2)
+        with col5:
+            general_result = st.radio("Kết quả tổng quát:", ["Đúng (1)", "Sai (2)"], horizontal=True)
+            total_reps = st.number_input("Tổng số lần thực hiện:", min_value=0, value=0)
+        with col6:
+            correct_reps = st.number_input("Số lần thực hiện đúng kỹ thuật:", min_value=0, value=0)
+        specialist_comment = st.text_area("Nhận xét chuyên môn của Bác sĩ/KTV PHCN:")
+
+        # V. THÔNG TIN VIDEO
+        st.markdown("### V. THÔNG TIN DỮ LIỆU VIDEO")
+        col7, col8 = st.columns(2)
+        with col7:
+            video_code = st.text_input("Mã video:", value=selected_video['video_name'] if selected_video else "")
+            recording_device = st.radio("Thiết bị ghi hình:", ["Điện thoại (1)", "Webcam (2)", "Khác (3)"], horizontal=True)
+        with col8:
+            recording_angle = st.radio("Góc quay:", ["Chính diện (1)", "Bên trái (2)", "Bên phải (3)"], horizontal=True)
+            camera_distance = st.text_input("Khoảng cách camera (m):", value="2.5")
+
+        # VI. XÁC NHẬN
+        st.markdown("---")
+        st.write("### VI. XÁC NHẬN")
+        confirm = st.checkbox("Tôi xác nhận các thông tin trên là chính xác và phục vụ cho mục đích nghiên cứu khoa học.")
+        
+        btn_label = "🚀 LƯU PHIẾU ĐÁNH GIÁ NGHIÊN CỨU" if user_role != "Bệnh nhân" else "🚀 GỬI THÔNG TIN KHAI BÁO"
+        submitted = st.form_submit_button(btn_label, width="stretch", type="primary")
+        
+        if submitted:
+            if not confirm:
+                st.error("⚠️ Vui lòng tick chọn xác nhận trước khi lưu phiếu.")
+            else:
+                research_data = load_data(RESEARCH_DATA_FILE)
+                entry = {
+                    "interviewer": interviewer,
+                    "interview_date": str(interview_date),
+                    "subject_code": subject_code,
+                    "age": age,
+                    "gender": gender,
+                    "region": region,
+                    "job": job,
+                    "education": education,
+                    "department": department,
+                    "treatment_type": treatment_type,
+                    "diagnosis": diagnosis,
+                    "lesion_side": lesion_side,
+                    "duration": duration,
+                    "training_side": training_side,
+                    "pain_level": pain_level,
+                    "disease_severity": disease_severity,
+                    "exercises": exercise_list,
+                    "general_result": general_result,
+                    "total_reps": total_reps,
+                    "correct_reps": correct_reps,
+                    "specialist_comment": specialist_comment,
+                    "video_code": video_code,
+                    "recording_device": recording_device,
+                    "recording_angle": recording_angle,
+                    "camera_distance": camera_distance,
+                    "submitted_by": st.session_state.user_info['username'],
+                    "role": user_role,
+                    "timestamp": get_vn_now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                research_data.append(entry)
+                save_data(RESEARCH_DATA_FILE, research_data)
+                st.success("✅ Đã lưu phiếu đánh giá nghiên cứu thành công!")
+                st.balloons()
+
+
+# ============================================
 # HÀM HIỂN THỊ LỊCH FRAMES ĐẦY ĐỦ
 # ============================================
 @st.fragment
@@ -5140,14 +5265,14 @@ def main():
                 for e in evals_main
             )
             
-        tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN"]
+        tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN", "📄 PHIẾU NCKH"]
         if has_ai_main:
             tab_titles.append("📊 KẾT QUẢ AI")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "📄 PHIẾU NCKH", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "📄 PHIẾU NCKH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     
@@ -5760,6 +5885,10 @@ def main():
     if "💬 PHẢN HỒI" in tab_map:
         with tab_map["💬 PHẢN HỒI"]:
             hien_thi_tab_phan_hoi()
+
+    if "📄 PHIẾU NCKH" in tab_map:
+        with tab_map["📄 PHIẾU NCKH"]:
+            hien_thi_tab_phieu_nckh()
 
 
     # ==================== FOOTER CHUNG (LUÔN HIỆN Ở DƯỚI CÙNG) ====================
