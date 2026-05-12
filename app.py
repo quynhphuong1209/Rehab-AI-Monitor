@@ -149,6 +149,32 @@ def hien_thi_footer_chung():
 .footer-logo-img {{width:95px;margin-bottom:10px;filter:{"none" if is_light else "drop-shadow(0 0 8px rgba(0, 198, 255, 0.4))"}}}
 .school-name-text {{font-weight:bold;color:{school_name_color};font-size:1.15rem;line-height:1.2}}
 a {{color:{title_color};text-decoration:none}}
+
+/* TỐI ƯU HÓA CÁC TAB - ĐẢM BẢO CHỮ KHÔNG BỊ TRÀN */
+.stTabs [data-baseweb="tab-list"] {{
+    gap: 10px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 5px !important;
+}}
+.stTabs [data-baseweb="tab"] {{
+    height: 48px !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+    flex-shrink: 0 !important;
+    padding: 0 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}}
+.stTabs [data-baseweb="tab"] p {{
+    font-size: 0.95rem !important;
+    font-weight: bold !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+}}
 </style>
 <div class="main-footer">
 <div class="footer-container">
@@ -413,7 +439,7 @@ st.markdown("""
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 42px !important;
+        height: 50px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -422,20 +448,21 @@ st.markdown("""
         color: white;
         transition: all 0.3s;
         border: 1px solid transparent;
-        min-width: 90px !important; 
+        min-width: fit-content !important; 
         width: auto !important;
-        padding: 0 12px !important;
+        padding: 0 25px !important;
         white-space: nowrap !important;
     }
 
     .stTabs [data-baseweb="tab"] div,
     .stTabs [data-baseweb="tab"] p {
-        font-size: 0.82rem !important;
+        font-size: 0.95rem !important;
         margin: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 4px !important;
+        gap: 6px !important;
+        font-weight: bold !important;
     }
 
     .stTabs [aria-selected="true"] {
@@ -2892,9 +2919,25 @@ st.markdown(f"""
         color: {header_text};
     }}
     
-    /* TABS STYLE */
+    /* TABS STYLE - CHỐNG TRÀN CHỮ TRÊN DI ĐỘNG */
     .stTabs [data-baseweb="tab-list"] {{
-        gap: 8px;
+        gap: 10px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        height: 48px !important;
+        white-space: nowrap !important;
+        min-width: fit-content !important;
+        flex-shrink: 0 !important;
+        padding: 0 20px !important;
+    }}
+    .stTabs [data-baseweb="tab"] p {{
+        font-size: 0.95rem !important;
+        font-weight: bold !important;
+        white-space: nowrap !important;
     }}
     
     /* METRIC CARD */
