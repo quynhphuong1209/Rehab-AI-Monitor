@@ -5437,7 +5437,8 @@ def main():
             has_ai_main = any(
                 e.get('doctor_username') == "AI_Researcher" and 
                 e['patient_username'] == selected_video_main['username'] and
-                e.get('video_name') == selected_video_main.get('video_name')
+                (e.get('video_name') == selected_video_main.get('video_name') or 
+                 selected_video_main.get('video_name', '') in e.get('video_name', ''))
                 for e in evals_main
             )
             # Kiểm tra xem NCV đã gửi video khung xương (output) chưa
@@ -5712,7 +5713,7 @@ def main():
                                     save_data(VIDEOS_FILE, video_list)
                                     st.info(f"📁 Video đã được lưu cho BN: {target_fn}")
                                 st.markdown("---")
-                                
+                       
                                 # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
                                 history_file = "lich_su_tap_luyen.json"
                                 new_entry = {
@@ -5997,26 +5998,29 @@ def main():
             
     if "📊 KẾT QUẢ AI" in tab_map:
         with tab_map["📊 KẾT QUẢ AI"]:
-            # Hiển thị kết quả AI cho Bác sĩ (tương tự Bệnh nhân nhưng cho BN được chọn)
             selected_video = st.session_state.get('current_eval_video')
             if not selected_video:
                 st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
             else:
-                evals = load_data(EVALUATIONS_FILE)
-                # Lọc chính xác theo bệnh nhân VÀ video đang chọn
-                p_evals = [e for e in evals if e['patient_username'] == selected_video['username'] and e.get('video_name') == selected_video.get('video_name')]
-                has_ai_sent = any(e.get('doctor_username') == "AI_Researcher" for e in p_evals)
-                
-                if not has_ai_sent:
-                    st.warning(f"🕒 Nghiên cứu viên chưa gửi kết quả phân tích AI cho video: {selected_video.get('video_name')}")
-                else:
+                all_vids = load_data(VIDEOS_FILE)
+                v_data = next((v for v in all_vids if v.get('username') == selected_video.get('username') and 
+                               (v.get('video_name') == selected_video.get('video_name') or 
+                                selected_video.get('video_name', '') in v.get('video_name', ''))), None)
+                if v_data and v_data.get('metrics'):
+                    st.session_state.stats = v_data['metrics']
+                    st.session_state.processed_video_path = v_data.get('processed_path')
+                    st.session_state.all_frames_data_path = v_data.get('all_frames_data_path')
+                    st.session_state.uploaded_file_name = v_data.get('video_name')
+                    st.session_state.has_data = True
+                    if v_data.get('df_path') and os.path.exists(v_data['df_path']):
+                        try: st.session_state.angle_df = pd.read_csv(v_data['df_path'])
+                        except: pass
                     st.markdown("## 📊 KẾT QUẢ PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
-
-                    tab_ai_1, tab_ai_2 = st.tabs(["📊 BIỂU ĐỒ CHI TIẾT", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"])
-                    with tab_ai_1:
-                        hien_thi_tab_phan_tich(key_suffix="doc_ai_tab")
-                    with tab_ai_2:
-                        hien_thi_frames_day_du(key_suffix="doc_ai_tab")
+                    t1, t2 = st.tabs(["📊 BIỂU ĐỒ CHI TIẾT", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"])
+                    with t1: hien_thi_tab_phan_tich(key_suffix="doc_ai_tab")
+                    with t2: hien_thi_frames_day_du(key_suffix="doc_ai_tab")
+                else:
+                    st.warning("🕒 Nghiên cứu viên chưa gửi kết quả phân tích AI cho video này.")
 
     if "📊 PHÂN TÍCH" in tab_map:
         with tab_map["📊 PHÂN TÍCH"]:
