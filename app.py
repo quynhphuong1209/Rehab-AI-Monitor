@@ -425,7 +425,8 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === SỬA LỖI CHỮ RÁC ICON SIDEBAR (THAY BẰNG MŨI TÊN CHUẨN) === */
+    /* === SỬA LỖI ICON SIDEBAR (PHONG CÁCH VACCINENLP) === */
+    /* 1. Nút mở Sidebar (khi đang đóng) */
     [data-testid="stSidebarCollapseButton"] {
         background: rgba(0, 198, 255, 0.1) !important;
         border: 1px solid rgba(0, 198, 255, 0.3) !important;
@@ -436,7 +437,6 @@ st.markdown("""
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        overflow: hidden !important;
         color: transparent !important;
     }
     [data-testid="stSidebarCollapseButton"]::after {
@@ -450,13 +450,33 @@ st.markdown("""
         transform: translate(-50%, -50%) !important;
         visibility: visible !important;
     }
+
+    /* 2. Nút đóng Sidebar (khi đang mở) */
+    [data-testid="stSidebarContent"] button[data-testid="stBaseButton-headerNoPadding"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
+        color: transparent !important;
+    }
+    [data-testid="stSidebarContent"] button[data-testid="stBaseButton-headerNoPadding"]::after {
+        content: "<<" !important;
+        position: absolute !important;
+        font-size: 16px !important;
+        font-weight: bold !important;
+        color: #00c6ff !important;
+        visibility: visible !important;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+
     [data-testid="stSidebarCollapseButton"] * {
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
     }
     
-    /* XÓA TRIỆT ĐỂ CHỮ double_arrow_right TRÊN TOP BAR */
+    /* XÓA TRIỆT ĐỂ CHỮ RÁC TRÊN TOP BAR */
     header[data-testid="stHeader"]::before {
         content: "" !important;
         display: none !important;
@@ -465,16 +485,6 @@ st.markdown("""
         color: transparent !important;
         font-size: 0 !important;
         height: 0 !important;
-    }
-    
-    /* Ẩn các icon lỗi khác */
-    [data-testid="stExpander"] summary span > span,
-    [data-testid="stFileUploader"] section span > span,
-    .stIconMaterial, .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
-        display: none !important;
-        color: transparent !important;
-        font-size: 0 !important;
-        visibility: hidden !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.04) !important;
@@ -5368,40 +5378,42 @@ def main():
     bai_tap = BAI_TAP[ma_bai_tap]
     
     with st.sidebar:
-        # === CẤU HÌNH THEME & TÀI KHOẢN (MOVED TO SIDEBAR) ===
-        current_theme = st.session_state.get('theme', 'dark')
+        # === KHU VỰC TÀI KHOẢN & HỆ THỐNG (SIDEBAR TOP) ===
         st.markdown(f"""
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+        <div style="background: rgba(0, 198, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(0, 198, 255, 0.2); margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <div style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                <span style="color: #888; font-size: 0.85rem; display: block; margin-bottom: 5px;">👤 NGƯỜI DÙNG</span>
+                <span style="color: #ffd700; font-weight: bold; font-size: 1.2rem; letter-spacing: 0.5px;">{st.session_state.user_info['username'].upper()}</span>
+            </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <span style="font-size: 0.9rem; color: #aaa;">Giao diện:</span>
+                <span style="font-size: 0.9rem; color: #ccc;">🌓 Giao diện:</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Overlay Streamlit components over the HTML block using columns or placement
-        t_col1, t_col2 = st.columns([1, 1])
-        with t_col1:
-            st.toggle("🌙 Tối" if current_theme == 'dark' else "☀️ Sáng", 
-                      value=(current_theme == 'dark'), 
-                      key="theme_toggle_sidebar", 
-                      on_change=update_theme_callback)
+        # Overlay Streamlit components (Toggle & Logout)
+        # Using a trick to place them visually inside the block above
+        st.markdown('<div style="margin-top: -85px; margin-left: 110px; margin-bottom: 50px;">', unsafe_allow_html=True)
+        st.toggle("Tối" if current_theme == 'dark' else "Sáng", 
+                  value=(current_theme == 'dark'), 
+                  key="theme_toggle_sidebar", 
+                  on_change=update_theme_callback,
+                  label_visibility="collapsed")
+        st.markdown('</div>', unsafe_allow_html=True)
         
-        st.markdown(f"""
-        <div style="padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 5px;">
-            <span style="color: #888; font-size: 0.8rem;">Đang đăng nhập:</span><br>
-            <span style="color: #ffd700; font-weight: bold; font-size: 1.1rem;">👤 {st.session_state.user_info['username']}</span>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("🚪 THOÁT HỆ THỐNG", width="stretch", key="logout_sidebar", type="secondary"):
+        if st.button("🚪 ĐĂNG XUẤT HỆ THỐNG", width="stretch", key="logout_sidebar", type="primary"):
             if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
                 st.logout()
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
             
-        st.markdown("---")
-        st.markdown(f"### 🎭 VAI TRÒ: {user_role.upper()}")
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%); padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; color: white; font-size: 0.9rem; margin-bottom: 20px;">
+            🎭 VAI TRÒ: {user_role.upper()}
+        </div>
+        """, unsafe_allow_html=True)
         
         if user_role == "Nghiên cứu viên":
             st.markdown("### 🔬 THÔNG TIN CHUYÊN GIA")
