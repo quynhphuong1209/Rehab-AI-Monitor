@@ -3710,7 +3710,7 @@ def hien_thi_tab_thanh_vien():
     st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
     st.markdown("""
     <div class="lecturer-card">
-        <div class="lecturer-name">Doctor 1</div>
+        <div class="lecturer-name">TS. Trần Hồng Việt 🎓</div>
         <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
         <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
     </div>
@@ -3721,7 +3721,7 @@ def hien_thi_tab_thanh_vien():
     with col2:
         st.markdown("""
         <div class="member-card" style="border-color: #ffd700; border: 2px solid #ffd700;">
-            <div class="member-name">Đinh Lê Quỳnh Phương</div>
+            <div class="member-name">Đinh Lê Quỳnh Phương 🛡️</div>
             <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
             <div class="member-id">MSSV: 2211090031</div>
         </div>
@@ -3730,40 +3730,29 @@ def hien_thi_tab_thanh_vien():
     st.markdown("---")
     st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
     thanh_vien = [
-        ("Kim Mạnh Hưng", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
-        ("Nguyễn Hải An", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
-        ("Phan Vân Anh", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
-        ("Nguyễn Thị Thanh Nga", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
+        ("Kim Mạnh Hưng 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
+        ("Nguyễn Hải An 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
+        ("Phan Vân Anh 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
+        ("Nguyễn Thị Thanh Nga 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
+        ("Nguyễn Thị Thơm 🛡️", "Thành viên nghiên cứu", "CNCQ KTPHCN3-1A", "2216030122"),
+        ("Nguyễn Thị Thu Hương 🛡️", "Thành viên nghiên cứu", "CNCQ YTCC22-1A", "2317010071"),
     ]
-    cols = st.columns(4)
-    for i, (ten, vai_tro, lop, mssv) in enumerate(thanh_vien):
-        with cols[i]:
-            st.markdown(f"""
-            <div class="member-card">
-                <div class="member-name">{ten}</div>
-                <div class="member-role">{vai_tro}</div>
-                <div class="member-class">{lop}</div>
-                <div class="member-id">MSSV: {mssv}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.markdown("### 🩺 CHUYÊN GIA LÂM SÀNG")
-    chuyen_gia = [
-        ("Nguyễn Thị Thơm", "Chuyên gia PHCN", "CNCQ KTPHCN3-1A", "2216030122"),
-        ("Nguyễn Thị Thu Hương", "Chuyên gia PHCN", "CNCQYTCC22-1A", "2317010071"),
-    ]
-    cols = st.columns(2)
-    for i, (ten, vai_tro, lop, mssv) in enumerate(chuyen_gia):
-        with cols[i]:
-            st.markdown(f"""
-            <div class="member-card">
-                <div class="member-name">{ten}</div>
-                <div class="member-role">{vai_tro}</div>
-                <div class="member-class">{lop}</div>
-                <div class="member-id">MSSV: {mssv}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    
+    # Hiển thị grid 3 cột cho 6 thành viên
+    for i in range(0, len(thanh_vien), 3):
+        cols = st.columns(3)
+        for j in range(3):
+            if i + j < len(thanh_vien):
+                ten, vai_tro, lop, mssv = thanh_vien[i+j]
+                with cols[j]:
+                    st.markdown(f"""
+                    <div class="member-card">
+                        <div class="member-name">{ten}</div>
+                        <div class="member-role">{vai_tro}</div>
+                        <div class="member-class">{lop}</div>
+                        <div class="member-id">MSSV: {mssv}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
     
     st.markdown("---")
     st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
@@ -5132,7 +5121,7 @@ def main():
 
         
         st.markdown("---")
-        st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** Doctor 1")
+        st.markdown("**👨‍🏫 Giảng viên hướng dẫn:** TS. Trần Hồng Việt 🎓")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
     # Định nghĩa các tab dựa trên vai trò
