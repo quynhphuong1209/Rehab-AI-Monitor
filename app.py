@@ -4096,12 +4096,15 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
         has_ai_eval = any(e.get('doctor_username') == "AI_Researcher" for e in my_evals)
         
         tab_labels = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
-        if has_ai_eval:
+        # Chỉ hiển thị tab biểu đồ và video cho Bệnh nhân và Bác sĩ, ẩn đối với NCV
+        show_detailed_tabs = has_ai_eval and user_role != "Nghiên cứu viên"
+        
+        if show_detailed_tabs:
             tab_labels += ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & HÌNH ẢNH"]
             
         tabs = st.tabs(tab_labels)
         tab_eval = tabs[0]
-        if has_ai_eval:
+        if show_detailed_tabs:
             tab_charts = tabs[1]
             tab_media = tabs[2]
 
@@ -4177,7 +4180,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                         if r.get('video_code'):
                             st.caption(f"🎬 Mã video: {r.get('video_code')} | Thiết bị: {r.get('recording_device')} | Góc: {r.get('recording_angle')}")
         
-        if has_ai_eval:
+        if show_detailed_tabs:
             with tab_charts:
                 st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
                 hien_thi_tab_phan_tich(key_suffix="pat_eval")
