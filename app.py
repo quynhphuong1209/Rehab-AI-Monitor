@@ -4264,6 +4264,27 @@ def hien_thi_tab_phieu_nckh():
     user_role = st.session_state.user_info.get('role', 'Bệnh nhân')
     selected_video = st.session_state.get('current_eval_video')
     
+    # --- LOGIC TỰ ĐỘNG ĐIỀN THÔNG TIN TỪ KHAI BÁO CỦA BN ---
+    symptoms_data = load_data(SYMPTOMS_FILE)
+    patient_username = selected_video['username'] if selected_video else st.session_state.user_info['username']
+    
+    # Lấy bản ghi mới nhất của BN này để auto-fill
+    p_record = next((s for s in reversed(symptoms_data) if s['username'] == patient_username), None)
+    
+    # Giá trị mặc định hoặc từ record
+    d_age = p_record.get('age', 25) if p_record else 25
+    d_gender_idx = 0
+    if p_record:
+        d_gender_idx = 0 if "Nam" in p_record.get('gender', 'Nam') else 1
+    
+    d_pain_idx = 0
+    d_severity_idx = 0
+    if p_record:
+        vas = p_record.get('vas', 0)
+        if vas <= 3: d_pain_idx, d_severity_idx = 0, 0
+        elif vas <= 6: d_pain_idx, d_severity_idx = 1, 1
+        else: d_pain_idx, d_severity_idx = 2, 2
+
     with st.form("research_evaluation_form_v2"):
         # I. THÔNG TIN CHUNG
         st.markdown("### I. THÔNG TIN CHUNG VÀ ĐẶC ĐIỂM LÂM SÀNG")
@@ -4271,9 +4292,9 @@ def hien_thi_tab_phieu_nckh():
         with col1:
             interviewer = st.text_input("Họ và tên người phỏng vấn:", value=st.session_state.user_info.get('full_name', '') if user_role != "Bệnh nhân" else "Tự khai báo")
             interview_date = st.date_input("Ngày phỏng vấn:", value=get_vn_now())
-            subject_code = st.text_input("Mã đối tượng (Mã BN):", value=selected_video['username'] if selected_video else st.session_state.user_info['username'])
-            age = st.number_input("Tuổi:", min_value=0, max_value=120, value=25)
-            gender = st.radio("Giới tính:", ["Nam (1)", "Nữ (2)"], horizontal=True)
+            subject_code = st.text_input("Mã đối tượng (Mã BN):", value=patient_username)
+            age = st.number_input("Tuổi:", min_value=0, max_value=120, value=d_age)
+            gender = st.radio("Giới tính:", ["Nam (1)", "Nữ (2)"], horizontal=True, index=d_gender_idx)
             region = st.radio("Khu vực:", ["Nội thành (1)", "Ngoại thành (2)"], horizontal=True)
         with col2:
             job = st.selectbox("Nghề nghiệp:", [
@@ -4295,9 +4316,9 @@ def hien_thi_tab_phieu_nckh():
         col3, col4 = st.columns(2)
         with col3:
             training_side = st.radio("Bên tập luyện:", ["Vai trái", "Vai phải"], horizontal=True)
-            pain_level = st.radio("Mức độ đau (VAS 0–10):", ["Nhẹ (0–3)", "Trung bình (4–6)", "Nặng (7–10)"], horizontal=True)
+            pain_level = st.radio("Mức độ đau (VAS 0–10):", ["Nhẹ (0–3)", "Trung bình (4–6)", "Nặng (7–10)"], horizontal=True, index=d_pain_idx)
         with col4:
-            disease_severity = st.radio("Mức độ bệnh:", ["Nhẹ", "Trung bình", "Nặng"], horizontal=True)
+            disease_severity = st.radio("Mức độ bệnh:", ["Nhẹ", "Trung bình", "Nặng"], horizontal=True, index=d_severity_idx)
 
         # III. NỘI DUNG TẬP LUYỆN
         st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
@@ -4312,7 +4333,7 @@ def hien_thi_tab_phieu_nckh():
         
         col5, col6 = st.columns(2)
         with col5:
-            general_result = st.radio("Kết quả tổng quát:", ["Đúng (1)", "Sai (2)"], horizontal=True)
+            general_result = st.radio("Kết quả tổng quát:", ["Đúng (1)", "Gần đúng (2)", "Sai (3)"], horizontal=True)
             total_reps = st.number_input("Tổng số lần thực hiện:", min_value=0, value=0)
         with col6:
             correct_reps = st.number_input("Số lần thực hiện đúng kỹ thuật:", min_value=0, value=0)
@@ -4375,6 +4396,64 @@ def hien_thi_tab_phieu_nckh():
                 save_data(RESEARCH_DATA_FILE, research_data)
                 st.success("✅ Đã lưu phiếu đánh giá nghiên cứu thành công!")
                 st.balloons()
+                st.rerun()
+
+    # --- PHẦN HIỂN THỊ LỊCH SỬ (VIEWER) ---
+    st.markdown("---")
+    st.markdown("### 📜 LỊCH SỬ PHIẾU ĐÁNH GIÁ NCKH")
+    
+    all_research_data = load_data(RESEARCH_DATA_FILE)
+    if not isinstance(all_research_data, list): all_research_data = []
+    
+    # Phân quyền xem dữ liệu
+    if user_role == "Bệnh nhân":
+        # Bệnh nhân chỉ thấy phiếu của mình
+        display_list = [d for d in all_research_data if d.get('subject_code') == username]
+    else:
+        # Bác sĩ & NCV thấy tất cả
+        display_list = all_research_data
+
+    if not display_list:
+        st.info("📭 Chưa có bản ghi dữ liệu nghiên cứu nào được lưu.")
+    else:
+        # Nút xuất dữ liệu cho NCV/Bác sĩ
+        if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên", "Quản trị viên"]:
+            c_exp1, c_exp2 = st.columns([1, 4])
+            with c_exp1:
+                df_export = pd.DataFrame(all_research_data)
+                csv = df_export.to_csv(index=False).encode('utf-8-sig')
+                st.download_button(
+                    label="📊 Xuất Excel (CSV)",
+                    data=csv,
+                    file_name=f"research_data_{get_vn_now().strftime('%Y%m%d')}.csv",
+                    mime="text/csv",
+                    width="stretch"
+                )
+        
+        # Hiển thị danh sách phiếu
+        for i, item in enumerate(reversed(display_list)):
+            with st.expander(f"📅 Phiếu ngày {item.get('timestamp', 'N/A')} - BN: {item.get('subject_code', 'N/A')} - KQ: {item.get('general_result', 'N/A')}"):
+                col_i1, col_i2, col_i3 = st.columns(3)
+                with col_i1:
+                    st.markdown("**📌 Thông tin chung**")
+                    st.write(f"- Người PV: {item.get('interviewer')}")
+                    st.write(f"- Ngày PV: {item.get('interview_date')}")
+                    st.write(f"- Tuổi/Giới: {item.get('age')}/{item.get('gender')}")
+                    st.write(f"- Khu vực: {item.get('region')}")
+                with col_i2:
+                    st.markdown("**🩺 Lâm sàng & Tập luyện**")
+                    st.write(f"- Chẩn đoán: {item.get('diagnosis')}")
+                    st.write(f"- Thời gian bệnh: {item.get('duration')}")
+                    st.write(f"- Bài tập: {', '.join(item.get('exercises', []))}")
+                    st.write(f"- Đau (VAS): {item.get('pain_level')}")
+                with col_i3:
+                    st.markdown("**📊 Đánh giá chuyên môn**")
+                    st.write(f"- Kết quả: {item.get('general_result')}")
+                    st.write(f"- Số lần Đúng/Tổng: {item.get('correct_reps')}/{item.get('total_reps')}")
+                    st.info(f"**Nhận xét:** {item.get('specialist_comment')}")
+                
+                if item.get('video_code'):
+                    st.caption(f"🎬 Mã video: {item.get('video_code')} | Thiết bị: {item.get('recording_device')} | Góc: {item.get('recording_angle')}")
 
 
 # ============================================
@@ -5265,14 +5344,14 @@ def main():
                 for e in evals_main
             )
             
-        tab_titles = ["🏠 TRANG CHỦ", "📝 ĐÁNH GIÁ PHCN", "📄 PHIẾU NCKH"]
+        tab_titles = ["🏠 TRANG CHỦ", "📄 PHIẾU NCKH", "📝 ĐÁNH GIÁ PHCN"]
         if has_ai_main:
             tab_titles.append("📊 KẾT QUẢ AI")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "📄 PHIẾU NCKH", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📄 PHIẾU NCKH", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 PHÂN TÍCH", "📄 PHIẾU NCKH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📄 PHIẾU NCKH", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     
