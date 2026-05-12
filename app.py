@@ -446,8 +446,10 @@ st.markdown("""
         display: none !important;
     }
 
-    /* HIỂN THỊ ICON MŨI TÊN KÉP CHUẨN (ĐÃ XÓA THEO YÊU CẦU) */
-    [data-testid="stSidebarCollapseButton"]::after {
+    /* XÓA TRIỆT ĐỂ BIỂU TƯỢNG << VÀ >> (DISPLAY: NONE) */
+    [data-testid="stSidebarCollapseButton"]::after,
+    [data-testid="stSidebarCollapseButton"]::before {
+        display: none !important;
         content: none !important;
     }
 
