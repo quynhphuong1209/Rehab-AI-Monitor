@@ -5269,11 +5269,12 @@ def main():
                 # 1. GIỚI THIỆU CÁC TAB CHO BÁC SĨ
                 st.markdown("### 🏥 GIỚI THIỆU GIAO DIỆN")
                 st.info("""
-                **Hệ thống hỗ trợ Bác sĩ/KTV với 4 Tab chính:**
+                **Hệ thống hỗ trợ Bác sĩ/KTV với 5 Tab chính:**
                 1. **🏠 TRANG CHỦ**: Xem danh sách video bệnh nhân gửi và chọn bài tập.
                 2. **📄 PHIẾU NCKH**: Thu thập dữ liệu kỹ thuật (Ground Truth) cho nghiên cứu AI.
                 3. **📝 ĐÁNH GIÁ PHCN**: Đưa ra nhận xét lâm sàng và kế hoạch điều trị.
                 4. **📊 KẾT QUẢ AI**: Tham khảo phân tích tự động từ mô hình máy học.
+                5. **⏰ LỊCH NHẮC NHỞ**: Quản lý lịch hẹn tái khám và nhắc nhở tập luyện.
                 """)
                 
                 st.markdown("---")
