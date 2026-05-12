@@ -413,80 +413,47 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* SỬA NÚT THU/MỞ SIDEBAR: XÓA CHỮ RÁC TUYỆT ĐỐI & BẤM NHẠY */
+    /* GIẢI PHÁP TRIỆT ĐỂ: NÚT SIDEBAR VÔ HÌNH NHƯNG VẪN BẤM ĐƯỢC */
     [data-testid="stSidebarCollapseButton"] {
-        background: rgba(0, 198, 255, 0.1) !important;
-        border-radius: 10px !important;
-        width: 42px !important;
-        height: 42px !important;
-        border: 1px solid rgba(0, 198, 255, 0.4) !important;
+        background: transparent !important;
+        border: none !important;
+        width: 45px !important;
+        height: 45px !important;
         cursor: pointer !important;
         position: relative !important;
-        overflow: hidden !important; /* Để đẩy chữ ra ngoài */
+        z-index: 999999 !important;
     }
 
-    [data-testid="stSidebarCollapseButton"] button {
-        background: transparent !important;
-        color: transparent !important;
-        border: none !important;
-        width: 100% !important;
-        height: 100% !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        z-index: 2 !important;
-        text-indent: -9999px !important; /* Đẩy chữ rác đi mất */
-        line-height: 0 !important;
-        font-size: 0 !important;
-    }
-
-    [data-testid="stSidebarCollapseButton"] svg {
+    /* Ẩn hoàn toàn mọi nội dung bên trong nút (chữ rác, icon lỗi) */
+    [data-testid="stSidebarCollapseButton"] * {
         display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
     }
 
-    /* HIỂN THỊ DUY NHẤT DẤU MŨI TÊN (Nằm dưới nút để click xuyên qua) */
     [data-testid="stSidebarCollapseButton"]::after {
-        content: "\00ab" !important;
-        font-family: Arial, sans-serif !important;
-        font-size: 22px !important;
-        color: #00c6ff !important;
-        font-weight: bold !important;
-        position: absolute !important;
-        z-index: 1 !important;
-        pointer-events: none !important;
-        left: 50% !important;
-        top: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        text-indent: 0 !important; /* Giữ icon ở lại */
-        visibility: visible !important;
+        content: none !important; /* Xóa luôn cả icon << */
     }
 
-    /* KHI SIDEBAR ĐANG MỞ -> HIỂN THỊ << */
+    /* ĐỊNH VỊ VÙNG BẤM TÀNG HÌNH */
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
         position: absolute !important;
-        right: 15px !important;
-        top: 15px !important;
-    }
-    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]::after {
-        content: "\00ab" !important;
+        right: 10px !important;
+        top: 10px !important;
     }
 
-    /* KHI SIDEBAR ĐANG ĐÓNG -> HIỂN THỊ >> */
     header [data-testid="stSidebarCollapseButton"] {
         position: fixed !important;
-        left: 15px !important;
-        top: 15px !important;
-        z-index: 1000000 !important;
-    }
-    header [data-testid="stSidebarCollapseButton"]::after {
-        content: "\00bb" !important;
+        left: 10px !important;
+        top: 10px !important;
     }
 
-    /* XÓA TRIỆT ĐỂ CHỮ RÁC double_arrow TRÊN TOÀN TRANG */
-    span:contains("double_arrow"), div:contains("double_arrow"), 
-    [class*="st-emotion-cache"]::before {
+    /* Xóa sạch mọi dấu vết chữ rác trên toàn hệ thống */
+    [class*="st-emotion-cache"] {
+        text-indent: 0 !important;
+    }
+    span:contains("double_arrow"), div:contains("double_arrow") {
         display: none !important;
-        font-size: 0 !important;
     }
 
     /* NÚT THU/MỞ SIDEBAR GIỐNG MẪU */
