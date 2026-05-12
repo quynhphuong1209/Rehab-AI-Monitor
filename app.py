@@ -461,6 +461,51 @@ st.markdown("""
         overflow: hidden !important;
         display: none !important;
     }
+
+    /* NÚT THU/MỞ SIDEBAR GIỐNG MẪU */
+    /* Khi Sidebar đang MỞ -> Hiển thị << ở bên phải Sidebar */
+    [data-testid="stSidebarNav"] + div [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
+        background: transparent !important;
+        border: none !important;
+        color: transparent !important;
+        font-size: 0 !important;
+        position: absolute !important;
+        right: 10px !important;
+        top: 10px !important;
+    }
+    [data-testid="stSidebarNav"] + div [data-testid="stSidebarCollapseButton"]::after,
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]::after {
+        content: "<<" !important;
+        font-size: 18px !important;
+        color: #888 !important;
+        visibility: visible !important;
+    }
+
+    /* Khi Sidebar đang ĐÓNG -> Hiển thị >> ở góc trái Header */
+    .st-emotion-cache-zq59db [data-testid="stSidebarCollapseButton"],
+    header [data-testid="stSidebarCollapseButton"] {
+        background: transparent !important;
+        border: none !important;
+        color: transparent !important;
+        font-size: 0 !important;
+        left: 10px !important;
+        top: 10px !important;
+    }
+    .st-emotion-cache-zq59db [data-testid="stSidebarCollapseButton"]::after,
+    header [data-testid="stSidebarCollapseButton"]::after {
+        content: ">>" !important;
+        font-size: 18px !important;
+        color: #888 !important;
+        visibility: visible !important;
+    }
+
+    /* Ẩn mọi văn bản rác phát sinh */
+    span:contains("double_arrow"), div:contains("double_arrow") {
+        display: none !important;
+        font-size: 0 !important;
+        color: transparent !important;
+    }
     
     /* Ẩn các icon lỗi khác */
     [data-testid="stExpander"] summary span > span,
@@ -5369,8 +5414,8 @@ def main():
         # === LOGO HUPH (GIỮ NGUYÊN HOẶC THÊM NẾU CẦN) ===
         st.markdown(f"""
         <div style="text-align: center; margin-bottom: 20px;">
-            <img src="https://huph.edu.vn/uploads/logo/logo-huph.png" width="80">
-            <h3 style="color: #00c6ff; margin-top: 10px; font-family: 'Times New Roman', serif;">REHAB-AI MONITOR</h3>
+            <div style="font-size: 50px; margin-bottom: 10px;">🏥</div>
+            <h3 style="color: #00c6ff; margin-top: 5px; font-family: 'Times New Roman', serif; font-weight: bold;">REHAB-AI MONITOR</h3>
         </div>
         """, unsafe_allow_html=True)
 
