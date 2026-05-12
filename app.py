@@ -5254,34 +5254,64 @@ def main():
             bai_tap = BAI_TAP[ma_bai_tap]
             
         else:
-            # === PHẦN AUTH (XIN CHÀO & ĐĂNG XUẤT) ===
-            st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
-            ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
-            ma_nguoi_dung = st.text_input("Mã số định danh", placeholder="VD: BN0001 / BS0001")
-            col1, col2 = st.columns(2)
-            with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
-            with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
+            if user_role == "Bác sĩ / KTV PHCN":
+                # 1. GIỚI THIỆU CÁC TAB CHO BÁC SĨ
+                st.markdown("### 🏥 GIỚI THIỆU GIAO DIỆN")
+                st.info("""
+                **Hệ thống hỗ trợ Bác sĩ/KTV với 4 Tab chính:**
+                1. **🏠 TRANG CHỦ**: Xem danh sách video bệnh nhân gửi và chọn bài tập.
+                2. **📄 PHIẾU NCKH**: Thu thập dữ liệu kỹ thuật (Ground Truth) cho nghiên cứu AI.
+                3. **📝 ĐÁNH GIÁ PHCN**: Đưa ra nhận xét lâm sàng và kế hoạch điều trị.
+                4. **📊 KẾT QUẢ AI**: Tham khảo phân tích tự động từ mô hình máy học.
+                """)
+                
+                st.markdown("---")
+                # 2. DANH SÁCH TRIỆU CHỨNG BỆNH NHÂN (Dành cho Bác sĩ)
+                st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN")
+                symptoms_data = load_data(SYMPTOMS_FILE)
+                if symptoms_data:
+                    for idx, s in enumerate(reversed(symptoms_data[-10:])): # Hiện 10 tin mới nhất
+                        col_s1, col_s2 = st.columns([5, 1])
+                        with col_s1:
+                            with st.expander(f"👤 {s['full_name']}"):
+                                st.caption(f"🕒 {s['time']}")
+                                st.write(f"**Mã BN:** {s.get('patient_id', 'N/A')} | **Tuổi:** {s['age']}")
+                                st.write(f"**Bài tập:** {s.get('exercise', 'N/A')}")
+                                st.info(f"**Triệu chứng:** {s['symptoms']}")
+                                st.warning(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
+                        with col_s2:
+                            if st.button("❌", key=f"del_symp_{idx}", help="Xóa thông báo này"):
+                                symptoms_data.pop(len(symptoms_data)-1-idx)
+                                save_data(SYMPTOMS_FILE, symptoms_data)
+                                st.rerun()
+                else:
+                    st.info("Chưa có BN gửi thông tin triệu chứng.")
             
-            if user_role == "Bệnh nhân":
+            else: # Vai trò Bệnh nhân
+                st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
+                ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
+                ma_nguoi_dung = st.text_input("Mã số định danh", placeholder="VD: BN0001 / BS0001")
+                col1, col2 = st.columns(2)
+                with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
+                with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
+                
                 st.markdown("---")
                 st.markdown("### 🩺 KHAI BÁO TRIỆU CHỨNG")
                 s_desc = st.text_area("Mô tả cảm giác đau:", 
                                       placeholder="VD: Đau nhói ở khớp vai...",
                                       height=100, key="s_sb_desc")
-                
                 s_vas = st.select_slider("Mức độ đau (VAS):", 
                                          options=list(range(11)), 
                                          value=3, key="s_sb_vas")
-            
-            st.markdown("---")
-            st.markdown("### 🎯 CHỌN BÀI TẬP")
-            ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
-            bai_tap = BAI_TAP[ma_bai_tap]
-            
-            st.markdown("### 📺 VIDEO HƯỚNG DẪN")
-            st.video(bai_tap["youtube"])
-            
-            if user_role == "Bệnh nhân":
+                
+                st.markdown("---")
+                st.markdown("### 🎯 CHỌN BÀI TẬP")
+                ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+                bai_tap = BAI_TAP[ma_bai_tap]
+                
+                st.markdown("### 📺 VIDEO HƯỚNG DẪN")
+                st.video(bai_tap["youtube"])
+                
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("📤 GỬI THÔNG TIN CHO BÁC SĨ - KTV VÀ NCV", width="stretch", type="primary"):
                     if ten_nguoi_dung and ma_nguoi_dung and gioi_tinh != "" and s_desc and ma_bai_tap:
@@ -5302,38 +5332,6 @@ def main():
                         st.balloons()
                     else:
                         st.warning("⚠️ Vui lòng điền đầy đủ các thông tin: Họ tên, Mã định danh, Giới tính, Bài tập và Mô tả triệu chứng.")
-            
-            if user_role == "Bác sĩ / KTV PHCN":
-                st.markdown("---")
-                st.markdown("### 🩺 THÔNG TIN LÂM SÀNG")
-                chan_doan = st.selectbox("Chẩn đoán", [
-                    "", 
-                    "Viêm quanh khớp vai thể giả liệt thể đông cứng", 
-                    "Viêm quanh khớp vai thể đơn thuần", 
-                    "Viêm quanh khớp cấp"
-                ])
-                muc_do_dau_bs = st.slider("Mức độ đau (VAS 0-10)", 0, 10, 3)
-                
-                if user_role == "Bác sĩ / KTV PHCN":
-                    st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN")
-                    symptoms_data = load_data(SYMPTOMS_FILE)
-                    if symptoms_data:
-                        for idx, s in enumerate(reversed(symptoms_data[-5:])): # Lấy 5 người mới nhất
-                            col_s1, col_s2 = st.columns([4, 1])
-                            with col_s1:
-                                with st.expander(f"👤 {s['full_name']}"):
-                                    st.caption(f"🕒 {s['time']}")
-                                    st.write(f"**Mã BN:** {s.get('patient_id', 'N/A')} | **Bài tập:** {s.get('exercise', 'N/A')}")
-                                    st.write(f"**Tuổi:** {s['age']} | **GT:** {s['gender']}")
-                                    st.info(f"**Triệu chứng:** {s['symptoms']}")
-                                    st.warning(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
-                            with col_s2:
-                                if st.button("❌", key=f"x_symp_{idx}", help="Xóa tin này"):
-                                    symptoms_data.pop(len(symptoms_data)-1-idx)
-                                    save_data(SYMPTOMS_FILE, symptoms_data)
-                                    st.rerun()
-                    else:
-                        st.info("Chưa có BN gửi thông tin.")
 
         
         st.markdown("---")
