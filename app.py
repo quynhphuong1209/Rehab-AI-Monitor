@@ -4266,7 +4266,15 @@ def hien_thi_tab_phieu_nckh():
     
     # --- LOGIC TỰ ĐỘNG ĐIỀN THÔNG TIN TỪ KHAI BÁO CỦA BN ---
     symptoms_data = load_data(SYMPTOMS_FILE)
-    patient_username = selected_video['username'] if selected_video else st.session_state.user_info['username']
+    
+    # Xác định BN mục tiêu: Nếu có video thì lấy theo video, nếu không lấy BN mới nhất gửi triệu chứng
+    if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
+        if selected_video:
+            patient_username = selected_video['username']
+        else:
+            patient_username = symptoms_data[-1]['username'] if symptoms_data else ""
+    else:
+        patient_username = st.session_state.user_info['username']
     
     # Lấy bản ghi mới nhất của BN này để auto-fill
     p_record = next((s for s in reversed(symptoms_data) if s['username'] == patient_username), None)
@@ -4291,7 +4299,8 @@ def hien_thi_tab_phieu_nckh():
         st.markdown("### I. THÔNG TIN CHUNG VÀ ĐẶC ĐIỂM LÂM SÀNG")
         col1, col2 = st.columns(2)
         with col1:
-            interviewer = st.text_input("Họ và tên người phỏng vấn:", value=st.session_state.user_info.get('full_name', '') if user_role != "Bệnh nhân" else "Tự khai báo")
+            default_interviewer = st.session_state.user_info.get('full_name', '') or st.session_state.user_info.get('username', '')
+            interviewer = st.text_input("Họ và tên người phỏng vấn:", value=default_interviewer if user_role != "Bệnh nhân" else "Tự khai báo")
             interview_date = st.date_input("Ngày phỏng vấn:", value=get_vn_now())
             subject_code = st.text_input("Mã đối tượng (Mã BN):", value=d_sub_code)
             age = st.number_input("Tuổi:", min_value=0, max_value=120, value=d_age)
@@ -5314,6 +5323,7 @@ def main():
                             with col_s1:
                                 with st.expander(f"👤 {s['full_name']}"):
                                     st.caption(f"🕒 {s['time']}")
+                                    st.write(f"**Mã BN:** {s.get('patient_id', 'N/A')} | **Bài tập:** {s.get('exercise', 'N/A')}")
                                     st.write(f"**Tuổi:** {s['age']} | **GT:** {s['gender']}")
                                     st.info(f"**Triệu chứng:** {s['symptoms']}")
                                     st.warning(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
