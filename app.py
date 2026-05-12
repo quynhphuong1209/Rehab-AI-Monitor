@@ -482,6 +482,33 @@ st.markdown("""
         box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
         transform: translateY(-2px);
     }
+
+    /* === BẢNG CHỈ SỐ NGHIÊN CỨU - THÍCH ỨNG THEO THEME === */
+    .research-table-container {
+        padding: 1.5rem;
+        border-radius: 18px;
+        border: 1px solid rgba(100, 116, 139, 0.2);
+        background: var(--secondary-background-color);
+        transition: all 0.3s ease;
+    }
+    
+    /* Khi ở chế độ sáng */
+    @media (prefers-color-scheme: light) {
+        .research-table-container {
+            background: white !important;
+            border: 1px solid black !important;
+            color: black !important;
+        }
+        .research-table-container table {
+            color: black !important;
+        }
+        .research-table-container tr {
+            border-bottom: 1px solid black !important;
+        }
+        .research-table-container thead {
+            background: #f8f9fa !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -3333,8 +3360,8 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             rmse_val = tk.get('mae_tong', 0) * 1.25 # Ước lượng RMSE từ MAE cho mục đích hiển thị nghiên cứu
             
             st.markdown(f"""
-            <div style="background: rgba(15, 23, 42, 0.4); padding: 1.5rem; border-radius: 18px; border: 1px solid rgba(100, 116, 139, 0.2);">
-                <table style="width: 100%; color: #e2e8f0; border-collapse: collapse; font-size: 0.95rem;">
+            <div class="research-table-container">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
                     <thead style="background: rgba(56, 189, 248, 0.1);">
                         <tr style="border-bottom: 2px solid #38bdf8; text-align: left;">
                             <th style="padding: 12px;">Chỉ số nghiên cứu</th>
