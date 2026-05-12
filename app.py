@@ -3631,7 +3631,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             with exp_data:
                 data_col1, data_col2 = st.columns(2)
                 with data_col1:
-                    if 'angle_df' in st.session_state:
+                    if st.session_state.get('angle_df') is not None:
                         csv_data = st.session_state.angle_df.to_csv(index=False).encode('utf-8')
                         st.download_button("📄 Tọa độ góc khớp (CSV)", csv_data, "angle_data.csv", "text/csv", width="stretch", key=f"dl_f6_{key_suffix}")
                 with data_col2:
