@@ -133,6 +133,24 @@ def hien_thi_footer_chung():
 .main-footer {{background:{footer_bg};padding:60px 20px 40px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:3px solid {border_color};box-shadow:0 -15px 35px rgba(0, 114, 255, 0.1);margin-top:80px;position:relative;overflow:hidden}}
 .footer-container {{display:flex;flex-wrap:nowrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:0}}
 .footer-col {{flex:1;min-width:200px;padding:0 30px;border-right:1px solid {col_border}}}
+
+/* RESPONSIVE FOOTER FOR MOBILE */
+@media (max-width: 1024px) {{
+    .footer-container {{ flex-wrap: wrap !important; }}
+    .footer-col {{ 
+        flex: 1 1 45% !important; 
+        border-right: none !important; 
+        border-bottom: 1px solid {col_border} !important;
+        padding: 30px 15px !important;
+    }}
+}}
+@media (max-width: 768px) {{
+    .footer-col {{ 
+        flex: 1 1 100% !important; 
+    }}
+    .footer-col:last-child {{ border-bottom: none !important; }}
+}}
+
 .footer-col:last-child {{border-right:none}}
 .footer-col.medium {{flex:1.2;min-width:250px}}
 .footer-col.wide {{flex:2.5;min-width:600px}}
@@ -398,17 +416,37 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === SỬA LỖI CHỮ RÁC ICON (TRIỆT ĐỂ) === */
+    /* === SỬA LỖI CHỮ RÁC ICON SIDEBAR (THAY BẰNG MŨI TÊN CHUẨN) === */
     [data-testid="stSidebarCollapseButton"] {
+        background: rgba(0, 198, 255, 0.1) !important;
+        border: 1px solid rgba(0, 198, 255, 0.3) !important;
+        border-radius: 8px !important;
+        width: 38px !important;
+        height: 38px !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow: hidden !important;
         color: transparent !important;
-        font-size: 0 !important;
-        line-height: 0 !important;
-        width: 40px !important;
-        height: 40px !important;
+    }
+    [data-testid="stSidebarCollapseButton"]::after {
+        content: "➲" !important; /* Mũi tên chuyên nghiệp */
+        position: absolute !important;
+        font-size: 22px !important;
+        color: #00c6ff !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        visibility: visible !important;
     }
     [data-testid="stSidebarCollapseButton"] * {
         display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
     }
+    
+    /* Ẩn các icon lỗi khác */
     [data-testid="stExpander"] summary span > span,
     [data-testid="stFileUploader"] section span > span,
     .stIconMaterial, .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
