@@ -109,7 +109,7 @@ EXTRACTED_FRAMES_DIR = "extracted_frames"
 OUTPUT_VIDEOS_DIR = "output_videos"
 
 def hien_thi_footer_chung():
-    """Hiển thị chân trang (footer) chuyên nghiệp cho dự án Rehab-AI-Monitor"""
+    """Hiển thị chân trang (footer) chuyên nghiệp và responsive cho Rehab-AI-Monitor"""
     import base64
     try:
         if os.path.exists("abc1.png"):
@@ -122,163 +122,156 @@ def hien_thi_footer_chung():
         logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
     is_light = st.session_state.get('theme') == 'light'
-    footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+    footer_bg = "#f8f9fa" if is_light else "#0d0d1a"
     footer_text = "#444" if is_light else "#ccc"
-    border_color = "#0072ff" if is_light else "#00c6ff"
-    title_color = "#0072ff" # Màu xanh đậm nổi bật cho cả 2 chế độ
-    school_name_color = "#1a1a2e" if is_light else "#fff"
+    border_color = "#0072ff"
     col_border = "rgba(0,0,0,0.1)" if is_light else "rgba(255,255,255,0.1)"
+    title_color = "#0072ff"
+    school_name_color = "#1a1a2e" if is_light else "#fff"
+
+    footer_html = f"""
+    <style>
+    .main-footer {{
+        background: {footer_bg};
+        padding: 50px 20px;
+        color: {footer_text};
+        font-family: 'Times New Roman', Times, serif !important;
+        border-top: 3px solid {border_color};
+        margin-top: 50px;
+    }}
+    .footer-container {{
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        max-width: 1550px;
+        margin: 0 auto;
+        gap: 20px;
+    }}
+    .footer-col {{
+        flex: 1;
+        min-width: 250px;
+        padding: 0 15px;
+        border-right: 1px solid {col_border};
+    }}
+    .footer-col.wide {{ flex: 2; min-width: 400px; }}
+    .footer-col:last-child {{ border-right: none; }}
     
-    footer_html = f"""<style>
-.main-footer {{background:{footer_bg};padding:60px 20px 40px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:3px solid {border_color};box-shadow:0 -15px 35px rgba(0, 114, 255, 0.1);margin-top:80px;position:relative;overflow:hidden}}
-.footer-container {{display:flex;flex-wrap:nowrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:0}}
-.footer-col {{flex:1;min-width:200px;padding:0 30px;border-right:1px solid {col_border}}}
-
-/* RESPONSIVE FOOTER FOR MOBILE */
-@media (max-width: 1024px) {{
-    .footer-container {{ flex-wrap: wrap !important; }}
-    .footer-col {{ 
-        flex: 1 1 45% !important; 
-        border-right: none !important; 
-        border-bottom: 1px solid {col_border} !important;
-        padding: 30px 15px !important;
+    @media (max-width: 1200px) {{
+        .footer-col {{ flex: 1 1 45%; border-right: none; border-bottom: 1px solid {col_border}; padding-bottom: 20px; }}
     }}
-}}
-@media (max-width: 768px) {{
-    .footer-col {{ 
-        flex: 1 1 100% !important; 
+    @media (max-width: 768px) {{
+        .footer-container {{ flex-direction: column !important; }}
+        .footer-col {{ flex: 1 1 100% !important; width: 100%; text-align: center; border-right: none; border-bottom: 1px solid {col_border}; padding: 20px 0; }}
+        .footer-title {{ justify-content: center; }}
+        .info-row {{ grid-template-columns: 1fr !important; gap: 5px; }}
+        .execution-grid {{ grid-template-columns: 1fr !important; }}
+        .execution-item {{ text-align: center; border-left: none; border-bottom: 1px dashed {col_border}; padding-bottom: 15px; }}
     }}
-    .footer-col:last-child {{ border-bottom: none !important; }}
-}}
-
-.footer-col:last-child {{border-right:none}}
-.footer-col.medium {{flex:1.2;min-width:250px}}
-.footer-col.wide {{flex:2.5;min-width:600px}}
-.footer-title {{color:{title_color} !important;font-weight:bold;margin-bottom:20px;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:10px;border-bottom:2px solid {col_border};padding-bottom:10px}}
-.info-row {{margin-bottom:10px;font-size:0.95rem;display:grid;grid-template-columns:85px 1fr;line-height:1.4}}
-.info-label {{font-weight:bold;opacity:0.9}}
-.execution-grid {{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:15px}}
-.execution-item {{border-left:2px solid {col_border};padding-left:12px}}
-
-/* MOBILE FOOTER FIX FOR MEMBERS */
-@media (max-width: 768px) {{
-    .execution-grid {{ 
-        grid-template-columns: 1fr !important; 
-        gap: 15px !important;
+    
+    .footer-title {{
+        color: {title_color} !important;
+        font-weight: bold;
+        margin-bottom: 15px;
+        font-size: 1.05rem;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid {col_border};
+        padding-bottom: 8px;
     }}
-}}
-
-.execution-name {{font-size:1.05rem;font-weight:bold;color:{title_color};display:block;margin-bottom:3px}}
-.execution-info {{font-size:0.85rem;opacity:0.8;margin-bottom:5px;display:block}}
-.execution-email {{font-size:0.8rem;text-decoration:none;color:{footer_text};opacity:0.7;display:flex;align-items:center;gap:5px}}
-.footer-bottom {{padding-top:30px;margin-top:50px;border-top:1px solid {col_border};font-size:0.9rem;color:{"#666" if is_light else "#888"};text-align:center}}
-.school-logo-section {{text-align:center;margin-bottom:15px}}
-.footer-logo-img {{width:95px;margin-bottom:10px;filter:{"none" if is_light else "drop-shadow(0 0 8px rgba(0, 198, 255, 0.4))"}}}
-.school-name-text {{font-weight:bold;color:{school_name_color};font-size:1.15rem;line-height:1.2}}
-a {{color:{title_color};text-decoration:none}}
-
-/* TỐI ƯU HÓA CÁC TAB - ĐẢM BẢO CHỮ KHÔNG BỊ TRÀN */
-.stTabs [data-baseweb="tab-list"] {{
-    gap: 10px !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    padding-bottom: 5px !important;
-}}
-.stTabs [data-baseweb="tab"] {{
-    height: 48px !important;
-    white-space: nowrap !important;
-    min-width: fit-content !important;
-    flex-shrink: 0 !important;
-    padding: 0 20px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}}
-.stTabs [data-baseweb="tab"] p {{
-    font-size: 0.95rem !important;
-    font-weight: bold !important;
-    white-space: nowrap !important;
-    margin: 0 !important;
-}}
-</style>
-<div class="main-footer">
-<div class="footer-container">
-<div class="footer-col">
-<div class="school-logo-section">
-<img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-<div class="school-name-text">TRƯỜNG ĐẠI HỌC<br>Y TẾ CÔNG CỘNG</div>
-</div>
-<div style="font-size:0.9rem;opacity:0.8;text-align:center">
-<p>📍 1A Đức Thắng, Bắc Từ Liêm, HN</p>
-<p>🌐 <a href="https://huph.edu.vn/" target="_blank">huph.edu.vn</a></p>
-</div>
-</div>
-<div class="footer-col medium">
-<div class="footer-title">👤 CHỦ NHIỆM ĐỀ TÀI</div>
-<div class="info-row"><span class="info-label">Họ tên:</span><span><b>Đinh Lê Quỳnh Phương</b></span></div>
-<div class="info-row"><span class="info-label">MSSV:</span><span>2211090031</span></div>
-<div style="margin-bottom:10px;font-size:0.95rem;line-height:1.4">
-<div class="info-label">Email:</div>
-<div style="word-break:break-all"><a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></div>
-</div>
-<div class="info-row" style="margin-top:10px"><span class="info-label">Lớp:</span><span>CNCQ KHDL1-1A</span></div>
-</div>
-<div class="footer-col wide">
-<div class="footer-title">👥 NHÓM THỰC HIỆN & GVHD</div>
-<div style="margin-bottom:20px;background:rgba(0,114,255,0.05);padding:15px;border-radius:12px;border-left:5px solid {title_color}">
-<div style="font-size:0.85rem;margin-bottom:3px;opacity:0.8">GIẢNG VIÊN HƯỚNG DẪN:</div>
-<div style="font-size:1.2rem;font-weight:bold;color:{title_color}">TS. Trần Hồng Việt</div>
-<div style="font-size:0.95rem;opacity:0.9">Khoa học dữ liệu - Đại học Y tế Công cộng</div>
-<div style="font-size:0.95rem"><a href="mailto:thviet79@gmail.com">📧 thviet79@gmail.com</a></div>
-</div>
-<div class="execution-grid">
-<div class="execution-item">
-<span class="execution-name">1. Kim Mạnh Hưng</span>
-<span class="execution-info">MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A</span>
-<a href="mailto:2211090016@studenthuph.edu.vn" class="execution-email">📧 2211090016@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">2. Nguyễn Hải An</span>
-<span class="execution-info">MSSV: 2211090001 | Lớp: CNCQ KHDL1-1A</span>
-<a href="mailto:2211090001@studenthuph.edu.vn" class="execution-email">📧 2211090001@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">3. Phan Vân Anh</span>
-<span class="execution-info">MSSV: 2211090004 | Lớp: CNCQ KHDL1-1A</span>
-<a href="mailto:2211090004@studenthuph.edu.vn" class="execution-email">📧 2211090004@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">4. Nguyễn Thị Thanh Nga</span>
-<span class="execution-info">MSSV: 2211090027 | Lớp: CNCQ KHDL1-1A</span>
-<a href="mailto:2211090027@studenthuph.edu.vn" class="execution-email">📧 2211090027@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">5. Nguyễn Thị Thơm</span>
-<span class="execution-info">MSSV: 2216030122 | Lớp: CNCQ KTPHCN3-1A</span>
-<a href="mailto:2216030122@studenthuph.edu.vn" class="execution-email">📧 2216030122@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">6. Nguyễn Thị Thu Hương</span>
-<span class="execution-info">MSSV: 2317010071 | Lớp: CNCQ YTCC22-1A</span>
-<a href="mailto:2317010071@studenthuph.edu.vn" class="execution-email">📧 2317010071@studenthuph.edu.vn</a>
-</div>
-</div>
-</div>
-<div class="footer-col">
-<div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
-<div style="font-size:0.85rem;line-height:1.5">
-<p><b>Trường ĐH Y tế Công cộng</b></p>
-<p>📍 Đức Thắng, Bắc Từ Liêm, HN</p>
-<p>📧 <a href="mailto:irb@huph.edu.vn">irb@huph.edu.vn</a></p>
-<p>📞 024 62663024</p>
-</div>
-</div>
-</div>
-<div class="footer-bottom">Đề tài NCKH cấp Trường | <b>REHAB-AI-MONITOR</b> | © 2026 NHÓM NGHIÊN CỨU TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
-</div>"""
+    .info-row {{ display: grid; grid-template-columns: 85px 1fr; margin-bottom: 8px; font-size: 0.95rem; text-align: left; line-height: 1.4; }}
+    .info-label {{ font-weight: bold; opacity: 0.9; }}
+    .execution-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }}
+    .execution-item {{ border-left: 2px solid {border_color}; padding-left: 12px; text-align: left; }}
+    .execution-name {{ font-size: 1.05rem; font-weight: bold; color: {title_color}; display: block; }}
+    .execution-info {{ font-size: 0.85rem; opacity: 0.8; display: block; margin: 2px 0; }}
+    .execution-email {{ font-size: 0.8rem; color: {footer_text}; opacity: 0.7; text-decoration: none; }}
+    
+    .school-logo-section {{ text-align: center; margin-bottom: 15px; }}
+    .footer-logo-img {{ width: 90px; margin-bottom: 10px; }}
+    .school-name-text {{ font-weight: bold; color: {school_name_color}; font-size: 1.1rem; line-height: 1.2; }}
+    .footer-bottom {{ text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid {col_border}; font-size: 0.9rem; font-weight: bold; }}
+    </style>
+    <div class="main-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <div class="school-logo-section">
+                    <img src="{logo_src}" class="footer-logo-img">
+                    <div class="school-name-text">TRƯỜNG ĐẠI HỌC<br>Y TẾ CÔNG CỘNG</div>
+                </div>
+                <div style="font-size:0.9rem; opacity:0.8; text-align:center; margin-top:10px;">
+                    <p>📍 1A Đức Thắng, Bắc Từ Liêm, HN</p>
+                    <p>🌐 <a href="https://huph.edu.vn/" style="color:{title_color}">huph.edu.vn</a></p>
+                </div>
+            </div>
+            
+            <div class="footer-col">
+                <div class="footer-title">👤 CHỦ NHIỆM ĐỀ TÀI</div>
+                <div class="info-row"><div class="info-label">Họ tên:</div><div><b>Đinh Lê Quỳnh Phương</b></div></div>
+                <div class="info-row"><div class="info-label">MSSV:</div><div>2211090031</div></div>
+                <div class="info-row"><div class="info-label">Lớp:</div><div>CNCQ KHDL1-1A</div></div>
+                <div class="info-row"><div class="info-label">Email:</div><div style="word-break:break-all"><a href="mailto:2211090031@studenthuph.edu.vn" style="color:{footer_text}">2211090031@studenthuph.edu.vn</a></div></div>
+            </div>
+            
+            <div class="footer-col wide">
+                <div class="footer-title">👥 NHÓM THỰC HIỆN & GVHD</div>
+                <div style="margin-bottom:15px; background:rgba(0,114,255,0.05); padding:12px; border-radius:10px; border-left:5px solid {title_color}">
+                    <div style="font-size:0.85rem; opacity:0.8;">GIẢNG VIÊN HƯỚNG DẪN:</div>
+                    <div style="font-size:1.15rem; font-weight:bold; color:{title_color}">TS. Trần Hồng Việt</div>
+                    <div style="font-size:0.9rem;">Khoa học dữ liệu - Đại học Y tế Công cộng</div>
+                </div>
+                
+                <div class="execution-grid">
+                    <div class="execution-item">
+                        <span class="execution-name">1. Kim Mạnh Hưng</span>
+                        <span class="execution-info">MSSV: 2211090016 | KHDL1-1A</span>
+                        <a href="mailto:2211090016@studenthuph.edu.vn" class="execution-email">📧 2211090016@studenthuph.edu.vn</a>
+                    </div>
+                    <div class="execution-item">
+                        <span class="execution-name">2. Nguyễn Hải An</span>
+                        <span class="execution-info">MSSV: 2211090001 | KHDL1-1A</span>
+                        <a href="mailto:2211090001@studenthuph.edu.vn" class="execution-email">📧 2211090001@studenthuph.edu.vn</a>
+                    </div>
+                    <div class="execution-item">
+                        <span class="execution-name">3. Phan Vân Anh</span>
+                        <span class="execution-info">MSSV: 2211090004 | KHDL1-1A</span>
+                        <a href="mailto:2211090004@studenthuph.edu.vn" class="execution-email">📧 2211090004@studenthuph.edu.vn</a>
+                    </div>
+                    <div class="execution-item">
+                        <span class="execution-name">4. Nguyễn Thị Thanh Nga</span>
+                        <span class="execution-info">MSSV: 2211090027 | KHDL1-1A</span>
+                        <a href="mailto:2211090027@studenthuph.edu.vn" class="execution-email">📧 2211090027@studenthuph.edu.vn</a>
+                    </div>
+                    <div class="execution-item">
+                        <span class="execution-name">5. Nguyễn Thị Thơm</span>
+                        <span class="execution-info">MSSV: 2216030122 | KTPHCN3-1A</span>
+                        <a href="mailto:2216030122@studenthuph.edu.vn" class="execution-email">📧 2216030122@studenthuph.edu.vn</a>
+                    </div>
+                    <div class="execution-item">
+                        <span class="execution-name">6. Nguyễn Thị Thu Hương</span>
+                        <span class="execution-info">MSSV: 2317010071 | YTCC22-1A</span>
+                        <a href="mailto:2317010071@studenthuph.edu.vn" class="execution-email">📧 2317010071@studenthuph.edu.vn</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-col">
+                <div class="footer-title">⚖️ HỘI ĐỒNG ĐẠO ĐỨC</div>
+                <div style="font-size: 0.9rem; line-height: 1.5;">
+                    <p><b>Trường Đại học Y tế Công cộng</b></p>
+                    <p>📍 Đức Thắng, Bắc Từ Liêm, HN</p>
+                    <p>📧 <a href="mailto:irb@huph.edu.vn" style="color:{title_color}">irb@huph.edu.vn</a></p>
+                    <p>📞 024 62663024</p>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">Đề tài NCKH cấp Trường | REHAB-AI-MONITOR | © 2026 TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
+    </div>
+    """
     st.markdown(footer_html, unsafe_allow_html=True)
+
 
 def load_data(file_path):
     if os.path.exists(file_path):
@@ -411,8 +404,12 @@ def chuyen_tab_bang_js(ten_tab):
     st.markdown(js_code, unsafe_allow_html=True)
 
 # ============================================
-# CẤU HÌNH TRANG
+# CẤU HÌNH TRANG & THEME
 # ============================================
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'dark'
+current_theme = st.session_state.theme
+
 st.set_page_config(
     page_title="Hệ thống giám sát tập PHCN từ xa - Đề tài NCKH",
     page_icon="🏥",
@@ -425,8 +422,7 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === SỬA LỖI ICON SIDEBAR (PHONG CÁCH VACCINENLP) === */
-    /* 1. Nút mở Sidebar (khi đang đóng) */
+    /* === SỬA LỖI CHỮ RÁC ICON SIDEBAR (THAY BẰNG MŨI TÊN CHUẨN) === */
     [data-testid="stSidebarCollapseButton"] {
         background: rgba(0, 198, 255, 0.1) !important;
         border: 1px solid rgba(0, 198, 255, 0.3) !important;
@@ -437,7 +433,9 @@ st.markdown("""
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        overflow: hidden !important;
         color: transparent !important;
+        font-size: 0 !important; /* Hide original text */
     }
     [data-testid="stSidebarCollapseButton"]::after {
         content: ">>" !important;
@@ -450,41 +448,37 @@ st.markdown("""
         transform: translate(-50%, -50%) !important;
         visibility: visible !important;
     }
-
-    /* 2. Nút đóng Sidebar (khi đang mở) */
-    [data-testid="stSidebarContent"] button[data-testid="stBaseButton-headerNoPadding"] {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 8px !important;
-        color: transparent !important;
-    }
-    [data-testid="stSidebarContent"] button[data-testid="stBaseButton-headerNoPadding"]::after {
-        content: "<<" !important;
-        position: absolute !important;
-        font-size: 16px !important;
-        font-weight: bold !important;
-        color: #00c6ff !important;
-        visibility: visible !important;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-    }
-
     [data-testid="stSidebarCollapseButton"] * {
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
     }
     
-    /* XÓA TRIỆT ĐỂ CHỮ RÁC TRÊN TOP BAR */
-    header[data-testid="stHeader"]::before {
+    /* XÓA TRIỆT ĐỂ CHỮ double_arrow_right TRÊN TOP BAR VÀ SIDEBAR */
+    header[data-testid="stHeader"]::before,
+    [data-testid="stSidebar"] header::before,
+    .st-emotion-cache-zq59db::before,
+    .st-emotion-cache-162961b::before {
         content: "" !important;
         display: none !important;
+        visibility: hidden !important;
     }
     .stApp > header {
         color: transparent !important;
         font-size: 0 !important;
         height: 0 !important;
+        overflow: hidden !important;
+        display: none !important;
+    }
+    
+    /* Ẩn các icon lỗi khác */
+    [data-testid="stExpander"] summary span > span,
+    [data-testid="stFileUploader"] section span > span,
+    .stIconMaterial, .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
+        display: none !important;
+        color: transparent !important;
+        font-size: 0 !important;
+        visibility: hidden !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.04) !important;
@@ -5339,6 +5333,9 @@ def hien_thi_tab_doi_mat_khau():
 # MAIN - GIỮ NGUYÊN CẤU TRÚC TAB
 # ============================================
 def main():
+    # Khởi tạo theme ngay lập tức để tránh lỗi NameError trong toàn bộ hàm
+    current_theme = st.session_state.get('theme', 'dark')
+
     # Kiểm tra trạng thái đăng nhập ngay đầu hàm main
     if not st.session_state.logged_in:
         # Nếu chưa đăng nhập, hiển thị trang đăng nhập toàn màn hình và dừng lại
@@ -5378,42 +5375,38 @@ def main():
     bai_tap = BAI_TAP[ma_bai_tap]
     
     with st.sidebar:
-        # === KHU VỰC TÀI KHOẢN & HỆ THỐNG (SIDEBAR TOP) ===
+        # === LOGO HUPH (GIỮ NGUYÊN HOẶC THÊM NẾU CẦN) ===
         st.markdown(f"""
-        <div style="background: rgba(0, 198, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(0, 198, 255, 0.2); margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            <div style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-                <span style="color: #888; font-size: 0.85rem; display: block; margin-bottom: 5px;">👤 NGƯỜI DÙNG</span>
-                <span style="color: #ffd700; font-weight: bold; font-size: 1.2rem; letter-spacing: 0.5px;">{st.session_state.user_info['username'].upper()}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <span style="font-size: 0.9rem; color: #ccc;">🌓 Giao diện:</span>
-            </div>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="https://huph.edu.vn/uploads/logo/logo-huph.png" width="80">
+            <h3 style="color: #00c6ff; margin-top: 10px; font-family: 'Times New Roman', serif;">REHAB-AI MONITOR</h3>
         </div>
         """, unsafe_allow_html=True)
+
+        # === CẤU HÌNH GIAO DIỆN (THEO ẢNH 2) ===
+        st.markdown("### 🎨 GIAO DIỆN")
+        col_theme1, col_theme2 = st.columns(2)
+        with col_theme1:
+            if st.button("🌙 Tối", type="primary" if current_theme == 'dark' else "secondary", use_container_width=True, key="btn_theme_dark"):
+                st.session_state.theme = 'dark'
+                st.rerun()
+        with col_theme2:
+            if st.button("☀️ Sáng", type="primary" if current_theme == 'light' else "secondary", use_container_width=True, key="btn_theme_light"):
+                st.session_state.theme = 'light'
+                st.rerun()
         
-        # Overlay Streamlit components (Toggle & Logout)
-        # Using a trick to place them visually inside the block above
-        st.markdown('<div style="margin-top: -85px; margin-left: 110px; margin-bottom: 50px;">', unsafe_allow_html=True)
-        st.toggle("Tối" if current_theme == 'dark' else "Sáng", 
-                  value=(current_theme == 'dark'), 
-                  key="theme_toggle_sidebar", 
-                  on_change=update_theme_callback,
-                  label_visibility="collapsed")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown(f"### Xin chào, **{st.session_state.user_info['username']}**!")
         
-        if st.button("🚪 ĐĂNG XUẤT HỆ THỐNG", width="stretch", key="logout_sidebar", type="primary"):
+        if st.button("🚪 THOÁT HỆ THỐNG", width="stretch", key="logout_sidebar", type="secondary"):
             if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
                 st.logout()
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
             
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(f"""
-        <div style="background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%); padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; color: white; font-size: 0.9rem; margin-bottom: 20px;">
-            🎭 VAI TRÒ: {user_role.upper()}
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown(f"### 🎭 VAI TRÒ: {user_role.upper()}")
         
         if user_role == "Nghiên cứu viên":
             st.markdown("### 🔬 THÔNG TIN CHUYÊN GIA")
