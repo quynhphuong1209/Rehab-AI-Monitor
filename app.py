@@ -4280,6 +4280,7 @@ def hien_thi_tab_phieu_nckh():
     p_record = next((s for s in reversed(symptoms_data) if s['username'] == patient_username), None)
     
     # Giá trị mặc định hoặc từ record
+    d_full_name = p_record.get('full_name', '') if p_record else ""
     d_sub_code = p_record.get('patient_id', patient_username) if p_record else patient_username
     d_age = p_record.get('age', 25) if p_record else 25
     d_gender_idx = 0
@@ -4299,8 +4300,7 @@ def hien_thi_tab_phieu_nckh():
         st.markdown("### I. THÔNG TIN CHUNG VÀ ĐẶC ĐIỂM LÂM SÀNG")
         col1, col2 = st.columns(2)
         with col1:
-            default_interviewer = st.session_state.user_info.get('full_name', '') or st.session_state.user_info.get('username', '')
-            interviewer = st.text_input("Họ và tên người phỏng vấn:", value=default_interviewer if user_role != "Bệnh nhân" else "Tự khai báo")
+            interviewer = st.text_input("Họ và tên người phỏng vấn:", value=d_full_name)
             interview_date = st.date_input("Ngày phỏng vấn:", value=get_vn_now())
             subject_code = st.text_input("Mã đối tượng (Mã BN):", value=d_sub_code)
             age = st.number_input("Tuổi:", min_value=0, max_value=120, value=d_age)
