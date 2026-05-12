@@ -3970,14 +3970,28 @@ def hien_thi_ket_qua_cho_benh_nhan():
                 st.markdown("---")
                 st.markdown("### 📑 KẾT QUẢ ĐÁNH GIÁ KỸ THUẬT (NCKH)")
                 for r in reversed(my_res):
-                    with st.expander(f"🔬 Đánh giá NCKH ngày {r['interview_date']} - {r['exercises']}", expanded=False):
-                        rc1, rc2 = st.columns([1, 2.5])
+                    with st.expander(f"📅 Phiếu ngày {r.get('timestamp', 'N/A')} - KQ: {r.get('general_result', 'N/A')}", expanded=False):
+                        rc1, rc2, rc3 = st.columns(3)
                         with rc1:
-                            st.metric("Kết quả", r['general_result'])
-                            st.write(f"**Đúng:** {r['correct_reps']}/{r['total_reps']}")
+                            st.markdown("**📌 Thông tin chung**")
+                            st.write(f"- Người PV: {r.get('interviewer')}")
+                            st.write(f"- Ngày PV: {r.get('interview_date')}")
+                            st.write(f"- Tuổi/Giới: {r.get('age')}/{r.get('gender')}")
+                            st.write(f"- Khu vực: {r.get('region')}")
                         with rc2:
-                            st.info(f"**Nhận xét chuyên môn:** {r['specialist_comment']}")
-                            st.write(f"**Người đánh giá:** {r['interviewer']}")
+                            st.markdown("**🩺 Lâm sàng & Tập luyện**")
+                            st.write(f"- Chẩn đoán: {r.get('diagnosis')}")
+                            st.write(f"- Thời gian bệnh: {r.get('duration')}")
+                            st.write(f"- Bài tập: {', '.join(r.get('exercises', [])) if isinstance(r.get('exercises'), list) else r.get('exercises')}")
+                            st.write(f"- Đau (VAS): {r.get('pain_level')}")
+                        with rc3:
+                            st.markdown("**📊 Đánh giá chuyên môn**")
+                            st.write(f"- Kết quả: {r.get('general_result')}")
+                            st.write(f"- Đúng/Tổng: {r.get('correct_reps')}/{r.get('total_reps')}")
+                            st.info(f"**Nhận xét:** {r.get('specialist_comment')}")
+                        
+                        if r.get('video_code'):
+                            st.caption(f"🎬 Mã video: {r.get('video_code')} | Thiết bị: {r.get('recording_device')} | Góc: {r.get('recording_angle')}")
         
         if has_ai_eval:
             with tab_charts:
