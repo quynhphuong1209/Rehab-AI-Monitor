@@ -413,7 +413,9 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* SỬA NÚT THU/MỞ SIDEBAR ĐỂ BẤM ĐƯỢC VÀ GIỐNG MẪU */
+    /* NHÚNG FONT MATERIAL ICONS ĐỂ HIỂN THỊ MŨI TÊN CHUẨN */
+    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
     [data-testid="stSidebarCollapseButton"] {
         background: rgba(0, 198, 255, 0.1) !important;
         border-radius: 8px !important;
@@ -423,59 +425,53 @@ st.markdown("""
         align-items: center !important;
         justify-content: center !important;
         border: 1px solid rgba(0, 198, 255, 0.3) !important;
-        position: relative !important;
         cursor: pointer !important;
-        z-index: 9999 !important;
+        position: relative !important;
     }
 
-    /* Giữ cho nút bấm được nhưng ẩn nội dung cũ */
-    [data-testid="stSidebarCollapseButton"] * {
+    /* Ẩn icon lỗi và chữ rác */
+    [data-testid="stSidebarCollapseButton"] svg,
+    [data-testid="stSidebarCollapseButton"] span {
+        display: none !important;
         opacity: 0 !important;
-        pointer-events: none !important;
     }
 
-    /* KHI SIDEBAR ĐANG MỞ -> HIỂN THỊ << */
+    /* HIỂN THỊ ICON MATERIAL CHUẨN */
+    [data-testid="stSidebarCollapseButton"]::after {
+        font-family: 'Material Icons' !important;
+        font-size: 24px !important;
+        color: #00c6ff !important;
+        display: block !important;
+        visibility: visible !important;
+        pointer-events: none !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+    }
+
+    /* KHI SIDEBAR ĐANG MỞ -> HIỂN THỊ keyboard_double_arrow_left */
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
         position: absolute !important;
         right: 15px !important;
         top: 15px !important;
     }
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]::after {
-        content: "<<" !important;
-        position: absolute !important;
-        font-size: 18px !important;
-        color: #00c6ff !important;
-        font-weight: bold !important;
-        visibility: visible !important;
-        pointer-events: none !important;
-        left: 50% !important;
-        top: 50% !important;
-        transform: translate(-50%, -50%) !important;
+        content: "keyboard_double_arrow_left" !important;
     }
 
-    /* KHI SIDEBAR ĐANG ĐÓNG -> HIỂN THỊ >> */
+    /* KHI SIDEBAR ĐANG ĐÓNG -> HIỂN THỊ keyboard_double_arrow_right */
     header [data-testid="stSidebarCollapseButton"] {
         position: fixed !important;
         left: 15px !important;
         top: 15px !important;
+        z-index: 999999 !important;
     }
     header [data-testid="stSidebarCollapseButton"]::after {
-        content: ">>" !important;
-        position: absolute !important;
-        font-size: 18px !important;
-        color: #00c6ff !important;
-        font-weight: bold !important;
-        visibility: visible !important;
-        pointer-events: none !important;
-        left: 50% !important;
-        top: 50% !important;
-        transform: translate(-50%, -50%) !important;
+        content: "keyboard_double_arrow_right" !important;
     }
 
-    /* XÓA TRIỆT ĐỂ CHỮ double_arrow_right */
-    [data-testid="stSidebar"] *, header * {
-        text-indent: 0 !important;
-    }
+    /* Ẩn mọi văn bản rác khác */
     .st-emotion-cache-1ae8k9d, .st-emotion-cache-zq59db, .st-emotion-cache-162961b {
         font-size: 0 !important;
         color: transparent !important;
