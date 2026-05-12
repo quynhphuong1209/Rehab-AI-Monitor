@@ -5706,46 +5706,46 @@ def main():
                 info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
                 info_text = "#000" if is_light else "#fff"
 
-            # 1. HÀNG ĐẦU: THÔNG TIN VÀ CHỈ SỐ
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                st.markdown(f"""
-                <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
-                    <h3 style="margin-top:0;">{bai_tap['icon']} {bai_tap['ten']}</h3>
-                    <p>{bai_tap['mo_ta']}</p>
-                    <div style="display: flex; gap: 20px; font-size: 0.9rem; opacity: 0.8;">
-                        <span>⏱️ <b>Thời gian:</b> {bai_tap['thoi_gian']}s/lần</span>
-                        <span>🔄 <b>Số lần:</b> {bai_tap['lan']} lần/ngày</span>
+                # 1. HÀNG ĐẦU: THÔNG TIN VÀ CHỈ SỐ
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    st.markdown(f"""
+                    <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
+                        <h3 style="margin-top:0;">{bai_tap['icon']} {bai_tap['ten']}</h3>
+                        <p>{bai_tap['mo_ta']}</p>
+                        <div style="display: flex; gap: 20px; font-size: 0.9rem; opacity: 0.8;">
+                            <span>⏱️ <b>Thời gian:</b> {bai_tap['thoi_gian']}s/lần</span>
+                            <span>🔄 <b>Số lần:</b> {bai_tap['lan']} lần/ngày</span>
+                        </div>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+                    
+                    with st.expander("📖 HƯỚNG DẪN TẬP LUYỆN", expanded=True):
+                        st.markdown(bai_tap['huong_dan'])
+                    
+                    with st.expander("✨ LỢI ÍCH CỦA BÀI TẬP", expanded=False):
+                        for loi_ich in bai_tap['loi_ich']:
+                            st.markdown(f"- {loi_ich}")
                 
-                with st.expander("📖 HƯỚNG DẪN TẬP LUYỆN", expanded=True):
-                    st.markdown(bai_tap['huong_dan'])
-                
-                with st.expander("✨ LỢI ÍCH CỦA BÀI TẬP", expanded=False):
-                    for loi_ich in bai_tap['loi_ich']:
-                        st.markdown(f"- {loi_ich}")
-            
-            with col2:
-                chuan = bai_tap['chuan']
-                card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
-                st.markdown(f"""
-                <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
-                    <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 THÔNG SỐ CHUẨN</h4>
-                    <p style="color:#00CED1; margin-bottom:5px;">🦾 Góc vai: <b>{chuan['vai']}°</b> ±{chuan['sai_so']}°</p>
-                    <p style="color:#FF6B6B; margin-bottom:10px;">💪 Góc khuỷu: <b>{chuan['khuyu']}°</b> ±{chuan['sai_so']}°</p>
-                    <div style="font-size:0.8rem; opacity:0.7; border-top:1px solid {info_border}; padding-top:10px;">
-                        <p style="margin-bottom:3px;">✅ Đạt: Cả 2 góc trong vùng sai số</p>
-                        <p style="margin-bottom:0;">❌ Không đạt: Có góc ngoài vùng sai số</p>
+                with col2:
+                    chuan = bai_tap['chuan']
+                    card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
+                    st.markdown(f"""
+                    <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
+                        <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 THÔNG SỐ CHUẨN</h4>
+                        <p style="color:#00CED1; margin-bottom:5px;">🦾 Góc vai: <b>{chuan['vai']}°</b> ±{chuan['sai_so']}°</p>
+                        <p style="color:#FF6B6B; margin-bottom:10px;">💪 Góc khuỷu: <b>{chuan['khuyu']}°</b> ±{chuan['sai_so']}°</p>
+                        <div style="font-size:0.8rem; opacity:0.7; border-top:1px solid {info_border}; padding-top:10px;">
+                            <p style="margin-bottom:3px;">✅ Đạt: Cả 2 góc trong vùng sai số</p>
+                            <p style="margin-bottom:0;">❌ Không đạt: Có góc ngoài vùng sai số</p>
+                        </div>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Video hướng dẫn mẫu
-                if 'video_guide' in bai_tap:
-                    st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
-                    st.video(bai_tap['video_guide'])
+                    """, unsafe_allow_html=True)
+                    
+                    # Video hướng dẫn mẫu
+                    if 'video_guide' in bai_tap:
+                        st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
+                        st.video(bai_tap['video_guide'])
 
             # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
             st.markdown("---")
