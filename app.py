@@ -3809,6 +3809,38 @@ def hien_thi_form_danh_gia_bac_si():
         st.warning("⚠️ Vui lòng chọn một video từ danh sách ở TRANG CHỦ để bắt đầu đánh giá.")
         return
 
+    # KIỂM TRA XEM ĐÃ CÓ ĐÁNH GIÁ CHO VIDEO NÀY CHƯA
+    evals = load_data(EVALUATIONS_FILE)
+    existing_eval = next((e for e in evals if 
+                         e.get('patient_username') == selected_video['username'] and 
+                         e.get('video_name') == selected_video.get('video_name') and
+                         e.get('doctor_username') == st.session_state.user_info['username']), None)
+
+    if existing_eval and not st.session_state.get('re_eval_mode'):
+        st.markdown(f"### ✅ BẠN ĐÃ HOÀN THÀNH ĐÁNH GIÁ CHO VIDEO NÀY")
+        st.info("💡 Dưới đây là thông tin bạn đã gửi cho bệnh nhân. Bạn có thể nhấn 'Đánh giá lại' nếu muốn thay đổi.")
+        
+        c1, c2 = st.columns([1, 2])
+        with c1:
+            st.metric("Kết quả", existing_eval['doctor_result'])
+            st.write(f"**Thời gian:** {existing_eval['time']}")
+        with c2:
+            st.success(f"**Nhận xét:** {existing_eval['comments']}")
+            st.write(f"**Kế hoạch:** {existing_eval['plan']}")
+            if existing_eval.get('errors'):
+                st.warning(f"**Các lỗi ghi nhận:** {', '.join(existing_eval['errors'])}")
+        
+        if st.button("🔄 Đánh giá lại động tác này"):
+            st.session_state.re_eval_mode = True
+            st.rerun()
+        return
+
+    # Nếu đang ở chế độ đánh giá (mới hoặc đánh giá lại)
+    if st.session_state.get('re_eval_mode'):
+        if st.button("⬅️ Quay lại bản xem trước"):
+            st.session_state.re_eval_mode = False
+            st.rerun()
+
     st.markdown(f"""
     <div style="background: rgba(0,206,209,0.1); padding: 1rem; border-radius: 10px; border: 1px solid #00CED1; margin-bottom: 1rem;">
         <strong>🎬 Đang đánh giá video:</strong> {selected_video['full_name']} - {selected_video['exercise']} ({selected_video['time']})
