@@ -4463,28 +4463,45 @@ def hien_thi_tab_phieu_nckh():
         
         # Hiển thị danh sách phiếu
         for i, item in enumerate(reversed(display_list)):
-            with st.expander(f"📅 Phiếu ngày {item.get('timestamp', 'N/A')} - BN: {item.get('subject_code', 'N/A')} - KQ: {item.get('general_result', 'N/A')}"):
-                col_i1, col_i2, col_i3 = st.columns(3)
-                with col_i1:
-                    st.markdown("**📌 Thông tin chung**")
-                    st.write(f"- Người PV: {item.get('interviewer')}")
-                    st.write(f"- Ngày PV: {item.get('interview_date')}")
-                    st.write(f"- Tuổi/Giới: {item.get('age')}/{item.get('gender')}")
-                    st.write(f"- Khu vực: {item.get('region')}")
-                with col_i2:
-                    st.markdown("**🩺 Lâm sàng & Tập luyện**")
-                    st.write(f"- Chẩn đoán: {item.get('diagnosis')}")
-                    st.write(f"- Thời gian bệnh: {item.get('duration')}")
-                    st.write(f"- Bài tập: {', '.join(item.get('exercises', []))}")
-                    st.write(f"- Đau (VAS): {item.get('pain_level')}")
-                with col_i3:
-                    st.markdown("**📊 Đánh giá chuyên môn**")
-                    st.write(f"- Kết quả: {item.get('general_result')}")
-                    st.write(f"- Số lần Đúng/Tổng: {item.get('correct_reps')}/{item.get('total_reps')}")
-                    st.info(f"**Nhận xét:** {item.get('specialist_comment')}")
-                
-                if item.get('video_code'):
-                    st.caption(f"🎬 Mã video: {item.get('video_code')} | Thiết bị: {item.get('recording_device')} | Góc: {item.get('recording_angle')}")
+            col_h_main, col_h_del = st.columns([12, 1])
+            with col_h_main:
+                with st.expander(f"📅 Phiếu ngày {item.get('timestamp', 'N/A')} - BN: {item.get('subject_code', 'N/A')} - KQ: {item.get('general_result', 'N/A')}"):
+                    col_i1, col_i2, col_i3 = st.columns(3)
+                    with col_i1:
+                        st.markdown("**📌 Thông tin chung**")
+                        st.write(f"- Người PV: {item.get('interviewer')}")
+                        st.write(f"- Ngày PV: {item.get('interview_date')}")
+                        st.write(f"- Tuổi/Giới: {item.get('age')}/{item.get('gender')}")
+                        st.write(f"- Khu vực: {item.get('region')}")
+                    with col_i2:
+                        st.markdown("**🩺 Lâm sàng & Tập luyện**")
+                        st.write(f"- Chẩn đoán: {item.get('diagnosis')}")
+                        st.write(f"- Thời gian bệnh: {item.get('duration')}")
+                        st.write(f"- Bài tập: {', '.join(item.get('exercises', []))}")
+                        st.write(f"- Đau (VAS): {item.get('pain_level')}")
+                    with col_i3:
+                        st.markdown("**📊 Đánh giá chuyên môn**")
+                        st.write(f"- Kết quả: {item.get('general_result')}")
+                        st.write(f"- Số lần Đúng/Tổng: {item.get('correct_reps')}/{item.get('total_reps')}")
+                        st.info(f"**Nhận xét:** {item.get('specialist_comment')}")
+                    
+                    if item.get('video_code'):
+                        st.caption(f"🎬 Mã video: {item.get('video_code')} | Thiết bị: {item.get('recording_device')} | Góc: {item.get('recording_angle')}")
+
+            with col_h_del:
+                if st.button("❌", key=f"del_res_{i}", help="Xóa bản ghi này"):
+                    # Tìm index thực tế trong all_research_data để xóa
+                    actual_idx = -1
+                    for idx, d in enumerate(all_research_data):
+                        if d.get('timestamp') == item.get('timestamp') and d.get('subject_code') == item.get('subject_code'):
+                            actual_idx = idx
+                            break
+                    
+                    if actual_idx != -1:
+                        all_research_data.pop(actual_idx)
+                        save_data(RESEARCH_DATA_FILE, all_research_data)
+                        st.success("Đã xóa!")
+                        st.rerun()
 
 
 # ============================================
