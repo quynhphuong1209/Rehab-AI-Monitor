@@ -413,45 +413,48 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* SỬA NÚT THU/MỞ SIDEBAR CHUẨN XỊN (KHÔNG CẦN FONT NGOÀI) */
+    /* SỬA NÚT THU/MỞ SIDEBAR: GIỮ CHỨC NĂNG CLICK & HIỂN THỊ ĐẸP */
     [data-testid="stSidebarCollapseButton"] {
         background: rgba(0, 198, 255, 0.1) !important;
         border-radius: 10px !important;
         width: 42px !important;
         height: 42px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
         border: 1px solid rgba(0, 198, 255, 0.4) !important;
         cursor: pointer !important;
         position: relative !important;
-        transition: all 0.3s ease !important;
-    }
-    [data-testid="stSidebarCollapseButton"]:hover {
-        background: rgba(0, 198, 255, 0.2) !important;
-        transform: scale(1.05) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    /* Ẩn triệt để mọi thứ bên trong nút cũ */
-    [data-testid="stSidebarCollapseButton"] * {
-        display: none !important;
-        opacity: 0 !important;
+    /* Ẩn nội dung cũ nhưng KHÔNG ẩn chính cái nút */
+    [data-testid="stSidebarCollapseButton"] button {
+        background: transparent !important;
+        color: transparent !important;
+        border: none !important;
+        width: 100% !important;
+        height: 100% !important;
         font-size: 0 !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        z-index: 2 !important;
     }
 
-    /* HIỂN THỊ BIỂU TƯỢNG MŨI TÊN KÉP BẰNG UNICODE (CỰC KỲ ỔN ĐỊNH) */
+    [data-testid="stSidebarCollapseButton"] svg {
+        display: none !important;
+    }
+
+    /* HIỂN THỊ BIỂU TƯỢNG MŨI TÊN KÉP (Dưới lớp nút để click xuyên qua) */
     [data-testid="stSidebarCollapseButton"]::after {
+        content: "\00ab" !important;
         font-family: Arial, sans-serif !important;
         font-size: 22px !important;
         color: #00c6ff !important;
         font-weight: bold !important;
-        visibility: visible !important;
-        pointer-events: none !important;
         position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        line-height: 1 !important;
+        z-index: 1 !important;
+        pointer-events: none !important;
     }
 
     /* KHI SIDEBAR ĐANG MỞ -> HIỂN THỊ << */
@@ -461,7 +464,7 @@ st.markdown("""
         top: 15px !important;
     }
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]::after {
-        content: "\00ab" !important; /* Ký tự << */
+        content: "\00ab" !important;
     }
 
     /* KHI SIDEBAR ĐANG ĐÓNG -> HIỂN THỊ >> */
@@ -472,7 +475,7 @@ st.markdown("""
         z-index: 1000000 !important;
     }
     header [data-testid="stSidebarCollapseButton"]::after {
-        content: "\00bb" !important; /* Ký tự >> */
+        content: "\00bb" !important;
     }
 
     /* XÓA TRIỆT ĐỂ CHỮ RÁC double_arrow TRÊN TOÀN TRANG */
