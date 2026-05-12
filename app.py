@@ -3837,31 +3837,20 @@ def hien_thi_form_danh_gia_bac_si():
                     st.rerun()
 
             st.markdown(f"#### 🎬 Đang đánh giá: {selected_video['full_name']} - {selected_video['exercise']}")
-
-            # Video Player
+            
             if os.path.exists(selected_video['video_path']):
                 st.video(selected_video['video_path'])
             
-            # Triệu chứng
-            s_data = load_data(SYMPTOMS_FILE)
-            p_s = next((s for s in reversed(s_data) if s['username'] == selected_video['username']), None)
-            if p_s:
-                with st.expander("🩺 TRIỆU CHỨNG BN KHAI BÁO", expanded=False):
-                    st.write(f"• **Mô tả:** {p_s['symptoms']}")
-                    st.write(f"• **Mức độ đau:** {p_s.get('vas', 'N/A')}/10")
+            with st.form("doctor_eval_form_final_v_fixed"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    k_qua = st.radio("Kết quả:", ["Đúng", "Sai", "Gần đúng"])
+                with col2:
+                    l_sai = st.multiselect("Lỗi sai:", ["Vị trí tay chưa đúng", "Biên độ chưa đạt", "Tốc độ quá nhanh/chậm", "Sai tư thế thân người"])
 
-            with st.form("doctor_eval_form_final_v6"):
-                st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC")
-                c1, c2 = st.columns(2)
-                with c1:
-                    k_qua = st.radio("Kết quả đánh giá:", ["Đúng", "Sai", "Gần đúng"])
-                with c2:
-                    l_sai = st.multiselect("Lỗi sai (nếu có):", ["Vị trí tay chưa đúng", "Biên độ chưa đạt", "Tốc độ quá nhanh/chậm", "Sai tư thế thân người"])
-
-                st.markdown("### V. NHẬN XÉT & GHI CHÚ")
-                n_xet = st.text_area("Gửi cho Bệnh nhân:", height=100)
-                n_xet_ncv = st.text_area("Ghi chú cho Nghiên cứu viên:", height=100)
-                k_hoach = st.radio("Kế hoạch tiếp theo:", ["Tiếp tục bài tập hiện tại", "Chuyển sang bài tập mới", "Hẹn khám lại trực tiếp"])
+                n_xet = st.text_area("Nhận xét cho BN:", height=80)
+                n_xet_ncv = st.text_area("Ghi chú cho NCV:", height=80)
+                k_hoach = st.radio("Chỉ định:", ["Tiếp tục", "Chuyển bài", "Khám lại"])
 
                 submitted = st.form_submit_button("🚀 GỬI ĐÁNH GIÁ", type="primary")
             
@@ -3878,13 +3867,13 @@ def hien_thi_form_danh_gia_bac_si():
                     "plan": k_hoach,
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
-                # Cập nhật hoặc thêm mới
                 evals = [e for e in evals if not (e.get('patient_username') == new_e['patient_username'] and e.get('video_name') == new_e['video_name'] and e.get('doctor_username') == new_e['doctor_username'])]
                 evals.append(new_e)
                 save_data(EVALUATIONS_FILE, evals)
                 st.session_state.re_eval_mode = False
-                st.success("✅ Đã gửi đánh giá thành công!")
+                st.success("✅ Gửi thành công!")
                 st.rerun()
+
 
     # 2. PHẦN NHẬT KÝ LỊCH SỬ (DƯỚI CÙNG - LUÔN HIỆN)
     st.markdown("---")
@@ -3904,144 +3893,6 @@ def hien_thi_form_danh_gia_bac_si():
                     st.success(f"**Nhận xét BN:** {h['comments']}")
                     st.info(f"**Ghi chú NCV:** {h.get('comments_ncv', 'Không có')}")
                     st.write(f"**Chỉ định:** {h['plan']}")
-            evals_data = load_data(EVALUATIONS_FILE)
-            has_ai_sent = any(
-                e.get('doctor_username') == "AI_Researcher" and 
-                e.get('patient_username') == selected_video['username'] and 
-                e.get('video_name') == selected_video.get('video_name') 
-                for e in evals_data
-            )
-            
-            display_video_path = selected_video['video_path']
-            if os.path.exists(display_video_path):
-                st.markdown(f"### 📺 XEM LẠI VIDEO GỐC")
-                st.video(display_video_path)
-            
-            # Hiển thị triệu chứng của bệnh nhân này
-            symptoms_data = load_data(SYMPTOMS_FILE)
-            patient_symptom = next((s for s in reversed(symptoms_data) if s['username'] == selected_video['username']), None)
-            if patient_symptom:
-                with st.expander("🩺 TRIỆU CHỨNG BN KHAI BÁO", expanded=True):
-                    st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
-                    st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
-
-            # Form nhập liệu
-            # ... (Tiếp tục với code form bên dưới)
-
-    # Kiểm tra xem NCV đã gửi kết quả cho VIDEO NÀY chưa
-    evals_data = load_data(EVALUATIONS_FILE)
-    has_ai_sent = any(
-        e.get('doctor_username') == "AI_Researcher" and 
-        e.get('patient_username') == selected_video['username'] and 
-        e.get('video_name') == selected_video.get('video_name') 
-        for e in evals_data
-    )
-
-    # BÁC SĨ LUÔN LUÔN XEM VIDEO GỐC ĐỂ ĐẢM BẢO GROUND TRUTH CHÍNH XÁC (Không bị AI chi phối)
-    display_video_path = selected_video['video_path']
-
-    if os.path.exists(display_video_path):
-        label_vid = "📺 XEM LẠI VIDEO GỐC (BỆNH NHÂN GỬI)"
-        st.markdown(f"### {label_vid}")
-        st.video(display_video_path)
-    else:
-        st.error("❌ Không tìm thấy file video trên hệ thống.")
-
-    # Hiển thị triệu chứng của bệnh nhân này để bác sĩ tham khảo
-    symptoms_data = load_data(SYMPTOMS_FILE)
-    patient_symptom = next((s for s in reversed(symptoms_data) if s['username'] == selected_video['username']), None)
-    if patient_symptom:
-        with st.expander("🩺 TRIỆU CHỨNG BN KHAI BÁO", expanded=True):
-            st.info(f"**Mô tả:** {patient_symptom['symptoms']}")
-            st.warning(f"**Mức độ đau (VAS):** {patient_symptom.get('vas', 'N/A')}/10")
-
-
-    tab_titles_eval = ["📝 ĐÁNH GIÁ CHUYÊN MÔN"]
-    if has_ai_sent and st.session_state.user_info.get('role') in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
-        tab_titles_eval += ["📊 CHI TIẾT AI PHÂN TÍCH", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"]
-
-    # HIỂN THỊ CÔNG CỤ THEO TAB (HOẶC TRỰC TIẾP NẾU CHỈ CÓ 1 TAB)
-    if len(tab_titles_eval) > 1:
-        tabs_eval = st.tabs(tab_titles_eval)
-        tab_form = tabs_eval[0]
-    else:
-        tab_form = st.container()
-
-
-    with tab_form:
-        # (Lịch sử đánh giá được ẩn đi cho Bác sĩ theo yêu cầu, chỉ hiển thị cho Bệnh nhân)
-
-
-        with st.form("doctor_eval_form"):
-            st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
-            # Tạo danh sách options động từ BAI_TAP để đồng bộ với default
-            exercise_options = [f"{i+1}. {BAI_TAP[k]['ten']}" for i, k in enumerate(BAI_TAP.keys())]
-            
-            bt_chosen = st.multiselect("Động tác bệnh nhân thực hiện:", 
-                                      exercise_options,
-                                      default=[f"{i+1}. {selected_video['exercise']}" for i, k in enumerate(BAI_TAP.keys()) if BAI_TAP[k]['ten'] == selected_video['exercise']])
-
-            st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC (GROUND TRUTH)")
-            col1, col2 = st.columns(2)
-            with col1:
-                ket_qua = st.radio("1. Kết quả đánh giá tổng quát:", ["Đúng", "Sai", "Gần đúng"])
-            with col2:
-                loi_sai = st.multiselect("2. Lỗi sai thường gặp (nếu có):", 
-                                        ["Vị trí tay chưa đúng", "Biên độ chưa đạt", "Tốc độ quá nhanh/chậm", "Sai tư thế thân người"])
-
-            st.markdown("### V. NHẬN XÉT CỦA BÁC SĨ/KTV PHCN")
-            col_rem1, col_rem2 = st.columns(2)
-            with col_rem1:
-                nhan_xet = st.text_area("Nhập nhận xét cho BỆNH NHÂN:", height=150)
-            with col_rem2:
-                nhan_xet_ncv = st.text_area("Ghi chú riêng cho NGHIÊN CỨU VIÊN (NCV):", height=150, help="Thông tin này chỉ hiển thị cho NCV, không hiện cho Bệnh nhân.")
-
-            st.markdown("### VI. KẾ HOẠCH TIẾP THEO")
-            ke_hoach = st.radio("Chỉ định:", ["Tiếp tục bài tập hiện tại", "Chuyển sang bài tập mới", "Hẹn khám lại trực tiếp"])
-
-            submitted = st.form_submit_button("🚀 GỬI ĐÁNH GIÁ CHO BỆNH NHÂN & NGHIÊN CỨU VIÊN", width="stretch", type="primary")
-            
-        if submitted:
-            evals = load_data(EVALUATIONS_FILE)
-            new_eval = {
-                "patient_username": selected_video['username'],
-                "doctor_username": st.session_state.user_info['username'],
-                "video_name": selected_video['video_name'],
-                "exercise": selected_video['exercise'],
-                "ai_accuracy": selected_video['accuracy'],
-                "doctor_result": ket_qua,
-                "errors": loi_sai,
-                "comments": nhan_xet,
-                "comments_ncv": nhan_xet_ncv,
-                "plan": ke_hoach,
-                "doctor_name": st.session_state.user_info.get('full_name', st.session_state.user_info['username']),
-                "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
-            }
-            evals.append(new_eval)
-            save_data(EVALUATIONS_FILE, evals)
-            
-            # Cập nhật trạng thái video
-            video_list = load_data(VIDEOS_FILE)
-            for v in video_list:
-                if v['video_path'] == selected_video['video_path']:
-                    v['status'] = "Đã đánh giá"
-            save_data(VIDEOS_FILE, video_list)
-            
-            st.success("✅ Đã gửi đánh giá thành công!")
-            st.balloons()
-
-    if has_ai_sent and st.session_state.user_info.get('role') in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
-        tab_ai_charts = tabs_eval[1]
-        tab_ai_media = tabs_eval[2]
-        
-        with tab_ai_charts:
-            st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
-            hien_thi_tab_phan_tich(key_suffix="doc_eval")
-
-        with tab_ai_media:
-            st.markdown("### 🎬 VIDEO & HÌNH ẢNH TRÍCH XUẤT KHUNG XƯƠNG")
-            hien_thi_frames_day_du(key_suffix="doc_eval")
-
 def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỔNG HỢP")
     
