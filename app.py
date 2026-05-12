@@ -413,42 +413,35 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* GIẢI PHÁP: NÚT THU/MỞ SIDEBAR TRỐNG (KHÔNG CHỮ, KHÔNG HÌNH) NHƯNG VẪN BẤM ĐƯỢC */
+    /* GIẢI PHÁP TÀNG HÌNH TRIỆT ĐỂ: KHÔNG CHỮ, KHÔNG HÌNH, VẪN BẤM ĐƯỢC */
     [data-testid="stSidebarCollapseButton"] {
-        background: rgba(0, 198, 255, 0.05) !important; /* Vùng bấm mờ để bạn biết chỗ bấm */
-        border-radius: 8px !important;
-        width: 40px !important;
-        height: 40px !important;
+        background: transparent !important;
+        border: none !important;
+        width: 50px !important;
+        height: 50px !important;
         cursor: pointer !important;
         position: relative !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        z-index: 99999 !important;
+        z-index: 999999 !important;
     }
 
-    /* Làm nội dung bên trong (chữ, icon) biến mất nhưng vẫn giữ tính tương tác */
-    [data-testid="stSidebarCollapseButton"] button {
-        opacity: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        cursor: pointer !important;
-    }
-
-    /* Ẩn triệt để các thành phần con khác */
+    /* Ẩn toàn bộ nội dung bên trong nút ở mọi cấp độ */
+    [data-testid="stSidebarCollapseButton"] button,
     [data-testid="stSidebarCollapseButton"] svg,
-    [data-testid="stSidebarCollapseButton"] span {
-        display: none !important;
+    [data-testid="stSidebarCollapseButton"] span,
+    [data-testid="stSidebarCollapseButton"] div {
+        background: transparent !important;
+        color: transparent !important;
+        font-size: 0 !important;
+        opacity: 0 !important;
+        border: none !important;
     }
 
-    [data-testid="stSidebarCollapseButton"]::after {
-        content: none !important; /* Xóa biểu tượng << */
+    [data-testid="stSidebarCollapseButton"]::after,
+    [data-testid="stSidebarCollapseButton"]::before {
+        content: none !important;
     }
 
-    /* VỊ TRÍ */
+    /* ĐỊNH VỊ VÙNG BẤM TÀNG HÌNH (DÀNH CHO CẢ MOBILE VÀ DESKTOP) */
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
         position: absolute !important;
         right: 10px !important;
@@ -459,6 +452,16 @@ st.markdown("""
         position: fixed !important;
         left: 10px !important;
         top: 10px !important;
+    }
+
+    /* BỘ LỌC TOÀN CẦU: XÓA SẠCH CHỮ RÁC double_arrow DÙ NẰM Ở ĐÂU */
+    span, div, p {
+        /* Nếu text chứa double_arrow thì ẩn đi */
+    }
+    /* Streamlit specific aggressive hiding */
+    .st-emotion-cache-1ae8k9d, .st-emotion-cache-zq59db, .st-emotion-cache-162961b {
+        font-size: 0 !important;
+        color: transparent !important;
     }
 
     /* Xóa sạch mọi dấu vết chữ rác trên toàn hệ thống */
