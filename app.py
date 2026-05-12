@@ -413,7 +413,7 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* XÓA TRIỆT ĐỂ CHỮ RÁC VÀ ICON GỐC TRONG NÚT SIDEBAR */
+    /* SỬA NÚT THU/MỞ SIDEBAR ĐỂ BẤM ĐƯỢC VÀ GIỐNG MẪU */
     [data-testid="stSidebarCollapseButton"] {
         background: rgba(0, 198, 255, 0.1) !important;
         border-radius: 8px !important;
@@ -424,23 +424,21 @@ st.markdown("""
         justify-content: center !important;
         border: 1px solid rgba(0, 198, 255, 0.3) !important;
         position: relative !important;
-        color: transparent !important;
+        cursor: pointer !important;
+        z-index: 9999 !important;
     }
 
-    /* Ẩn mọi thứ bên trong nút (text, span, svg) */
+    /* Giữ cho nút bấm được nhưng ẩn nội dung cũ */
     [data-testid="stSidebarCollapseButton"] * {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-        font-size: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
 
     /* KHI SIDEBAR ĐANG MỞ -> HIỂN THỊ << */
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
         position: absolute !important;
-        right: 10px !important;
-        top: 10px !important;
+        right: 15px !important;
+        top: 15px !important;
     }
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]::after {
         content: "<<" !important;
@@ -449,7 +447,7 @@ st.markdown("""
         color: #00c6ff !important;
         font-weight: bold !important;
         visibility: visible !important;
-        display: block !important;
+        pointer-events: none !important;
         left: 50% !important;
         top: 50% !important;
         transform: translate(-50%, -50%) !important;
@@ -458,9 +456,8 @@ st.markdown("""
     /* KHI SIDEBAR ĐANG ĐÓNG -> HIỂN THỊ >> */
     header [data-testid="stSidebarCollapseButton"] {
         position: fixed !important;
-        left: 10px !important;
-        top: 10px !important;
-        z-index: 1000000 !important;
+        left: 15px !important;
+        top: 15px !important;
     }
     header [data-testid="stSidebarCollapseButton"]::after {
         content: ">>" !important;
@@ -469,7 +466,7 @@ st.markdown("""
         color: #00c6ff !important;
         font-weight: bold !important;
         visibility: visible !important;
-        display: block !important;
+        pointer-events: none !important;
         left: 50% !important;
         top: 50% !important;
         transform: translate(-50%, -50%) !important;
