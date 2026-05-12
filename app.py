@@ -413,7 +413,7 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* SỬA NÚT THU/MỞ SIDEBAR: GIỮ CHỨC NĂNG CLICK & HIỂN THỊ ĐẸP */
+    /* SỬA NÚT THU/MỞ SIDEBAR: XÓA CHỮ RÁC TUYỆT ĐỐI & BẤM NHẠY */
     [data-testid="stSidebarCollapseButton"] {
         background: rgba(0, 198, 255, 0.1) !important;
         border-radius: 10px !important;
@@ -422,30 +422,29 @@ st.markdown("""
         border: 1px solid rgba(0, 198, 255, 0.4) !important;
         cursor: pointer !important;
         position: relative !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        overflow: hidden !important; /* Để đẩy chữ ra ngoài */
     }
 
-    /* Ẩn nội dung cũ nhưng KHÔNG ẩn chính cái nút */
     [data-testid="stSidebarCollapseButton"] button {
         background: transparent !important;
         color: transparent !important;
         border: none !important;
         width: 100% !important;
         height: 100% !important;
-        font-size: 0 !important;
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         z-index: 2 !important;
+        text-indent: -9999px !important; /* Đẩy chữ rác đi mất */
+        line-height: 0 !important;
+        font-size: 0 !important;
     }
 
     [data-testid="stSidebarCollapseButton"] svg {
         display: none !important;
     }
 
-    /* HIỂN THỊ BIỂU TƯỢNG MŨI TÊN KÉP (Dưới lớp nút để click xuyên qua) */
+    /* HIỂN THỊ DUY NHẤT DẤU MŨI TÊN (Nằm dưới nút để click xuyên qua) */
     [data-testid="stSidebarCollapseButton"]::after {
         content: "\00ab" !important;
         font-family: Arial, sans-serif !important;
@@ -455,6 +454,11 @@ st.markdown("""
         position: absolute !important;
         z-index: 1 !important;
         pointer-events: none !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        text-indent: 0 !important; /* Giữ icon ở lại */
+        visibility: visible !important;
     }
 
     /* KHI SIDEBAR ĐANG MỞ -> HIỂN THỊ << */
