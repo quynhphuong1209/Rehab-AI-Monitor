@@ -3962,16 +3962,13 @@ def hien_thi_ket_qua_cho_benh_nhan():
                         status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã phê duyệt"
                         st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic; margin-top:10px;">📩 {status_text}</p>', unsafe_allow_html=True)
         
-        with tab_charts:
-            st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
-            # CHỈ HIỂN THỊ NẾU NCV ĐÃ GỬI KẾT QUẢ
-            if has_ai_eval:
+        if has_ai_eval:
+            with tab_charts:
+                st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
                 hien_thi_tab_phan_tich(key_suffix="pat_eval")
-            
-        with tab_media:
-            st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
-            # CHỈ HIỂN THỊ NẾU NCV ĐÃ GỬI KẾT QUẢ CHO VIDEO GẦN NHẤT
-            if has_ai_eval:
+                
+            with tab_media:
+                st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
                 hien_thi_frames_day_du(key_suffix="pat_results")
 
 def hien_thi_tab_khai_bao_trieu_chung():
