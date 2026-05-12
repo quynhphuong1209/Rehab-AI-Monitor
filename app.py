@@ -446,26 +446,17 @@ st.markdown("""
         display: none !important;
     }
 
-    /* HIỂN THỊ ICON MŨI TÊN KÉP CHUẨN */
+    /* HIỂN THỊ ICON MŨI TÊN KÉP CHUẨN (ĐÃ XÓA THEO YÊU CẦU) */
     [data-testid="stSidebarCollapseButton"]::after {
-        content: "<<" !important;
-        position: absolute !important;
-        z-index: 1 !important;
-        color: #00c6ff !important;
-        font-size: 18px !important;
-        font-weight: bold !important;
-        pointer-events: none !important;
+        content: none !important;
     }
 
-    /* KHI SIDEBAR ĐÓNG -> HIỂN THỊ >> */
+    /* KHI SIDEBAR ĐÓNG */
     header [data-testid="stSidebarCollapseButton"] {
         position: fixed !important;
         left: 15px !important;
         top: 15px !important;
         z-index: 999999 !important;
-    }
-    header [data-testid="stSidebarCollapseButton"]::after {
-        content: ">>" !important;
     }
 
     /* ĐỊNH VỊ KHI SIDEBAR MỞ */
