@@ -5376,6 +5376,7 @@ def main():
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
         # Chỉ hiện phiếu NCKH nếu Bác sĩ đã bấm gửi (có dữ liệu cho BN này)
+        username = st.session_state.user_info['username']
         has_r = any(d.get('subject_code') == username for d in res_data_list)
         tab_titles = ["🏠 TRANG CHỦ"]
         if has_r:
