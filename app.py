@@ -159,6 +159,15 @@ def hien_thi_footer_chung():
 .info-label {{font-weight:bold;opacity:0.9}}
 .execution-grid {{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:15px}}
 .execution-item {{border-left:2px solid {col_border};padding-left:12px}}
+
+/* MOBILE FOOTER FIX FOR MEMBERS */
+@media (max-width: 768px) {{
+    .execution-grid {{ 
+        grid-template-columns: 1fr !important; 
+        gap: 15px !important;
+    }}
+}}
+
 .execution-name {{font-size:1.05rem;font-weight:bold;color:{title_color};display:block;margin-bottom:3px}}
 .execution-info {{font-size:0.85rem;opacity:0.8;margin-bottom:5px;display:block}}
 .execution-email {{font-size:0.8rem;text-decoration:none;color:{footer_text};opacity:0.7;display:flex;align-items:center;gap:5px}}
@@ -431,9 +440,10 @@ st.markdown("""
         color: transparent !important;
     }
     [data-testid="stSidebarCollapseButton"]::after {
-        content: "➲" !important; /* Mũi tên chuyên nghiệp */
+        content: ">>" !important;
         position: absolute !important;
-        font-size: 22px !important;
+        font-size: 16px !important;
+        font-weight: bold !important;
         color: #00c6ff !important;
         left: 50% !important;
         top: 50% !important;
@@ -444,6 +454,17 @@ st.markdown("""
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
+    }
+    
+    /* XÓA TRIỆT ĐỂ CHỮ double_arrow_right TRÊN TOP BAR */
+    header[data-testid="stHeader"]::before {
+        content: "" !important;
+        display: none !important;
+    }
+    .stApp > header {
+        color: transparent !important;
+        font-size: 0 !important;
+        height: 0 !important;
     }
     
     /* Ẩn các icon lỗi khác */
@@ -5316,40 +5337,7 @@ def main():
 
     # Callback xử lý đổi theme nhanh
     def update_theme_callback():
-        st.session_state.theme = 'dark' if st.session_state.theme_toggle_top else 'light'
-
-    # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
-    # TOP BAR (LOGOUT) - Quay lại góc trên bên phải
-    st.markdown('<div class="top-auth-container" style="margin-top: -50px; margin-bottom: 20px;">', unsafe_allow_html=True)
-    t_col1, t_col2 = st.columns([1.2, 3.8])
-    
-    with t_col2:
-        inner_c1, inner_c2, inner_c3 = st.columns([1.2, 1.4, 0.8], vertical_alignment="center")
-        with inner_c1:
-            # === CHẾ ĐỘ SÁNG/TỐI (THEME TOGGLE) - TỐI ƯU TỐC ĐỘ ===
-            current_theme = st.session_state.get('theme', 'dark')
-            label = "🌙 Tối" if current_theme == 'dark' else "☀️ Sáng"
-            st.toggle(label, value=(current_theme == 'dark'), 
-                      key="theme_toggle_top", 
-                      on_change=update_theme_callback)
-            
-        with inner_c2:
-            st.markdown(f"""
-            <div style="text-align: right; line-height: 1.1;">
-                <span style="color: #888; font-size: 0.8rem;">Xin chào,</span><br>
-                <span style="color: #ffd700; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with inner_c3:
-            if st.button("🚪 Thoát", width="stretch", key="logout_top"):
-                if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
-                    st.logout()
-                # Xóa sạch session state khi đăng xuất để tránh lộ dữ liệu hoặc cache rác
-                for key in list(st.session_state.keys()):
-                    del st.session_state[key]
-                st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.session_state.theme = 'dark' if st.session_state.theme_toggle_sidebar else 'light'
 
     # TOP HEADER - Đã được tối ưu cho cả Light và Dark mode
     is_light = st.session_state.get('theme') == 'light'
@@ -5380,6 +5368,39 @@ def main():
     bai_tap = BAI_TAP[ma_bai_tap]
     
     with st.sidebar:
+        # === CẤU HÌNH THEME & TÀI KHOẢN (MOVED TO SIDEBAR) ===
+        current_theme = st.session_state.get('theme', 'dark')
+        st.markdown(f"""
+        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span style="font-size: 0.9rem; color: #aaa;">Giao diện:</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Overlay Streamlit components over the HTML block using columns or placement
+        t_col1, t_col2 = st.columns([1, 1])
+        with t_col1:
+            st.toggle("🌙 Tối" if current_theme == 'dark' else "☀️ Sáng", 
+                      value=(current_theme == 'dark'), 
+                      key="theme_toggle_sidebar", 
+                      on_change=update_theme_callback)
+        
+        st.markdown(f"""
+        <div style="padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 5px;">
+            <span style="color: #888; font-size: 0.8rem;">Đang đăng nhập:</span><br>
+            <span style="color: #ffd700; font-weight: bold; font-size: 1.1rem;">👤 {st.session_state.user_info['username']}</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚪 THOÁT HỆ THỐNG", width="stretch", key="logout_sidebar", type="secondary"):
+            if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
+                st.logout()
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+            
+        st.markdown("---")
         st.markdown(f"### 🎭 VAI TRÒ: {user_role.upper()}")
         
         if user_role == "Nghiên cứu viên":
