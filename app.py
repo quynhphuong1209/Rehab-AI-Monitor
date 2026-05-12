@@ -2206,6 +2206,7 @@ def tinh_metrics_chi_tiet(df, bt):
 # ============================================
 def ve_bieu_do_goc_vai(df, bt):
     """Vẽ biểu đồ góc vai với thiết kế đẹp mắt"""
+    if df is None or df.empty: return go.Figure()
     chuan_vai = bt['chuan']['vai']
     sai_so = bt['chuan']['sai_so']
     
@@ -2266,6 +2267,7 @@ def ve_bieu_do_goc_vai(df, bt):
 
 def ve_bieu_do_goc_khuyu(df, bt):
     """Vẽ biểu đồ góc khuỷu với thiết kế đẹp mắt"""
+    if df is None or df.empty: return go.Figure()
     chuan_khuyu = bt['chuan']['khuyu']
     sai_so = bt['chuan']['sai_so']
     
@@ -2322,6 +2324,7 @@ def ve_bieu_do_goc_khuyu(df, bt):
 
 def ve_bieu_do_histogram(df, bt):
     """Vẽ biểu đồ histogram phân phối góc"""
+    if df is None or df.empty: return go.Figure()
     fig = make_subplots(rows=1, cols=2, 
                         subplot_titles=("<b>Phân phối góc vai</b>", "<b>Phân phối góc khuỷu</b>"),
                         shared_yaxes=True)
@@ -2420,6 +2423,7 @@ def ve_bieu_do_tron_thong_ke(tk):
 
 def ve_bieu_do_boxplot_phan_loai(df):
     """Vẽ biểu đồ Boxplot phân loại góc theo kết quả (Đúng/Sai/Gần đúng)"""
+    if df is None or df.empty: return go.Figure()
     # Gán nhãn cho từng frame
     plot_df = df.copy()
     def classify(row):
@@ -3251,10 +3255,14 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     tk = st.session_state.get('stats')
     df = st.session_state.get('angle_df')
     
-    if tk is None or df is None:
-        st.warning("⚠️ Dữ liệu phân tích chi tiết không khả dụng hoặc chưa được tải.")
-        st.info("💡 Vui lòng đảm bảo Nghiên cứu viên đã hoàn tất việc trích xuất khung xương cho video này.")
+    if tk is None:
+        st.warning("⚠️ Dữ liệu phân tích tổng quan không khả dụng.")
+        st.info("💡 Vui lòng đảm bảo Nghiên cứu viên đã gửi kết quả cho video này.")
         return
+        
+    if df is None or df.empty:
+        st.warning("⚠️ Dữ liệu tọa độ góc chi tiết không khả dụng (có thể do dữ liệu cũ).")
+        st.info("💡 Các biểu đồ đường sẽ không hiển thị, nhưng báo cáo tổng quan vẫn xem được bình thường.")
     
     # Chuẩn bị dữ liệu thống kê tổng hợp (Mở rộng cho NCV)
     fail_count_total = tk['tong_frame_hop_le'] - tk['frame_dung'] - tk['frame_gan_dung']
