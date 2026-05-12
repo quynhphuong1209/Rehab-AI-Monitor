@@ -413,55 +413,75 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* GIẢI PHÁP TÀNG HÌNH TRIỆT ĐỂ: KHÔNG CHỮ, KHÔNG HÌNH, VẪN BẤM ĐƯỢC */
+    /* CSS CHUẨN TỪ VACCINENLP: NÚT THU/MỞ SIDEBAR CHUYÊN NGHIỆP */
     [data-testid="stSidebarCollapseButton"] {
-        background: transparent !important;
-        border: none !important;
-        width: 50px !important;
-        height: 50px !important;
+        background: rgba(0, 198, 255, 0.1) !important;
+        border: 1px solid rgba(0, 198, 255, 0.3) !important;
+        border-radius: 8px !important;
+        width: 40px !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         cursor: pointer !important;
         position: relative !important;
-        z-index: 999999 !important;
+        z-index: 99999 !important;
     }
 
-    /* Ẩn toàn bộ nội dung bên trong nút ở mọi cấp độ */
-    [data-testid="stSidebarCollapseButton"] button,
-    [data-testid="stSidebarCollapseButton"] svg,
-    [data-testid="stSidebarCollapseButton"] span,
-    [data-testid="stSidebarCollapseButton"] div {
+    /* Ẩn nội dung gốc (SVG và Text) của Streamlit */
+    [data-testid="stSidebarCollapseButton"] button {
         background: transparent !important;
-        color: transparent !important;
-        font-size: 0 !important;
-        opacity: 0 !important;
         border: none !important;
-    }
-
-    [data-testid="stSidebarCollapseButton"]::after,
-    [data-testid="stSidebarCollapseButton"]::before {
-        content: none !important;
-    }
-
-    /* ĐỊNH VỊ VÙNG BẤM TÀNG HÌNH (DÀNH CHO CẢ MOBILE VÀ DESKTOP) */
-    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
+        color: transparent !important;
+        width: 100% !important;
+        height: 100% !important;
         position: absolute !important;
-        right: 10px !important;
-        top: 10px !important;
+        z-index: 2 !important;
+        text-indent: -9999px !important;
+        line-height: 0 !important;
+        font-size: 0 !important;
+    }
+    
+    [data-testid="stSidebarCollapseButton"] svg {
+        display: none !important;
     }
 
+    /* HIỂN THỊ ICON MŨI TÊN KÉP CHUẨN */
+    [data-testid="stSidebarCollapseButton"]::after {
+        content: "<<" !important;
+        position: absolute !important;
+        z-index: 1 !important;
+        color: #00c6ff !important;
+        font-size: 18px !important;
+        font-weight: bold !important;
+        pointer-events: none !important;
+    }
+
+    /* KHI SIDEBAR ĐÓNG -> HIỂN THỊ >> */
     header [data-testid="stSidebarCollapseButton"] {
         position: fixed !important;
-        left: 10px !important;
-        top: 10px !important;
+        left: 15px !important;
+        top: 15px !important;
+        z-index: 999999 !important;
+    }
+    header [data-testid="stSidebarCollapseButton"]::after {
+        content: ">>" !important;
     }
 
-    /* BỘ LỌC TOÀN CẦU: XÓA SẠCH CHỮ RÁC double_arrow DÙ NẰM Ở ĐÂU */
-    span, div, p {
-        /* Nếu text chứa double_arrow thì ẩn đi */
+    /* ĐỊNH VỊ KHI SIDEBAR MỞ */
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
+        position: absolute !important;
+        right: 15px !important;
+        top: 15px !important;
     }
-    /* Streamlit specific aggressive hiding */
-    .st-emotion-cache-1ae8k9d, .st-emotion-cache-zq59db, .st-emotion-cache-162961b {
+
+    /* KHỬ HOÀN TOÀN CHỮ RÁC double_arrow_right TRÊN MOBILE */
+    span[data-testid="stIconMaterial"], 
+    .st-emotion-cache-1ae8k9d, 
+    .st-emotion-cache-zq59db {
         font-size: 0 !important;
         color: transparent !important;
+        display: none !important;
     }
 
     /* Xóa sạch mọi dấu vết chữ rác trên toàn hệ thống */
