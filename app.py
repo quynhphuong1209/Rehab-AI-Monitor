@@ -3902,11 +3902,25 @@ def hien_thi_form_danh_gia_bac_si():
             st.markdown("### 🎬 VIDEO & HÌNH ẢNH TRÍCH XUẤT KHUNG XƯƠNG")
             hien_thi_frames_day_du(key_suffix="doc_eval")
 
-def hien_thi_ket_qua_cho_benh_nhan():
-    st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỪ BÁC SĨ & AI")
+def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
+    st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỔNG HỢP")
     
     evals = load_data(EVALUATIONS_FILE)
-    my_evals = [e for e in evals if e['patient_username'] == st.session_state.user_info['username']]
+    user_role = st.session_state.user_info.get('role')
+    
+    if target_username:
+        my_evals = [e for e in evals if e['patient_username'] == target_username]
+        username = target_username
+    else:
+        # Nếu không có target_username, mặc định lấy user hiện tại (cho BN) 
+        # hoặc lấy tất cả (cho NCV)
+        if user_role == "Bệnh nhân":
+            username = st.session_state.user_info['username']
+            my_evals = [e for e in evals if e['patient_username'] == username]
+        else:
+            # Cho NCV: Lấy tất cả đánh giá
+            my_evals = evals
+            username = None # Sẽ lọc theo từng record trong loop
     
     # Hiển thị nếu có bất kỳ đánh giá nào (từ Bác sĩ hoặc AI/NCV)
     if not my_evals:
@@ -3964,8 +3978,14 @@ def hien_thi_ket_qua_cho_benh_nhan():
             
             # --- HIỂN THỊ THÊM KẾT QUẢ NCKH (NẾU CÓ) ---
             res_data = load_data(RESEARCH_DATA_FILE)
-            username = st.session_state.user_info['username']
-            my_res = [d for d in res_data if d.get('patient_username') == username or d.get('subject_code') == username]
+            if user_role == "Bệnh nhân":
+                curr_user = username if username else st.session_state.user_info['username']
+                my_res = [d for d in res_data if d.get('patient_username') == curr_user or d.get('subject_code') == curr_user]
+            else:
+                # NCV thấy hết, nhưng ở đây ta lọc theo record hiện tại (e) để hiển thị đúng ngữ cảnh
+                p_user = e.get('patient_username')
+                my_res = [d for d in res_data if d.get('patient_username') == p_user or d.get('subject_code') == p_user]
+
             if my_res:
                 st.markdown("---")
                 st.markdown("### 📑 KẾT QUẢ ĐÁNH GIÁ KỸ THUẬT (NCKH)")
@@ -6048,9 +6068,7 @@ def main():
 
     if "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
         with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]:
-            st.markdown("## 📊 TỔNG HỢP KẾT QUẢ ĐÁNH GIÁ (NCV)")
-            st.info("💡 Đây là dữ liệu tổng hợp từ Bác sĩ & KTV để phục vụ nghiên cứu.")
-            hien_thi_tab_phieu_nckh()
+            hien_thi_ket_qua_cho_benh_nhan(target_username=None)
 
     if "📄 PHIẾU NCKH" in tab_map:
         with tab_map["📄 PHIẾU NCKH"]:
