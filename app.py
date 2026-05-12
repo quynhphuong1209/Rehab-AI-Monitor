@@ -3961,6 +3961,22 @@ def hien_thi_ket_qua_cho_benh_nhan():
                         
                         status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã phê duyệt"
                         st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic; margin-top:10px;">📩 {status_text}</p>', unsafe_allow_html=True)
+            
+            # --- HIỂN THỊ THÊM KẾT QUẢ NCKH (NẾU CÓ) ---
+            res_data = load_data(RESEARCH_DATA_FILE)
+            my_res = [d for d in res_data if d.get('patient_username') == username or d.get('subject_code') == username]
+            if my_res:
+                st.markdown("---")
+                st.markdown("### 📑 KẾT QUẢ ĐÁNH GIÁ KỸ THUẬT (NCKH)")
+                for r in reversed(my_res):
+                    with st.expander(f"🔬 Đánh giá NCKH ngày {r['interview_date']} - {r['exercises']}", expanded=False):
+                        rc1, rc2 = st.columns([1, 2.5])
+                        with rc1:
+                            st.metric("Kết quả", r['general_result'])
+                            st.write(f"**Đúng:** {r['correct_reps']}/{r['total_reps']}")
+                        with rc2:
+                            st.info(f"**Nhận xét chuyên môn:** {r['specialist_comment']}")
+                            st.write(f"**Người đánh giá:** {r['interviewer']}")
         
         if has_ai_eval:
             with tab_charts:
@@ -4368,7 +4384,7 @@ def hien_thi_tab_phieu_nckh():
         st.write("### VI. XÁC NHẬN")
         confirm = st.checkbox("Tôi xác nhận các thông tin trên là chính xác và phục vụ cho mục đích nghiên cứu khoa học.")
         
-        btn_label = "🚀 LƯU PHIẾU ĐÁNH GIÁ NGHIÊN CỨU" if user_role != "Bệnh nhân" else "🚀 GỬI THÔNG TIN KHAI BÁO"
+        btn_label = "🚀 LƯU & GỬI PHIẾU NCKH CHO BỆNH NHÂN & NCV" if user_role != "Bệnh nhân" else "🚀 GỬI THÔNG TIN KHAI BÁO"
         submitted = st.form_submit_button(btn_label, width="stretch", type="primary")
         
         if submitted:
@@ -4409,7 +4425,7 @@ def hien_thi_tab_phieu_nckh():
                 }
                 research_data.append(entry)
                 save_data(RESEARCH_DATA_FILE, research_data)
-                st.success("✅ Đã lưu phiếu đánh giá nghiên cứu thành công!")
+                st.success("✅ Đã lưu và gửi phiếu đánh giá nghiên cứu cho Bệnh nhân & NCV thành công!")
                 st.balloons()
                 st.rerun()
 
