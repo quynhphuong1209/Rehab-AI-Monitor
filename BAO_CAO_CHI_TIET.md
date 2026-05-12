@@ -1,4 +1,4 @@
-# BÁO CÁO CHI TIẾT MÃ NGUỒN VÀ THUẬT TOÁN (v3.0 Finalized)
+# BÁO CÁO CHI TIẾT MÃ NGUỒN VÀ THUẬT TOÁN (v3.1 Updated)
 **HỆ THỐNG GIÁM SÁT TẬP LUYỆN PHỤC HỒI CHỨC NĂNG (REHAB AI MONITOR)**
 
 ---
@@ -23,6 +23,7 @@ Hệ thống đã đạt đến độ hoàn thiện cao nhất (Production-ready
 
 ### 2.3. Tối ưu hóa Trải nghiệm Người dùng (UX Enhancement)
 - **Auto-Tab Switching:** Sử dụng JavaScript Injection để tự động điều hướng chuyên gia đến đúng Tab chức năng khi có tác vụ mới (như chọn video BN).
+- **Mobile Responsive Tabs:** Hệ thống CSS Injection đặc biệt được thiết kế để chuẩn hóa giao diện Tab trên di động, ngăn chặn tình trạng tràn chữ (Text Clipping) và cho phép cuộn ngang linh hoạt.
 - **Theme Synchronization:** Hệ thống CSS thông minh tự động hiệu chỉnh độ tương phản cho cả hai chế độ Sáng/Tối, đảm bảo tính thẩm mỹ y tế chuyên nghiệp.
 
 ---
@@ -43,10 +44,10 @@ Hệ thống đã đạt đến độ hoàn thiện cao nhất (Production-ready
 
 ---
 
-## 5. KẾT QUẢ ĐẠT ĐƯỢC (v3.0 Finalized)
+## 5. KẾT QUẢ ĐẠT ĐƯỢC (v3.1 Updated)
 - **Giao diện chuẩn y khoa:** Sử dụng font 'Times New Roman' và bố cục Card hiện đại, tăng 50% hiệu suất thao tác của bác sĩ.
 - **Quy trình bảo mật NCKH:** Tích hợp trang thông tin đạo đức nghiên cứu, bảo mật dữ liệu bệnh nhân theo chuẩn NCKH. Hệ thống tài khoản được phân quyền chặt chẽ (Admin, Doctor, Researcher, Patient).
-- **Tính thực tiễn cao:** Đã được tinh chỉnh bởi Chủ nhiệm đề tài **Đinh Lê Quỳnh Phương** và cố vấn chuyên môn để sẵn sàng ứng dụng thử nghiệm tại Bệnh viện Đa khoa Phạm Ngọc Thạch.
+- **Tính thực tiễn cao:** Đã được tinh chỉnh bởi Chủ nhiệm đề tài **Đinh Lê Quỳnh Phương** và cố vấn chuyên môn **TS. Trần Hồng Việt** để sẵn sàng ứng dụng thử nghiệm tại Bệnh viện Đa khoa Phạm Ngọc Thạch.
 
 ---
 
