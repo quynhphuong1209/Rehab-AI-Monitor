@@ -348,8 +348,8 @@ def chuyen_tab_bang_js(ten_tab):
                 if (tabs[i].innerText.includes("{ten_tab}")) {{
                     tabs[i].click();
                     break;
-                }
-            }
+                }}
+            }}
         }}, 300);
     </script>
     """
