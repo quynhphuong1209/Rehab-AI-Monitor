@@ -413,68 +413,73 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* NHÚNG FONT MATERIAL ICONS ĐỂ HIỂN THỊ MŨI TÊN CHUẨN */
-    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-
+    /* SỬA NÚT THU/MỞ SIDEBAR CHUẨN XỊN (KHÔNG CẦN FONT NGOÀI) */
     [data-testid="stSidebarCollapseButton"] {
         background: rgba(0, 198, 255, 0.1) !important;
-        border-radius: 8px !important;
-        width: 40px !important;
-        height: 40px !important;
+        border-radius: 10px !important;
+        width: 42px !important;
+        height: 42px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        border: 1px solid rgba(0, 198, 255, 0.3) !important;
+        border: 1px solid rgba(0, 198, 255, 0.4) !important;
         cursor: pointer !important;
         position: relative !important;
+        transition: all 0.3s ease !important;
+    }
+    [data-testid="stSidebarCollapseButton"]:hover {
+        background: rgba(0, 198, 255, 0.2) !important;
+        transform: scale(1.05) !important;
     }
 
-    /* Ẩn icon lỗi và chữ rác */
-    [data-testid="stSidebarCollapseButton"] svg,
-    [data-testid="stSidebarCollapseButton"] span {
+    /* Ẩn triệt để mọi thứ bên trong nút cũ */
+    [data-testid="stSidebarCollapseButton"] * {
         display: none !important;
         opacity: 0 !important;
+        font-size: 0 !important;
     }
 
-    /* HIỂN THỊ ICON MATERIAL CHUẨN */
+    /* HIỂN THỊ BIỂU TƯỢNG MŨI TÊN KÉP BẰNG UNICODE (CỰC KỲ ỔN ĐỊNH) */
     [data-testid="stSidebarCollapseButton"]::after {
-        font-family: 'Material Icons' !important;
-        font-size: 24px !important;
+        font-family: Arial, sans-serif !important;
+        font-size: 22px !important;
         color: #00c6ff !important;
-        display: block !important;
+        font-weight: bold !important;
         visibility: visible !important;
         pointer-events: none !important;
         position: absolute !important;
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
+        line-height: 1 !important;
     }
 
-    /* KHI SIDEBAR ĐANG MỞ -> HIỂN THỊ keyboard_double_arrow_left */
+    /* KHI SIDEBAR ĐANG MỞ -> HIỂN THỊ << */
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
         position: absolute !important;
         right: 15px !important;
         top: 15px !important;
     }
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]::after {
-        content: "keyboard_double_arrow_left" !important;
+        content: "\00ab" !important; /* Ký tự << */
     }
 
-    /* KHI SIDEBAR ĐANG ĐÓNG -> HIỂN THỊ keyboard_double_arrow_right */
+    /* KHI SIDEBAR ĐANG ĐÓNG -> HIỂN THỊ >> */
     header [data-testid="stSidebarCollapseButton"] {
         position: fixed !important;
         left: 15px !important;
         top: 15px !important;
-        z-index: 999999 !important;
+        z-index: 1000000 !important;
     }
     header [data-testid="stSidebarCollapseButton"]::after {
-        content: "keyboard_double_arrow_right" !important;
+        content: "\00bb" !important; /* Ký tự >> */
     }
 
-    /* Ẩn mọi văn bản rác khác */
-    .st-emotion-cache-1ae8k9d, .st-emotion-cache-zq59db, .st-emotion-cache-162961b {
+    /* XÓA TRIỆT ĐỂ CHỮ RÁC double_arrow TRÊN TOÀN TRANG */
+    span:contains("double_arrow"), div:contains("double_arrow"), 
+    [class*="st-emotion-cache"]::before {
+        display: none !important;
         font-size: 0 !important;
-        color: transparent !important;
     }
 
     /* NÚT THU/MỞ SIDEBAR GIỐNG MẪU */
