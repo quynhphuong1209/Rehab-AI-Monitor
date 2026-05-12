@@ -339,16 +339,18 @@ if not st.session_state.get('logged_in'):
 # HÀM HỖ TRỢ ĐIỀU HƯỚNG TAB BẰNG JS
 # ============================================
 def chuyen_tab_bang_js(ten_tab):
-    """Sử dụng JavaScript để tự động click chuyển Tab trên giao diện Streamlit"""
+    """Sử dụng JavaScript để tự động click chuyển Tab trên giao diện Streamlit với độ trễ để đảm bảo render xong"""
     js_code = f"""
     <script>
-        var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-        for (var i = 0; i < tabs.length; i++) {{
-            if (tabs[i].innerText.includes("{ten_tab}")) {{
-                tabs[i].click();
-                break;
-            }}
-        }}
+        setTimeout(function() {{
+            var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"], div[data-baseweb="tab"]');
+            for (var i = 0; i < tabs.length; i++) {{
+                if (tabs[i].innerText.includes("{ten_tab}")) {{
+                    tabs[i].click();
+                    break;
+                }
+            }
+        }}, 300);
     </script>
     """
     st.markdown(js_code, unsafe_allow_html=True)
