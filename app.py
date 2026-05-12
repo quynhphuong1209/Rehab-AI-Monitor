@@ -3155,8 +3155,6 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                             
                         if not df_loaded and 'all_frames_data_path' in v and os.path.exists(v['all_frames_data_path']):
                             try:
-                                import json
-                                import pandas as pd
                                 with open(v['all_frames_data_path'], 'r', encoding='utf-8') as f:
                                     json_data = json.load(f)
                                 if json_data:
@@ -6280,8 +6278,6 @@ def main():
                         
                     if not df_loaded and v_data.get('all_frames_data_path') and os.path.exists(v_data['all_frames_data_path']):
                         try:
-                            import json
-                            import pandas as pd
                             with open(v_data['all_frames_data_path'], 'r', encoding='utf-8') as f:
                                 json_data = json.load(f)
                             if json_data:
