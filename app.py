@@ -5708,7 +5708,8 @@ def main():
                             plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color=font_c)
                         )
-                        st.plotly_chart(fig, use_container_width=True)
+                        # theme=None để tránh Streamlit ghi đè màu chữ bằng theme mặc định
+                        st.plotly_chart(fig, use_container_width=True, theme=None)
 
             if user_role != "Quản trị viên":
                 is_light = st.session_state.theme == 'light'
