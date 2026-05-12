@@ -206,7 +206,7 @@ padding-bottom: 8px;
 <div class="footer-title">👤 CHỦ NHIỆM ĐỀ TÀI</div>
 <div class="info-row"><div class="info-label">Họ tên:</div><div><b>Đinh Lê Quỳnh Phương</b></div></div>
 <div class="info-row"><div class="info-label">MSSV:</div><div>2211090031</div></div>
-<div class="info-row"><div class="info-label">Lớp:</div><div>CNCQ KHDL1-1A</div></div>
+<div class="info-row"><div class="info-label">Lớp:</div><div><b>CNCQ KHDL1-1A</b></div></div>
 <div class="info-row"><div class="info-label">Email:</div><div style="word-break:break-all"><a href="mailto:2211090031@studenthuph.edu.vn" style="color:{footer_text}">2211090031@studenthuph.edu.vn</a></div></div>
 </div>
 <div class="footer-col wide">
@@ -219,32 +219,32 @@ padding-bottom: 8px;
 <div class="execution-grid">
 <div class="execution-item">
 <span class="execution-name">1. Kim Mạnh Hưng</span>
-<span class="execution-info">MSSV: 2211090016 | KHDL1-1A</span>
+<span class="execution-info">MSSV: 2211090016 | CNCQ KHDL1-1A</span>
 <a href="mailto:2211090016@studenthuph.edu.vn" class="execution-email">📧 2211090016@studenthuph.edu.vn</a>
 </div>
 <div class="execution-item">
 <span class="execution-name">2. Nguyễn Hải An</span>
-<span class="execution-info">MSSV: 2211090001 | KHDL1-1A</span>
+<span class="execution-info">MSSV: 2211090001 | CNCQ KHDL1-1A</span>
 <a href="mailto:2211090001@studenthuph.edu.vn" class="execution-email">📧 2211090001@studenthuph.edu.vn</a>
 </div>
 <div class="execution-item">
 <span class="execution-name">3. Phan Vân Anh</span>
-<span class="execution-info">MSSV: 2211090004 | KHDL1-1A</span>
+<span class="execution-info">MSSV: 2211090004 | CNCQ KHDL1-1A</span>
 <a href="mailto:2211090004@studenthuph.edu.vn" class="execution-email">📧 2211090004@studenthuph.edu.vn</a>
 </div>
 <div class="execution-item">
 <span class="execution-name">4. Nguyễn Thị Thanh Nga</span>
-<span class="execution-info">MSSV: 2211090027 | KHDL1-1A</span>
+<span class="execution-info">MSSV: 2211090027 | CNCQ KHDL1-1A</span>
 <a href="mailto:2211090027@studenthuph.edu.vn" class="execution-email">📧 2211090027@studenthuph.edu.vn</a>
 </div>
 <div class="execution-item">
 <span class="execution-name">5. Nguyễn Thị Thơm</span>
-<span class="execution-info">MSSV: 2216030122 | KTPHCN3-1A</span>
+<span class="execution-info">MSSV: 2216030122 | CNCQ KTPHCN3-1A</span>
 <a href="mailto:2216030122@studenthuph.edu.vn" class="execution-email">📧 2216030122@studenthuph.edu.vn</a>
 </div>
 <div class="execution-item">
 <span class="execution-name">6. Nguyễn Thị Thu Hương</span>
-<span class="execution-info">MSSV: 2317010071 | YTCC22-1A</span>
+<span class="execution-info">MSSV: 2317010071 | CNCQ YTCC22-1A</span>
 <a href="mailto:2317010071@studenthuph.edu.vn" class="execution-email">📧 2317010071@studenthuph.edu.vn</a>
 </div>
 </div>
@@ -413,53 +413,60 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === SỬA LỖI CHỮ RÁC ICON SIDEBAR (THAY BẰNG MŨI TÊN CHUẨN) === */
+    /* XÓA TRIỆT ĐỂ CHỮ RÁC ICON SIDEBAR */
     [data-testid="stSidebarCollapseButton"] {
+        color: transparent !important;
+        font-size: 0 !important;
         background: rgba(0, 198, 255, 0.1) !important;
-        border: 1px solid rgba(0, 198, 255, 0.3) !important;
         border-radius: 8px !important;
-        width: 38px !important;
-        height: 38px !important;
-        position: relative !important;
+        width: 40px !important;
+        height: 40px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        overflow: hidden !important;
-        color: transparent !important;
-        font-size: 0 !important; /* Hide original text */
-    }
-    [data-testid="stSidebarCollapseButton"]::after {
-        content: ">>" !important;
-        position: absolute !important;
-        font-size: 16px !important;
-        font-weight: bold !important;
-        color: #00c6ff !important;
-        left: 50% !important;
-        top: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        visibility: visible !important;
-    }
-    [data-testid="stSidebarCollapseButton"] * {
-        display: none !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
+        border: 1px solid rgba(0, 198, 255, 0.2) !important;
     }
     
-    /* XÓA TRIỆT ĐỂ CHỮ double_arrow_right TRÊN TOP BAR VÀ SIDEBAR */
-    header[data-testid="stHeader"]::before,
-    [data-testid="stSidebar"] header::before,
-    .st-emotion-cache-zq59db::before,
-    .st-emotion-cache-162961b::before {
-        content: "" !important;
+    [data-testid="stSidebarCollapseButton"] svg {
         display: none !important;
-        visibility: hidden !important;
     }
-    .stApp > header {
-        color: transparent !important;
+
+    /* KHI SIDEBAR ĐANG MỞ (NÚT << Ở BÊN PHẢI) */
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
+        position: absolute !important;
+        right: 10px !important;
+        top: 10px !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]::after {
+        content: "<<" !important;
+        font-size: 20px !important;
+        color: #00c6ff !important;
+        font-weight: bold !important;
+        visibility: visible !important;
+    }
+
+    /* KHI SIDEBAR ĐANG ĐÓNG (NÚT >> Ở GÓC TRÁI MÀN HÌNH) */
+    header [data-testid="stSidebarCollapseButton"] {
+        position: fixed !important;
+        left: 10px !important;
+        top: 10px !important;
+        z-index: 1000000 !important;
+    }
+    header [data-testid="stSidebarCollapseButton"]::after {
+        content: ">>" !important;
+        font-size: 20px !important;
+        color: #00c6ff !important;
+        font-weight: bold !important;
+        visibility: visible !important;
+    }
+
+    /* XÓA TRIỆT ĐỂ CHỮ double_arrow_right */
+    [data-testid="stSidebar"] *, header * {
+        text-indent: 0 !important;
+    }
+    .st-emotion-cache-1ae8k9d, .st-emotion-cache-zq59db, .st-emotion-cache-162961b {
         font-size: 0 !important;
-        height: 0 !important;
-        overflow: hidden !important;
-        display: none !important;
+        color: transparent !important;
     }
 
     /* NÚT THU/MỞ SIDEBAR GIỐNG MẪU */
