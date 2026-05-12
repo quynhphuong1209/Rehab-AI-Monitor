@@ -6237,7 +6237,8 @@ def main():
                 st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
             else:
                 all_vids = load_data(VIDEOS_FILE)
-                v_data = next((v for v in all_vids if v.get('username') == selected_video.get('username') and 
+                # Đảo ngược danh sách để lấy bản ghi mới nhất (do NCV ghi đè/append khi gửi kết quả)
+                v_data = next((v for v in reversed(all_vids) if v.get('username') == selected_video.get('username') and 
                                (v.get('video_name') == selected_video.get('video_name') or 
                                 selected_video.get('video_name', '') in v.get('video_name', ''))), None)
                 if v_data and v_data.get('metrics'):
