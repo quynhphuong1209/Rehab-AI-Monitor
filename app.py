@@ -105,6 +105,8 @@ EVALUATIONS_FILE = "doctor_evaluations.json"
 REMINDERS_FILE = "schedules.json"
 VIDEOS_FILE = "video_list.json"
 RESEARCH_DATA_FILE = "research_data.json"
+EXTRACTED_FRAMES_DIR = "extracted_frames"
+OUTPUT_VIDEOS_DIR = "output_videos"
 
 def hien_thi_footer_chung():
     """Hiển thị chân trang (footer) chuyên nghiệp cho dự án Rehab-AI-Monitor"""
