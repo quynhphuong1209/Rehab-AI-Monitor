@@ -4402,6 +4402,7 @@ def hien_thi_tab_phieu_nckh():
                     "recording_device": recording_device,
                     "recording_angle": recording_angle,
                     "camera_distance": camera_distance,
+                    "patient_username": patient_username, # Liên kết với tài khoản BN
                     "submitted_by": st.session_state.user_info['username'],
                     "role": user_role,
                     "timestamp": get_vn_now().strftime("%Y-%m-%d %H:%M:%S")
@@ -4421,8 +4422,8 @@ def hien_thi_tab_phieu_nckh():
     
     # Phân quyền xem dữ liệu
     if user_role == "Bệnh nhân":
-        # Bệnh nhân chỉ thấy phiếu của mình
-        display_list = [d for d in all_research_data if d.get('subject_code') == username]
+        # Bệnh nhân thấy phiếu dựa trên username tài khoản hoặc mã đối tượng
+        display_list = [d for d in all_research_data if d.get('patient_username') == username or d.get('subject_code') == username]
     else:
         # Bác sĩ & NCV thấy tất cả
         display_list = all_research_data
@@ -5374,7 +5375,7 @@ def main():
     elif user_role == "Bệnh nhân":
         # Chỉ hiện phiếu NCKH nếu Bác sĩ đã bấm gửi (có dữ liệu cho BN này)
         username = st.session_state.user_info['username']
-        has_r = any(d.get('subject_code') == username for d in res_data_list)
+        has_r = any(d.get('patient_username') == username or d.get('subject_code') == username for d in res_data_list)
         tab_titles = ["🏠 TRANG CHỦ"]
         if has_r:
             tab_titles.append("📄 PHIẾU NCKH")
