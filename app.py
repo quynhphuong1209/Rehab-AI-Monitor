@@ -3146,8 +3146,21 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                         st.session_state.all_frames_data_path = v.get('all_frames_data_path')
                         st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP['codman'])
                         st.session_state.has_data = True
+                        df_loaded = False
                         if 'df_path' in v and os.path.exists(v['df_path']):
-                            try: st.session_state.angle_df = pd.read_csv(v['df_path'])
+                            try: 
+                                st.session_state.angle_df = pd.read_csv(v['df_path'])
+                                df_loaded = True
+                            except: pass
+                            
+                        if not df_loaded and 'all_frames_data_path' in v and os.path.exists(v['all_frames_data_path']):
+                            try:
+                                import json
+                                import pandas as pd
+                                with open(v['all_frames_data_path'], 'r', encoding='utf-8') as f:
+                                    json_data = json.load(f)
+                                if json_data:
+                                    st.session_state.angle_df = pd.DataFrame(json_data)
                             except: pass
                         st.rerun()
                 with col_load2:
@@ -6258,8 +6271,21 @@ def main():
                     # Load bài tập để tránh lỗi NoneType khi hiển thị biểu đồ
                     ex_name = v_data.get('exercise', 'codman')
                     st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
+                    df_loaded = False
                     if v_data.get('df_path') and os.path.exists(v_data['df_path']):
-                        try: st.session_state.angle_df = pd.read_csv(v_data['df_path'])
+                        try: 
+                            st.session_state.angle_df = pd.read_csv(v_data['df_path'])
+                            df_loaded = True
+                        except: pass
+                        
+                    if not df_loaded and v_data.get('all_frames_data_path') and os.path.exists(v_data['all_frames_data_path']):
+                        try:
+                            import json
+                            import pandas as pd
+                            with open(v_data['all_frames_data_path'], 'r', encoding='utf-8') as f:
+                                json_data = json.load(f)
+                            if json_data:
+                                st.session_state.angle_df = pd.DataFrame(json_data)
                         except: pass
                     st.markdown("## 📊 KẾT QUẢ PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
                     t1, t2 = st.tabs(["📊 BIỂU ĐỒ CHI TIẾT", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"])
