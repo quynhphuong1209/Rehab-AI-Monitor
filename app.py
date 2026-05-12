@@ -4504,8 +4504,17 @@ def hien_thi_tab_phieu_nckh():
         # Bệnh nhân thấy phiếu dựa trên username tài khoản hoặc mã đối tượng
         display_list = [d for d in all_research_data if d.get('patient_username') == username or d.get('subject_code') == username]
     else:
-        # Bác sĩ & NCV thấy tất cả
-        display_list = all_research_data
+        # Bác sĩ & NCV thấy tất cả, nhưng nếu đang chọn 1 video cụ thể, ta ưu tiên hiện BN đó
+        selected_video = st.session_state.get('current_eval_video')
+        if selected_video and user_role == "Bác sĩ / KTV PHCN":
+            p_user = selected_video['username']
+            # Lọc danh sách cho BN hiện tại lên đầu
+            display_list = [d for d in all_research_data if d.get('patient_username') == p_user]
+            # Nếu không có của BN hiện tại thì mới hiện tất cả hoặc thông báo
+            if not display_list:
+                display_list = all_research_data
+        else:
+            display_list = all_research_data
 
     if not display_list:
         st.info("📭 Chưa có bản ghi dữ liệu nghiên cứu nào được lưu.")
@@ -5457,16 +5466,24 @@ def main():
         has_ai_main = False
         if selected_video_main:
             evals_main = load_data(EVALUATIONS_FILE)
+            # Kiểm tra xem AI đã gửi kết quả phân tích chưa
             has_ai_main = any(
                 e.get('doctor_username') == "AI_Researcher" and 
                 e['patient_username'] == selected_video_main['username'] and
                 e.get('video_name') == selected_video_main.get('video_name')
                 for e in evals_main
             )
+            # Kiểm tra xem NCV đã gửi video khung xương (output) chưa
+            # Giả định nếu có folder frames tương ứng thì coi là đã có output
+            video_folder = selected_video_main.get('video_name', '').split('.')[0]
+            frames_path = os.path.join(EXTRACTED_FRAMES_DIR, video_folder)
+            has_video_output = os.path.exists(frames_path) and len(os.listdir(frames_path)) > 0 if os.path.exists(frames_path) else False
             
         tab_titles = ["🏠 TRANG CHỦ", "📄 PHIẾU NCKH", "📝 ĐÁNH GIÁ PHCN"]
         if has_ai_main:
             tab_titles.append("📊 KẾT QUẢ AI")
+        if has_video_output:
+            tab_titles.append("🎬 VIDEO & ẢNH")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
