@@ -1982,6 +1982,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
 def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaPipe Full", min_confidence=0.5, exercise_name="codman"):
     import gc
     import json
+    import os
     
     # 1. LOAD DYNAMIC REFERENCE (BẢN CHUẨN YOUTUBE)
     dynamic_chuan = None
