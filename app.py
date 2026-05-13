@@ -4065,18 +4065,29 @@ def hien_thi_form_danh_gia_bac_si():
     if not my_history:
         st.info("📭 Bạn chưa có bản ghi đánh giá lâm sàng nào.")
     else:
-        for h in reversed(my_history):
-            with st.expander(f"🕒 {h['time']} - BN: {h['patient_username']} - KQ: {h['doctor_result']}"):
-                col_h1, col_h2 = st.columns(2)
-                with col_h1:
-                    st.write(f"**Bài tập:** {h['exercise']}")
-                    st.write(f"**Kết quả:** {h['doctor_result']}")
-                    if h.get('errors'):
-                        st.write(f"**Lỗi:** {', '.join(h['errors'])}")
-                with col_h2:
-                    st.success(f"**Nhận xét BN:** {h['comments']}")
-                    st.info(f"**Ghi chú NCV:** {h.get('comments_ncv', 'Không có')}")
-                    st.write(f"**Chỉ định:** {h['plan']}")
+        for i, h in enumerate(reversed(my_history)):
+            col_main_h, col_del_h = st.columns([12, 1])
+            with col_main_h:
+                with st.expander(f"🕒 {h['time']} - BN: {h['patient_username']} - KQ: {h['doctor_result']}"):
+                    col_h1, col_h2 = st.columns(2)
+                    with col_h1:
+                        st.write(f"**Bài tập:** {h['exercise']}")
+                        st.write(f"**Kết quả:** {h['doctor_result']}")
+                        if h.get('errors'):
+                            st.write(f"**Lỗi:** {', '.join(h['errors'])}")
+                    with col_h2:
+                        st.success(f"**Nhận xét BN:** {h['comments']}")
+                        st.info(f"**Ghi chú NCV:** {h.get('comments_ncv', 'Không có')}")
+                        st.write(f"**Chỉ định:** {h['plan']}")
+            with col_del_h:
+                st.write("") # Căn chỉnh nút xóa xuống một chút
+                if st.button("❌", key=f"del_doc_h_{i}", help="Xóa bản ghi đánh giá này"):
+                    all_evals = load_data(EVALUATIONS_FILE)
+                    # Lọc bỏ bản ghi khớp với thời gian và BN
+                    all_evals = [e for e in all_evals if not (e.get('time') == h['time'] and e.get('patient_username') == h['patient_username'] and e.get('doctor_username') == st.session_state.user_info['username'])]
+                    save_data(EVALUATIONS_FILE, all_evals)
+                    st.success("Đã xóa bản ghi!")
+                    st.rerun()
 def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỔNG HỢP")
     
