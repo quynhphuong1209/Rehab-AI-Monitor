@@ -1481,10 +1481,10 @@ def hien_thi_tab_realtime(bai_tap):
         st.markdown(f"""
         <div class="info-box">
             <h4>🎯 BÀI TẬP: {bai_tap['ten']}</h4>
-            <p>🦾 Mục tiêu Vai: {bai_tap['chuan']['vai']}°</p>
-            <p>💪 Mục tiêu Khuỷu: {bai_tap['chuan']['khuyu']}°</p>
+            <p>🔄 <b>Trạng thái:</b> So sánh thời gian thực</p>
+            <p>📽️ <b>Mục tiêu:</b> Khớp với Video mẫu</p>
             <hr>
-            <p style="font-size: 0.8rem; color: #aaa;">Hệ thống sẽ vẽ khung xương và tính góc trực tiếp trên video của bạn.</p>
+            <p style="font-size: 0.8rem; color: #aaa;">Hệ thống sẽ vẽ khung xương và đối chiếu chuyển động của bạn với video chuẩn theo từng giây.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -2738,7 +2738,7 @@ BAI_TAP = {
         "thoi_gian": 45, 
         "lan": 12,
         # THÊM DÒNG NÀY - BẢN NGẮN CHO HIỂN THỊ CHÍNH
-        "huong_dan": "1. Cầm gậy bằng hai tay, tay lành cầm một đầu, tay bệnh cầm đầu kia\n2. Tay lành dùng lực đẩy gậy lên cao, kéo tay bệnh theo\n3. Giữ 5-10 giây ở tư thế cao nhất, hạ từ từ\n4. Thực hiện 10 lần mỗi động tác: nâng trước, xoay ngoài, xoay trong\n5. Thở ra khi nâng gậy lên, hít vào khi hạ xuống",
+        "huong_dan": "1. Cầm gậy bằng hai tay, tay lành cầm một đầu, tay bệnh cầm đầu kia\n2. Tay lành dùng lực đẩy gậy lên cao, kéo tay bệnh theo khớp với biên độ trong Video mẫu\n3. Giữ 5-10 giây ở tư thế cao nhất, hạ từ từ\n4. Thực hiện 10 lần mỗi động tác: nâng trước, xoay ngoài, xoay trong\n5. Thở ra khi nâng gậy lên, hít vào khi hạ xuống",
         "loi_ich": [
             "✓ Cải thiện tầm vận động khớp vai chủ động và thụ động",
             "✓ Tăng cường sức mạnh cơ vai một cách an toàn",
@@ -2777,7 +2777,7 @@ BAI_TAP = {
         - Lặp lại 10 lần
         
         **3. ĐỘNG TÁC 2 - XOAY VAI NGOÀI (External Rotation):**
-        - Nằm ngửa, tay bệnh gập khuỷu 90°, cẳng tay hướng lên trần
+        - Nằm ngửa, tay bệnh gập khuỷu khớp với tư thế trong Video mẫu, cẳng tay hướng lên trần
         - Tay lành cầm gậy đẩy tay bệnh ra ngoài
         - Giữ 5 giây ở tư thế xoay tối đa
         - Thực hiện 10 lần
@@ -2795,7 +2795,7 @@ BAI_TAP = {
         **6. TIẾN TRIỂN BÀI TẬP (Theo tuần):**
         - Tuần 1-2: Thực hiện với biên độ 50% tầm vận động tối đa
         - Tuần 3-4: Tăng lên 75% tầm vận động
-        - Tuần 5-6: Thực hiện toàn bộ tầm vận động (90°)
+        - Tuần 5-6: Thực hiện toàn bộ tầm vận động khớp với video chuẩn
         - Tuần 7-8: Thêm tạ nhẹ (0.5-1kg) nếu không đau
         """,
         "tieu_chi_danh_gia": """
@@ -2816,7 +2816,7 @@ BAI_TAP = {
         "thoi_gian": 40, 
         "lan": 15,
         # THÊM DÒNG NÀY - BẢN NGẮN CHO HIỂN THỊ CHÍNH
-        "huong_dan": "1. Bắt đầu với dây kháng lực thấp nhất (màu vàng hoặc đỏ)\n2. Xoay vai ngoài: Nằm nghiêng, khuỷu gập 90°, xoay cẳng tay ra ngoài\n3. Xoay vai trong: Đứng hoặc nằm nghiêng, kéo dây vào trong áp sát bụng\n4. Dang vai: Đứng, dẫm dây dưới chân, dang tay sang ngang 60°\n5. Gập vai: Đứng, nâng tay ra trước 60°\n6. Mỗi động tác 10-15 lần x 3 hiệp, nghỉ 30 giây giữa hiệp",
+        "huong_dan": "1. Bắt đầu với dây kháng lực thấp nhất (màu vàng hoặc đỏ)\n2. Xoay vai ngoài: Nằm nghiêng, khuỷu gập 90°, xoay cẳng tay ra ngoài theo mẫu\n3. Xoay vai trong: Đứng hoặc nằm nghiêng, kéo dây vào trong áp sát bụng\n4. Dang vai: Đứng, dẫm dây dưới chân, dang tay sang ngang khớp với biên độ Video mẫu\n5. Gập vai: Đứng, nâng tay ra trước theo Video hướng dẫn\n6. Mỗi động tác 10-15 lần x 3 hiệp, nghỉ 30 giây giữa hiệp",
         "loi_ich": [
             "✓ Tăng sức mạnh và sức bền của cơ chóp xoay",
             "✓ Ổn định khớp vai trong các hoạt động hàng ngày",
@@ -2848,7 +2848,7 @@ BAI_TAP = {
         
         **2. ĐỘNG TÁC 1 - XOAY VAI NGOÀI:**
         - Tư thế: Nằm nghiêng về phía tay lành
-        - Tay bệnh: Gập khuỷu 90°, đặt sát thân mình
+        - Tay bệnh: Gập khuỷu khớp với tư thế trong Video mẫu, đặt sát thân mình
         - Cố định dây: Buộc dây vào vật chắc chắn ngang thắt lưng
         - Động tác: Xoay cẳng tay ra ngoài, giữ khuỷu sát người
         - Giữ 2-3 giây ở cuối tầm, trở về chậm
@@ -2856,20 +2856,20 @@ BAI_TAP = {
         
         **3. ĐỘNG TÁC 2 - XOAY VAI TRONG:**
         - Tư thế: Đứng hoặc nằm nghiêng về phía tay bệnh
-        - Tay bệnh: Gập khuỷu 90°
+        - Tay bệnh: Gập khuỷu khớp với tư thế trong Video mẫu
         - Cố định dây: Buộc dây ở phía cùng bên
         - Động tác: Kéo dây vào trong, áp sát tay vào bụng
         - Thực hiện 10-15 lần, 3 hiệp
         
         **4. ĐỘNG TÁC 3 - DANG VAI (Abduction):**
         - Tư thế: Đứng, tay bệnh duỗi thẳng, dây dẫm dưới chân
-        - Động tác: Dang tay sang ngang đến 60°
+        - Động tác: Dang tay sang ngang khớp với biên độ Video mẫu
         - Giữ 2 giây, hạ về chậm
         - Thực hiện 10-12 lần, 3 hiệp
         
         **5. ĐỘNG TÁC 4 - GẬP VAI (Flexion):**
         - Tư thế: Đứng, dây dẫm dưới chân
-        - Động tác: Nâng tay ra trước đến 60°
+        - Động tác: Nâng tay ra trước theo biên độ Video chuẩn
         - Kiểm soát ở cả chiều lên và xuống
         - Thực hiện 10-12 lần, 3 hiệp
         
@@ -2886,7 +2886,7 @@ BAI_TAP = {
         """,
         "tieu_chi_danh_gia": """
         📊 **TIÊU CHÍ ĐÁNH GIÁ KẾT QUẢ:**
-        - Kháng lực phù hợp với biên độ 60° của video tham chiếu
+        - Kháng lực phù hợp với biên độ vận động trong Video tham chiếu
         - Thực hiện đúng kỹ thuật, không bù trừ bằng cơ vai khác
         - Bệnh nhân có thể thực hiện 3 hiệp 15 lần với dây cấp độ phù hợp
         - Không đau trong và sau khi tập (VAS < 2)
