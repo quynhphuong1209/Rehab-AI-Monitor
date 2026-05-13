@@ -375,41 +375,54 @@ if not st.session_state.get('logged_in'):
 # HÀM HỖ TRỢ ĐIỀU HƯỚNG TAB BẰNG JS
 # ============================================
 def chuyen_tab_bang_js(ten_tab):
-    """Sử dụng JavaScript với cơ chế so khớp mờ (fuzzy) để tìm Tab kể cả khi có emoji lạ"""
+    """Sử dụng JavaScript mạnh mẽ nhất để chuyển Tab, tìm kiếm sâu trong DOM"""
+    # Lấy phần chữ cái chính để so khớp mờ
+    import re
+    search_text = re.sub(r'[^\w\s]', '', ten_tab).strip().upper()
+    
     js_code = f"""
     <script>
         (function() {{
-            var targetRaw = "{ten_tab}";
-            // Hàm dọn dẹp chữ: bỏ emoji, bỏ dấu, chuyển hoa
-            function cleanText(text) {{
-                return text.replace(/[^\\w\\s]/gi, '').replace(/\\s+/g, '').toUpperCase();
-            }}
-            
-            var targetClean = cleanText(targetRaw);
-            console.log("Mục tiêu tìm kiếm (đã dọn): " + targetClean);
+            var target = "{search_text}";
+            console.log("Tab Switcher: Tìm kiếm mục tiêu -> " + target);
             var attempts = 0;
             
-            function searchAndClick() {{
+            function clean(str) {{
+                return str.replace(/[^\\w\\s]/gi, '').replace(/\\s+/g, '').toUpperCase();
+            }}
+            
+            function tryClick() {{
+                // 1. Tìm tất cả các nút bấm Tab của Streamlit
                 var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
                 for (var i = 0; i < tabs.length; i++) {{
-                    var currentTabClean = cleanText(tabs[i].textContent);
-                    if (currentTabClean.includes(targetClean) || targetClean.includes(currentTabClean)) {{
-                        console.log("Khớp thành công: " + tabs[i].textContent);
+                    if (clean(tabs[i].textContent).includes(target)) {{
+                        console.log("Tab Switcher: Đã tìm thấy nút tab -> Click!");
                         tabs[i].click();
                         return true;
                     }}
                 }}
+                
+                // 2. Fallback: Tìm bất kỳ phần tử nào chứa text và tìm nút bao quanh nó
+                var allButtons = window.parent.document.querySelectorAll('button');
+                for (var i = 0; i < allButtons.length; i++) {{
+                    if (clean(allButtons[i].textContent).includes(target)) {{
+                        console.log("Tab Switcher: Đã tìm thấy nút qua text -> Click!");
+                        allButtons[i].click();
+                        return true;
+                    }}
+                }}
+                
                 return false;
             }}
             
-            function loop() {{
-                if (!searchAndClick() && attempts < 40) {{
+            function startLoop() {{
+                if (!tryClick() && attempts < 50) {{
                     attempts++;
-                    setTimeout(loop, 150);
+                    setTimeout(startLoop, 100);
                 }}
             }}
             
-            setTimeout(loop, 300);
+            setTimeout(startLoop, 200);
         }})();
     </script>
     """
