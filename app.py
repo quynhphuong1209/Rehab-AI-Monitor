@@ -1892,8 +1892,19 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
         pts_vai = (hong_p, vai_p, khuyu_p)
         pts_khuyu = (vai_p, khuyu_p, co_tay_p)
 
+    # --- LOGIC SO SÁNH ĐỘNG (DYNAMIC COMPARISON) ---
     chuan_vai = chuan["vai"]
     chuan_khuyu = chuan["khuyu"]
+    
+    # Nếu có chuỗi tham chiếu (sequence), tra cứu theo timestamp
+    if "sequence" in chuan and chuan["sequence"]:
+        target_ts = frame_idx / fps
+        # Tìm frame tham chiếu có thời gian gần nhất với timestamp hiện tại
+        # Sử dụng tìm kiếm nhị phân hoặc min key để lấy mốc thời gian khớp nhất
+        best_match = min(chuan["sequence"], key=lambda x: abs(x.get('time', x.get('timestamp_seconds', 0)) - target_ts))
+        chuan_vai = best_match.get('goc_vai', best_match.get('vai', chuan_vai))
+        chuan_khuyu = best_match.get('goc_khuyu', best_match.get('khuyu', chuan_khuyu))
+
     ss = chuan["sai_so"]
     
     vai_diff = abs(goc_vai - chuan_vai)
@@ -3193,6 +3204,14 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                             ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), 'codman')
                             bt = BAI_TAP[ex_key]
                             
+                            # --- NẠP DỮ LIỆU THAM CHIẾU ĐỘNG (DYNAMIC REFERENCE) ---
+                            ref_path = f"reference_{ex_key}.json"
+                            if os.path.exists(ref_path):
+                                try:
+                                    with open(ref_path, "r", encoding="utf-8") as rf:
+                                        bt['chuan']['sequence'] = json.load(rf)
+                                except: pass
+                            
                             def update_progress(p):
                                 elapsed = time.time() - start_time_man
                                 progress_bar.progress(p)
@@ -3461,7 +3480,25 @@ def hien_thi_tab_phan_tich(key_suffix=""):
 
             if user_role == "Nghiên cứu viên":
                 st.markdown("---")
-                if st.button("📤 XÁC NHẬN & GỬI BÁO CÁO TỔNG HỢP", key=f"btn_send_final_{key_suffix}", width="stretch", type="primary"):
+                col_ncv1, col_ncv2 = st.columns(2)
+                with col_ncv1:
+                    is_btn_send = st.button("📤 XÁC NHẬN & GỬI BÁO CÁO", key=f"btn_send_final_{key_suffix}", width="stretch", type="primary")
+                with col_ncv2:
+                    if st.button("💾 LƯU LÀM VIDEO MẪU (REFERENCE)", key=f"btn_save_ref_{key_suffix}", width="stretch"):
+                        v_meta = st.session_state.get('current_eval_video')
+                        if v_meta and st.session_state.get('angle_df') is not None:
+                            ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == v_meta['exercise']), 'codman')
+                            ref_path = f"reference_{ex_key}.json"
+                            # Trích xuất dữ liệu cần thiết: timestamp, vai, khuyu
+                            ref_df = st.session_state.angle_df[['timestamp_seconds', 'goc_vai', 'goc_khuyu']].copy()
+                            ref_df.columns = ['time', 'vai', 'khuyu']
+                            ref_data = ref_df.to_dict('records')
+                            with open(ref_path, "w", encoding="utf-8") as rf:
+                                json.dump(ref_data, rf, ensure_ascii=False, indent=4)
+                            st.success(f"✅ Đã lưu video này làm bộ khung chuẩn cho bài tập: {v_meta['exercise']}")
+                            st.balloons()
+                
+                if is_btn_send:
                     v_meta = st.session_state.get('current_eval_video')
                     if v_meta:
                         acc = tk['do_chinh_xac']
@@ -5541,6 +5578,32 @@ def main():
             ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
             bai_tap = BAI_TAP[ma_bai_tap]
             
+            # --- KIỂM TRA DỮ LIỆU CHUẨN ĐỘNG ---
+            ref_path = f"reference_{ma_bai_tap}.json"
+            if os.path.exists(ref_path):
+                with open(ref_path, "r", encoding="utf-8") as rf:
+                    ref_data = json.load(rf)
+                
+                df_ref = pd.DataFrame(ref_data)
+                min_v, max_v = df_ref['vai'].min(), df_ref['vai'].max()
+                min_k, max_k = df_ref['khuyu'].min(), df_ref['khuyu'].max()
+                
+                st.markdown(f"""
+                <div style="background: rgba(0, 206, 209, 0.1); padding: 10px; border-radius: 10px; border: 1px solid #00c6ff;">
+                    <p style="margin:0; font-size:0.85rem; color:#00c6ff;">✅ <b>ĐÃ CÓ CHUẨN ĐỘNG (DYNAMIC)</b></p>
+                    <p style="margin:0; font-size:0.8rem; color:#aaa;">Phạm vi vai: {int(min_v)}° - {int(max_v)}°</p>
+                    <p style="margin:0; font-size:0.8rem; color:#aaa;">Phạm vi khuỷu: {int(min_k)}° - {int(max_k)}°</p>
+                    <p style="margin-top:5px; font-size:0.75rem; color:#888;"><i>Hệ thống sẽ so sánh từng giây theo video mẫu YouTube.</i></p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.checkbox("📈 Xem biểu đồ chuẩn", key="cb_show_ref_sidebar"):
+                    fig_ref = px.line(df_ref, x='time', y=['vai', 'khuyu'], title="Biểu đồ góc chuẩn")
+                    fig_ref.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=8, color='white'))
+                    st.plotly_chart(fig_ref, use_container_width=True)
+            else:
+                st.info("ℹ️ Bài tập này hiện đang dùng chuẩn góc tĩnh.")
+            
         else:
             if user_role == "Bác sĩ / KTV PHCN":
                 # 1. GIỚI THIỆU CÁC TAB CHO BÁC SĨ
@@ -5609,6 +5672,16 @@ def main():
                 st.markdown("### 🎯 CHỌN BÀI TẬP")
                 ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
                 bai_tap = BAI_TAP[ma_bai_tap]
+                
+                # --- KIỂM TRA DỮ LIỆU CHUẨN ĐỘNG CHO BN ---
+                ref_path = f"reference_{ma_bai_tap}.json"
+                if os.path.exists(ref_path):
+                    st.markdown(f"""
+                    <div style="background: rgba(0, 206, 209, 0.1); padding: 10px; border-radius: 10px; border: 1px solid #00c6ff; margin-bottom:15px;">
+                        <p style="margin:0; font-size:0.85rem; color:#00c6ff;">✅ <b>BÀI TẬP ĐÃ CÓ MẪU CHUẨN</b></p>
+                        <p style="margin:0; font-size:0.75rem; color:#888;">AI sẽ so sánh từng giây động tác của bạn với video mẫu từ YouTube để đánh giá chính xác nhất.</p>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
                 st.markdown("### 📺 VIDEO HƯỚNG DẪN")
                 st.video(bai_tap["youtube"])
@@ -5821,7 +5894,16 @@ def main():
                 st.success(f"✅ Đã chọn file: {file_upload.name} ({file_upload.size / (1024*1024):.2f} MB)")
                 
                 if user_role == "Nghiên cứu viên":
-                    btn_text = "🚀 BẮT ĐẦU XỬ LÝ AI"
+                    st.markdown("---")
+                    st.markdown("#### ⚙️ CẤU HÌNH XỬ LÝ")
+                    col_ncv_cfg1, col_ncv_cfg2 = st.columns(2)
+                    with col_ncv_cfg1:
+                        is_reference = st.checkbox("💾 Lưu làm Video Mẫu (Reference)", value=False, help="Dùng video này làm tiêu chuẩn so sánh cho các bệnh nhân sau này.")
+                    with col_ncv_cfg2:
+                        ncv_model = st.selectbox("Mô hình AI", ["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], index=1)
+                        st.session_state.ncv_model_type = ncv_model
+                    
+                    btn_text = "🚀 BẮT ĐẦU PHÂN TÍCH MẪU" if is_reference else "🚀 BẮT ĐẦU XỬ LÝ AI"
                     if st.button(btn_text, width="stretch", type="primary"):
                         st.session_state.processing = True
                         st.session_state.has_data = False
@@ -5979,6 +6061,18 @@ def main():
                                     })
                                     save_data(VIDEOS_FILE, video_list)
                                     st.info(f"📁 Video đã được lưu cho BN: {target_fn}")
+
+                                # --- XỬ LÝ LƯU VIDEO MẪU (REFERENCE) ---
+                                if user_role == "Nghiên cứu viên" and is_reference:
+                                    ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == bai_tap['ten']), 'codman')
+                                    ref_path = f"reference_{ex_key}.json"
+                                    ref_df = df[['timestamp_seconds', 'goc_vai', 'goc_khuyu']].copy()
+                                    ref_df.columns = ['time', 'vai', 'khuyu']
+                                    ref_data = ref_df.to_dict('records')
+                                    with open(ref_path, "w", encoding="utf-8") as rf:
+                                        json.dump(ref_data, rf, ensure_ascii=False, indent=4)
+                                    st.success(f"🌟 Đã thiết lập video này làm CHUẨN ĐỘNG cho bài tập: {bai_tap['ten']}")
+                                
                                 st.markdown("---")
                        
                                 # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
