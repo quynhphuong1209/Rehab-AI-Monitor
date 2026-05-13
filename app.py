@@ -3379,7 +3379,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                 df.to_csv(index=False).encode('utf-8'),
                 "raw_keypoints_heavy.csv",
                 "text/csv",
-                key="dl_heavy_csv"
+                key=f"dl_heavy_csv_{key_suffix}"
             )
 
     # 2. HÀNG THỐNG KÊ TỔNG QUAN (4 THẺ)
@@ -3661,7 +3661,9 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                     try: st.download_button("📉 Biểu đồ Khuỷu (ROM)", fig_khuyu.to_image(format="png"), "elbow_rom.png", "image/png", width="stretch", key=f"dl_f3_{key_suffix}")
                     except: pass
                 with img_col2:
-                    try: st.download_button("📦 Biểu đồ Boxplot (Stability)", fig_box.to_image(format="png"), "boxplot_stability.png", "image/png", width="stretch", key=f"dl_f4_{key_suffix}")
+                    try: st.download_button("📦 Boxplot Vai (Stability)", fig_box_vai.to_image(format="png"), "boxplot_shoulder.png", "image/png", width="stretch", key=f"dl_f4a_{key_suffix}")
+                    except: pass
+                    try: st.download_button("📦 Boxplot Khuỷu (Stability)", fig_box_khuyu.to_image(format="png"), "boxplot_elbow.png", "image/png", width="stretch", key=f"dl_f4b_{key_suffix}")
                     except: pass
                     try: st.download_button("🕸️ Biểu đồ Radar (Overall)", fig_radar.to_image(format="png"), "radar_performance.png", "image/png", width="stretch", key=f"dl_f5_{key_suffix}")
                     except: pass
