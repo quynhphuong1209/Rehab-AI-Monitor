@@ -1753,13 +1753,21 @@ def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
     if "Lite" in model_type: complexity = 0
     elif "Heavy" in model_type: complexity = 2
     
-    return mp_pose.Pose(
-        static_image_mode=True,
-        model_complexity=complexity,
-        smooth_landmarks=False,
-        min_detection_confidence=min_confidence,
-        min_tracking_confidence=min_confidence
-    )
+    try:
+        return mp_pose.Pose(
+            static_image_mode=False,
+            model_complexity=complexity,
+            min_detection_confidence=min_confidence,
+            min_tracking_confidence=min_confidence
+        )
+    except Exception as e:
+        st.warning(f"⚠️ Không thể tải mô hình {model_type}, đang chuyển sang mô hình Full (ổn định hơn).")
+        return mp_pose.Pose(
+            static_image_mode=False,
+            model_complexity=1,
+            min_detection_confidence=min_confidence,
+            min_tracking_confidence=min_confidence
+        )
 
 # ============================================
 # THÔNG BÁO LỖI ĐỘNG TÁC
