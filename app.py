@@ -406,25 +406,33 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === SỬA LỖI CHỮ RÁC ICON (TRIỆT ĐỂ) === */
-    [data-testid="stSidebarCollapseButton"] {
-        color: transparent !important;
-        font-size: 0 !important;
-        line-height: 0 !important;
-        width: 40px !important;
-        height: 40px !important;
+    /* === FIX ICON SIDEBAR & RÁC CHỮ (CHỈNH SỬA CHUẨN) === */
+    /* Hiện lại nút đóng/mở sidebar */
+    [data-testid="stSidebarCollapseButton"], 
+    [data-testid="stExpandSidebarButton"] {
+        visibility: visible !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
-    [data-testid="stSidebarCollapseButton"] * {
-        display: none !important;
+
+    /* Ép font biểu tượng chuẩn cho các icon của Streamlit */
+    [data-testid="stIconMaterial"], 
+    .material-icons,
+    [data-testid="stSidebarCollapseButton"] span,
+    [data-testid="stExpandSidebarButton"] span {
+        font-family: 'Material Icons' !important;
+        color: rgba(250, 250, 250, 0.8) !important;
+        font-size: 24px !important;
+        text-indent: 0 !important;
+        visibility: visible !important;
     }
-    [data-testid="stExpander"] summary span > span,
-    [data-testid="stFileUploader"] section span > span,
-    .stIconMaterial, .st-emotion-cache-1ae8k9d, .st-emotion-cache-162961b, .st-emotion-cache-6qob1r {
-        display: none !important;
-        color: transparent !important;
-        font-size: 0 !important;
-        visibility: hidden !important;
+
+    /* Ẩn hoàn toàn văn bản rác nếu font chưa kịp load */
+    span[data-testid="stIconMaterial"] {
+        overflow: hidden !important;
     }
+
     [data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.04) !important;
         border-radius: 20px !important;
