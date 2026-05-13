@@ -5308,33 +5308,6 @@ def hien_thi_dang_nhap_dang_ky():
                         except Exception as e:
                             st.error(f"⚠️ Lỗi Google: {e}")
 
-            st.markdown("### 🎯 CHỌN BÀI TẬP")
-            ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
-            bai_tap = BAI_TAP[ma_bai_tap]
-            
-            # --- HIỂN THỊ VIDEO MẪU YT TRONG SIDEBAR ĐỂ ĐỐI CHIẾU ---
-            yt_link = bai_tap.get('youtube')
-            if yt_link:
-                st.sidebar.markdown(f"#### 📺 VIDEO MẪU YT (TARGET)")
-                st.sidebar.video(yt_link)
-                st.sidebar.caption("💡 Đối chiếu song song với BN")
-
-            # --- KIỂM TRA DỮ LIỆU CHUẨN ĐỘNG ---
-            ref_path = f"reference_{ma_bai_tap}.json"
-            if os.path.exists(ref_path):
-                st.sidebar.success("✅ CHẾ ĐỘ CHUẨN ĐỘNG (DYNAMIC)")
-                with open(ref_path, "r", encoding="utf-8") as rf:
-                    ref_data = json.load(rf)
-                
-                with st.sidebar.expander("📈 BIỂU ĐỒ MỤC TIÊU YT", expanded=True):
-                    df_ref = pd.DataFrame(ref_data)
-                    fig_ref = go.Figure()
-                    fig_ref.add_trace(go.Scatter(x=df_ref['time'], y=df_ref['vai'], name='Vai mẫu', line=dict(color='#00c6ff', width=2)))
-                    fig_ref.add_trace(go.Scatter(x=df_ref['time'], y=df_ref['khuyu'], name='Khuỷu mẫu', line=dict(color='#ffd700', width=2)))
-                    fig_ref.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=8, color='white'))
-                    st.plotly_chart(fig_ref, use_container_width=True)
-            else:
-                st.sidebar.info("ℹ️ **CHẾ ĐỘ TĨNH:** Hiện chưa có file mẫu `.json` cho bài tập này. \n\n💡 **Cách kích hoạt Chuẩn động (Dynamic):** Hãy tải video YouTube chuẩn lên và tích chọn ô 'Lưu làm Video Mẫu' ở dưới.")
 
 # ============================================
 # HÀM HIỂN TRỊ TAB QUẢN TRỊ VIÊN
@@ -5647,8 +5620,8 @@ def main():
             st.markdown("### 🎯 CHỌN MÔ HÌNH")
             st.selectbox("Mô hình Pose", ["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"], key="ncv_model_type")
             
-        # --- PHẦN CHỌN BÀI TẬP & ĐỐI CHIẾU (DÀNH CHO CẢ NCV & BÁC SĨ) ---
-        if user_role in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
+        # --- PHẦN CHỌN BÀI TẬP & ĐỐI CHIẾU (CHỈ KHI ĐÃ ĐĂNG NHẬP) ---
+        if st.session_state.get('logged_in') and user_role in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
             st.markdown("---")
             st.markdown("### 🎯 CHỌN BÀI TẬP")
             ma_bai_tap = st.selectbox("Bài tập đang theo dõi", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="sb_exercise_select")
@@ -5677,7 +5650,7 @@ def main():
                     st.plotly_chart(fig_ref, use_container_width=True)
             else:
                 st.sidebar.warning("🤖 **AI SẴN SÀNG SO SÁNH SONG SONG**")
-                st.sidebar.caption("Hệ thống đang sử dụng chuẩn góc mặc định. (Bạn có thể nâng cấp lên Chuẩn động bằng cách nạp video mẫu).")
+                st.sidebar.caption("Hệ thống đang sử dụng chuẩn góc mặc định.")
             
         else:
             if user_role == "Bác sĩ / KTV PHCN":
@@ -5934,16 +5907,6 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Video hướng dẫn mẫu (YouTube hoặc local)
-                    video_source = bai_tap.get('video_guide') or bai_tap.get('youtube')
-                    if video_source:
-                        st.markdown("### 🎬 VIDEO MẪU YT (DYNAMIC TARGET)")
-                        st.video(video_source)
-                        st.markdown(f"""
-                        <div style="background: rgba(0, 198, 255, 0.1); padding: 12px; border-radius: 10px; border-left: 5px solid #00c6ff; font-size: 0.85rem;">
-                            <b>🎯 HUẤN LUYỆN CHUẨN ĐỘNG:</b> AI sử dụng video mẫu này để nhận dạng và trích xuất chuỗi góc chuẩn của Vai và Khuỷu theo từng giây (mili-giây).
-                        </div>
-                        """, unsafe_allow_html=True)
 
             # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
             st.markdown("---")
