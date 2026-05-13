@@ -5603,8 +5603,8 @@ def main():
 
         
         st.markdown("---")
-        st.markdown("**👨‍🏫 GV hướng dẫn 1 (Khoa học dữ liệu):** TS. Trần Hồng Việt 🎓")
-        st.markdown("**👩‍🏫 GV hướng dẫn 2 (Lâm sàng):** Nguyễn Thị Thùy Chi 🎓")
+        st.markdown("**👨‍🏫 Giảng viên hướng dẫn 1 (Khoa học dữ liệu):** TS. Trần Hồng Việt 🎓")
+        st.markdown("**👩‍🏫 Giảng viên hướng dẫn 2 (Lâm sàng):** Nguyễn Thị Thùy Chi 🎓")
         st.markdown("**👩‍⚕️ Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương")
     
     # Định nghĩa các tab dựa trên vai trò
