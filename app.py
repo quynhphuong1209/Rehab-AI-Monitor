@@ -406,52 +406,48 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === XÓA SẠCH CHỮ RÁC (DÙNG KỸ THUẬT TEXT-INDENT) === */
-    /* Đẩy toàn bộ văn bản mặc định ra khỏi màn hình */
+    /* === TẢI FONT BIỂU TƯỢNG TRỰC TIẾP TỪ GOOGLE === */
+    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+    /* === KHỬ CHỮ RÁC TRÊN NÚT SIDEBAR & TOOLBAR === */
     [data-testid="stSidebarCollapseButton"] button, 
-    [data-testid="stExpandSidebarButton"] button {
+    [data-testid="stExpandSidebarButton"] button,
+    [data-testid="stToolbar"] button {
+        color: transparent !important;
         text-indent: -9999px !important;
         overflow: hidden !important;
         position: relative !important;
-        background-color: transparent !important;
-        border: none !important;
-        width: 45px !important;
-        height: 45px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        background: transparent !important;
     }
 
-    /* Đưa mũi tên quay trở lại tâm của nút bấm */
+    /* Vẽ lại mũi tên bằng pseudo-element để không bao giờ bị hiện chữ */
     [data-testid="stSidebarCollapseButton"] button::after, 
     [data-testid="stExpandSidebarButton"] button::after {
         text-indent: 0 !important;
         position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
         color: white !important;
         font-size: 26px !important;
         font-weight: bold !important;
+        visibility: visible !important;
+        display: flex !important;
     }
 
     [data-testid="stExpandSidebarButton"] button::after {
-        content: "»"; /* Mũi tên mở */
+        content: "»" !important;
     }
 
     [data-testid="stSidebarCollapseButton"] button::after {
-        content: "«"; /* Mũi tên đóng */
+        content: "«" !important;
     }
 
-    /* Ẩn mọi thành phần con khác để chắc chắn 100% */
-    [data-testid="stSidebarCollapseButton"] button *,
-    [data-testid="stExpandSidebarButton"] button * {
-        visibility: hidden !important;
-        display: none !important;
+    /* Ẩn mọi văn bản rác lọt ra ngoài */
+    [data-testid="stSidebarCollapseButton"] *, 
+    [data-testid="stExpandSidebarButton"] *,
+    [data-testid="stToolbar"] * {
+        text-transform: none !important;
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
