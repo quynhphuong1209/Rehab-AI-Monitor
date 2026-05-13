@@ -2024,7 +2024,12 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     h_cap = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
     timestamp = int(time.time())
-    out_path = os.path.join(tempfile.gettempdir(), f'processed_{timestamp}.mp4')
+    
+    # Tạo thư mục lưu trữ cố định thay vì dùng thư mục tạm để tránh bị xóa mất file
+    processed_dir = "data/processed_videos"
+    if not os.path.exists(processed_dir): os.makedirs(processed_dir, exist_ok=True)
+    
+    out_path = os.path.join(processed_dir, f'processed_{timestamp}.mp4')
     thu_muc_frame = tempfile.mkdtemp()
     
     model = get_pose_model(model_type=model_type, min_confidence=min_confidence)
@@ -5054,8 +5059,8 @@ def hien_thi_frames_day_du(key_suffix=""):
                 </div>
                 <img src='data:image/jpeg;base64,{b64_str}'>
                 <div style='padding: 8px 12px; display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; background: rgba(0,0,0,0.5);'>
-                    <span>Vai: {f_data.get('goc_vai', 0):.0f}°</span>
-                    <span>Khuỷu: {f_data.get('goc_khuyu', 0):.0f}°</span>
+                    <span>Vai: {(f_data.get('goc_vai') or 0):.0f}°</span>
+                    <span>Khuỷu: {(f_data.get('goc_khuyu') or 0):.0f}°</span>
                 </div>
             </div>
             """
@@ -5967,11 +5972,14 @@ def main():
                         status_text = st.empty()
                         
                         try:
-                            status_text.info("📤 Đang đọc file video...")
-                            # Lưu file vào thư mục tạm để OpenCV có thể đọc
-                            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
-                                tmp_file.write(file_upload.getvalue())
-                                video_path = tmp_file.name
+                            status_text.info("📤 Đang lưu trữ file video...")
+                            # Tạo thư mục upload cố định
+                            upload_dir = "data/uploads"
+                            if not os.path.exists(upload_dir): os.makedirs(upload_dir, exist_ok=True)
+                            
+                            video_path = os.path.join(upload_dir, f"{int(time.time())}_{file_upload.name}")
+                            with open(video_path, "wb") as f:
+                                f.write(file_upload.getvalue())
                             
                             progress_bar.progress(0.2)
                             status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
