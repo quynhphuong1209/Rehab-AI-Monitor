@@ -3343,6 +3343,9 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     title_text_color = "#0072ff" if is_light else "#ffd700"
     desc_text_color = "#666" if is_light else "#aaa"
 
+    # Kiểm tra xem có đang dùng chuẩn động không
+    is_dynamic = 'sequence' in bt['chuan'] and bt['chuan']['sequence']
+
     st.markdown(f"""
     <div style="background: {banner_bg}; 
                 border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
@@ -3353,6 +3356,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                 <p style="color: {desc_text_color}; margin: 0.5rem 0 0 0;">
                     🏥 Bài tập: {bt['ten']} | ⚙️ Model: <span style="color:#00c6ff;">{model_type}</span>
                 </p>
+                {"<div style='margin-top:10px;'><span style='background:rgba(0,206,209,0.2); color:#00CED1; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:1px solid #00CED1;'>✅ CHUẨN ĐỘNG (DYNAMIC): Đã khớp mốc thời gian</span></div>" if is_dynamic else ""}
             </div>
             <div style="text-align: right;">
                 <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
@@ -4810,7 +4814,7 @@ def hien_thi_frames_day_du(key_suffix=""):
     pass_count = sum(1 for f in all_frames_data if f.get('dung'))
     nearly_count = sum(1 for f in all_frames_data if f.get('gan_dung') and not f.get('dung'))
     fail_count = total_frames - pass_count - nearly_count
-    tk = st.session_state.get('stats', {})
+    tk = st.session_state.get('stats') or {}
     filename = st.session_state.get('uploaded_file_name') or os.path.basename(st.session_state.get('processed_video_path', '') or 'Video hệ thống')
     ai_acc = tk.get('do_chinh_xac', 0.0)
     processed_video_path = st.session_state.get('processed_video_path')
@@ -4818,7 +4822,7 @@ def hien_thi_frames_day_du(key_suffix=""):
     has_video = bool(processed_video_path and os.path.exists(processed_video_path))
 
     # 0. HIỂN THỊ VIDEO ĐÃ PHÂN TÍCH
-    st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
+    st.markdown("### 🎬 VIDEO PHÂN TÍCH CHUẨN ĐỘNG (DYNAMIC)")
     
     # Khung video và thông tin
     v_col1, v_col2 = st.columns([2, 1], gap='large')
@@ -5859,10 +5863,16 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Video hướng dẫn mẫu
-                    if 'video_guide' in bai_tap:
-                        st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
-                        st.video(bai_tap['video_guide'])
+                    # Video hướng dẫn mẫu (YouTube hoặc local)
+                    video_source = bai_tap.get('video_guide') or bai_tap.get('youtube')
+                    if video_source:
+                        st.markdown("### 🎬 VIDEO MẪU YT (DYNAMIC TARGET)")
+                        st.video(video_source)
+                        st.markdown(f"""
+                        <div style="background: rgba(0, 198, 255, 0.1); padding: 12px; border-radius: 10px; border-left: 5px solid #00c6ff; font-size: 0.85rem;">
+                            <b>🎯 HUẤN LUYỆN CHUẨN ĐỘNG:</b> AI sử dụng video mẫu này để nhận dạng và trích xuất chuỗi góc chuẩn của Vai và Khuỷu theo từng giây (mili-giây).
+                        </div>
+                        """, unsafe_allow_html=True)
 
             # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
             st.markdown("---")
