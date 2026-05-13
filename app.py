@@ -422,7 +422,7 @@ st.markdown("""
     }
 
     /* FIX RIÊNG CHO NÚT UPLOAD TRONG TAB XANH DƯƠNG */
-    [data-testid="stFileUploader"] button {
+    [data-testid="stFileUploader"] button:not([data-testid="stFileUploaderDeleteBtn"]) {
         color: transparent !important;
         text-indent: -9999px !important;
         overflow: hidden !important;
@@ -433,7 +433,7 @@ st.markdown("""
         min-width: 150px !important;
     }
 
-    [data-testid="stFileUploader"] button::after {
+    [data-testid="stFileUploader"] button:not([data-testid="stFileUploaderDeleteBtn"])::after {
         content: "📂 Chọn Video" !important;
         text-indent: 0 !important;
         position: absolute !important;
@@ -5648,27 +5648,34 @@ def main():
             # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
             st.markdown("---")
             
-            if user_role == "Bệnh nhân":
-                st.markdown("### 📤 TẢI LÊN VIDEO TẬP LUYỆN")
-                st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
-                file_upload = st.file_uploader(
-                    "Tải lên video của bạn để AI phân tích và gửi kết quả cho Bác sĩ/NCV", 
-                    type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
-                    help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
-                    key="video_uploader_v2"
-                )
-            elif user_role == "Nghiên cứu viên":
-                st.markdown("### 🧪 PHÂN TÍCH VIDEO NGHIÊN CỨU")
-                st.info("💡 NCV có quyền truy cập sâu vào tọa độ khớp và biểu đồ nghiên cứu.")
-                file_upload = st.file_uploader(
-                    "Tải lên video thô (Raw Data)", 
-                    type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
-                    key="video_uploader_ncv"
-                )
+            if not st.session_state.get('has_data'):
+                if user_role == "Bệnh nhân":
+                    st.markdown("### 📤 TẢI LÊN VIDEO TẬP LUYỆN")
+                    st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
+                    file_upload = st.file_uploader(
+                        "Tải lên video của bạn để AI phân tích và gửi kết quả cho Bác sĩ/NCV", 
+                        type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
+                        help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
+                        key="video_uploader_v2"
+                    )
+                elif user_role == "Nghiên cứu viên":
+                    st.markdown("### 🧪 PHÂN TÍCH VIDEO NGHIÊN CỨU")
+                    st.info("💡 NCV có quyền truy cập sâu vào tọa độ khớp và biểu đồ nghiên cứu.")
+                    file_upload = st.file_uploader(
+                        "Tải lên video thô (Raw Data)", 
+                        type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
+                        key="video_uploader_ncv"
+                    )
+                else:
+                    file_upload = None
+                    if user_role != "Quản trị viên":
+                        st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
             else:
                 file_upload = None
-                if user_role != "Quản trị viên":
-                    st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
+                st.success("✅ Video đã được tải lên và phân tích thành công!")
+                if st.button("🔄 Tải video khác", type="secondary"):
+                    st.session_state.has_data = False
+                    st.rerun()
             
             # XỬ LÝ VIDEO
             if file_upload is not None and not st.session_state.processing:
