@@ -406,39 +406,13 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === XÓA SẠCH CHỮ RÁC & HIỆN MŨI TÊN CHUẨN (ẢNH 2) === */
-    /* Ẩn tuyệt đối mọi thứ bên trong nút của Streamlit */
-    [data-testid="stSidebarCollapseButton"] button *,
-    [data-testid="stExpandSidebarButton"] button * {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-        opacity: 0 !important;
-    }
-
-    /* Nút MỞ Sidebar (Hiện khi sidebar đang đóng) -> Mũi tên hướng PHẢI » */
-    [data-testid="stExpandSidebarButton"] button::after {
-        content: "»";
-        color: white !important;
-        font-size: 26px !important;
-        font-weight: bold !important;
-        display: block !important;
-        line-height: 1 !important;
-    }
-
-    /* Nút ĐÓNG Sidebar (Hiện khi sidebar đang mở) -> Mũi tên hướng TRÁI « */
-    [data-testid="stSidebarCollapseButton"] button::after {
-        content: "«";
-        color: white !important;
-        font-size: 26px !important;
-        font-weight: bold !important;
-        display: block !important;
-        line-height: 1 !important;
-    }
-
-    /* Định dạng chung cho nút bấm */
+    /* === XÓA SẠCH CHỮ RÁC (DÙNG KỸ THUẬT TEXT-INDENT) === */
+    /* Đẩy toàn bộ văn bản mặc định ra khỏi màn hình */
     [data-testid="stSidebarCollapseButton"] button, 
     [data-testid="stExpandSidebarButton"] button {
+        text-indent: -9999px !important;
+        overflow: hidden !important;
+        position: relative !important;
         background-color: transparent !important;
         border: none !important;
         width: 45px !important;
@@ -446,7 +420,38 @@ st.markdown("""
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        cursor: pointer !important;
+    }
+
+    /* Đưa mũi tên quay trở lại tâm của nút bấm */
+    [data-testid="stSidebarCollapseButton"] button::after, 
+    [data-testid="stExpandSidebarButton"] button::after {
+        text-indent: 0 !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: white !important;
+        font-size: 26px !important;
+        font-weight: bold !important;
+    }
+
+    [data-testid="stExpandSidebarButton"] button::after {
+        content: "»"; /* Mũi tên mở */
+    }
+
+    [data-testid="stSidebarCollapseButton"] button::after {
+        content: "«"; /* Mũi tên đóng */
+    }
+
+    /* Ẩn mọi thành phần con khác để chắc chắn 100% */
+    [data-testid="stSidebarCollapseButton"] button *,
+    [data-testid="stExpandSidebarButton"] button * {
+        visibility: hidden !important;
+        display: none !important;
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
