@@ -13,6 +13,7 @@ __pycache__/
 *.exe
 *.json
 !BAI_TAP.json
+!reference_*.json
 # Exclude data directories
 temp_frames/
 frames/
