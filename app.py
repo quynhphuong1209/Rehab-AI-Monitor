@@ -3391,29 +3391,25 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     # Kiểm tra xem có đang dùng chuẩn động không
     is_dynamic = 'sequence' in bt['chuan'] and bt['chuan']['sequence']
 
-    st.markdown(f"""
-<div style="background: {banner_bg}; 
-            border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
-            border: 1px solid {banner_border}; box-shadow: {banner_shadow};">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <h2 style="color: {title_text_color}; margin: 0; font-size: 1.8rem;">{header_title}</h2>
-            <p style="color: {desc_text_color}; margin: 0.5rem 0 0 0;">
-                🏥 Bài tập: {bt['ten']} | ⚙️ Model: <span style="color:#00c6ff;">{model_type}</span>
-            </p>
-            {"<div style='margin-top:10px;'><span style='background:rgba(0,206,209,0.2); color:#00CED1; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:1px solid #00CED1;'>✅ CHUẨN ĐỘNG (DYNAMIC): Đã khớp mốc thời gian</span></div>" if is_dynamic else ""}
-        </div>
-        <div style="text-align: right;">
-            <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
-                <span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
-            </div>
-            <div style="margin-top: 5px; font-size: 0.8rem; color: #888; text-align: right;">
-                Model: <span style="color: #00c6ff;">{st.session_state.get('ncv_model_type', 'Default')}</span>
-            </div>
-        </div>
-    </div>
+    # Tạo badge chuẩn động riêng để tránh lỗi hiển thị
+    dynamic_badge = f"<div style='margin-top:10px;'><span style='background:rgba(0,206,209,0.2); color:#00CED1; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:1px solid #00CED1;'>✅ CHUẨN ĐỘNG (DYNAMIC): Đã khớp mốc thời gian</span></div>" if is_dynamic else ""
+
+    html_header = f"""<div style="background: {banner_bg}; border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid {banner_border}; box-shadow: {banner_shadow};">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<div>
+<h2 style="color: {title_text_color}; margin: 0; font-size: 1.8rem;">{header_title}</h2>
+<p style="color: {desc_text_color}; margin: 0.5rem 0 0 0;">🏥 Bài tập: {bt['ten']} | ⚙️ Model: <span style="color:#00c6ff;">{model_type}</span></p>
+{dynamic_badge}
 </div>
-""", unsafe_allow_html=True)
+<div style="text-align: right;">
+<div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
+<span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
+</div>
+<div style="margin-top: 5px; font-size: 0.8rem; color: #888; text-align: right;">Model: <span style="color: #00c6ff;">{st.session_state.get('ncv_model_type', 'Default')}</span></div>
+</div>
+</div>
+</div>"""
+    st.markdown(html_header, unsafe_allow_html=True)
 
     # PHẦN DÀNH RIÊNG CHO NGHIÊN CỨU VIÊN KHI DÙNG HEAVY MODEL
     if st.session_state.get('ncv_model_type') == "MediaPipe Heavy" and user_role == "Nghiên cứu viên":
