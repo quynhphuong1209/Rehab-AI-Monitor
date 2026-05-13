@@ -412,14 +412,40 @@ st.markdown("""
     /* === KHỬ CHỮ RÁC TRÊN NÚT SIDEBAR & TOOLBAR === */
     [data-testid="stSidebarCollapseButton"] button, 
     [data-testid="stExpandSidebarButton"] button,
-    [data-testid="stToolbar"] button,
-    [data-testid="stFileUploader"] button {
+    [data-testid="stToolbar"] button {
         color: transparent !important;
         text-indent: -9999px !important;
         overflow: hidden !important;
         position: relative !important;
         background: transparent !important;
         border: none !important;
+    }
+
+    /* FIX RIÊNG CHO NÚT UPLOAD TRONG TAB XANH DƯƠNG */
+    [data-testid="stFileUploader"] button {
+        color: transparent !important;
+        text-indent: -9999px !important;
+        overflow: hidden !important;
+        position: relative !important;
+        background: #0072ff !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        min-width: 150px !important;
+    }
+
+    [data-testid="stFileUploader"] button::after {
+        content: "📂 Chọn Video" !important;
+        text-indent: 0 !important;
+        position: absolute !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        color: white !important;
+        font-size: 14px !important;
+        font-weight: bold !important;
+        visibility: visible !important;
+        width: 100% !important;
+        text-align: center !important;
     }
 
     /* Vẽ lại mũi tên bằng pseudo-element để không bao giờ bị hiện chữ */
@@ -430,7 +456,7 @@ st.markdown("""
         left: 50% !important;
         top: 50% !important;
         transform: translate(-50%, -50%) !important;
-        color: #0072ff !important; /* Đổi sang màu xanh cho nổi bật */
+        color: #0072ff !important; 
         font-size: 28px !important;
         font-weight: bold !important;
         visibility: visible !important;
