@@ -4133,31 +4133,31 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                 title_color = "#00CED1" if is_ai else "#ffd700"
                 icon = "🤖" if is_ai else "👨‍⚕️"
                 
-                with st.expander(f"{icon} Đánh giá ngày {e['time']} - Bài tập: {e['exercise']}", expanded=True):
+                with st.expander(f"{icon} Đánh giá ngày {e.get('time', 'N/A')} - Bài tập: {e.get('exercise', 'N/A')}", expanded=True):
                     c1, c2 = st.columns([1, 2.5])
                     with c1:
                         st.markdown(f"""
                         <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid {title_color}44;">
                             <p style="margin:0; color:#888; font-size:0.8rem;">ĐỘ CHÍNH XÁC</p>
-                            <h2 style="margin:0; color:{title_color};">{e['ai_accuracy']}%</h2>
+                            <h2 style="margin:0; color:{title_color};">{e.get('ai_accuracy', 'N/A')}{'%' if 'ai_accuracy' in e else ''}</h2>
                             <hr style="margin:10px 0; border:0; border-top:1px solid #333;">
-                            <h4 style="margin:0; color:{title_color};">{e['doctor_result']}</h4>
+                            <h4 style="margin:0; color:{title_color};">{e.get('doctor_result', 'N/A')}</h4>
                         </div>
                         """, unsafe_allow_html=True)
                     with c2:
                         st.markdown(f"**Nguồn:** <span style='color: {title_color}; font-weight: bold;'>{e.get('doctor_name', 'Hệ thống AI')}</span>", unsafe_allow_html=True)
                         
                         # Chỉ hiển thị lỗi sai nếu không phải AI hoặc nếu có lỗi thực sự (không phải warning kỹ thuật)
-                        errors = [err for err in e['errors'] if "WARNING" not in err.upper()]
+                        errors = [err for err in e.get('errors', []) if "WARNING" not in err.upper()]
                         if not is_ai and errors:
                             st.markdown(f"**Lỗi sai:** {', '.join(errors)}")
                         
                         if is_ai:
-                            st.markdown(f"**Nhận xét:** {e['comments']}. Độ chính xác: {e['ai_accuracy']}%")
+                            st.markdown(f"**Nhận xét:** {e.get('comments', '')}. Độ chính xác: {e.get('ai_accuracy', 'N/A')}%")
                         else:
-                            st.markdown(f"**Nhận xét:** {e['comments']}")
+                            st.markdown(f"**Nhận xét:** {e.get('comments', 'Không có')}")
                             
-                        st.markdown(f"**Kế hoạch:** {e['plan']}")
+                        st.markdown(f"**Kế hoạch:** {e.get('plan', 'N/A')}")
                         
                         status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã phê duyệt"
                         st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic; margin-top:10px;">📩 {status_text}</p>', unsafe_allow_html=True)
