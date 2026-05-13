@@ -749,9 +749,18 @@ if st.session_state.get('theme') == 'dark':
 
         /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
         div[data-baseweb="popover"], div[role="listbox"], ul[data-baseweb="menu"], 
-        div[data-baseweb="popover"] *, [data-baseweb="menu-item"] {
+        div[data-baseweb="popover"] *, [data-baseweb="menu-item"],
+        div[data-baseweb="select"] > div, 
+        div[data-baseweb="select"] * {
             background-color: #1a1a2e !important;
             color: white !important;
+        }
+        /* Sửa lỗi chữ trong ô selectbox bị mờ hoặc sai màu */
+        div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
+            color: white !important;
+        }
+        div[data-baseweb="select"] svg {
+            fill: white !important;
         }
         [data-baseweb="menu-item"]:hover {
             background-color: #2a5298 !important;
