@@ -2173,8 +2173,9 @@ def tinh_metrics_chi_tiet(df, bt):
         return {}
     
     total = len(df)
-    chuan_vai = bt['chuan']['vai']
-    chuan_khuyu = bt['chuan']['khuyu']
+    # Lấy giá trị chuẩn trung bình hoặc mặc định nếu không có cột
+    chuan_vai = df['vai_chuan'].mean() if 'vai_chuan' in df.columns else 90
+    chuan_khuyu = df['khuyu_chuan'].mean() if 'khuyu_chuan' in df.columns else 170
     
     # Đảm bảo tính loại trừ: Gần đúng không bao gồm Đúng
     df_dung = df['dung']
@@ -2188,9 +2189,13 @@ def tinh_metrics_chi_tiet(df, bt):
     ty_le_vai_dung = df['vai_dung'].sum() / total * 100
     ty_le_khuyu_dung = df['khuyu_dung'].sum() / total * 100
     
-    # TÍNH TOÁN SAI SỐ MAE (Mean Absolute Error)
-    mae_vai = np.abs(df['goc_vai'] - chuan_vai).mean()
-    mae_khuyu = np.abs(df['goc_khuyu'] - chuan_khuyu).mean()
+    # TÍNH TOÁN SAI SỐ MAE (Mean Absolute Error) so với chuẩn động từng giây
+    if 'vai_chuan' in df.columns and 'khuyu_chuan' in df.columns:
+        mae_vai = np.abs(df['goc_vai'] - df['vai_chuan']).mean()
+        mae_khuyu = np.abs(df['goc_khuyu'] - df['khuyu_chuan']).mean()
+    else:
+        mae_vai = np.abs(df['goc_vai'] - chuan_vai).mean()
+        mae_khuyu = np.abs(df['goc_khuyu'] - chuan_khuyu).mean()
     mae_tong = (mae_vai + mae_khuyu) / 2
     
     # TÍNH TOÁN PRECISION, RECALL, F1-SCORE (Dựa trên mô hình đánh giá so với chuẩn)
@@ -2233,7 +2238,9 @@ def tinh_metrics_chi_tiet(df, bt):
         "precision": precision,
         "recall": recall,
         "f1_score": f1_score,
-        "icc": icc
+        "icc": icc,
+        "tb_vai_chuan": df['vai_chuan'].mean() if 'vai_chuan' in df.columns else 90,
+        "tb_khuyu_chuan": df['khuyu_chuan'].mean() if 'khuyu_chuan' in df.columns else 170
     }
 
 # ============================================
@@ -2241,13 +2248,15 @@ def tinh_metrics_chi_tiet(df, bt):
 # ============================================
 def ve_bieu_do_goc_vai(df, bt):
     """Vẽ biểu đồ góc vai với thiết kế đẹp mắt"""
-    chuan_vai = bt['chuan']['vai']
     sai_so = bt['chuan']['sai_so']
+    
+    # Lấy chuẩn trung bình để vẽ vùng nền
+    c_vai = df['vai_chuan'].mean() if 'vai_chuan' in df.columns else 90
     
     fig = go.Figure()
     
-    # Thêm vùng chuẩn
-    fig.add_hrect(y0=chuan_vai-sai_so, y1=chuan_vai+sai_so,
+    # Thêm vùng chuẩn (Dựa trên trung bình)
+    fig.add_hrect(y0=c_vai-sai_so, y1=c_vai+sai_so,
                   fillcolor="rgba(0, 255, 0, 0.15)", line_width=0,
                   annotation_text="Vùng chuẩn", annotation_position="top left")
     
@@ -2261,14 +2270,22 @@ def ve_bieu_do_goc_vai(df, bt):
         hovertemplate='Frame: %{x}<br>Góc vai: %{y:.1f}°<extra></extra>'
     ))
     
-    # Thêm đường chuẩn
-    fig.add_hline(y=chuan_vai, line_dash='dash', line_color='#00FF00',
-                 line_width=2, annotation_text=f"Chuẩn: {chuan_vai}°",
-                 annotation_position="top right")
+    # Thêm đường chuẩn (Ưu tiên đường động từ YouTube)
+    if 'vai_chuan' in df.columns:
+        fig.add_trace(go.Scatter(
+            y=df['vai_chuan'],
+            mode='lines',
+            line=dict(color='#00FF00', width=2, dash='dash'),
+            name='Góc vai chuẩn (YouTube Động)'
+        ))
+    else:
+        fig.add_hline(y=c_vai, line_dash='dash', line_color='#00FF00',
+                     line_width=2, annotation_text=f"Chuẩn tĩnh: {c_vai}°",
+                     annotation_position="top right")
     
     # Tô màu vùng ngoài chuẩn
-    fig.add_hrect(y0=0, y1=chuan_vai-sai_so, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
-    fig.add_hrect(y0=chuan_vai+sai_so, y1=180, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
+    fig.add_hrect(y0=0, y1=c_vai-sai_so, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
+    fig.add_hrect(y0=c_vai+sai_so, y1=180, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
     
     is_light = st.session_state.theme == 'light'
     chart_text_color = '#333' if is_light else 'white'
@@ -2301,15 +2318,19 @@ def ve_bieu_do_goc_vai(df, bt):
 
 def ve_bieu_do_goc_khuyu(df, bt):
     """Vẽ biểu đồ góc khuỷu với thiết kế đẹp mắt"""
-    chuan_khuyu = bt['chuan']['khuyu']
     sai_so = bt['chuan']['sai_so']
+    
+    # Lấy chuẩn trung bình để vẽ vùng nền
+    c_khuyu = df['khuyu_chuan'].mean() if 'khuyu_chuan' in df.columns else 170
     
     fig = go.Figure()
     
-    fig.add_hrect(y0=chuan_khuyu-sai_so, y1=chuan_khuyu+sai_so,
+    # Thêm vùng chuẩn (Dựa trên trung bình)
+    fig.add_hrect(y0=c_khuyu-sai_so, y1=c_khuyu+sai_so,
                   fillcolor="rgba(0, 255, 0, 0.15)", line_width=0,
                   annotation_text="Vùng chuẩn", annotation_position="top left")
     
+    # Thêm đường góc bệnh nhân
     fig.add_trace(go.Scatter(
         y=df['goc_khuyu'],
         mode='lines+markers',
@@ -2319,12 +2340,22 @@ def ve_bieu_do_goc_khuyu(df, bt):
         hovertemplate='Frame: %{x}<br>Góc khuỷu: %{y:.1f}°<extra></extra>'
     ))
     
-    fig.add_hline(y=chuan_khuyu, line_dash='dash', line_color='#00FF00',
-                 line_width=2, annotation_text=f"Chuẩn: {chuan_khuyu}°",
-                 annotation_position="top right")
+    # Thêm đường chuẩn (Ưu tiên đường động từ YouTube)
+    if 'khuyu_chuan' in df.columns:
+        fig.add_trace(go.Scatter(
+            y=df['khuyu_chuan'],
+            mode='lines',
+            line=dict(color='#00FF00', width=2, dash='dash'),
+            name='Góc khuỷu chuẩn (YouTube Động)'
+        ))
+    else:
+        fig.add_hline(y=c_khuyu, line_dash='dash', line_color='#00FF00',
+                     line_width=2, annotation_text=f"Chuẩn tĩnh: {c_khuyu}°",
+                     annotation_position="top right")
     
-    fig.add_hrect(y0=0, y1=chuan_khuyu-sai_so, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
-    fig.add_hrect(y0=chuan_khuyu+sai_so, y1=180, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
+    # Tô màu vùng ngoài chuẩn
+    fig.add_hrect(y0=0, y1=c_khuyu-sai_so, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
+    fig.add_hrect(y0=c_khuyu+sai_so, y1=180, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
     
     is_light = st.session_state.theme == 'light'
     chart_text_color = '#333' if is_light else 'white'
@@ -2512,10 +2543,10 @@ def ve_bieu_do_boxplot_phan_loai(df):
     fig_khuyu = ve_bieu_do_boxplot_phan_loai_single(df, 'goc_khuyu', "Góc Khuỷu theo nhóm")
     return fig_vai, fig_khuyu
 
-def lay_nhan_dinh_lam_sang(goc_vai, goc_khuyu, bt):
+def lay_nhan_dinh_lam_sang(goc_vai, goc_khuyu, bt, v_chuan=None, k_chuan=None):
     """Cung cấp nhận định lâm sàng dựa trên lỗi phát hiện"""
-    cv = bt['chuan']['vai']
-    ck = bt['chuan']['khuyu']
+    cv = v_chuan if v_chuan is not None else bt['chuan'].get('vai', 90)
+    ck = k_chuan if k_chuan is not None else bt['chuan'].get('khuyu', 170)
     ss = bt['chuan']['sai_so']
     
     nhan_dinh = []
@@ -3238,6 +3269,8 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                                     "recall": metrics["recall"],
                                     "f1_score": metrics["f1_score"],
                                     "icc": metrics["icc"],
+                                    "tb_vai_chuan": metrics.get("tb_vai_chuan", 90),
+                                    "tb_khuyu_chuan": metrics.get("tb_khuyu_chuan", 170),
                                     "thoi_gian": process_time_man,
                                     "tong_frame": total_frames,
                                     "warnings": all_warnings
@@ -3393,7 +3426,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         <div class="metric-card" style="height: 120px;">
             <div class="metric-value" style="font-size: 1.8rem; color: #00CED1;">{tk.get('ty_le_vai_dung', 0):.1f}%</div>
             <div class="metric-label">🦾 Tỉ lệ đúng góc vai</div>
-            <div style="color: #666; font-size: 0.75rem;">Chuẩn: {bt['chuan']['vai']}° ±{bt['chuan']['sai_so']}°</div>
+            <div style="color: #666; font-size: 0.75rem;">Chuẩn: Video YouTube mẫu</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -3402,7 +3435,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
         <div class="metric-card" style="height: 120px;">
             <div class="metric-value" style="font-size: 1.8rem; color: #FF6B6B;">{tk.get('ty_le_khuyu_dung', 0):.1f}%</div>
             <div class="metric-label">💪 Tỉ lệ đúng góc khuỷu</div>
-            <div style="color: #666; font-size: 0.75rem;">Chuẩn: {bt['chuan']['khuyu']}° ±{bt['chuan']['sai_so']}°</div>
+            <div style="color: #666; font-size: 0.75rem;">Chuẩn: Video YouTube mẫu</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -3521,7 +3554,9 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     if "🩺 NHẬN ĐỊNH LÂM SÀNG" in t_map:
         with t_map["🩺 NHẬN ĐỊNH LÂM SÀNG"]:
             st.markdown("### 🩺 NHẬN ĐỊNH CHUYÊN MÔN")
-            insights = lay_nhan_dinh_lam_sang(tk['tb_goc_vai'], tk['tb_goc_khuyu'], bt)
+            insights = lay_nhan_dinh_lam_sang(tk['tb_goc_vai'], tk['tb_goc_khuyu'], bt, 
+                                             v_chuan=tk.get('tb_vai_chuan'), 
+                                             k_chuan=tk.get('tb_khuyu_chuan'))
             if insights:
                 for item in insights:
                     st.markdown(f"""
