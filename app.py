@@ -2469,16 +2469,17 @@ def ve_bieu_do_boxplot_phan_loai_single(df, column='goc_vai', title="Góc Vai th
         height=450,
         legend=dict(
             orientation="h", 
-            yanchor="bottom", 
-            y=-0.2, 
+            yanchor="top", 
+            y=-0.25, 
             xanchor="center", 
             x=0.5,
             font=dict(color=chart_text_color)
         ),
-        margin=dict(t=60, b=80, l=20, r=20)
+        margin=dict(t=60, b=150, l=20, r=20)
     )
     
     fig.update_yaxes(title_text="Góc (độ)", gridcolor=chart_grid_color)
+    fig.update_xaxes(automargin=True, tickangle=0) # Automargin helps with spacing
     return fig
 
 def ve_bieu_do_boxplot_phan_loai(df):
