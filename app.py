@@ -5941,6 +5941,15 @@ def main():
                             # Lấy cấu hình từ session state (NCV) nếu có, nếu không dùng mặc định
                             model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Full')
                             conf_ncv = st.session_state.get('ncv_confidence', 0.5)
+                            
+                            # --- NẠP DỮ LIỆU THAM CHIẾU ĐỘNG (DÀNH CHO TRANG CHỦ) ---
+                            ex_key_ncv = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == bai_tap['ten']), 'codman')
+                            ref_path_ncv = f"reference_{ex_key_ncv}.json"
+                            if os.path.exists(ref_path_ncv):
+                                try:
+                                    with open(ref_path_ncv, "r", encoding="utf-8") as rf:
+                                        bai_tap['chuan']['sequence'] = json.load(rf)
+                                except: pass
 
                             output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
                                 video_path, bai_tap['chuan'], update_progress,
