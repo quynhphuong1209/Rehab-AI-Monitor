@@ -1760,8 +1760,8 @@ def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
             min_detection_confidence=min_confidence,
             min_tracking_confidence=min_confidence
         )
-    except Exception as e:
-        st.warning(f"⚠️ Không thể tải mô hình {model_type}, đang chuyển sang mô hình Full (ổn định hơn).")
+    except Exception:
+        # Fallback im lặng sang mô hình Full để tránh làm phiền người dùng
         return mp_pose.Pose(
             static_image_mode=False,
             model_complexity=1,
@@ -5635,9 +5635,15 @@ def main():
             ma_bai_tap = st.selectbox("Bài tập đang theo dõi", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="sb_exercise_select")
             bai_tap = BAI_TAP[ma_bai_tap]
             
-            # --- HIỂN THỊ VIDEO MẪU YT TRONG SIDEBAR ĐỂ ĐỐI CHIẾU ---
+            # --- HIỂN THỊ VIDEO MẪU (ƯU TIÊN FILE CỤC BỘ NẾU ĐÃ NẠP) ---
+            local_ref_vid = f"reference_{ma_bai_tap}.mp4"
             yt_link = bai_tap.get('youtube')
-            if yt_link:
+            
+            if os.path.exists(local_ref_vid):
+                st.sidebar.markdown(f"#### 📺 VIDEO MẪU (ĐÃ NẠP)")
+                st.sidebar.video(local_ref_vid)
+                st.sidebar.caption("✅ Đang dùng video mẫu của bạn")
+            elif yt_link:
                 st.sidebar.markdown(f"#### 📺 VIDEO MẪU YT (TARGET)")
                 st.sidebar.video(yt_link)
                 st.sidebar.caption("💡 Đối chiếu song song với BN")
@@ -5855,8 +5861,6 @@ def main():
                             percent = (count / total_selections) * 100
                             st.markdown(f"**{ex}**: {count} lượt ({percent:.1f}%)")
                     with col_st2:
-                        import plotly.express as px
-                        import pandas as pd
                         df_stat = pd.DataFrame(list(ex_counts.items()), columns=['Bài tập', 'Số lượt'])
                         fig = px.pie(df_stat, values='Số lượt', names='Bài tập', hole=0.4)
                         
@@ -6124,14 +6128,22 @@ def main():
 
                                 # --- XỬ LÝ LƯU VIDEO MẪU (REFERENCE) ---
                                 if user_role == "Nghiên cứu viên" and is_reference:
+                                    import shutil
                                     ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == bai_tap['ten']), 'codman')
                                     ref_path = f"reference_{ex_key}.json"
+                                    vid_ref_save = f"reference_{ex_key}.mp4"
+                                    
+                                    # 1. Lưu JSON chuẩn
                                     ref_df = df[['timestamp_seconds', 'goc_vai', 'goc_khuyu']].copy()
                                     ref_df.columns = ['time', 'vai', 'khuyu']
                                     ref_data = ref_df.to_dict('records')
                                     with open(ref_path, "w", encoding="utf-8") as rf:
                                         json.dump(ref_data, rf, ensure_ascii=False, indent=4)
-                                    st.success(f"🌟 Đã thiết lập video này làm CHUẨN ĐỘNG cho bài tập: {bai_tap['ten']}")
+                                    
+                                    # 2. Lưu Video mẫu vật lý
+                                    shutil.copy(output_path, vid_ref_save)
+                                    
+                                    st.success(f"🌟 Đã thiết lập video này làm CHUẨN ĐỘNG (cả dữ liệu và video) cho bài tập: {bai_tap['ten']}")
                                 
                                 st.markdown("---")
                        
