@@ -2722,10 +2722,10 @@ BAI_TAP = {
         """,
         "tieu_chi_danh_gia": """
         📊 **TIÊU CHÍ ĐÁNH GIÁ KẾT QUẢ:**
-        - Góc vai đạt 45° ± 15° (30° - 60°)
-        - Góc khuỷu duy trì 160° ± 15° (145° - 175°)
+        - Khớp với biên độ vận động của Video YouTube chuẩn
+        - Sai số tọa độ Euclidean thấp hơn ngưỡng cho phép
         - Bệnh nhân không có biểu hiện đau khi thực hiện (VAS < 3)
-        - Thực hiện động tác mượt mà, không giật cục
+        - Thực hiện động tác mượt mà, đồng bộ với nhịp của video mẫu
         - Duy trì được nhịp thở đều đặn trong khi tập
         """
     },
@@ -2800,11 +2800,11 @@ BAI_TAP = {
         """,
         "tieu_chi_danh_gia": """
         📊 **TIÊU CHÍ ĐÁNH GIÁ KẾT QUẢ:**
-        - Góc vai đạt 90° ± 15° (75° - 105°)
-        - Góc khuỷu duy trì gần duỗi thẳng (170° ± 15°)
+        - Khớp với biên độ nâng gậy và xoay vai của Video mẫu
         - Không có hiện tượng bù trừ (nghiêng người, nhún vai)
         - Bệnh nhân có thể tự thực hiện với mức độ trợ giúp tối thiểu
         - Cải thiện khả năng với tay lên cao (lấy đồ trên kệ, móc áo)
+        - Đồng bộ thời gian thực với các mốc giây trong video hướng dẫn
         """
     },
     "khang_luc": {
@@ -2886,12 +2886,12 @@ BAI_TAP = {
         """,
         "tieu_chi_danh_gia": """
         📊 **TIÊU CHÍ ĐÁNH GIÁ KẾT QUẢ:**
-        - Góc vai đạt 60° ± 15° (45° - 75°)
-        - Góc khuỷu gập 90° ± 15° (75° - 105°)
+        - Kháng lực phù hợp với biên độ 60° của video tham chiếu
         - Thực hiện đúng kỹ thuật, không bù trừ bằng cơ vai khác
         - Bệnh nhân có thể thực hiện 3 hiệp 15 lần với dây cấp độ phù hợp
         - Không đau trong và sau khi tập (VAS < 2)
         - Cải thiện sức mạnh (test cơ manual muscle testing tăng 1-2 cấp độ)
+        - Tốc độ co duỗi khớp với nhịp đếm trong video chuẩn
         """,
         "tien_trinh_dieu_tri": """
         📅 **TIẾN TRÌNH ĐIỀU TRỊ THEO GIAI ĐOẠN:**
@@ -5741,12 +5741,12 @@ def main():
                 card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
                 st.markdown(f"""
                 <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
-                    <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 THÔNG SỐ CHUẨN</h4>
-                    <p style="color:#00CED1; margin-bottom:5px;">🦾 Góc vai: <b>{chuan['vai']}°</b> ±{chuan['sai_so']}°</p>
-                    <p style="color:#FF6B6B; margin-bottom:10px;">💪 Góc khuỷu: <b>{chuan['khuyu']}°</b> ±{chuan['sai_so']}°</p>
-                    <div style="font-size:0.8rem; opacity:0.7; border-top:1px solid {info_border}; padding-top:10px;">
-                        <p style="margin-bottom:3px;">✅ Đạt: Cả 2 góc trong vùng sai số</p>
-                        <p style="margin-bottom:0;">❌ Không đạt: Có góc ngoài vùng sai số</p>
+                    <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 ĐỐI CHIẾU VIDEO CHUẨN</h4>
+                    <p style="color:#00CED1; margin-bottom:8px; font-size:0.95rem;">⚡ Hệ thống tự động so sánh chuyển động của bạn với <b>Video YouTube chuẩn</b> theo từng giây.</p>
+                    <p style="color:#FF6B6B; margin-bottom:12px; font-size:0.95rem;">📊 Độ chính xác được tính dựa trên sai số khoảng cách (Euclidean) và biên độ tọa độ khớp thực tế.</p>
+                    <div style="font-size:0.85rem; opacity:0.8; border-top:1px solid {info_border}; padding-top:10px;">
+                        <p style="margin-bottom:5px;">✅ <b>Đạt:</b> Chuyển động khớp với biên độ của video mẫu.</p>
+                        <p style="margin-bottom:0;">❌ <b>Cần cải thiện:</b> Động tác sai lệch đáng kể so với video mẫu.</p>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
