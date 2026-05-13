@@ -215,6 +215,8 @@ padding-bottom: 8px;
 <div style="font-size:0.85rem; opacity:0.8;">GIẢNG VIÊN HƯỚNG DẪN:</div>
 <div style="font-size:1.15rem; font-weight:bold; color:{title_color}">TS. Trần Hồng Việt</div>
 <div style="font-size:0.9rem;">Khoa học dữ liệu - Đại học Y tế Công cộng</div>
+<div style="font-size:1.15rem; font-weight:bold; color:{title_color}; border-top: 1px solid {col_border}; margin-top: 8px; padding-top: 8px;">Nguyễn Thị Thùy Chi</div>
+<div style="font-size:0.9rem;">Giảng viên hướng dẫn - Đại học Y tế Công cộng</div>
 </div>
 <div class="execution-grid">
 <div class="execution-item">
@@ -3932,13 +3934,23 @@ def hien_thi_tab_thong_tin_nghien_cuu():
 
 def hien_thi_tab_thanh_vien():
     st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
-    st.markdown("""
-    <div class="lecturer-card">
-        <div class="lecturer-name">TS. Trần Hồng Việt 🎓</div>
-        <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
-        <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
-    </div>
-    """, unsafe_allow_html=True)
+    col_l1, col_l2 = st.columns(2)
+    with col_l1:
+        st.markdown("""
+        <div class="lecturer-card">
+            <div class="lecturer-name">TS. Trần Hồng Việt 🎓</div>
+            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_l2:
+        st.markdown("""
+        <div class="lecturer-card">
+            <div class="lecturer-name">Nguyễn Thị Thùy Chi 🎓</div>
+            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
     col1, col2, col3 = st.columns([1, 2, 1])
