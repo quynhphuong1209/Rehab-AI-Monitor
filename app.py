@@ -207,16 +207,9 @@ a {{color:{title_color};text-decoration:none}}
 <div class="info-row" style="margin-top:10px"><span class="info-label">Lớp:</span><span>CNCQ KHDL1-1A</span></div>
 </div>
 <div class="footer-col wide">
-<div class="footer-title">👥 NHÓM THỰC HIỆN & GVHD</div>
-<div style="margin-bottom:20px;background:rgba(0,114,255,0.05);padding:15px;border-radius:12px;border-left:5px solid {title_color}">
-<div style="font-size:0.85rem;margin-bottom:3px;opacity:0.8">GIẢNG VIÊN HƯỚNG DẪN:</div>
-<div style="font-size:1.2rem;font-weight:bold;color:{title_color}">TS. Trần Hồng Việt</div>
-<div style="font-size:0.95rem;opacity:0.9">Khoa học dữ liệu - Đại học Y tế Công cộng</div>
-<div style="font-size:0.95rem"><a href="mailto:thviet79@gmail.com">📧 thviet79@gmail.com</a></div>
-</div>
-<div style="background:rgba(0,198,255,0.03); padding:20px; border-radius:12px; border:1px dashed {title_color}; margin-top:10px;">
-    <div style="font-size:0.9rem; font-weight:bold; color:{title_color}; margin-bottom:8px;">🎯 MỤC TIÊU & CÔNG NGHỆ CỐT LÕI:</div>
-    <p style="font-size:0.85rem; margin:0; line-height:1.5;">Ứng dụng <b>Computer Vision</b> và <b>Mediapipe AI</b> để số hóa quy trình giám sát phục hồi chức năng từ xa. Hệ thống tập trung vào độ chính xác cao (Accuracy), tính thời gian thực (Real-time) và bảo mật dữ liệu y tế theo chuẩn nghiên cứu khoa học.</p>
+<div class="footer-title" style="color: #0047AB;">🎯 MỤC TIÊU & CÔNG NGHỆ CỐT LÕI</div>
+<div style="background:rgba(0,114,255,0.03); padding:15px; border-radius:12px; border:1px solid rgba(0,114,255,0.1); margin-top:10px;">
+    <p style="font-size:0.85rem; margin:0; line-height:1.6; opacity:0.9;">Ứng dụng <b>Computer Vision</b> và <b>Mediapipe AI</b> để số hóa quy trình giám sát phục hồi chức năng từ xa. Hệ thống tập trung vào độ chính xác cao (Accuracy), tính thời gian thực (Real-time) và bảo mật dữ liệu y tế theo chuẩn nghiên cứu khoa học.</p>
 </div>
 </div>
 <div class="footer-col">
