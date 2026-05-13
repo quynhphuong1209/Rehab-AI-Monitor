@@ -2237,13 +2237,35 @@ def ve_bieu_do_goc_vai(df, bt):
         line=dict(color='#00CED1', width=3),
         marker=dict(size=4, color='#00CED1', symbol='circle'),
         name='Góc vai bệnh nhân',
-        hovertemplate='Frame: %{x}<br>Góc vai: %{y:.1f}°<extra></extra>'
+        hovertemplate='Frame: %{x}<br>Góc vai BN: %{y:.1f}°<extra></extra>'
     ))
     
-    # Thêm đường chuẩn
-    fig.add_hline(y=chuan_vai, line_dash='dash', line_color='#00FF00',
-                 line_width=2, annotation_text=f"Chuẩn: {chuan_vai}°",
-                 annotation_position="top right")
+    # --- THÊM ĐƯỜNG MỤC TIÊU ĐỘNG (NẾU CÓ) ---
+    if 'sequence' in bt['chuan'] and bt['chuan']['sequence']:
+        seq = bt['chuan']['sequence']
+        # Giả định FPS là 30 nếu không có trong df, hoặc tính từ timestamp
+        fps_val = 30
+        if 'timestamp_seconds' in df.columns and len(df) > 1:
+            fps_val = 1 / (df['timestamp_seconds'].iloc[1] - df['timestamp_seconds'].iloc[0])
+            
+        target_y = []
+        for idx in range(len(df)):
+            t = idx / fps_val
+            match = min(seq, key=lambda x: abs(x.get('time', x.get('timestamp_seconds', 0)) - t))
+            target_y.append(match.get('vai', match.get('goc_vai', chuan_vai)))
+            
+        fig.add_trace(go.Scatter(
+            y=target_y,
+            mode='lines',
+            line=dict(color='#FFD700', width=2, dash='dot'),
+            name='Góc vai MỤC TIÊU (YouTube)',
+            hovertemplate='Mục tiêu: %{y:.1f}°<extra></extra>'
+        ))
+    else:
+        # Thêm đường chuẩn tĩnh
+        fig.add_hline(y=chuan_vai, line_dash='dash', line_color='#00FF00',
+                     line_width=2, annotation_text=f"Chuẩn: {chuan_vai}°",
+                     annotation_position="top right")
     
     # Tô màu vùng ngoài chuẩn
     fig.add_hrect(y0=0, y1=chuan_vai-sai_so, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
@@ -2290,18 +2312,41 @@ def ve_bieu_do_goc_khuyu(df, bt):
                   fillcolor="rgba(0, 255, 0, 0.15)", line_width=0,
                   annotation_text="Vùng chuẩn", annotation_position="top left")
     
+    # Thêm đường góc bệnh nhân
     fig.add_trace(go.Scatter(
         y=df['goc_khuyu'],
         mode='lines+markers',
         line=dict(color='#FF6B6B', width=3),
         marker=dict(size=4, color='#FF6B6B', symbol='circle'),
         name='Góc khuỷu bệnh nhân',
-        hovertemplate='Frame: %{x}<br>Góc khuỷu: %{y:.1f}°<extra></extra>'
+        hovertemplate='Frame: %{x}<br>Góc khuỷu BN: %{y:.1f}°<extra></extra>'
     ))
     
-    fig.add_hline(y=chuan_khuyu, line_dash='dash', line_color='#00FF00',
-                 line_width=2, annotation_text=f"Chuẩn: {chuan_khuyu}°",
-                 annotation_position="top right")
+    # --- THÊM ĐƯỜNG MỤC TIÊU ĐỘNG (NẾU CÓ) ---
+    if 'sequence' in bt['chuan'] and bt['chuan']['sequence']:
+        seq = bt['chuan']['sequence']
+        fps_val = 30
+        if 'timestamp_seconds' in df.columns and len(df) > 1:
+            fps_val = 1 / (df['timestamp_seconds'].iloc[1] - df['timestamp_seconds'].iloc[0])
+            
+        target_y = []
+        for idx in range(len(df)):
+            t = idx / fps_val
+            match = min(seq, key=lambda x: abs(x.get('time', x.get('timestamp_seconds', 0)) - t))
+            target_y.append(match.get('khuyu', match.get('goc_khuyu', chuan_khuyu)))
+            
+        fig.add_trace(go.Scatter(
+            y=target_y,
+            mode='lines',
+            line=dict(color='#FFD700', width=2, dash='dot'),
+            name='Góc khuỷu MỤC TIÊU (YouTube)',
+            hovertemplate='Mục tiêu: %{y:.1f}°<extra></extra>'
+        ))
+    else:
+        # Thêm đường chuẩn tĩnh
+        fig.add_hline(y=chuan_khuyu, line_dash='dash', line_color='#00FF00',
+                     line_width=2, annotation_text=f"Chuẩn: {chuan_khuyu}°",
+                     annotation_position="top right")
     
     fig.add_hrect(y0=0, y1=chuan_khuyu-sai_so, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
     fig.add_hrect(y0=chuan_khuyu+sai_so, y1=180, fillcolor="rgba(255, 0, 0, 0.1)", line_width=0)
