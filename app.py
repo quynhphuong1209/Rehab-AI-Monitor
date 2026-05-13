@@ -3501,6 +3501,25 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
                         })
                         save_data(EVALUATIONS_FILE, evals)
+                        
+                        # ĐỒNG BỘ HÓA: Cập nhật luôn vào VIDEOS_FILE để bác sĩ/BN thấy metrics
+                        video_list = load_data(VIDEOS_FILE)
+                        updated = False
+                        for vid in video_list:
+                            if vid.get('username') == v_meta['username'] and vid.get('video_name') == v_meta.get('video_name'):
+                                vid['accuracy'] = round(acc, 1)
+                                vid['metrics'] = tk
+                                vid['status'] = "Đã phân tích & Gửi báo cáo"
+                                # Đảm bảo các đường dẫn path cũng được lưu nếu có
+                                if st.session_state.get('processed_video_path'):
+                                    vid['processed_path'] = st.session_state.processed_video_path
+                                if st.session_state.get('all_frames_data_path'):
+                                    vid['all_frames_data_path'] = st.session_state.all_frames_data_path
+                                updated = True
+                                break
+                        if updated:
+                            save_data(VIDEOS_FILE, video_list)
+                            
                         st.success(f"✅ Đã gửi báo cáo cho BN {v_meta['full_name']}!")
                         st.balloons()
 
@@ -4162,6 +4181,24 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
         if has_ai_eval:
             tab_charts = tabs[1]
             tab_media = tabs[2]
+            
+            # TỰ ĐỘNG LOAD DỮ LIỆU AI MỚI NHẤT CHO BỆNH NHÂN NẾU CHƯA CÓ TRONG SESSION
+            if not st.session_state.get('stats'):
+                all_vids = load_data(VIDEOS_FILE)
+                # Lấy video mới nhất có metrics của BN này
+                p_vids = [v for v in all_vids if v.get('username') == username and v.get('metrics')]
+                if p_vids:
+                    lv = p_vids[-1]
+                    st.session_state.stats = lv['metrics']
+                    st.session_state.processed_video_path = lv.get('processed_path')
+                    st.session_state.all_frames_data_path = lv.get('all_frames_data_path')
+                    st.session_state.uploaded_file_name = lv.get('video_name')
+                    st.session_state.has_data = True
+                    if lv.get('df_path') and os.path.exists(lv['df_path']):
+                        try: st.session_state.angle_df = pd.read_csv(lv['df_path'])
+                        except: pass
+                    ex_n = lv.get('exercise', 'codman')
+                    st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_n), BAI_TAP['codman'])
 
         with tab_eval:
             for e in reversed(my_evals):
