@@ -1876,6 +1876,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
         pts_khuyu = (vai_p, khuyu_p, co_tay_p)
 
     # MẶC ĐỊNH (Nếu không có dynamic, hệ thống sẽ dùng số an toàn nhưng ưu tiên tuyệt đối dynamic)
+    thoi_gian_giay = frame_idx / fps
     chuan_vai = chuan.get("vai", 90)
     chuan_khuyu = chuan.get("khuyu", 170)
     
@@ -1999,39 +2000,33 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         # Chuẩn hóa tên bài tập để so khớp từ khóa
         exercise_name_clean = exercise_name.lower().strip()
         
-        # Mặc định là codman nếu không khớp từ khóa đặc biệt nào
+        # Mặc định là codman
         ref_name = "codman"
         
-        # Kiểm tra từ khóa trong tên bài tập (Cực kỳ mạnh mẽ - hỗ trợ cả tiếng Việt có dấu/không dấu)
+        # Kiểm tra từ khóa trong tên bài tập (Cực kỳ mạnh mẽ)
         if any(kw in exercise_name_clean for kw in ["gậy", "gay", "pulley", "stick"]):
             ref_name = "gay"
-        elif any(kw in exercise_name_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band", "thun"]):
+        elif any(kw in exercise_name_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"]):
             ref_name = "day"
-        elif any(kw in exercise_name_clean for kw in ["codman", "con lắc", "con lac", "pendulum"]):
+        elif "codman" in exercise_name_clean:
             ref_name = "codman"
             
-        # Tìm file ở nhiều vị trí để đảm bảo nạp được trên Web
+        # Sử dụng đường dẫn tuyệt đối để đảm bảo nạp được file trên mọi môi trường
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        possible_paths = [
-            os.path.join(current_dir, f"reference_{ref_name}.json"),
-            os.path.join(os.getcwd(), f"reference_{ref_name}.json"),
-            f"reference_{ref_name}.json"
-        ]
+        ref_file = os.path.join(current_dir, f"reference_{ref_name}.json")
         
-        target_file = None
-        for p in possible_paths:
-            if os.path.exists(p):
-                target_file = p
-                break
-        
-        if target_file:
-            with open(target_file, 'r', encoding='utf-8') as f:
+        if os.path.exists(ref_file):
+            with open(ref_file, 'r', encoding='utf-8') as f:
                 dynamic_chuan = json.load(f)
-                st.toast(f"✅ Đã nạp chuẩn: reference_{ref_name}.json", icon="🎯")
+                # print(f"✅ Đã nạp dữ liệu chuẩn YouTube: {ref_file}") # Debug
         else:
-            st.toast(f"⚠️ Không tìm thấy file chuẩn: reference_{ref_name}.json. Đang dùng mốc tĩnh.", icon="⚠️")
+            # Fallback nếu không thấy file ở đường dẫn tuyệt đối thì thử đường dẫn tương đối
+            ref_file_rel = f"reference_{ref_name}.json"
+            if os.path.exists(ref_file_rel):
+                with open(ref_file_rel, 'r', encoding='utf-8') as f:
+                    dynamic_chuan = json.load(f)
     except Exception as e:
-        st.toast(f"❌ Lỗi nạp chuẩn: {e}", icon="❌")
+        st.error(f"⚠️ Lỗi nạp dữ liệu chuẩn YouTube: {e}")
 
     cap = cv2.VideoCapture(duong_dan_video)
     if not cap.isOpened(): raise Exception("Video Error")
