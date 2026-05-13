@@ -5944,8 +5944,7 @@ def main():
                     with col_ncv_cfg1:
                         is_reference = st.checkbox("💾 Lưu làm Video Mẫu (Reference)", value=False, help="Dùng video này làm tiêu chuẩn so sánh cho các bệnh nhân sau này.")
                     with col_ncv_cfg2:
-                        ncv_model = st.selectbox("Mô hình AI", ["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], index=1)
-                        st.session_state.ncv_model_type = ncv_model
+                        ncv_model = st.selectbox("Mô hình AI", ["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], index=1, help="Chọn mô hình AI để xử lý video này (Ghi đè tạm thời nếu cần).")
                     
                     btn_text = "🚀 BẮT ĐẦU PHÂN TÍCH MẪU" if is_reference else "🚀 BẮT ĐẦU XỬ LÝ AI"
                     if st.button(btn_text, width="stretch", type="primary"):
@@ -5972,10 +5971,6 @@ def main():
                                 progress_bar.progress(0.2 + p * 0.7)
                                 status_text.info(f"🔄 Đang xử lý frame... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
                             
-                            # Lấy cấu hình từ session state (NCV) nếu có, nếu không dùng mặc định
-                            model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Full')
-                            conf_ncv = st.session_state.get('ncv_confidence', 0.5)
-                            
                             # --- NẠP DỮ LIỆU THAM CHIẾU ĐỘNG (DÀNH CHO TRANG CHỦ) ---
                             ex_key_ncv = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == bai_tap['ten']), 'codman')
                             ref_path_ncv = f"reference_{ex_key_ncv}.json"
@@ -5985,9 +5980,13 @@ def main():
                                         bai_tap['chuan']['sequence'] = json.load(rf)
                                 except: pass
 
+                            # Sử dụng cấu hình từ widget cục bộ hoặc sidebar
+                            final_model = ncv_model if ncv_model else st.session_state.get('ncv_model_type', 'MediaPipe Full')
+                            conf_ncv = st.session_state.get('ncv_confidence', 0.5)
+
                             output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
                                 video_path, bai_tap['chuan'], update_progress,
-                                model_type=model_type_ncv, min_confidence=conf_ncv
+                                model_type=final_model, min_confidence=conf_ncv
                             )
                             
                             progress_bar.progress(0.95)
