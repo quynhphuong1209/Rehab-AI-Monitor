@@ -131,15 +131,15 @@ def hien_thi_footer_chung():
     
     footer_html = f"""<style>
 .main-footer {{background:{footer_bg};padding:60px 20px 40px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:3px solid {border_color};box-shadow:0 -15px 35px rgba(0, 114, 255, 0.1);margin-top:80px;position:relative;overflow:hidden}}
-.footer-container {{display:flex;flex-wrap:nowrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:0}}
-.footer-col {{flex:1;min-width:200px;padding:0 30px;border-right:1px solid {col_border}}}
+.footer-container {{display:flex;flex-wrap:wrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:20px}}
+.footer-col {{flex:1;min-width:280px;padding:20px 30px;border-right:1px solid {col_border}}}
 .footer-col:last-child {{border-right:none}}
-.footer-col.medium {{flex:1.2;min-width:250px}}
-.footer-col.wide {{flex:2.5;min-width:600px}}
+.footer-col.medium {{flex:1.2;min-width:280px}}
+.footer-col.wide {{flex:2.5;min-width:300px}}
 .footer-title {{color:{title_color} !important;font-weight:bold;margin-bottom:20px;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:10px;border-bottom:2px solid {col_border};padding-bottom:10px}}
 .info-row {{margin-bottom:10px;font-size:0.95rem;display:grid;grid-template-columns:85px 1fr;line-height:1.4}}
 .info-label {{font-weight:bold;opacity:0.9}}
-.execution-grid {{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:15px}}
+.execution-grid {{display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:25px;margin-top:15px}}
 .execution-item {{border-left:2px solid {col_border};padding-left:12px}}
 .execution-name {{font-size:1.05rem;font-weight:bold;color:{title_color};display:block;margin-bottom:3px}}
 .execution-info {{font-size:0.85rem;opacity:0.8;margin-bottom:5px;display:block}}
@@ -149,6 +149,14 @@ def hien_thi_footer_chung():
 .footer-logo-img {{width:95px;margin-bottom:10px;filter:{"none" if is_light else "drop-shadow(0 0 8px rgba(0, 198, 255, 0.4))"}}}
 .school-name-text {{font-weight:bold;color:{school_name_color};font-size:1.15rem;line-height:1.2}}
 a {{color:{title_color};text-decoration:none}}
+
+/* TỐI ƯU CHO DI ĐỘNG */
+@media (max-width: 1024px) {{
+    .footer-container {{ flex-direction: column; align-items: stretch; gap: 40px; }}
+    .footer-col {{ border-right: none !important; border-bottom: 1px solid {col_border}; padding-bottom: 30px; width: 100% !important; min-width: 100% !important; flex: none !important; }}
+    .footer-col:last-child {{ border-bottom: none; }}
+    .execution-grid {{ grid-template-columns: 1fr; }}
+}}
 
 /* TỐI ƯU HÓA CÁC TAB - ĐẢM BẢO CHỮ KHÔNG BỊ TRÀN */
 .stTabs [data-baseweb="tab-list"] {{
