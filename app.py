@@ -5308,6 +5308,34 @@ def hien_thi_dang_nhap_dang_ky():
                         except Exception as e:
                             st.error(f"⚠️ Lỗi Google: {e}")
 
+            st.markdown("### 🎯 CHỌN BÀI TẬP")
+            ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+            bai_tap = BAI_TAP[ma_bai_tap]
+            
+            # --- HIỂN THỊ VIDEO MẪU YT TRONG SIDEBAR ĐỂ ĐỐI CHIẾU ---
+            yt_link = bai_tap.get('youtube')
+            if yt_link:
+                st.sidebar.markdown(f"#### 📺 VIDEO MẪU YT (TARGET)")
+                st.sidebar.video(yt_link)
+                st.sidebar.caption("💡 Đối chiếu song song với BN")
+
+            # --- KIỂM TRA DỮ LIỆU CHUẨN ĐỘNG ---
+            ref_path = f"reference_{ma_bai_tap}.json"
+            if os.path.exists(ref_path):
+                st.sidebar.success("✅ CHẾ ĐỘ CHUẨN ĐỘNG (DYNAMIC)")
+                with open(ref_path, "r", encoding="utf-8") as rf:
+                    ref_data = json.load(rf)
+                
+                with st.sidebar.expander("📈 BIỂU ĐỒ MỤC TIÊU YT", expanded=True):
+                    df_ref = pd.DataFrame(ref_data)
+                    fig_ref = go.Figure()
+                    fig_ref.add_trace(go.Scatter(x=df_ref['time'], y=df_ref['vai'], name='Vai mẫu', line=dict(color='#00c6ff', width=2)))
+                    fig_ref.add_trace(go.Scatter(x=df_ref['time'], y=df_ref['khuyu'], name='Khuỷu mẫu', line=dict(color='#ffd700', width=2)))
+                    fig_ref.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=8, color='white'))
+                    st.plotly_chart(fig_ref, use_container_width=True)
+            else:
+                st.sidebar.info("ℹ️ **CHẾ ĐỘ TĨNH:** Hiện chưa có file mẫu `.json` cho bài tập này. \n\n💡 **Cách kích hoạt Chuẩn động (Dynamic):** Hãy tải video YouTube chuẩn lên và tích chọn ô 'Lưu làm Video Mẫu' ở dưới.")
+
 # ============================================
 # HÀM HIỂN TRỊ TAB QUẢN TRỊ VIÊN
 # ============================================
@@ -5623,31 +5651,29 @@ def main():
             ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
             bai_tap = BAI_TAP[ma_bai_tap]
             
+            # --- HIỂN THỊ VIDEO MẪU YT TRONG SIDEBAR ĐỂ ĐỐI CHIẾU ---
+            yt_link = bai_tap.get('youtube')
+            if yt_link:
+                st.sidebar.markdown(f"#### 📺 VIDEO MẪU YT (TARGET)")
+                st.sidebar.video(yt_link)
+                st.sidebar.caption("💡 Đối chiếu song song với BN")
+
             # --- KIỂM TRA DỮ LIỆU CHUẨN ĐỘNG ---
             ref_path = f"reference_{ma_bai_tap}.json"
             if os.path.exists(ref_path):
+                st.sidebar.success("✅ CHẾ ĐỘ CHUẨN ĐỘNG (DYNAMIC)")
                 with open(ref_path, "r", encoding="utf-8") as rf:
                     ref_data = json.load(rf)
                 
-                df_ref = pd.DataFrame(ref_data)
-                min_v, max_v = df_ref['vai'].min(), df_ref['vai'].max()
-                min_k, max_k = df_ref['khuyu'].min(), df_ref['khuyu'].max()
-                
-                st.markdown(f"""
-                <div style="background: rgba(0, 206, 209, 0.1); padding: 10px; border-radius: 10px; border: 1px solid #00c6ff;">
-                    <p style="margin:0; font-size:0.85rem; color:#00c6ff;">✅ <b>ĐÃ CÓ CHUẨN ĐỘNG (DYNAMIC)</b></p>
-                    <p style="margin:0; font-size:0.8rem; color:#aaa;">Phạm vi vai: {int(min_v)}° - {int(max_v)}°</p>
-                    <p style="margin:0; font-size:0.8rem; color:#aaa;">Phạm vi khuỷu: {int(min_k)}° - {int(max_k)}°</p>
-                    <p style="margin-top:5px; font-size:0.75rem; color:#888;"><i>Hệ thống sẽ so sánh từng giây theo video mẫu YouTube.</i></p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.checkbox("📈 Xem biểu đồ chuẩn", key="cb_show_ref_sidebar"):
-                    fig_ref = px.line(df_ref, x='time', y=['vai', 'khuyu'], title="Biểu đồ góc chuẩn")
+                with st.sidebar.expander("📈 BIỂU ĐỒ MỤC TIÊU YT", expanded=True):
+                    df_ref = pd.DataFrame(ref_data)
+                    fig_ref = go.Figure()
+                    fig_ref.add_trace(go.Scatter(x=df_ref['time'], y=df_ref['vai'], name='Vai mẫu', line=dict(color='#00c6ff', width=2)))
+                    fig_ref.add_trace(go.Scatter(x=df_ref['time'], y=df_ref['khuyu'], name='Khuỷu mẫu', line=dict(color='#ffd700', width=2)))
                     fig_ref.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=8, color='white'))
                     st.plotly_chart(fig_ref, use_container_width=True)
             else:
-                st.info("ℹ️ **CHẾ ĐỘ TĨNH:** Hiện chưa có file mẫu `.json` cho bài tập này. \n\n💡 **Cách kích hoạt Chuẩn động (Dynamic):** Hãy tải video YouTube chuẩn lên và tích chọn ô 'Lưu làm Video Mẫu' ở dưới.")
+                st.sidebar.info("ℹ️ **CHẾ ĐỘ TĨNH:** Hiện chưa có file mẫu `.json` cho bài tập này. \n\n💡 **Cách kích hoạt Chuẩn động (Dynamic):** Hãy tải video YouTube chuẩn lên và tích chọn ô 'Lưu làm Video Mẫu' ở dưới.")
             
         else:
             if user_role == "Bác sĩ / KTV PHCN":
