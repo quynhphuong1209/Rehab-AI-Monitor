@@ -375,58 +375,64 @@ if not st.session_state.get('logged_in'):
 # HÀM HỖ TRỢ ĐIỀU HƯỚNG TAB BẰNG JS
 # ============================================
 def chuyen_tab_bang_js(ten_tab):
-    """Sử dụng JavaScript mạnh mẽ nhất để chuyển Tab, tìm kiếm sâu trong DOM"""
-    # Lấy phần chữ cái chính để so khớp mờ
+    """Sử dụng JavaScript mạnh mẽ nhất (MutationObserver + Deep Search) để chuyển Tab"""
     import re
+    # Dọn dẹp tên tab để tìm kiếm mờ
     search_text = re.sub(r'[^\w\s]', '', ten_tab).strip().upper()
     
     js_code = f"""
     <script>
         (function() {{
             var target = "{search_text}";
-            console.log("Tab Switcher: Tìm kiếm mục tiêu -> " + target);
-            var attempts = 0;
+            console.log("Tab Switcher: Khởi động tìm kiếm -> " + target);
             
             function clean(str) {{
                 return str.replace(/[^\\w\\s]/gi, '').replace(/\\s+/g, '').toUpperCase();
             }}
             
             function tryClick() {{
-                // 1. Tìm tất cả các nút bấm Tab của Streamlit
-                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-                for (var i = 0; i < tabs.length; i++) {{
-                    if (clean(tabs[i].textContent).includes(target)) {{
-                        console.log("Tab Switcher: Đã tìm thấy nút tab -> Click!");
-                        tabs[i].click();
-                        return true;
-                    }}
-                }}
-                
-                // 2. Fallback: Tìm bất kỳ phần tử nào chứa text và tìm nút bao quanh nó
-                var allButtons = window.parent.document.querySelectorAll('button');
+                // Quét tất cả các nút bấm có thể là Tab
+                var allButtons = window.parent.document.querySelectorAll('button[data-baseweb="tab"], button');
                 for (var i = 0; i < allButtons.length; i++) {{
-                    if (clean(allButtons[i].textContent).includes(target)) {{
-                        console.log("Tab Switcher: Đã tìm thấy nút qua text -> Click!");
+                    var txt = clean(allButtons[i].textContent);
+                    if (txt === target || (txt.length > 5 && txt.includes(target))) {{
+                        console.log("Tab Switcher: Tìm thấy mục tiêu [" + allButtons[i].textContent + "] -> Click!");
                         allButtons[i].click();
                         return true;
                     }}
                 }}
-                
                 return false;
             }}
             
-            function startLoop() {{
-                if (!tryClick() && attempts < 50) {{
-                    attempts++;
-                    setTimeout(startLoop, 100);
-                }}
-            }}
+            // 1. Thử ngay lập tức
+            if (tryClick()) return;
             
-            setTimeout(startLoop, 200);
+            // 2. Nếu chưa được, dùng MutationObserver để theo dõi khi Tab xuất hiện
+            var observer = new MutationObserver(function(mutations, obs) {{
+                if (tryClick()) {{
+                    obs.disconnect();
+                }}
+            }});
+            
+            observer.observe(window.parent.document.body, {{
+                childList: true,
+                subtree: true
+            }});
+            
+            // 3. Fallback: Vẫn dùng vòng lặp nếu Observer thất bại
+            var attempts = 0;
+            var interval = setInterval(function() {{
+                attempts++;
+                if (tryClick() || attempts > 50) {{
+                    clearInterval(interval);
+                    observer.disconnect();
+                }}
+            }}, 200);
         }})();
     </script>
     """
     st.markdown(js_code, unsafe_allow_html=True)
+    st.toast(f"🚀 Đang tự động chuyển sang Tab: {ten_tab}", icon="🔄")
 
 # ============================================
 # CẤU HÌNH TRANG
