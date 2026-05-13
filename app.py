@@ -206,7 +206,7 @@ a {{color:{title_color};text-decoration:none}}
 </div>
 <div class="info-row" style="margin-top:10px"><span class="info-label">Lớp:</span><span>CNCQ KHDL1-1A</span></div>
 </div>
-<div class="footer-col wide">
+<div class="footer-col medium">
 <div class="footer-title" style="color: #0047AB;">🎯 MỤC TIÊU & CÔNG NGHỆ CỐT LÕI</div>
 <div style="background:rgba(0,114,255,0.03); padding:15px; border-radius:12px; border:1px solid rgba(0,114,255,0.1); margin-top:10px;">
     <p style="font-size:0.85rem; margin:0; line-height:1.6; opacity:0.9;">Ứng dụng <b>Computer Vision</b> và <b>Mediapipe AI</b> để số hóa quy trình giám sát phục hồi chức năng từ xa. Hệ thống tập trung vào độ chính xác cao (Accuracy), tính thời gian thực (Real-time) và bảo mật dữ liệu y tế theo chuẩn nghiên cứu khoa học.</p>
