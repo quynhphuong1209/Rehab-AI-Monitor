@@ -5933,97 +5933,87 @@ def main():
             # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
             st.markdown("---")
             
-            if user_role == "Bệnh nhân":
-                st.markdown("### 📤 TẢI LÊN VIDEO TẬP LUYỆN")
-                st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
+            if user_role == "Nghiên cứu viên":
+                with st.container(border=True):
+                    st.markdown("### 🎓 TRẠM NẠP MẪU CHUẨN (GROUND TRUTH)")
+                    st.info("💡 Bạn có thể nạp dữ liệu chuẩn trực tiếp từ YouTube để máy 'học' góc độ mẫu.")
+                    
+                    col_yt1, col_yt2 = st.columns([3, 1])
+                    with col_yt1:
+                        yt_url_input = st.text_input("🔗 Link YouTube mẫu:", value=bai_tap.get('youtube', ''), key="yt_url_ncv")
+                    with col_yt2:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        yt_auto = st.button("🤖 HỌC TỪ YOUTUBE", width="stretch", type="secondary")
+
+                    if yt_auto:
+                        if not yt_dlp:
+                            st.error("❌ Thư viện 'yt-dlp' chưa được cài đặt.")
+                        else:
+                            # TỰ ĐỘNG XỬ LÝ YOUTUBE
+                            st.session_state.processing = True
+                            st.session_state.has_data = False
+                            progress_bar = st.progress(0)
+                            
+                            with st.status("📥 Đang tải và phân tích YouTube...", expanded=True) as status:
+                                try:
+                                    if not yt_url_input:
+                                        st.error("❌ Vui lòng nhập link YouTube!")
+                                        st.stop()
+                                    
+                                    ydl_opts = {
+                                        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                                        'outtmpl': f'data/uploads/yt_{ma_bai_tap}_%(id)s.%(ext)s',
+                                        'quiet': True, 'no_warnings': True
+                                    }
+                                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                                        info = ydl.extract_info(yt_url_input, download=True)
+                                        video_path = ydl.prepare_filename(info)
+                                    
+                                    status.update(label="🎬 Bắt đầu phân tích khung xương...", state="running")
+                                    
+                                    # CHẠY XỬ LÝ AI (Ép kiểu là Reference)
+                                    start_time = time.time()
+                                    def update_progress(p):
+                                        progress_bar.progress(0.1 + p * 0.8)
+                                    
+                                    output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
+                                        video_path, bai_tap['chuan'], update_progress,
+                                        model_type="MediaPipe Full", min_confidence=0.5
+                                    )
+                                    
+                                    # LƯU MẪU CHUẨN (Ép buộc lưu)
+                                    ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == bai_tap['ten']), 'codman')
+                                    ref_path = f"reference_{ex_key}.json"
+                                    vid_ref_save = f"reference_{ex_key}.mp4"
+                                    
+                                    with open(ref_path, "w", encoding="utf-8") as rf:
+                                        json.dump(angle_data, rf, ensure_ascii=False, indent=4)
+                                    shutil.copy(output_path, vid_ref_save)
+                                    
+                                    status.update(label=f"✅ Đã nạp thành công mẫu chuẩn cho bài: {bai_tap['ten']}", state="complete")
+                                    st.success("🌟 Hệ thống đã sẵn sàng so sánh song song cho các bệnh nhân!")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ Lỗi: {e}")
+                                    st.stop()
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("### 🧪 PHÂN TÍCH VIDEO BỆNH NHÂN (RESEARCH)")
                 file_upload = st.file_uploader(
-                    "Tải lên video của bạn để AI phân tích và gửi kết quả cho Bác sĩ/NCV", 
-                    type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
-                    help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
-                    key="video_uploader_v2"
-                )
-            elif user_role == "Nghiên cứu viên":
-                st.markdown("### 🧪 PHÂN TÍCH VIDEO NGHIÊN CỨU")
-                st.info("💡 NCV có quyền truy cập sâu vào tọa độ khớp và biểu đồ nghiên cứu.")
-                file_upload = st.file_uploader(
-                    "Tải lên video thô (Raw Data)", 
+                    "Tải lên video thô để đối chiếu với mẫu trên", 
                     type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
                     key="video_uploader_ncv"
                 )
+            elif user_role == "Bệnh nhân":
+                st.markdown("### 📤 TẢI LÊN VIDEO TẬP LUYỆN")
+                st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB")
+                file_upload = st.file_uploader(
+                    "Tải lên video của bạn", 
+                    type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
+                    key="video_uploader_v2"
+                )
             else:
                 file_upload = None
-                if user_role != "Quản trị viên":
-                    st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
-            
-            # XỬ LÝ VIDEO
-            if file_upload is not None and not st.session_state.processing:
-                st.success(f"✅ Đã chọn file: {file_upload.name} ({file_upload.size / (1024*1024):.2f} MB)")
-                
-                if user_role == "Nghiên cứu viên":
-                    st.markdown("---")
-                    st.markdown("#### ⚙️ CẤU HÌNH XỬ LÝ")
-                    col_ncv_cfg1, col_ncv_cfg2 = st.columns(2)
-                    with col_ncv_cfg1:
-                        is_reference = st.checkbox("💾 Lưu làm Video Mẫu (Reference)", value=False, help="Dùng video này làm tiêu chuẩn so sánh cho các bệnh nhân sau này.")
-                    with col_ncv_cfg2:
-                        ncv_model = st.selectbox("Mô hình AI", ["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], index=0, help="Chọn mô hình AI để xử lý video này (Ghi đè tạm thời nếu cần).")
-                    
-                    btn_text = "🚀 BẮT ĐẦU PHÂN TÍCH MẪU" if is_reference else "🚀 BẮT ĐẦU XỬ LÝ AI"
-                    
-                    c_btn1, c_btn2 = st.columns(2)
-                    with c_btn1:
-                        do_process = st.button(btn_text, width="stretch", type="primary")
-                    with c_btn2:
-                        # TÍNH NĂNG MỚI: TỰ ĐỘNG HỌC TỪ YOUTUBE
-                        yt_auto = st.button("🤖 HỌC TỪ YOUTUBE", width="stretch", type="secondary", help="Tự động tải video từ link YouTube trên và nạp làm mẫu chuẩn.")
-                    
-                    if do_process or yt_auto:
-                        # Biến để kiểm soát nguồn video
-                        source_video_path = None
-                        
-                        if yt_auto:
-                            if not yt_dlp:
-                                st.error("❌ Thư viện 'yt-dlp' chưa được cài đặt. Vui lòng liên hệ kỹ thuật.")
-                            else:
-                                with st.status("📥 Đang tải video từ YouTube...", expanded=True) as status:
-                                    try:
-                                        yt_url = bai_tap.get('youtube')
-                                        if not yt_url:
-                                            st.error("❌ Bài tập này chưa có link YouTube!")
-                                            st.stop()
-                                        
-                                        ydl_opts = {
-                                            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-                                            'outtmpl': f'data/uploads/yt_{ma_bai_tap}_%(id)s.%(ext)s',
-                                            'quiet': True,
-                                            'no_warnings': True
-                                        }
-                                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                                            info = ydl.extract_info(yt_url, download=True)
-                                            source_video_path = ydl.prepare_filename(info)
-                                        
-                                        status.update(label="✅ Đã tải xong video YouTube! Bắt đầu phân tích AI...", state="complete")
-                                    except Exception as e:
-                                        st.error(f"❌ Lỗi tải YouTube: {e}")
-                                        st.stop()
-                        else:
-                            # Xử lý file upload bình thường
-                            status_text = st.empty()
-                            status_text.info("📤 Đang lưu trữ file video...")
-                            upload_dir = "data/uploads"
-                            if not os.path.exists(upload_dir): os.makedirs(upload_dir, exist_ok=True)
-                            source_video_path = os.path.join(upload_dir, f"{int(time.time())}_{file_upload.name}")
-                            with open(source_video_path, "wb") as f:
-                                f.write(file_upload.getvalue())
-
-                        # BẮT ĐẦU XỬ LÝ AI CHUNG
-                        st.session_state.processing = True
-                        st.session_state.has_data = False
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        
-                        try:
-                            video_path = source_video_path
                             
                             progress_bar.progress(0.2)
                             status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
