@@ -6014,34 +6014,51 @@ def main():
                 )
             else:
                 file_upload = None
-                            
-                            progress_bar.progress(0.2)
-                            status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
-                            
-                            start_time = time.time()
-                            
-                            def update_progress(p):
-                                elapsed = time.time() - start_time
-                                progress_bar.progress(0.2 + p * 0.7)
-                                status_text.info(f"🔄 Đang xử lý frame... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
-                            
-                            # --- NẠP DỮ LIỆU THAM CHIẾU ĐỘNG (DÀNH CHO TRANG CHỦ) ---
-                            ex_key_ncv = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == bai_tap['ten']), 'codman')
-                            ref_path_ncv = f"reference_{ex_key_ncv}.json"
-                            if os.path.exists(ref_path_ncv):
-                                try:
-                                    with open(ref_path_ncv, "r", encoding="utf-8") as rf:
-                                        bai_tap['chuan']['sequence'] = json.load(rf)
-                                except: pass
+            # XỬ LÝ VIDEO TẢI LÊN (Chung cho cả BN và NCV)
+            if file_upload is not None and not st.session_state.processing:
+                st.success(f"✅ Đã nhận file: {file_upload.name}")
+                
+                # Cấu hình riêng cho NCV khi phân tích video bệnh nhân
+                ncv_model_local = "MediaPipe Full"
+                if user_role == "Nghiên cứu viên":
+                    ncv_model_local = st.selectbox("Mô hình AI", ["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], index=0, key="ncv_model_patient")
+                
+                if st.button("🚀 BẮT ĐẦU PHÂN TÍCH AI", width="stretch", type="primary"):
+                    st.session_state.processing = True
+                    st.session_state.has_data = False
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    try:
+                        status_text.info("📤 Đang lưu trữ file video...")
+                        upload_dir = "data/uploads"
+                        if not os.path.exists(upload_dir): os.makedirs(upload_dir, exist_ok=True)
+                        video_path = os.path.join(upload_dir, f"{int(time.time())}_{file_upload.name}")
+                        with open(video_path, "wb") as f:
+                            f.write(file_upload.getvalue())
+                        
+                        progress_bar.progress(0.2)
+                        status_text.info("🎬 Đang xử lý video với AI...")
+                        
+                        start_time = time.time()
+                        def update_progress(p):
+                            elapsed = time.time() - start_time
+                            progress_bar.progress(0.2 + p * 0.7)
+                            status_text.info(f"🔄 Đang xử lý... {p*100:.0f}% | ⏱️ {elapsed:.1f}s")
+                        
+                        # Load chuẩn động nếu có
+                        ex_key_local = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == bai_tap['ten']), 'codman')
+                        ref_path_local = f"reference_{ex_key_local}.json"
+                        if os.path.exists(ref_path_local):
+                            try:
+                                with open(ref_path_local, "r", encoding="utf-8") as rf:
+                                    bai_tap['chuan']['sequence'] = json.load(rf)
+                            except: pass
 
-                            # Sử dụng cấu hình từ widget cục bộ hoặc sidebar
-                            final_model = ncv_model if ncv_model else st.session_state.get('ncv_model_type', 'MediaPipe Full')
-                            conf_ncv = st.session_state.get('ncv_confidence', 0.5)
-
-                            output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
-                                video_path, bai_tap['chuan'], update_progress,
-                                model_type=final_model, min_confidence=conf_ncv
-                            )
+                        output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
+                            video_path, bai_tap['chuan'], update_progress,
+                            model_type=ncv_model_local, min_confidence=0.5
+                        )
                             
                             progress_bar.progress(0.95)
                             status_text.info("📦 Đang hoàn tất...")
