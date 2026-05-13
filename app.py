@@ -5647,8 +5647,11 @@ def main():
             st.markdown("### 🎯 CHỌN MÔ HÌNH")
             st.selectbox("Mô hình Pose", ["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"], key="ncv_model_type")
             
+        # --- PHẦN CHỌN BÀI TẬP & ĐỐI CHIẾU (DÀNH CHO CẢ NCV & BÁC SĨ) ---
+        if user_role in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
+            st.markdown("---")
             st.markdown("### 🎯 CHỌN BÀI TẬP")
-            ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+            ma_bai_tap = st.selectbox("Bài tập đang theo dõi", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="sb_exercise_select")
             bai_tap = BAI_TAP[ma_bai_tap]
             
             # --- HIỂN THỊ VIDEO MẪU YT TRONG SIDEBAR ĐỂ ĐỐI CHIẾU ---
@@ -5673,7 +5676,8 @@ def main():
                     fig_ref.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=8, color='white'))
                     st.plotly_chart(fig_ref, use_container_width=True)
             else:
-                st.sidebar.info("ℹ️ **CHẾ ĐỘ TĨNH:** Hiện chưa có file mẫu `.json` cho bài tập này. \n\n💡 **Cách kích hoạt Chuẩn động (Dynamic):** Hãy tải video YouTube chuẩn lên và tích chọn ô 'Lưu làm Video Mẫu' ở dưới.")
+                st.sidebar.warning("🤖 **AI SẴN SÀNG SO SÁNH SONG SONG**")
+                st.sidebar.caption("Hệ thống đang sử dụng chuẩn góc mặc định. (Bạn có thể nâng cấp lên Chuẩn động bằng cách nạp video mẫu).")
             
         else:
             if user_role == "Bác sĩ / KTV PHCN":
