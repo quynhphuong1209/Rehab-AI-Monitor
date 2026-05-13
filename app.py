@@ -375,40 +375,41 @@ if not st.session_state.get('logged_in'):
 # HÀM HỖ TRỢ ĐIỀU HƯỚNG TAB BẰNG JS
 # ============================================
 def chuyen_tab_bang_js(ten_tab):
-    """Sử dụng JavaScript mạnh mẽ hơn để chuyển Tab, bỏ qua emoji để tránh lỗi so khớp"""
-    # Lấy phần chữ, bỏ qua emoji nếu có
-    search_text = ten_tab.replace("📝", "").replace("📊", "").strip()
-    
+    """Sử dụng JavaScript với cơ chế so khớp mờ (fuzzy) để tìm Tab kể cả khi có emoji lạ"""
     js_code = f"""
     <script>
         (function() {{
-            var targetText = "{search_text}".toUpperCase();
-            console.log("Đang tìm Tab: " + targetText);
+            var targetRaw = "{ten_tab}";
+            // Hàm dọn dẹp chữ: bỏ emoji, bỏ dấu, chuyển hoa
+            function cleanText(text) {{
+                return text.replace(/[^\w\s]/gi, '').replace(/\s+/g, '').toUpperCase();
+            }}
+            
+            var targetClean = cleanText(targetRaw);
+            console.log("Mục tiêu tìm kiếm (đã dọn): " + targetClean);
             var attempts = 0;
             
-            function doSwitch() {{
-                var doc = window.parent.document;
-                var tabs = doc.querySelectorAll('button[data-baseweb="tab"]');
-                var found = false;
-                
+            function searchAndClick() {{
+                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
                 for (var i = 0; i < tabs.length; i++) {{
-                    var tabText = tabs[i].textContent.toUpperCase();
-                    if (tabText.includes(targetText)) {{
-                        console.log("Đã tìm thấy Tab: " + tabText + " - Đang click...");
+                    var currentTabClean = cleanText(tabs[i].textContent);
+                    if (currentTabClean.includes(targetClean) || targetClean.includes(currentTabClean)) {{
+                        console.log("Khớp thành công: " + tabs[i].textContent);
                         tabs[i].click();
-                        found = true;
-                        break;
+                        return true;
                     }}
-                }}
-                
-                if (!found && attempts < 30) {{
+                }
+                return false;
+            }}
+            
+            function loop() {{
+                if (!searchAndClick() && attempts < 40) {{
                     attempts++;
-                    setTimeout(doSwitch, 150);
+                    setTimeout(loop, 150);
                 }}
             }}
             
-            // Chạy ngay và thử lại nếu chưa thấy
-            setTimeout(doSwitch, 300);
+            setTimeout(loop, 300);
         }})();
     </script>
     """
