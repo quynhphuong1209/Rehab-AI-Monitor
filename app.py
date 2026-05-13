@@ -5618,7 +5618,7 @@ def main():
             """, unsafe_allow_html=True)
             
             st.markdown("### 🎯 CHỌN MÔ HÌNH")
-            st.selectbox("Mô hình Pose", ["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"], key="ncv_model_type")
+            st.selectbox("Mô hình Pose", ["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], key="ncv_model_type")
             
         # --- PHẦN CHỌN BÀI TẬP & ĐỐI CHIẾU (CHỈ KHI ĐÃ ĐĂNG NHẬP) ---
         if st.session_state.get('logged_in') and user_role in ["Nghiên cứu viên", "Bác sĩ / KTV PHCN"]:
@@ -5944,7 +5944,7 @@ def main():
                     with col_ncv_cfg1:
                         is_reference = st.checkbox("💾 Lưu làm Video Mẫu (Reference)", value=False, help="Dùng video này làm tiêu chuẩn so sánh cho các bệnh nhân sau này.")
                     with col_ncv_cfg2:
-                        ncv_model = st.selectbox("Mô hình AI", ["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], index=1, help="Chọn mô hình AI để xử lý video này (Ghi đè tạm thời nếu cần).")
+                        ncv_model = st.selectbox("Mô hình AI", ["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], index=0, help="Chọn mô hình AI để xử lý video này (Ghi đè tạm thời nếu cần).")
                     
                     btn_text = "🚀 BẮT ĐẦU PHÂN TÍCH MẪU" if is_reference else "🚀 BẮT ĐẦU XỬ LÝ AI"
                     if st.button(btn_text, width="stretch", type="primary"):
