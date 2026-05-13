@@ -406,31 +406,31 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === FIX ICON SIDEBAR & RÁC CHỮ (CHỈNH SỬA CHUẨN) === */
-    /* Hiện lại nút đóng/mở sidebar */
+    /* === FIX TRIỆT ĐỂ LỖI HIỆN CHỮ TRÊN BIỂU TƯỢNG === */
+    /* Target trực tiếp các nút thu/mở sidebar */
+    [data-testid="stSidebarCollapseButton"] span,
+    [data-testid="stExpandSidebarButton"] span,
+    [data-testid="stIconMaterial"] {
+        font-family: 'Material Icons' !important;
+        color: transparent !important; /* Làm chữ rác biến mất hoàn toàn */
+        text-shadow: 0 0 0 rgba(250, 250, 250, 0.9) !important; /* Chỉ hiện bóng của icon */
+        font-size: 22px !important;
+        visibility: visible !important;
+        display: inline-block !important;
+    }
+
+    /* Đảm bảo nút bấm vẫn có kích thước chuẩn để click */
     [data-testid="stSidebarCollapseButton"], 
     [data-testid="stExpandSidebarButton"] {
-        visibility: visible !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
-    /* Ép font biểu tượng chuẩn cho các icon của Streamlit */
-    [data-testid="stIconMaterial"], 
-    .material-icons,
-    [data-testid="stSidebarCollapseButton"] span,
-    [data-testid="stExpandSidebarButton"] span {
-        font-family: 'Material Icons' !important;
-        color: rgba(250, 250, 250, 0.8) !important;
-        font-size: 24px !important;
-        text-indent: 0 !important;
-        visibility: visible !important;
-    }
-
-    /* Ẩn hoàn toàn văn bản rác nếu font chưa kịp load */
-    span[data-testid="stIconMaterial"] {
-        overflow: hidden !important;
+    /* Khử hoàn toàn khoảng cách thừa */
+    [data-testid="stSidebarCollapseButton"] div,
+    [data-testid="stExpandSidebarButton"] div {
+        background-color: transparent !important;
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
