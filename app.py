@@ -477,9 +477,16 @@ st.markdown("""
         padding-bottom: 10rem !important; /* Thêm khoảng trống cuối trang để kéo xuống hết cỡ */
     }
     
-    .top-auth-container {
-        margin-top: -30px;
-        margin-bottom: 10px;
+    .main-header h1 {
+        font-size: clamp(1.8rem, 5vw, 3rem) !important;
+    }
+    .main-header p {
+        font-size: clamp(0.9rem, 2.5vw, 1.25rem) !important;
+    }
+    .research-badge span {
+        font-size: clamp(0.7rem, 2vw, 0.9rem) !important;
+        display: inline-block;
+        max-width: 100%;
     }
 
     .google-btn {
@@ -4898,14 +4905,14 @@ def update_theme_callback():
 # GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ
 # ============================================
 def hien_thi_dang_nhap_dang_ky():
-    # Thêm nút chuyển đổi Theme ngay tại trang đăng nhập để người dùng test
-    col_t1, col_t2 = st.columns([4, 1])
-    with col_t2:
+    with st.sidebar:
+        st.markdown("### 🛠️ CẤU HÌNH GIAO DIỆN")
         current_theme = st.session_state.get('theme', 'dark')
-        t_label = "🌙 Tối" if current_theme == 'dark' else "☀️ Sáng"
+        t_label = "🌙 Chế độ Tối" if current_theme == 'dark' else "☀️ Chế độ Sáng"
         st.toggle(t_label, value=(current_theme == 'dark'), 
                   key="theme_toggle_login", 
                   on_change=lambda: st.session_state.update({"theme": "dark" if st.session_state.theme_toggle_login else "light"}))
+        st.markdown("---")
 
     # Định nghĩa màu sắc tiêu đề theo theme để tránh lỗi nền trắng chữ trắng
     is_light = st.session_state.get('theme') == 'light'
@@ -5280,38 +5287,32 @@ def main():
     def update_theme_callback():
         st.session_state.theme = 'dark' if st.session_state.theme_toggle_top else 'light'
 
-    # ==================== NẾU ĐÃ ĐĂNG NHẬP (GIAO DIỆN CHÍNH) ====================
-    # TOP BAR (LOGOUT) - Quay lại góc trên bên phải
-    st.markdown('<div class="top-auth-container" style="margin-top: -50px; margin-bottom: 20px;">', unsafe_allow_html=True)
-    t_col1, t_col2 = st.columns([1.2, 3.8])
-    
-    with t_col2:
-        inner_c1, inner_c2, inner_c3 = st.columns([1.2, 1.4, 0.8], vertical_alignment="center")
-        with inner_c1:
-            # === CHẾ ĐỘ SÁNG/TỐI (THEME TOGGLE) - TỐI ƯU TỐC ĐỘ ===
-            current_theme = st.session_state.get('theme', 'dark')
-            label = "🌙 Tối" if current_theme == 'dark' else "☀️ Sáng"
-            st.toggle(label, value=(current_theme == 'dark'), 
-                      key="theme_toggle_top", 
-                      on_change=update_theme_callback)
-            
-        with inner_c2:
-            st.markdown(f"""
-            <div style="text-align: right; line-height: 1.1;">
-                <span style="color: #888; font-size: 0.8rem;">Xin chào,</span><br>
-                <span style="color: #ffd700; font-weight: bold; font-size: 1rem;">👤 {st.session_state.user_info['username']}</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with inner_c3:
-            if st.button("🚪 Thoát", width="stretch", key="logout_top"):
-                if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
-                    st.logout()
-                # Xóa sạch session state khi đăng xuất để tránh lộ dữ liệu hoặc cache rác
-                for key in list(st.session_state.keys()):
-                    del st.session_state[key]
-                st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Chuyển các điều khiển hệ thống vào Sidebar
+    with st.sidebar:
+        st.markdown("### 🛠️ HỆ THỐNG")
+        
+        # 1. Chế độ Sáng/Tối
+        current_theme = st.session_state.get('theme', 'dark')
+        label = "🌙 Chế độ Tối" if current_theme == 'dark' else "☀️ Chế độ Sáng"
+        st.toggle(label, value=(current_theme == 'dark'), 
+                  key="theme_toggle_top", 
+                  on_change=update_theme_callback)
+        
+        # 2. Thông tin người dùng & Đăng xuất
+        st.markdown(f"""
+        <div style="background: rgba(255, 215, 0, 0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.3); margin-top: 10px; margin-bottom: 10px;">
+            <div style="font-size: 0.8rem; color: #888;">Đang đăng nhập:</div>
+            <div style="color: #ffd700; font-weight: bold; font-size: 1.1rem; margin-bottom: 10px;">👤 {st.session_state.user_info['username']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚪 Đăng xuất hệ thống", width="stretch", key="logout_sidebar", type="secondary"):
+            if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
+                st.logout()
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+        st.markdown("---")
 
     # TOP HEADER - Đã được tối ưu cho cả Light và Dark mode
     is_light = st.session_state.get('theme') == 'light'
