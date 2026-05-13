@@ -421,8 +421,14 @@ st.markdown("""
         border: none !important;
     }
 
-    /* FIX RIÊNG CHO NÚT UPLOAD TRONG TAB XANH DƯƠNG */
-    [data-testid="stFileUploader"] button:not([data-testid="stFileUploaderDeleteBtn"]) {
+    /* FIX TRIỆT ĐỂ LỖI HIỆN NHIỀU NÚT "CHỌN VIDEO" */
+    [data-testid="stFileUploader"] button {
+        display: none !important; /* Ẩn mặc định tất cả các nút rác bên trong uploader */
+    }
+
+    /* Chỉ hiện duy nhất nút "Duyệt file" chính và vẽ lại nó */
+    [data-testid="stFileUploader"] section button[data-testid="stBaseButton-secondary"] {
+        display: block !important;
         color: transparent !important;
         text-indent: -9999px !important;
         overflow: hidden !important;
@@ -431,9 +437,10 @@ st.markdown("""
         border-radius: 8px !important;
         padding: 10px 20px !important;
         min-width: 150px !important;
+        margin: 0 auto !important;
     }
 
-    [data-testid="stFileUploader"] button:not([data-testid="stFileUploaderDeleteBtn"])::after {
+    [data-testid="stFileUploader"] section button[data-testid="stBaseButton-secondary"]::after {
         content: "📂 Chọn Video" !important;
         text-indent: 0 !important;
         position: absolute !important;
@@ -446,6 +453,11 @@ st.markdown("""
         visibility: visible !important;
         width: 100% !important;
         text-align: center !important;
+    }
+
+    /* Đảm bảo nút xóa (X) vẫn hiển thị nếu cần, hoặc ẩn hẳn nếu muốn sạch sẽ */
+    [data-testid="stFileUploaderDeleteBtn"] {
+        display: none !important; 
     }
 
     /* Vẽ lại mũi tên bằng pseudo-element để không bao giờ bị hiện chữ */
@@ -5685,7 +5697,7 @@ def main():
                     btn_text = "🚀 BẮT ĐẦU XỬ LÝ AI"
                     if st.button(btn_text, width="stretch", type="primary"):
                         st.session_state.processing = True
-                        st.session_state.has_data = False
+                        st.session_state.has_data = True
                         
                         progress_bar = st.progress(0)
                         status_text = st.empty()
