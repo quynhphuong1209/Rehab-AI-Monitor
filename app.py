@@ -406,31 +406,42 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === FIX TRIỆT ĐỂ LỖI HIỆN CHỮ TRÊN BIỂU TƯỢNG === */
-    /* Target trực tiếp các nút thu/mở sidebar */
-    [data-testid="stSidebarCollapseButton"] span,
-    [data-testid="stExpandSidebarButton"] span,
-    [data-testid="stIconMaterial"] {
-        font-family: 'Material Icons' !important;
-        color: transparent !important; /* Làm chữ rác biến mất hoàn toàn */
-        text-shadow: 0 0 0 rgba(250, 250, 250, 0.9) !important; /* Chỉ hiện bóng của icon */
-        font-size: 22px !important;
-        visibility: visible !important;
-        display: inline-block !important;
+    /* === TRIỆT TIÊU HOÀN TOÀN CHỮ RÁC TRÊN NÚT SIDEBAR === */
+    /* Ẩn mọi nội dung mặc định của Streamlit bên trong nút thu/mở */
+    [data-testid="stSidebarCollapseButton"] button div,
+    [data-testid="stSidebarCollapseButton"] button span,
+    [data-testid="stExpandSidebarButton"] button div,
+    [data-testid="stExpandSidebarButton"] button span {
+        display: none !important;
     }
 
-    /* Đảm bảo nút bấm vẫn có kích thước chuẩn để click */
-    [data-testid="stSidebarCollapseButton"], 
-    [data-testid="stExpandSidebarButton"] {
+    /* Tạo biểu tượng mũi tên mới bằng CSS (không dùng font icon nên không bị rác chữ) */
+    [data-testid="stSidebarCollapseButton"] button::after {
+        content: "«";
+        color: white !important;
+        font-size: 28px !important;
+        font-weight: bold !important;
+        line-height: 1 !important;
+    }
+
+    [data-testid="stExpandSidebarButton"] button::after {
+        content: "»";
+        color: white !important;
+        font-size: 28px !important;
+        font-weight: bold !important;
+        line-height: 1 !important;
+    }
+
+    /* Đảm bảo nút luôn hiển thị và dễ bấm */
+    [data-testid="stSidebarCollapseButton"] button, 
+    [data-testid="stExpandSidebarButton"] button {
         background-color: transparent !important;
         border: none !important;
-        box-shadow: none !important;
-    }
-
-    /* Khử hoàn toàn khoảng cách thừa */
-    [data-testid="stSidebarCollapseButton"] div,
-    [data-testid="stExpandSidebarButton"] div {
-        background-color: transparent !important;
+        width: 40px !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
