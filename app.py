@@ -1875,9 +1875,9 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
         pts_vai = (hong_p, vai_p, khuyu_p)
         pts_khuyu = (vai_p, khuyu_p, co_tay_p)
 
-    # MẶC ĐỊNH LẤY TỪ CHUẨN TĨNH
-    chuan_vai = chuan["vai"]
-    chuan_khuyu = chuan["khuyu"]
+    # MẶC ĐỊNH (Nếu không có dynamic, hệ thống sẽ dùng số an toàn nhưng ưu tiên tuyệt đối dynamic)
+    chuan_vai = chuan.get("vai", 90)
+    chuan_khuyu = chuan.get("khuyu", 170)
     
     # NẾU CÓ DỮ LIỆU DYNAMIC (BẢN CHUẨN YOUTUBE) -> TÌM GÓC TẠI GIÂY TƯƠNG ỨNG
     if dynamic_chuan:
@@ -1996,27 +1996,36 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     # 1. LOAD DYNAMIC REFERENCE (BẢN CHUẨN YOUTUBE)
     dynamic_chuan = None
     try:
-        # Chuẩn hóa tên bài tập để so khớp từ khóa (không phân biệt hoa thường, bỏ khoảng trắng)
+        # Chuẩn hóa tên bài tập để so khớp từ khóa
         exercise_name_clean = exercise_name.lower().strip()
         
-        # Mặc định là codman nếu không tìm thấy từ khóa đặc trưng
+        # Mặc định là codman
         ref_name = "codman"
         
-        # Logic tìm kiếm từ khóa thông minh
-        if any(kw in exercise_name_clean for kw in ["gậy", "gay", "pulley"]):
+        # Kiểm tra từ khóa trong tên bài tập (Cực kỳ mạnh mẽ)
+        if any(kw in exercise_name_clean for kw in ["gậy", "gay", "pulley", "stick"]):
             ref_name = "gay"
-        elif any(kw in exercise_name_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband"]):
+        elif any(kw in exercise_name_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"]):
             ref_name = "day"
         elif "codman" in exercise_name_clean:
             ref_name = "codman"
             
-        ref_file = f"reference_{ref_name}.json"
+        # Sử dụng đường dẫn tuyệt đối để đảm bảo nạp được file trên mọi môi trường
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        ref_file = os.path.join(current_dir, f"reference_{ref_name}.json")
         
         if os.path.exists(ref_file):
             with open(ref_file, 'r', encoding='utf-8') as f:
                 dynamic_chuan = json.load(f)
+                # print(f"✅ Đã nạp dữ liệu chuẩn YouTube: {ref_file}") # Debug
+        else:
+            # Fallback nếu không thấy file ở đường dẫn tuyệt đối thì thử đường dẫn tương đối
+            ref_file_rel = f"reference_{ref_name}.json"
+            if os.path.exists(ref_file_rel):
+                with open(ref_file_rel, 'r', encoding='utf-8') as f:
+                    dynamic_chuan = json.load(f)
     except Exception as e:
-        print(f"Error loading dynamic reference: {e}")
+        st.error(f"⚠️ Lỗi nạp dữ liệu chuẩn YouTube: {e}")
 
     cap = cv2.VideoCapture(duong_dan_video)
     if not cap.isOpened(): raise Exception("Video Error")
@@ -2683,7 +2692,7 @@ BAI_TAP = {
         "ten": "Bài tập con lắc Codman",
         "icon": "🔄",
         "mo_ta": "Bài tập dao động tay thụ động theo quán tính, giúp thả lỏng khớp vai, giảm đau và chống dính khớp.",
-        "chuan": {"vai": 45, "khuyu": 160, "sai_so": 30},
+        "chuan": {"sai_so": 30, "kieu": "dynamic"},
         "youtube": "https://youtu.be/a4eCRWuqO40",
         "thoi_gian": 30, 
         "lan": 10,
@@ -2752,7 +2761,7 @@ BAI_TAP = {
         "ten": "Bài tập với gậy (Pulley Exercise)",
         "icon": "🏒",
         "mo_ta": "Sử dụng gậy hoặc ròng rọc hỗ trợ nâng tay và xoay vai bị hạn chế vận động.",
-        "chuan": {"vai": 90, "khuyu": 170, "sai_so": 30},
+        "chuan": {"sai_so": 30, "kieu": "dynamic"},
         "youtube": "https://www.youtube.com/watch?v=s2O8WHT5o2k",
         "thoi_gian": 45, 
         "lan": 12,
@@ -2830,7 +2839,7 @@ BAI_TAP = {
         "ten": "Bài tập với dây kháng lực (Theraband Exercise)",
         "icon": "💪",
         "mo_ta": "Tăng cường sức mạnh cơ chóp xoay và cơ quanh khớp vai bằng dây thun kháng lực.",
-        "chuan": {"vai": 60, "khuyu": 90, "sai_so": 30},
+        "chuan": {"sai_so": 30, "kieu": "dynamic"},
         "youtube": "https://www.youtube.com/watch?v=njDHDnZ6lis",
         "thoi_gian": 40, 
         "lan": 15,
