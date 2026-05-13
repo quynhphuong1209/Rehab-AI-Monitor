@@ -412,12 +412,14 @@ st.markdown("""
     /* === KHỬ CHỮ RÁC TRÊN NÚT SIDEBAR & TOOLBAR === */
     [data-testid="stSidebarCollapseButton"] button, 
     [data-testid="stExpandSidebarButton"] button,
-    [data-testid="stToolbar"] button {
+    [data-testid="stToolbar"] button,
+    [data-testid="stFileUploader"] button {
         color: transparent !important;
         text-indent: -9999px !important;
         overflow: hidden !important;
         position: relative !important;
         background: transparent !important;
+        border: none !important;
     }
 
     /* Vẽ lại mũi tên bằng pseudo-element để không bao giờ bị hiện chữ */
@@ -428,8 +430,8 @@ st.markdown("""
         left: 50% !important;
         top: 50% !important;
         transform: translate(-50%, -50%) !important;
-        color: white !important;
-        font-size: 26px !important;
+        color: #0072ff !important; /* Đổi sang màu xanh cho nổi bật */
+        font-size: 28px !important;
         font-weight: bold !important;
         visibility: visible !important;
         display: flex !important;
@@ -443,11 +445,21 @@ st.markdown("""
         content: "«" !important;
     }
 
-    /* Ẩn mọi văn bản rác lọt ra ngoài */
-    [data-testid="stSidebarCollapseButton"] *, 
-    [data-testid="stExpandSidebarButton"] *,
-    [data-testid="stToolbar"] * {
-        text-transform: none !important;
+    /* ẨN TRIỆT ĐỂ CÁC BIỂU TƯỢNG MATERIAL BỊ LỖI HIỆN CHỮ (NHƯ 'arr', 'keyboard...') */
+    [data-testid="stIconMaterial"], 
+    .stIconMaterial, 
+    span[data-testid="stIconMaterial"],
+    .st-emotion-cache-stIconMaterial {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        font-size: 0 !important;
+    }
+
+    /* Fix lỗi chữ rác trong Expander và các Widget khác */
+    [data-testid="stExpander"] [data-testid="stIconMaterial"] {
+        display: none !important;
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
