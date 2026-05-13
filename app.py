@@ -382,7 +382,7 @@ def chuyen_tab_bang_js(ten_tab):
             var targetRaw = "{ten_tab}";
             // Hàm dọn dẹp chữ: bỏ emoji, bỏ dấu, chuyển hoa
             function cleanText(text) {{
-                return text.replace(/[^\w\s]/gi, '').replace(/\s+/g, '').toUpperCase();
+                return text.replace(/[^\\w\\s]/gi, '').replace(/\\s+/g, '').toUpperCase();
             }}
             
             var targetClean = cleanText(targetRaw);
@@ -398,7 +398,7 @@ def chuyen_tab_bang_js(ten_tab):
                         tabs[i].click();
                         return true;
                     }}
-                }
+                }}
                 return false;
             }}
             
