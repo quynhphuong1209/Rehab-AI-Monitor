@@ -2429,9 +2429,8 @@ def ve_bieu_do_tron_thong_ke(tk):
     )
     return fig
 
-def ve_bieu_do_boxplot_phan_loai(df):
-    """Vẽ biểu đồ Boxplot phân loại góc theo kết quả (Đúng/Sai/Gần đúng)"""
-    # Gán nhãn cho từng frame
+def ve_bieu_do_boxplot_phan_loai_single(df, column='goc_vai', title="Góc Vai theo nhóm"):
+    """Vẽ một biểu đồ Boxplot phân loại góc cho một khớp cụ thể"""
     plot_df = df.copy()
     def classify(row):
         if row['dung']: return 'ĐÚNG (Pass)'
@@ -2440,32 +2439,19 @@ def ve_bieu_do_boxplot_phan_loai(df):
     
     plot_df['Phân loại'] = plot_df.apply(classify, axis=1)
     
-    fig = make_subplots(rows=1, cols=2, subplot_titles=("<b>Góc Vai theo nhóm</b>", "<b>Góc Khuỷu theo nhóm</b>"))
-    
+    fig = go.Figure()
     colors = {'ĐÚNG (Pass)': '#00FF00', 'GẦN ĐÚNG (Nearly)': '#FFA500', 'SAI (Fail)': '#FF4444'}
     
     for label in ['ĐÚNG (Pass)', 'GẦN ĐÚNG (Nearly)', 'SAI (Fail)']:
         subset = plot_df[plot_df['Phân loại'] == label]
         if not subset.empty:
-            # Boxplot Vai
             fig.add_trace(go.Box(
-                y=subset['goc_vai'],
+                y=subset[column],
                 name=label,
                 marker_color=colors[label],
                 boxmean='sd',
-                legendgroup=label,
                 showlegend=True
-            ), row=1, col=1)
-            
-            # Boxplot Khuỷu
-            fig.add_trace(go.Box(
-                y=subset['goc_khuyu'],
-                name=label,
-                marker_color=colors[label],
-                boxmean='sd',
-                legendgroup=label,
-                showlegend=False
-            ), row=1, col=2)
+            ))
             
     is_light = st.session_state.theme == 'light'
     chart_text_color = '#333' if is_light else 'white'
@@ -2473,28 +2459,33 @@ def ve_bieu_do_boxplot_phan_loai(df):
 
     fig.update_layout(
         title=dict(
-            text="<b>📦 PHÂN TÍCH BIÊN ĐỘ THEO NHÓM KẾT QUẢ</b>",
-            font=dict(size=18, color=chart_text_color),
+            text=f"<b>{title}</b>",
+            font=dict(size=16, color=chart_text_color),
             x=0.5
         ),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color=chart_text_color),
-        height=500,
+        height=450,
         legend=dict(
             orientation="h", 
             yanchor="bottom", 
             y=-0.2, 
             xanchor="center", 
             x=0.5,
-            font=dict(color=chart_text_color) # Ép màu chữ chú thích
+            font=dict(color=chart_text_color)
         ),
-        margin=dict(t=80, b=100)
+        margin=dict(t=60, b=80, l=20, r=20)
     )
     
     fig.update_yaxes(title_text="Góc (độ)", gridcolor=chart_grid_color)
-    
     return fig
+
+def ve_bieu_do_boxplot_phan_loai(df):
+    """Giữ lại hàm cũ nhưng gọi hàm mới để tương thích ngược nếu cần, hoặc trả về list 2 fig"""
+    fig_vai = ve_bieu_do_boxplot_phan_loai_single(df, 'goc_vai', "Góc Vai theo nhóm")
+    fig_khuyu = ve_bieu_do_boxplot_phan_loai_single(df, 'goc_khuyu', "Góc Khuỷu theo nhóm")
+    return fig_vai, fig_khuyu
 
 def lay_nhan_dinh_lam_sang(goc_vai, goc_khuyu, bt):
     """Cung cấp nhận định lâm sàng dựa trên lỗi phát hiện"""
@@ -3409,7 +3400,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     fig_vai = ve_bieu_do_goc_vai(df, bt)
     fig_khuyu = ve_bieu_do_goc_khuyu(df, bt)
     fig_hist = ve_bieu_do_histogram(df, bt)
-    fig_box = ve_bieu_do_boxplot_phan_loai(df)
+    fig_box_vai, fig_box_khuyu = ve_bieu_do_boxplot_phan_loai(df)
     fig_radar = ve_bieu_do_radar(tk)
 
     # === TAB 1: TỔNG QUAN ===
@@ -3485,7 +3476,11 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     if "📦 BIÊN ĐỘ ROM" in t_map:
         with t_map["📦 BIÊN ĐỘ ROM"]:
             st.markdown("### 📦 PHÂN TÍCH BIÊN ĐỘ VẬN ĐỘNG (ROM)")
-            st.plotly_chart(fig_box, width="stretch", key=f"box_ch_ncv_{key_suffix}")
+            col_rom1, col_rom2 = st.columns(2)
+            with col_rom1:
+                st.plotly_chart(fig_box_vai, use_container_width=True, key=f"box_vai_ncv_{key_suffix}")
+            with col_rom2:
+                st.plotly_chart(fig_box_khuyu, use_container_width=True, key=f"box_khu_ncv_{key_suffix}")
             st.info("💡 Biểu đồ Boxplot so sánh sự biến thiên và ổn định của góc khớp.")
 
     # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
