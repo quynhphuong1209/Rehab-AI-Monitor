@@ -376,17 +376,35 @@ if not st.session_state.get('logged_in'):
 # ============================================
 def chuyen_tab_bang_js(ten_tab):
     """Sử dụng JavaScript để tự động click chuyển Tab trên giao diện Streamlit với độ trễ để đảm bảo render xong"""
+    # Xử lý chuỗi tab để tránh lỗi ký tự đặc biệt
     js_code = f"""
     <script>
-        setTimeout(function() {{
-            var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"], div[data-baseweb="tab"]');
-            for (var i = 0; i < tabs.length; i++) {{
-                if (tabs[i].innerText.includes("{ten_tab}")) {{
-                    tabs[i].click();
-                    break;
+        (function() {{
+            var targetTab = "{ten_tab}";
+            var attempts = 0;
+            var maxAttempts = 20;
+            
+            function tryClickTab() {{
+                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+                var found = false;
+                
+                for (var i = 0; i < tabs.length; i++) {{
+                    var text = tabs[i].innerText || tabs[i].textContent;
+                    if (text && text.includes(targetTab)) {{
+                        tabs[i].click();
+                        found = true;
+                        break;
+                    }}
+                }}
+                
+                if (!found && attempts < maxAttempts) {{
+                    attempts++;
+                    setTimeout(tryClickTab, 200);
                 }}
             }}
-        }}, 300);
+            
+            setTimeout(tryClickTab, 500);
+        }})();
     </script>
     """
     st.markdown(js_code, unsafe_allow_html=True)
