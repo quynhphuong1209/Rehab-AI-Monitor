@@ -3166,7 +3166,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             
             # Nếu video ĐÃ CÓ metrics -> Cho phép NCV quyết định có tải lại hay không
             if 'metrics' in v and v['metrics']:
-                st.info("💡 Video này đã được phân tích trước đó.")
+                st.info("💡 Video này đã được phân tích trước đó. Để áp dụng hệ thống đối soát DYNAMIC (Bản chuẩn Youtube) mới, vui lòng chạy lại phân tích ở bên dưới.")
                 col_load1, col_load2 = st.columns(2)
                 with col_load1:
                     if st.button("🔄 TẢI LẠI KẾT QUẢ ĐÃ LƯU", width="stretch", key=f"btn_reload_cached_{key_suffix}"):
@@ -3328,12 +3328,21 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     header_title = "📊 DASHBOARD PHÂN TÍCH NHANH" if "Lite" in model_type else "📊 DASHBOARD PHÂN TÍCH LÂM SÀNG"
     if "Heavy" in model_type: header_title = "🔬 PHÂN TÍCH NGHIÊN CỨU CHUYÊN SÂU"
 
+    # Kiểm tra sự tồn tại của file reference để hiển thị trạng thái
+    ex_key_ui = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == bt['ten']), 'codman')
+    mapping_ui = {"codman": "codman", "gay": "gay", "khang_luc": "day"}
+    ref_name_ui = mapping_ui.get(ex_key_ui, ex_key_ui)
+    has_dynamic_ref = os.path.exists(f"reference_{ref_name_ui}.json")
+    
     is_light = st.session_state.theme == 'light'
     banner_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
     banner_border = "#ced4da" if is_light else "#2a5298"
     banner_shadow = "0 10px 30px rgba(0,0,0,0.05)" if is_light else "0 10px 30px rgba(0,0,0,0.5)"
     title_text_color = "#0072ff" if is_light else "#ffd700"
     desc_text_color = "#666" if is_light else "#aaa"
+
+    # Trạng thái Dynamic
+    dyn_status = f'<span style="color: #00FF00; font-weight: bold;">⚡ DYNAMIC ON</span>' if has_dynamic_ref else '<span style="color: #888;">⚪ STATIC</span>'
 
     st.markdown(f"""
     <div style="background: {banner_bg}; 
@@ -3343,7 +3352,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             <div>
                 <h2 style="color: {title_text_color}; margin: 0; font-size: 1.8rem;">{header_title}</h2>
                 <p style="color: {desc_text_color}; margin: 0.5rem 0 0 0;">
-                    🏥 Bài tập: {bt['ten']} | ⚙️ Model: <span style="color:#00c6ff;">{model_type}</span>
+                    🏥 Bài tập: {bt['ten']} | ⚙️ Model: <span style="color:#00c6ff;">{model_type}</span> | {dyn_status}
                 </p>
             </div>
             <div style="text-align: right;">
