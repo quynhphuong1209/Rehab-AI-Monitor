@@ -2018,13 +2018,17 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         if os.path.exists(ref_file):
             with open(ref_file, 'r', encoding='utf-8') as f:
                 dynamic_chuan = json.load(f)
-                # print(f"✅ Đã nạp dữ liệu chuẩn YouTube: {ref_file}") # Debug
+            if callback: callback(0.01) # Trạng thái bắt đầu
+            st.toast(f"✅ Đã nạp chuẩn YouTube: {ref_name}", icon="📊")
         else:
-            # Fallback nếu không thấy file ở đường dẫn tuyệt đối thì thử đường dẫn tương đối
-            ref_file_rel = f"reference_{ref_name}.json"
-            if os.path.exists(ref_file_rel):
-                with open(ref_file_rel, 'r', encoding='utf-8') as f:
+            # Thử tìm ở thư mục hiện tại (CWD)
+            ref_file_cwd = f"reference_{ref_name}.json"
+            if os.path.exists(ref_file_cwd):
+                with open(ref_file_cwd, 'r', encoding='utf-8') as f:
                     dynamic_chuan = json.load(f)
+                st.toast(f"✅ Đã nạp chuẩn YouTube (CWD): {ref_name}", icon="📊")
+            else:
+                st.error(f"⚠️ Không tìm thấy file chuẩn: {ref_file}. Hệ thống dùng chuẩn tĩnh tạm thời.")
     except Exception as e:
         st.error(f"⚠️ Lỗi nạp dữ liệu chuẩn YouTube: {e}")
 
