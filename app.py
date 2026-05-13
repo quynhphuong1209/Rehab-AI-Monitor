@@ -214,37 +214,9 @@ a {{color:{title_color};text-decoration:none}}
 <div style="font-size:0.95rem;opacity:0.9">Khoa học dữ liệu - Đại học Y tế Công cộng</div>
 <div style="font-size:0.95rem"><a href="mailto:thviet79@gmail.com">📧 thviet79@gmail.com</a></div>
 </div>
-<div class="execution-grid">
-<div class="execution-item">
-<span class="execution-name">1. Kim Mạnh Hưng</span>
-<span class="execution-info">MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A</span>
-<a href="mailto:2211090016@studenthuph.edu.vn" class="execution-email">📧 2211090016@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">2. Nguyễn Hải An</span>
-<span class="execution-info">MSSV: 2211090001 | Lớp: CNCQ KHDL1-1A</span>
-<a href="mailto:2211090001@studenthuph.edu.vn" class="execution-email">📧 2211090001@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">3. Phan Vân Anh</span>
-<span class="execution-info">MSSV: 2211090004 | Lớp: CNCQ KHDL1-1A</span>
-<a href="mailto:2211090004@studenthuph.edu.vn" class="execution-email">📧 2211090004@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">4. Nguyễn Thị Thanh Nga</span>
-<span class="execution-info">MSSV: 2211090027 | Lớp: CNCQ KHDL1-1A</span>
-<a href="mailto:2211090027@studenthuph.edu.vn" class="execution-email">📧 2211090027@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">5. Nguyễn Thị Thơm</span>
-<span class="execution-info">MSSV: 2216030122 | Lớp: CNCQ KTPHCN3-1A</span>
-<a href="mailto:2216030122@studenthuph.edu.vn" class="execution-email">📧 2216030122@studenthuph.edu.vn</a>
-</div>
-<div class="execution-item">
-<span class="execution-name">6. Nguyễn Thị Thu Hương</span>
-<span class="execution-info">MSSV: 2317010071 | Lớp: CNCQ YTCC22-1A</span>
-<a href="mailto:2317010071@studenthuph.edu.vn" class="execution-email">📧 2317010071@studenthuph.edu.vn</a>
-</div>
+<div style="background:rgba(0,198,255,0.03); padding:20px; border-radius:12px; border:1px dashed {title_color}; margin-top:10px;">
+    <div style="font-size:0.9rem; font-weight:bold; color:{title_color}; margin-bottom:8px;">🎯 MỤC TIÊU & CÔNG NGHỆ CỐT LÕI:</div>
+    <p style="font-size:0.85rem; margin:0; line-height:1.5;">Ứng dụng <b>Computer Vision</b> và <b>Mediapipe AI</b> để số hóa quy trình giám sát phục hồi chức năng từ xa. Hệ thống tập trung vào độ chính xác cao (Accuracy), tính thời gian thực (Real-time) và bảo mật dữ liệu y tế theo chuẩn nghiên cứu khoa học.</p>
 </div>
 </div>
 <div class="footer-col">
@@ -3960,13 +3932,25 @@ def hien_thi_tab_thong_tin_nghien_cuu():
 
 def hien_thi_tab_thanh_vien():
     st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
-    st.markdown("""
-    <div class="lecturer-card">
-        <div class="lecturer-name">TS. Trần Hồng Việt 🎓</div>
-        <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn</p>
-        <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
-    </div>
-    """, unsafe_allow_html=True)
+    gv_col1, gv_col2 = st.columns(2)
+    with gv_col1:
+        st.markdown("""
+        <div class="lecturer-card">
+            <div class="lecturer-name">TS. Trần Hồng Việt 🎓</div>
+            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn Khoa học Dữ Liệu</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+            <a href="mailto:thviet79@gmail.com" style="text-decoration:none; color:#00CED1; font-size:0.9rem;">📧 thviet79@gmail.com</a>
+        </div>
+        """, unsafe_allow_html=True)
+    with gv_col2:
+        st.markdown("""
+        <div class="lecturer-card" style="border-color: #00CED1;">
+            <div class="lecturer-name" style="color: #00CED1;">Cô Nguyễn Thị Thùy Chi 🎓</div>
+            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn Lâm Sàng</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
+            <a href="mailto:chi.ntt@huph.edu.vn" style="text-decoration:none; color:#00CED1; font-size:0.9rem;">📧 chi.ntt@huph.edu.vn</a>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -3976,18 +3960,19 @@ def hien_thi_tab_thanh_vien():
             <div class="member-name">Đinh Lê Quỳnh Phương 🛡️</div>
             <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
             <div class="member-id">MSSV: 2211090031</div>
+            <a href="mailto:2211090031@studenthuph.edu.vn" style="text-decoration:none; color:#0072ff; font-size:0.85rem;">📧 2211090031@studenthuph.edu.vn</a>
         </div>
         """, unsafe_allow_html=True)
     
     st.markdown("---")
     st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
     thanh_vien = [
-        ("Kim Mạnh Hưng 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090016"),
-        ("Nguyễn Hải An 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090001"),
-        ("Phan Vân Anh 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090004"),
-        ("Nguyễn Thị Thanh Nga 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090027"),
-        ("Nguyễn Thị Thơm 🛡️", "Thành viên nghiên cứu", "CNCQ KTPHCN3-1A", "2216030122"),
-        ("Nguyễn Thị Thu Hương 🛡️", "Thành viên nghiên cứu", "CNCQ YTCC22-1A", "2317010071"),
+        ("Kim Mạnh Hưng 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090016", "2211090016@studenthuph.edu.vn"),
+        ("Nguyễn Hải An 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090001", "2211090001@studenthuph.edu.vn"),
+        ("Phan Vân Anh 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090004", "2211090004@studenthuph.edu.vn"),
+        ("Nguyễn Thị Thanh Nga 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090027", "2211090027@studenthuph.edu.vn"),
+        ("Nguyễn Thị Thơm 🛡️", "Thành viên nghiên cứu", "CNCQ KTPHCN3-1A", "2216030122", "2216030122@studenthuph.edu.vn"),
+        ("Nguyễn Thị Thu Hương 🛡️", "Thành viên nghiên cứu", "CNCQ YTCC22-1A", "2317010071", "2317010071@studenthuph.edu.vn"),
     ]
     
     # Hiển thị grid 3 cột cho 6 thành viên
@@ -3995,7 +3980,7 @@ def hien_thi_tab_thanh_vien():
         cols = st.columns(3)
         for j in range(3):
             if i + j < len(thanh_vien):
-                ten, vai_tro, lop, mssv = thanh_vien[i+j]
+                ten, vai_tro, lop, mssv, email = thanh_vien[i+j]
                 with cols[j]:
                     st.markdown(f"""
                     <div class="member-card">
@@ -4003,6 +3988,7 @@ def hien_thi_tab_thanh_vien():
                         <div class="member-role">{vai_tro}</div>
                         <div class="member-class">{lop}</div>
                         <div class="member-id">MSSV: {mssv}</div>
+                        <a href="mailto:{email}" style="text-decoration:none; color:#00CED1; font-size:0.8rem;">📧 {email}</a>
                     </div>
                     """, unsafe_allow_html=True)
     
