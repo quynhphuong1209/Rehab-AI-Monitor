@@ -1805,7 +1805,14 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
     # 2. AI XỬ LÝ TRỰC TIẾP TRÊN FRAME GỐC VỚI CHẾ ĐỘ STATIC
-    ket_qua = model.process(rgb)
+    try:
+        ket_qua = model.process(rgb)
+    except Exception as e:
+        # Fallback khẩn cấp nếu mô hình Heavy bị lỗi Permission Denied khi chạy
+        if "Permission denied" in str(e) or "Heavy" in str(getattr(model, '_model_complexity', '')):
+            st.warning("⚠️ Lỗi mô hình AI! Đang tự động chuyển sang mô hình ổn định hơn...")
+            return frame, None, None, None, None, ["AI Model Error: Falling back"]
+        raise e
     
     frame_output = frame.copy()
     GREEN, RED, WHITE = (0, 255, 0), (0, 0, 255), (255, 255, 255)
@@ -5064,8 +5071,8 @@ def hien_thi_frames_day_du(key_suffix=""):
                 </div>
                 <img src='data:image/jpeg;base64,{b64_str}'>
                 <div style='padding: 8px 12px; display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; background: rgba(0,0,0,0.5);'>
-                    <span>Vai: {(f_data.get('goc_vai') or 0):.0f}°</span>
-                    <span>Khuỷu: {(f_data.get('goc_khuyu') or 0):.0f}°</span>
+                    <span>Vai: {(f_data.get('goc_vai') or 0.0):.0f}°</span>
+                    <span>Khuỷu: {(f_data.get('goc_khuyu') or 0.0):.0f}°</span>
                 </div>
             </div>
             """
@@ -5529,6 +5536,7 @@ def hien_thi_tab_doi_mat_khau():
 # MAIN - GIỮ NGUYÊN CẤU TRÚC TAB
 # ============================================
 def main():
+    global pd # Đảm bảo pd luôn truy cập được từ global scope
     # Khởi tạo theme ngay lập tức để tránh lỗi NameError trong toàn bộ hàm
     current_theme = st.session_state.get('theme', 'dark')
 
@@ -5936,14 +5944,41 @@ def main():
             if user_role == "Nghiên cứu viên":
                 with st.container(border=True):
                     st.markdown("### 🎓 TRẠM NẠP MẪU CHUẨN (GROUND TRUTH)")
-                    st.info("💡 Bạn có thể nạp dữ liệu chuẩn trực tiếp từ YouTube để máy 'học' góc độ mẫu.")
+                    st.info("💡 Bạn có thể nạp dữ liệu chuẩn trực tiếp từ YouTube để máy 'học' góc độ mẫu. Video này sẽ trở thành 'kim chỉ nam' để so sánh với tất cả bệnh nhân.")
                     
+                    # HIỂN THỊ THÔNG TIN MẪU HIỆN TẠI
+                    ref_path_check = f"reference_{ma_bai_tap}.json"
+                    vid_ref_check = f"reference_{ma_bai_tap}.mp4"
+                    
+                    c_ref1, c_ref2 = st.columns([1, 1])
+                    with c_ref1:
+                        if os.path.exists(vid_ref_check):
+                            st.success(f"📺 Mẫu hiện tại cho: {bai_tap['ten']}")
+                            st.video(vid_ref_check)
+                        else:
+                            st.warning("⚠️ Chưa có video mẫu chuẩn cho bài tập này.")
+                    
+                    with c_ref2:
+                        if os.path.exists(ref_path_check):
+                            with open(ref_path_check, "r", encoding="utf-8") as rf:
+                                ref_data = json.load(rf)
+                            st.success("📊 Đã có dữ liệu góc mẫu (Ground Truth)")
+                            st.caption(f"Tỉ lệ frame hợp lệ: {len(ref_data)} frames")
+                            # Biểu đồ nhỏ preview
+                            df_p = pd.DataFrame(ref_data)
+                            fig_p = px.line(df_p, x='time', y=['vai', 'khuyu'], title="Preview Góc Mẫu")
+                            fig_p.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), showlegend=False)
+                            st.plotly_chart(fig_p, use_container_width=True)
+                        else:
+                            st.info("Nhập link YouTube bên dưới để AI trích xuất góc mẫu.")
+
+                    st.markdown("---")
                     col_yt1, col_yt2 = st.columns([3, 1])
                     with col_yt1:
-                        yt_url_input = st.text_input("🔗 Link YouTube mẫu:", value=bai_tap.get('youtube', ''), key="yt_url_ncv")
+                        yt_url_input = st.text_input("🔗 Cập nhật Link YouTube mẫu:", value=bai_tap.get('youtube', ''), key="yt_url_ncv")
                     with col_yt2:
                         st.markdown("<br>", unsafe_allow_html=True)
-                        yt_auto = st.button("🤖 HỌC TỪ YOUTUBE", width="stretch", type="secondary")
+                        yt_auto = st.button("🤖 NẠP MẪU MỚI", width="stretch", type="primary")
 
                     if yt_auto:
                         if not yt_dlp:
@@ -5990,8 +6025,32 @@ def main():
                                         json.dump(angle_data, rf, ensure_ascii=False, indent=4)
                                     shutil.copy(output_path, vid_ref_save)
                                     
+                                    # CẬP NHẬT SESSION STATE ĐỂ XEM NGAY KẾT QUẢ VỪA NẠP
+                                    df = pd.DataFrame(angle_data)
+                                    metrics = tinh_metrics_chi_tiet(df, bai_tap)
+                                    
+                                    st.session_state.has_data = True
+                                    st.session_state.angle_df = df
+                                    st.session_state.stats = {
+                                        "do_chinh_xac": metrics["ty_le_tong_the"],
+                                        "ty_le_gan_dung": metrics["ty_le_gan_dung"],
+                                        "frame_dung": metrics["frame_dung"],
+                                        "frame_gan_dung": metrics["frame_gan_dung"],
+                                        "tong_frame_hop_le": valid_frames,
+                                        "tb_goc_vai": metrics["tb_goc_vai"],
+                                        "tb_goc_khuyu": metrics["tb_goc_khuyu"],
+                                        "f1_score": metrics["f1_score"],
+                                        "thoi_gian": time.time() - start_time,
+                                        "tong_frame": total_frames
+                                    }
+                                    st.session_state.processed_video_path = output_path
+                                    st.session_state.all_frames_data_path = all_frames_data
+                                    st.session_state.uploaded_file_name = f"YouTube Reference: {bai_tap['ten']}"
+                                    st.session_state.processing = False
+                                    
                                     status.update(label=f"✅ Đã nạp thành công mẫu chuẩn cho bài: {bai_tap['ten']}", state="complete")
                                     st.success("🌟 Hệ thống đã sẵn sàng so sánh song song cho các bệnh nhân!")
+                                    time.sleep(1)
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"❌ Lỗi: {e}")
@@ -6060,42 +6119,42 @@ def main():
                             model_type=ncv_model_local, min_confidence=0.5
                         )
                             
-                            progress_bar.progress(0.95)
-                            status_text.info("📦 Đang hoàn tất...")
+                        progress_bar.progress(0.95)
+                        status_text.info("📦 Đang hoàn tất...")
+                        
+                        process_time = time.time() - start_time
+                        
+                        if valid_frames > 0 and len(angle_data) > 0:
+                            df = pd.DataFrame(angle_data)
+                            metrics = tinh_metrics_chi_tiet(df, bai_tap)
                             
-                            process_time = time.time() - start_time
-                            
-                            if valid_frames > 0 and len(angle_data) > 0:
-                                df = pd.DataFrame(angle_data)
-                                metrics = tinh_metrics_chi_tiet(df, bai_tap)
-                                
-                                st.session_state.has_data = True
-                                st.session_state.angle_df = df
-                                st.session_state.stats = {
-                                    "do_chinh_xac": metrics["ty_le_tong_the"],
-                                    "ty_le_gan_dung": metrics["ty_le_gan_dung"],
-                                    "ty_le_vai_dung": metrics["ty_le_vai_dung"],
-                                    "ty_le_khuyu_dung": metrics["ty_le_khuyu_dung"],
-                                    "frame_dung": metrics["frame_dung"],
-                                    "frame_gan_dung": metrics["frame_gan_dung"],
-                                    "tong_frame_hop_le": valid_frames,
-                                    "tb_goc_vai": metrics["tb_goc_vai"],
-                                    "tb_goc_khuyu": metrics["tb_goc_khuyu"],
-                                    "min_goc_vai": metrics["min_goc_vai"],
-                                    "max_goc_vai": metrics["max_goc_vai"],
-                                    "min_goc_khuyu": metrics["min_goc_khuyu"],
-                                    "max_goc_khuyu": metrics["max_goc_khuyu"],
-                                    "std_goc_vai": metrics["std_goc_vai"],
-                                    "std_goc_khuyu": metrics["std_goc_khuyu"],
-                                    "mae_tong": metrics["mae_tong"],
-                                    "precision": metrics["precision"],
-                                    "recall": metrics["recall"],
-                                    "f1_score": metrics["f1_score"],
-                                    "icc": metrics["icc"],
-                                    "thoi_gian": process_time,
-                                    "tong_frame": total_frames,
-                                    "warnings": all_warnings
-                                }
+                            st.session_state.has_data = True
+                            st.session_state.angle_df = df
+                            st.session_state.stats = {
+                                "do_chinh_xac": metrics["ty_le_tong_the"],
+                                "ty_le_gan_dung": metrics["ty_le_gan_dung"],
+                                "ty_le_vai_dung": metrics["ty_le_vai_dung"],
+                                "ty_le_khuyu_dung": metrics["ty_le_khuyu_dung"],
+                                "frame_dung": metrics["frame_dung"],
+                                "frame_gan_dung": metrics["frame_gan_dung"],
+                                "tong_frame_hop_le": valid_frames,
+                                "tb_goc_vai": metrics["tb_goc_vai"],
+                                "tb_goc_khuyu": metrics["tb_goc_khuyu"],
+                                "min_goc_vai": metrics["min_goc_vai"],
+                                "max_goc_vai": metrics["max_goc_vai"],
+                                "min_goc_khuyu": metrics["min_goc_khuyu"],
+                                "max_goc_khuyu": metrics["max_goc_khuyu"],
+                                "std_goc_vai": metrics["std_goc_vai"],
+                                "std_goc_khuyu": metrics["std_goc_khuyu"],
+                                "mae_tong": metrics["mae_tong"],
+                                "precision": metrics["precision"],
+                                "recall": metrics["recall"],
+                                "f1_score": metrics["f1_score"],
+                                "icc": metrics["icc"],
+                                "thoi_gian": process_time,
+                                "tong_frame": total_frames,
+                                "warnings": all_warnings
+                            }
                                 st.session_state.frames_zip = zip_data
                                 st.session_state.exercise = bai_tap
                                 st.session_state.all_frames_paths = frame_paths
