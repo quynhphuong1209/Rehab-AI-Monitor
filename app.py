@@ -1795,7 +1795,7 @@ def get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, sai_so):
 # ============================================
 # XỬ LÝ FRAME - CẢI THIỆN BOX THÔNG TIN
 # ============================================
-def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
+def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
     # 1. LẤY KÍCH THƯỚC VÀ CHUYỂN ĐỔI MÀU (Không dùng padding gây lệch)
     h, w = frame.shape[:2]
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -1901,8 +1901,21 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
         pts_vai = (hong_p, vai_p, khuyu_p)
         pts_khuyu = (vai_p, khuyu_p, co_tay_p)
 
+    # MẶC ĐỊNH LẤY TỪ CHUẨN TĨNH
     chuan_vai = chuan["vai"]
     chuan_khuyu = chuan["khuyu"]
+    
+    # NẾU CÓ DỮ LIỆU DYNAMIC (BẢN CHUẨN YOUTUBE) -> TÌM GÓC TẠI GIÂY TƯƠNG ỨNG
+    if dynamic_chuan:
+        # Tìm frame gần nhất trong dynamic_chuan (dữ liệu thường theo giây)
+        # Giả sử dynamic_chuan là list các dict {'time': 0.1, 'vai': 30, 'khuyu': 175}
+        target_time = round(thoi_gian_giay, 1)
+        # Lặp để tìm (hoặc dùng nội suy nếu muốn mượt hơn, ở đây ta lấy gần đúng nhất)
+        closest_ref = min(dynamic_chuan, key=lambda x: abs(x['time'] - target_time), default=None)
+        if closest_ref:
+            chuan_vai = closest_ref['vai']
+            chuan_khuyu = closest_ref['khuyu']
+
     ss = chuan["sai_so"]
     
     vai_diff = abs(goc_vai - chuan_vai)
@@ -2001,8 +2014,26 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30):
 # ============================================
 # XỬ LÝ VIDEO
 # ============================================
-def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaPipe Full", min_confidence=0.5):
+def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaPipe Full", min_confidence=0.5, exercise_name="codman"):
     import gc
+    import json
+    
+    # 1. LOAD DYNAMIC REFERENCE (BẢN CHUẨN YOUTUBE)
+    dynamic_chuan = None
+    try:
+        # Tìm key của bài tập từ tên
+        ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == exercise_name), 'codman')
+        # Mapping tên file
+        mapping = {"codman": "codman", "gay": "gay", "khang_luc": "day"}
+        ref_name = mapping.get(ex_key, ex_key)
+        ref_file = f"reference_{ref_name}.json"
+        
+        if os.path.exists(ref_file):
+            with open(ref_file, 'r', encoding='utf-8') as f:
+                dynamic_chuan = json.load(f)
+    except Exception as e:
+        print(f"Error loading dynamic reference: {e}")
+
     cap = cv2.VideoCapture(duong_dan_video)
     if not cap.isOpened(): raise Exception("Video Error")
     
@@ -2058,7 +2089,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 
             try:
                 # Xử lý AI
-                xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(frame, model, chuan, frame_count, fps)
+                xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(frame, model, chuan, frame_count, fps, dynamic_chuan=dynamic_chuan)
             except Exception as e:
                 print(f"Error processing frame {frame_count}: {e}")
                 continue
@@ -3183,7 +3214,7 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                                 status_text.info(f"🔄 Đang xử lý... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
                             
                             output_path, _, _, angle_data, total_frames, valid_frames, _, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
-                                v['video_path'], bt['chuan'], update_progress
+                                v['video_path'], bt['chuan'], update_progress, exercise_name=v['exercise']
                             )
                             
                             process_time_man = time.time() - start_time_man
