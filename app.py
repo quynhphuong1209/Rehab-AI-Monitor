@@ -2015,22 +2015,28 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         current_dir = os.path.dirname(os.path.abspath(__file__))
         ref_file = os.path.join(current_dir, f"reference_{ref_name}.json")
         
-        if os.path.exists(ref_file):
-            with open(ref_file, 'r', encoding='utf-8') as f:
+        # CHIẾN LƯỢC TÌM KIẾM FILE ĐA TẦNG (ROBUST PATH RESOLUTION)
+        search_paths = [
+            f"reference_{ref_name}.json", # Thử ở root (Thường dùng cho Cloud)
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), f"reference_{ref_name}.json"), # Thử cùng thư mục app.py
+            os.path.join(os.getcwd(), f"reference_{ref_name}.json") # Thử thư mục làm việc hiện tại
+        ]
+        
+        ref_file_found = None
+        for p in search_paths:
+            if os.path.exists(p):
+                ref_file_found = p
+                break
+                
+        if ref_file_found:
+            with open(ref_file_found, 'r', encoding='utf-8') as f:
                 dynamic_chuan = json.load(f)
-            if callback: callback(0.01) # Trạng thái bắt đầu
-            st.toast(f"✅ Đã nạp chuẩn YouTube: {ref_name}", icon="📊")
+            if callback: callback(0.01)
+            st.toast(f"✅ Đã nạp chuẩn: {ref_name}", icon="📊")
         else:
-            # Thử tìm ở thư mục hiện tại (CWD)
-            ref_file_cwd = f"reference_{ref_name}.json"
-            if os.path.exists(ref_file_cwd):
-                with open(ref_file_cwd, 'r', encoding='utf-8') as f:
-                    dynamic_chuan = json.load(f)
-                st.toast(f"✅ Đã nạp chuẩn YouTube (CWD): {ref_name}", icon="📊")
-            else:
-                st.error(f"⚠️ Không tìm thấy file chuẩn: {ref_file}. Hệ thống dùng chuẩn tĩnh tạm thời.")
+            st.error(f"⚠️ Không tìm thấy file chuẩn: reference_{ref_name}.json ở bất kỳ thư mục nào ({search_paths})")
     except Exception as e:
-        st.error(f"⚠️ Lỗi nạp dữ liệu chuẩn YouTube: {e}")
+        st.error(f"⚠️ Lỗi nạp chuẩn: {e}")
 
     cap = cv2.VideoCapture(duong_dan_video)
     if not cap.isOpened(): raise Exception("Video Error")
