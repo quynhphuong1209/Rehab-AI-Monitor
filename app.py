@@ -3347,28 +3347,28 @@ def hien_thi_tab_phan_tich(key_suffix=""):
     is_dynamic = 'sequence' in bt['chuan'] and bt['chuan']['sequence']
 
     st.markdown(f"""
-    <div style="background: {banner_bg}; 
-                border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
-                border: 1px solid {banner_border}; box-shadow: {banner_shadow};">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h2 style="color: {title_text_color}; margin: 0; font-size: 1.8rem;">{header_title}</h2>
-                <p style="color: {desc_text_color}; margin: 0.5rem 0 0 0;">
-                    🏥 Bài tập: {bt['ten']} | ⚙️ Model: <span style="color:#00c6ff;">{model_type}</span>
-                </p>
-                {"<div style='margin-top:10px;'><span style='background:rgba(0,206,209,0.2); color:#00CED1; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:1px solid #00CED1;'>✅ CHUẨN ĐỘNG (DYNAMIC): Đã khớp mốc thời gian</span></div>" if is_dynamic else ""}
+<div style="background: {banner_bg}; 
+            border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; 
+            border: 1px solid {banner_border}; box-shadow: {banner_shadow};">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="color: {title_text_color}; margin: 0; font-size: 1.8rem;">{header_title}</h2>
+            <p style="color: {desc_text_color}; margin: 0.5rem 0 0 0;">
+                🏥 Bài tập: {bt['ten']} | ⚙️ Model: <span style="color:#00c6ff;">{model_type}</span>
+            </p>
+            {"<div style='margin-top:10px;'><span style='background:rgba(0,206,209,0.2); color:#00CED1; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:1px solid #00CED1;'>✅ CHUẨN ĐỘNG (DYNAMIC): Đã khớp mốc thời gian</span></div>" if is_dynamic else ""}
+        </div>
+        <div style="text-align: right;">
+            <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
+                <span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
             </div>
-            <div style="text-align: right;">
-                <div style="background: rgba(0,206,209,0.1); padding: 5px 15px; border-radius: 10px; border: 1px solid #00CED1;">
-                    <span style="color: #00CED1; font-weight: bold; font-size: 1.2rem;">{tk['do_chinh_xac']:.1f}% ACCURACY</span>
-                </div>
-                <div style="margin-top: 5px; font-size: 0.8rem; color: #888; text-align: right;">
-                    Model: <span style="color: #00c6ff;">{st.session_state.get('ncv_model_type', 'Default')}</span>
-                </div>
+            <div style="margin-top: 5px; font-size: 0.8rem; color: #888; text-align: right;">
+                Model: <span style="color: #00c6ff;">{st.session_state.get('ncv_model_type', 'Default')}</span>
             </div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
     # PHẦN DÀNH RIÊNG CHO NGHIÊN CỨU VIÊN KHI DÙNG HEAVY MODEL
     if st.session_state.get('ncv_model_type') == "MediaPipe Heavy" and user_role == "Nghiên cứu viên":
@@ -5606,7 +5606,7 @@ def main():
                     fig_ref.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=8, color='white'))
                     st.plotly_chart(fig_ref, use_container_width=True)
             else:
-                st.info("ℹ️ Bài tập này hiện đang dùng chuẩn góc tĩnh.")
+                st.info("ℹ️ **CHẾ ĐỘ TĨNH:** Hiện chưa có file mẫu `.json` cho bài tập này. \n\n💡 **Cách kích hoạt Chuẩn động (Dynamic):** Hãy tải video YouTube chuẩn lên và tích chọn ô 'Lưu làm Video Mẫu' ở dưới.")
             
         else:
             if user_role == "Bác sĩ / KTV PHCN":
