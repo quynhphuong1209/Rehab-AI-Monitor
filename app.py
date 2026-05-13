@@ -1986,11 +1986,20 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     # 1. LOAD DYNAMIC REFERENCE (BẢN CHUẨN YOUTUBE)
     dynamic_chuan = None
     try:
-        # Tìm key của bài tập từ tên
-        ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == exercise_name), 'codman')
-        # Mapping tên file
-        mapping = {"codman": "codman", "gay": "gay", "khang_luc": "day"}
-        ref_name = mapping.get(ex_key, ex_key)
+        # Chuẩn hóa tên bài tập để so khớp từ khóa (không phân biệt hoa thường, bỏ khoảng trắng)
+        exercise_name_clean = exercise_name.lower().strip()
+        
+        # Mặc định là codman nếu không tìm thấy từ khóa đặc trưng
+        ref_name = "codman"
+        
+        # Logic tìm kiếm từ khóa thông minh
+        if any(kw in exercise_name_clean for kw in ["gậy", "gay", "pulley"]):
+            ref_name = "gay"
+        elif any(kw in exercise_name_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband"]):
+            ref_name = "day"
+        elif "codman" in exercise_name_clean:
+            ref_name = "codman"
+            
         ref_file = f"reference_{ref_name}.json"
         
         if os.path.exists(ref_file):
