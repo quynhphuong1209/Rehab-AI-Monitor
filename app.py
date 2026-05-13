@@ -406,42 +406,47 @@ st.set_page_config(
 # ============================================
 st.markdown("""
 <style>
-    /* === TRIỆT TIÊU HOÀN TOÀN CHỮ RÁC TRÊN NÚT SIDEBAR === */
-    /* Ẩn mọi nội dung mặc định của Streamlit bên trong nút thu/mở */
-    [data-testid="stSidebarCollapseButton"] button div,
-    [data-testid="stSidebarCollapseButton"] button span,
-    [data-testid="stExpandSidebarButton"] button div,
-    [data-testid="stExpandSidebarButton"] button span {
+    /* === XÓA SẠCH CHỮ RÁC & HIỆN MŨI TÊN CHUẨN (ẢNH 2) === */
+    /* Ẩn tuyệt đối mọi thứ bên trong nút của Streamlit */
+    [data-testid="stSidebarCollapseButton"] button *,
+    [data-testid="stExpandSidebarButton"] button * {
         display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        opacity: 0 !important;
     }
 
-    /* Tạo biểu tượng mũi tên mới bằng CSS (không dùng font icon nên không bị rác chữ) */
-    [data-testid="stSidebarCollapseButton"] button::after {
-        content: "«";
-        color: white !important;
-        font-size: 28px !important;
-        font-weight: bold !important;
-        line-height: 1 !important;
-    }
-
+    /* Nút MỞ Sidebar (Hiện khi sidebar đang đóng) -> Mũi tên hướng PHẢI » */
     [data-testid="stExpandSidebarButton"] button::after {
         content: "»";
         color: white !important;
-        font-size: 28px !important;
+        font-size: 26px !important;
         font-weight: bold !important;
+        display: block !important;
         line-height: 1 !important;
     }
 
-    /* Đảm bảo nút luôn hiển thị và dễ bấm */
+    /* Nút ĐÓNG Sidebar (Hiện khi sidebar đang mở) -> Mũi tên hướng TRÁI « */
+    [data-testid="stSidebarCollapseButton"] button::after {
+        content: "«";
+        color: white !important;
+        font-size: 26px !important;
+        font-weight: bold !important;
+        display: block !important;
+        line-height: 1 !important;
+    }
+
+    /* Định dạng chung cho nút bấm */
     [data-testid="stSidebarCollapseButton"] button, 
     [data-testid="stExpandSidebarButton"] button {
         background-color: transparent !important;
         border: none !important;
-        width: 40px !important;
-        height: 40px !important;
+        width: 45px !important;
+        height: 45px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        cursor: pointer !important;
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
