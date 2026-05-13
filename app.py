@@ -375,7 +375,7 @@ if not st.session_state.get('logged_in'):
 # HÀM HỖ TRỢ ĐIỀU HƯỚNG TAB BẰNG JS
 # ============================================
 def chuyen_tab_bang_js(ten_tab):
-    """Sử dụng JavaScript mạnh mẽ nhất (MutationObserver + Deep Search) để chuyển Tab"""
+    """Sử dụng JavaScript mạnh mẽ nhất (Multi-Root + Deep Search) để chuyển Tab"""
     import re
     # Dọn dẹp tên tab để tìm kiếm mờ
     search_text = re.sub(r'[^\w\s]', '', ten_tab).strip().upper()
@@ -384,55 +384,55 @@ def chuyen_tab_bang_js(ten_tab):
     <script>
         (function() {{
             var target = "{search_text}";
-            console.log("Tab Switcher: Khởi động tìm kiếm -> " + target);
+            console.log("Tab Switcher: Tìm kiếm -> " + target);
             
             function clean(str) {{
-                return str.replace(/[^\\w\\s]/gi, '').replace(/\\s+/g, '').toUpperCase();
+                return str ? str.replace(/[^\\w\\s]/gi, '').replace(/\\s+/g, '').toUpperCase() : "";
             }}
             
             function tryClick() {{
-                // Quét tất cả các nút bấm có thể là Tab
-                var allButtons = window.parent.document.querySelectorAll('button[data-baseweb="tab"], button');
-                for (var i = 0; i < allButtons.length; i++) {{
-                    var txt = clean(allButtons[i].textContent);
-                    if (txt === target || (txt.length > 5 && txt.includes(target))) {{
-                        console.log("Tab Switcher: Tìm thấy mục tiêu [" + allButtons[i].textContent + "] -> Click!");
-                        allButtons[i].click();
-                        return true;
+                // Danh sách các "gốc" tài liệu để tìm kiếm (đề phòng iframe)
+                var roots = [document];
+                try {{ if (window.parent && window.parent.document) roots.push(window.parent.document); }} catch(e) {{}}
+                
+                for (var r = 0; r < roots.length; r++) {{
+                    var doc = roots[r];
+                    // Tìm tất cả các loại phần tử có thể là Tab
+                    var selectors = [
+                        'button[data-baseweb="tab"]',
+                        'button[role="tab"]',
+                        '[data-testid="stTab"] button',
+                        'button'
+                    ];
+                    
+                    for (var s = 0; s < selectors.length; s++) {{
+                        var elements = doc.querySelectorAll(selectors[s]);
+                        for (var i = 0; i < elements.length; i++) {{
+                            var txt = clean(elements[i].textContent);
+                            if (txt && (txt === target || (txt.length > 3 && txt.includes(target)))) {{
+                                console.log("Tab Switcher: Tìm thấy mục tiêu tại [" + selectors[s] + "] -> Click!");
+                                elements[i].click();
+                                return true;
+                            }}
+                        }}
                     }}
                 }}
                 return false;
             }}
             
-            // 1. Thử ngay lập tức
-            if (tryClick()) return;
-            
-            // 2. Nếu chưa được, dùng MutationObserver để theo dõi khi Tab xuất hiện
-            var observer = new MutationObserver(function(mutations, obs) {{
-                if (tryClick()) {{
-                    obs.disconnect();
-                }}
-            }});
-            
-            observer.observe(window.parent.document.body, {{
-                childList: true,
-                subtree: true
-            }});
-            
-            // 3. Fallback: Vẫn dùng vòng lặp nếu Observer thất bại
             var attempts = 0;
             var interval = setInterval(function() {{
                 attempts++;
-                if (tryClick() || attempts > 50) {{
+                if (tryClick() || attempts > 60) {{
                     clearInterval(interval);
-                    observer.disconnect();
+                    console.log("Tab Switcher: Kết thúc sau " + attempts + " lần thử.");
                 }}
-            }}, 200);
+            }}, 150);
         }})();
     </script>
     """
     st.markdown(js_code, unsafe_allow_html=True)
-    st.toast(f"🚀 Đang tự động chuyển sang Tab: {ten_tab}", icon="🔄")
+    st.toast(f"🔄 Đang chuyển sang: {ten_tab}", icon="🚀")
 
 # ============================================
 # CẤU HÌNH TRANG
