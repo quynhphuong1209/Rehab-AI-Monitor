@@ -30,6 +30,11 @@ import subprocess
 import hashlib
 import gc
 import streamlit.components.v1 as components
+try:
+    import yt_dlp
+except ImportError:
+    yt_dlp = None
+import shutil
 
 # --- CACHED THUMBNAIL GENERATOR ---
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -5964,22 +5969,61 @@ def main():
                         ncv_model = st.selectbox("Mô hình AI", ["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], index=0, help="Chọn mô hình AI để xử lý video này (Ghi đè tạm thời nếu cần).")
                     
                     btn_text = "🚀 BẮT ĐẦU PHÂN TÍCH MẪU" if is_reference else "🚀 BẮT ĐẦU XỬ LÝ AI"
-                    if st.button(btn_text, width="stretch", type="primary"):
+                    
+                    c_btn1, c_btn2 = st.columns(2)
+                    with c_btn1:
+                        do_process = st.button(btn_text, width="stretch", type="primary")
+                    with c_btn2:
+                        # TÍNH NĂNG MỚI: TỰ ĐỘNG HỌC TỪ YOUTUBE
+                        yt_auto = st.button("🤖 HỌC TỪ YOUTUBE", width="stretch", type="secondary", help="Tự động tải video từ link YouTube trên và nạp làm mẫu chuẩn.")
+                    
+                    if do_process or yt_auto:
+                        # Biến để kiểm soát nguồn video
+                        source_video_path = None
+                        
+                        if yt_auto:
+                            if not yt_dlp:
+                                st.error("❌ Thư viện 'yt-dlp' chưa được cài đặt. Vui lòng liên hệ kỹ thuật.")
+                            else:
+                                with st.status("📥 Đang tải video từ YouTube...", expanded=True) as status:
+                                    try:
+                                        yt_url = bai_tap.get('youtube')
+                                        if not yt_url:
+                                            st.error("❌ Bài tập này chưa có link YouTube!")
+                                            st.stop()
+                                        
+                                        ydl_opts = {
+                                            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                                            'outtmpl': f'data/uploads/yt_{ma_bai_tap}_%(id)s.%(ext)s',
+                                            'quiet': True,
+                                            'no_warnings': True
+                                        }
+                                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                                            info = ydl.extract_info(yt_url, download=True)
+                                            source_video_path = ydl.prepare_filename(info)
+                                        
+                                        status.update(label="✅ Đã tải xong video YouTube! Bắt đầu phân tích AI...", state="complete")
+                                    except Exception as e:
+                                        st.error(f"❌ Lỗi tải YouTube: {e}")
+                                        st.stop()
+                        else:
+                            # Xử lý file upload bình thường
+                            status_text = st.empty()
+                            status_text.info("📤 Đang lưu trữ file video...")
+                            upload_dir = "data/uploads"
+                            if not os.path.exists(upload_dir): os.makedirs(upload_dir, exist_ok=True)
+                            source_video_path = os.path.join(upload_dir, f"{int(time.time())}_{file_upload.name}")
+                            with open(source_video_path, "wb") as f:
+                                f.write(file_upload.getvalue())
+
+                        # BẮT ĐẦU XỬ LÝ AI CHUNG
                         st.session_state.processing = True
                         st.session_state.has_data = False
-                        
                         progress_bar = st.progress(0)
                         status_text = st.empty()
                         
                         try:
-                            status_text.info("📤 Đang lưu trữ file video...")
-                            # Tạo thư mục upload cố định
-                            upload_dir = "data/uploads"
-                            if not os.path.exists(upload_dir): os.makedirs(upload_dir, exist_ok=True)
-                            
-                            video_path = os.path.join(upload_dir, f"{int(time.time())}_{file_upload.name}")
-                            with open(video_path, "wb") as f:
-                                f.write(file_upload.getvalue())
+                            video_path = source_video_path
                             
                             progress_bar.progress(0.2)
                             status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
