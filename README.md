@@ -40,11 +40,13 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## 👩‍⚕️ Nhóm nghiên cứu
-- **Giảng viên hướng dẫn:** TS. Trần Hồng Việt
-- **Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương
-- **Thành viên nhóm NCKH:** Kim Mạnh Hưng, Nguyễn Hải An, Nguyễn Thị Thanh Nga, Phan Vân Anh, Nguyễn Thị Thơm, Nguyễn Thị Thu Hương
-- **Đơn vị:** Đại học Y tế Công cộng - Bệnh viện Đa khoa Phạm Ngọc Thạch.
+## 👨‍🏫 Nhóm thực hiện & Hướng dẫn
+- **Giảng viên hướng dẫn:** 
+  1. TS. Trần Hồng Việt (Khoa học dữ liệu)
+  2. Nguyễn Thị Thùy Chi (Lâm sàng)
+- **Chủ nhiệm đề tài:** Đinh Lê Quỳnh Phương (KHDL1-1A)
+- **Thành viên nhóm nghiên cứu:** Kim Mạnh Hưng, Nguyễn Hải An, Nguyễn Thị Thanh Nga, Phan Vân Anh, Nguyễn Thị Thơm, Nguyễn Thị Thu Hương.
+- **Đơn vị phối hợp:** Đại học Y tế Công cộng - Bệnh viện Đa khoa Phạm Ngọc Thạch.
 
 ---
 © 2025-2026 Rehab AI Monitor Team.
