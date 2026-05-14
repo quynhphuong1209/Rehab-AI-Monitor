@@ -4308,12 +4308,19 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     my_history_vids = []
     if has_ai_eval:
         all_vids = load_data(VIDEOS_FILE)
-        p_username = username if username else st.session_state.user_info['username']
         all_evals = load_data(EVALUATIONS_FILE)
-        sent_video_names = [e.get('video_name') for e in all_evals 
-                            if e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == p_username]
-        my_history_vids = [v for v in reversed(all_vids) 
-                          if v.get('username') == p_username and v.get('metrics') and v.get('video_name') in sent_video_names]
+        
+        if user_role == "Bệnh nhân":
+            p_username = username if username else st.session_state.user_info['username']
+            # Bệnh nhân thấy các video của mình đã có kết quả AI hoặc bác sĩ
+            sent_video_names = [e.get('video_name') for e in all_evals 
+                                if e.get('patient_username') == p_username]
+            my_history_vids = [v for v in reversed(all_vids) 
+                              if v.get('username') == p_username and v.get('video_name') in sent_video_names]
+        else:
+            # Bác sĩ và NCV thấy tất cả các video ĐÃ ĐƯỢC ĐÁNH GIÁ (bởi bất kỳ ai)
+            sent_video_names = [e.get('video_name') for e in all_evals]
+            my_history_vids = [v for v in reversed(all_vids) if v.get('video_name') in sent_video_names]
 
     # 2. XÁC ĐỊNH TRẠNG THÁI "CHỜ KẾT QUẢ" (FRESH SESSION)
     is_fresh_session = st.session_state.get('fresh_session', False)
@@ -4353,22 +4360,25 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
             
             # Selectbox lịch sử
             st.markdown("### 📅 XEM LẠI LỊCH SỬ TẬP LUYỆN")
+        if user_role == "Bệnh nhân":
             history_opts = [{"label": "--- Đang chờ kết quả mới (Ẩn lịch sử) ---", "val": None}] + [{"label": f"🕒 {v.get('time')} - Bài: {v.get('exercise')} (Đạt: {v.get('accuracy')}%)", "val": v} for v in my_history_vids]
+        else:
+            history_opts = [{"label": "--- Chọn một phiên tập để xem ---", "val": None}] + [{"label": f"🕒 {v.get('time')} - {v.get('full_name')} - {v.get('exercise')}", "val": v} for v in my_history_vids]
             
-            selected_opt = st.selectbox(
-                "Lựa chọn phiên tập:",
-                history_opts,
-                format_func=lambda x: x["label"],
-                key="patient_history_selector_global"
-            )
-            selected_v = selected_opt["val"]
-            
-            if selected_v:
-                # Nếu đã chọn lịch sử, hiện nút Làm mới để quay về màn hình chờ
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("🔄 LÀM MỚI (QUAY LẠI CHỜ KẾT QUẢ)", width="stretch", type="secondary"):
-                    del st.session_state['patient_history_selector_global']
-                    st.rerun()
+        selected_opt = st.selectbox(
+            "Lựa chọn phiên tập:",
+            history_opts,
+            format_func=lambda x: x["label"],
+            key="patient_history_selector_global"
+        )
+        selected_v = selected_opt["val"]
+        
+        if selected_v:
+            # Nếu đã chọn lịch sử, hiện nút Làm mới để quay về màn hình chờ
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("🔄 LÀM MỚI (QUAY LẠI CHỜ KẾT QUẢ)", width="stretch", type="secondary"):
+                del st.session_state['patient_history_selector_global']
+                st.rerun()
 
         else:
             # HIỆN KẾT QUẢ MỚI NHẤT & NÚT LÀM MỚI
@@ -4403,8 +4413,8 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
             except: pass
     
     # 4. HIỂN THỊ CÁC TAB
-    # Khôi phục lại cho Bác sĩ xem, CHỈ CÓ NCV LÀ KHÔNG XEM (vì NCV đã có tab riêng)
-    show_extra_tabs = has_ai_eval and user_role != "Nghiên cứu viên"
+    # Khôi phục lại cho Bác sĩ và NCV xem đầy đủ để đối chiếu
+    show_extra_tabs = has_ai_eval and user_role != "Quản trị viên"
     tab_labels = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
     if show_extra_tabs:
         tab_labels += ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & HÌNH ẢNH"]
@@ -6550,6 +6560,10 @@ def main():
 
     if "📊 KẾT QUẢ" in tab_map:
         with tab_map["📊 KẾT QUẢ"]:
+            hien_thi_ket_qua_cho_benh_nhan()
+    
+    if "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
+        with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]:
             hien_thi_ket_qua_cho_benh_nhan()
 
     # ==================== TAB: KHAI BÁO TRIỆU CHỨNG ====================
