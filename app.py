@@ -5853,15 +5853,21 @@ def main():
             # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
             st.markdown("---")
             
-            if not st.session_state.get('has_data'):
+            # BIẾN KIỂM TRA ĐIỀU KIỆN HIỆN UPLOADER
+            show_uploader = not st.session_state.get('has_data')
+            # Nếu là Bệnh nhân, luôn hiện uploader ở trang chủ để họ nộp bài mới
+            if user_role == "Bệnh nhân":
+                show_uploader = True
+                
+            if show_uploader:
+                if 'uploader_id' not in st.session_state:
+                    st.session_state.uploader_id = 0
+
                 if user_role == "Bệnh nhân":
                     st.markdown("### 📤 TẢI LÊN VIDEO TẬP LUYỆN")
                     st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
-                    if 'uploader_id' not in st.session_state:
-                        st.session_state.uploader_id = 0
-                    
                     file_upload = st.file_uploader(
-                        "Tải lên video của bạn để AI phân tích và gửi kết quả cho Bác sĩ/NCV", 
+                        "Tải lên video của bạn để gửi cho Bác sĩ/NCV", 
                         type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
                         help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
                         key=f"video_uploader_v{st.session_state.uploader_id}"
@@ -5879,7 +5885,7 @@ def main():
                     file_upload = None
                     if user_role != "Quản trị viên":
                         st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
-            else:
+            elif user_role != "Bệnh nhân": # Chỉ hiện thông báo "Hoàn tất" cho NCV/Bác sĩ
                 file_upload = None
                 # Nút reset thủ công - BẮT BUỘC ĐỂ TẬP BÀI MỚI
                 st.markdown("### ✅ PHÂN TÍCH HOÀN TẤT")
@@ -5899,6 +5905,8 @@ def main():
                     st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
                     st.cache_data.clear() # Xóa bộ nhớ đệm hình ảnh/biểu đồ
                     st.rerun()
+            else:
+                file_upload = None
             
             # XỬ LÝ VIDEO
             if file_upload is not None and not st.session_state.processing:
@@ -6139,6 +6147,12 @@ def main():
                         save_data(VIDEOS_FILE, video_list)
                         st.success("✅ Đã gửi video cho BÁC SĨ - KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
                         st.balloons()
+                        
+                        # RESET NGAY ĐỂ BỆNH NHÂN NỘP BÀI KHÁC
+                        st.session_state.has_data = False
+                        st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
+                        time.sleep(2)
+                        st.rerun()
 
             # === HIỆN TRẠNG THÁI ĐANG XỬ LÝ HOẶC ĐÃ CÓ KẾT QUẢ ===
             if st.session_state.processing:
