@@ -6617,9 +6617,7 @@ def main():
         with tab_map["💬 PHẢN HỒI"]:
             hien_thi_tab_phan_hoi()
 
-    if "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
-        with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]:
-            hien_thi_ket_qua_cho_benh_nhan(target_username=None)
+
 
     if "📄 PHIẾU NCKH" in tab_map:
         with tab_map["📄 PHIẾU NCKH"]:
