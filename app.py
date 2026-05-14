@@ -4403,8 +4403,10 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
             except: pass
     
     # 4. HIỂN THỊ CÁC TAB
+    # Khôi phục lại cho Bác sĩ xem, CHỈ CÓ NCV LÀ KHÔNG XEM (vì NCV đã có tab riêng)
+    show_extra_tabs = has_ai_eval and user_role != "Nghiên cứu viên"
     tab_labels = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
-    if has_ai_eval:
+    if show_extra_tabs:
         tab_labels += ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & HÌNH ẢNH"]
         
     tabs = st.tabs(tab_labels)
@@ -4470,7 +4472,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
             if is_fresh_session:
                 st.info("👆 Hãy chọn một phiên tập từ danh sách bên trên để xem nhận xét chi tiết.")
 
-    if has_ai_eval:
+    if show_extra_tabs:
         tab_charts = tabs[1]
         tab_media = tabs[2]
         
