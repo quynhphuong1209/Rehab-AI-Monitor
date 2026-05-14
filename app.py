@@ -4426,25 +4426,38 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                 with st.expander(f"{icon} Đánh giá ngày {e.get('time', 'N/A')} - Bài tập: {e.get('exercise', 'N/A')}", expanded=True):
                     c1, c2 = st.columns([1, 2.5])
                     with c1:
-                        st.markdown(f"""
-                        <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid {title_color}44;">
-                            <p style="margin:0; color:#888; font-size:0.8rem;">ĐỘ CHÍNH XÁC</p>
-                            <h2 style="margin:0; color:{title_color};">{e.get('ai_accuracy', 'N/A')}{'%' if 'ai_accuracy' in e else ''}</h2>
-                            <hr style="margin:10px 0; border:0; border-top:1px solid #333;">
-                            <h4 style="margin:0; color:{title_color};">{e.get('doctor_result', 'N/A')}</h4>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        if is_ai:
+                            acc_val = e.get('ai_accuracy', 'N/A')
+                            if isinstance(acc_val, (float, int)): acc_val = round(float(acc_val), 1)
+                            elif isinstance(acc_val, str) and acc_val.replace('.','',1).isdigit(): acc_val = round(float(acc_val), 1)
+                            
+                            st.markdown(f"""
+                            <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid {title_color}44;">
+                                <p style="margin:0; color:#888; font-size:0.8rem;">ĐỘ CHÍNH XÁC</p>
+                                <h2 style="margin:0; color:{title_color};">{acc_val}%</h2>
+                                <hr style="margin:10px 0; border:0; border-top:1px solid #333;">
+                                <h4 style="margin:0; color:{title_color};">{e.get('doctor_result', 'N/A')}</h4>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"""
+                            <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid {title_color}44;">
+                                <p style="margin:0; color:#888; font-size:0.8rem;">KẾT QUẢ ĐÁNH GIÁ</p>
+                                <h2 style="margin:0; color:{title_color}; padding: 10px 0;">{e.get('doctor_result', 'N/A')}</h2>
+                            </div>
+                            """, unsafe_allow_html=True)
                     with c2:
-                        st.markdown(f"**Nguồn:** <span style='color: {title_color}; font-weight: bold;'>{e.get('doctor_name', 'Hệ thống AI')}</span>", unsafe_allow_html=True)
+                        source_name = e.get('doctor_name')
+                        if not source_name or source_name == "Hệ thống AI" and not is_ai:
+                            source_name = "Hệ thống AI" if is_ai else "Bác sĩ, KTV"
+                            
+                        st.markdown(f"**Nguồn:** <span style='color: {title_color}; font-weight: bold;'>{source_name}</span>", unsafe_allow_html=True)
                         
                         errors = [err for err in e.get('errors', []) if "WARNING" not in err.upper()]
                         if not is_ai and errors:
                             st.markdown(f"**Lỗi sai:** {', '.join(errors)}")
                         
-                        if is_ai:
-                            st.markdown(f"**Nhận xét:** {e.get('comments', '')}. Độ chính xác: {e.get('ai_accuracy', 'N/A')}%")
-                        else:
-                            st.markdown(f"**Nhận xét:** {e.get('comments', 'Không có')}")
+                        st.markdown(f"**Nhận xét:** {e.get('comments', 'Không có')}")
                             
                         st.markdown(f"**Kế hoạch:** {e.get('plan', 'N/A')}")
                         status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã phê duyệt"
