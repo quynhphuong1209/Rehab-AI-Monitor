@@ -4206,6 +4206,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
 
 
         # Xác định các loại tab hiển thị dựa trên dữ liệu có sẵn
+        selected_v = None
         has_ai_eval = any(e.get('doctor_username') == "AI_Researcher" for e in my_evals)
         
         tab_labels = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
