@@ -417,23 +417,10 @@ st.markdown("""
     /* === TẢI FONT BIỂU TƯỢNG TRỰC TIẾP TỪ GOOGLE === */
     @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-    /* === HIỆN LẠI HỆ THỐNG STREAMLIT (HEADER, FOOTER, MENU) THEO YÊU CẦU === */
-    /*
-    header[data-testid="stHeader"], 
-    footer, 
-    #MainMenu, 
-    [data-testid="stToolbar"] {
-        display: none !important;
-        visibility: hidden !important;
-        height: 0 !important;
-        padding: 0 !important;
-    }
-    */
-
-    /* === KHỬ CHỮ RÁC TRÊN NÚT SIDEBAR (ĐÃ TẠM DỪNG ĐỂ HIỆN LẠI HỆ THỐNG) === */
-    /*
+    /* === KHỬ CHỮ RÁC TRÊN NÚT SIDEBAR & TOOLBAR === */
     [data-testid="stSidebarCollapseButton"] button, 
-    [data-testid="stExpandSidebarButton"] button {
+    [data-testid="stExpandSidebarButton"] button,
+    [data-testid="stToolbar"] button {
         color: transparent !important;
         text-indent: -9999px !important;
         overflow: hidden !important;
@@ -441,7 +428,6 @@ st.markdown("""
         background: transparent !important;
         border: none !important;
     }
-    */
 
     /* FIX TRIỆT ĐỂ LỖI HIỆN NHIỀU NÚT "CHỌN VIDEO" */
     [data-testid="stFileUploader"] button {
@@ -482,7 +468,7 @@ st.markdown("""
         display: none !important; 
     }
 
-    /*
+    /* Vẽ lại mũi tên bằng pseudo-element để không bao giờ bị hiện chữ */
     [data-testid="stSidebarCollapseButton"] button::after, 
     [data-testid="stExpandSidebarButton"] button::after {
         text-indent: 0 !important;
@@ -504,10 +490,8 @@ st.markdown("""
     [data-testid="stSidebarCollapseButton"] button::after {
         content: "«" !important;
     }
-    */
 
     /* ẨN TRIỆT ĐỂ CÁC BIỂU TƯỢNG MATERIAL BỊ LỖI HIỆN CHỮ (NHƯ 'arr', 'keyboard...') */
-    /*
     [data-testid="stIconMaterial"], 
     .stIconMaterial, 
     span[data-testid="stIconMaterial"],
@@ -518,7 +502,6 @@ st.markdown("""
         height: 0 !important;
         font-size: 0 !important;
     }
-    */
 
     /* Fix lỗi chữ rác trong Expander và các Widget khác */
     [data-testid="stExpander"] [data-testid="stIconMaterial"] {
@@ -581,7 +564,7 @@ st.markdown("""
 
     /* ĐẨY GIAO DIỆN LÊN CAO TỐI ĐA */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 2rem !important;
         padding-bottom: 10rem !important; /* Thêm khoảng trống cuối trang để kéo xuống hết cỡ */
     }
     

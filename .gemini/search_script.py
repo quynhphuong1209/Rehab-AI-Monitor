@@ -1,9 +1,16 @@
 import os
+import re
 
-search_term = "current_theme"
-file_path = r"c:\Users\dinhl\Downloads\Rehab-AI-Monitor\app.py"
+file_path = r'c:\Users\dinhl\Downloads\Rehab-AI-Monitor\app.py'
 
 with open(file_path, 'r', encoding='utf-8') as f:
-    for i, line in enumerate(f, 1):
-        if search_term in line:
-            print(f"{i}: {line.strip()}")
+    content = f.read()
+
+# Find all st.markdown blocks
+markdown_blocks = re.findall(r'st\.markdown\("""(.*?)"""', content, re.DOTALL)
+
+for i, block in enumerate(markdown_blocks):
+    if 'display: none' in block or 'visibility: hidden' in block or 'stHeader' in block or 'footer' in block:
+        print(f"Block {i} contains potential hiding CSS:")
+        print(block)
+        print("-" * 50)
