@@ -6309,8 +6309,17 @@ def main():
                             # Xác định xem đã có kết quả AI chưa để hiển thị text
                             evals_db = load_data(EVALUATIONS_FILE)
                             v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('video_name') == v.get('video_name') for e in evals_db)
+                            
+                            doc_eval = next((e for e in reversed(evals_db) if e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name')), None)
 
-                            with st.expander(f"🎬 {v['full_name']} - {v['exercise']} ({v['time']}) - {v['status']}"):
+                            display_status = v['status']
+                            if user_role == "Bác sĩ / KTV PHCN":
+                                if doc_eval:
+                                    display_status = "Đã đánh giá"
+                                else:
+                                    display_status = "Đang chờ bác sĩ đánh giá"
+
+                            with st.expander(f"🎬 {v['full_name']} - {v['exercise']} ({v['time']}) - {display_status}"):
                                 col_v1, col_v2 = st.columns([2, 1])
                                 with col_v1:
                                     if os.path.exists(v_display_path):
@@ -6332,9 +6341,7 @@ def main():
                                     st.write(f"**Trạng thái:** {v['status']}")
                                     
                                     # HIỂN THỊ ĐÁNH GIÁ CỦA BÁC SĨ (GROUND TRUTH) CHO NCV
-                                    evals_db = load_data(EVALUATIONS_FILE)
-                                    doc_eval = next((e for e in reversed(evals_db) if e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name')), None)
-                                    
+                                    # doc_eval đã được lấy ở trên
                                     if doc_eval:
                                         with st.expander("🩺 ĐÁNH GIÁ CHUYÊN MÔN (GROUND TRUTH)", expanded=True):
                                             st.success(f"**Bác sĩ:** {doc_eval.get('doctor_name', 'Bác sĩ')}")
