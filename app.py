@@ -5873,13 +5873,19 @@ def main():
                         st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
             else:
                 file_upload = None
-                # Nút reset thủ công (Nếu cần)
-                if st.button("🔄 Làm mới để tải video khác", type="secondary"):
+            else:
+                file_upload = None
+                # Nút reset thủ công - BẮT BUỘC ĐỂ TẬP BÀI MỚI
+                st.markdown("### ✅ PHÂN TÍCH HOÀN TẤT")
+                st.info("💡 Bạn đã hoàn thành bài tập này. Hãy xem kết quả ở các Tab khác.")
+                if st.button("🔄 LÀM MỚI ĐỂ TẬP BÀI KHÁC", width="stretch", type="primary"):
+                    # Xóa sạch 100% dữ liệu cũ
+                    for key in ['has_data', 'stats', 'angle_df', 'processed_video_path', 'current_df_csv_path', 'uploaded_file_name']:
+                        if key in st.session_state:
+                            st.session_state[key] = None
                     st.session_state.has_data = False
-                    st.session_state.stats = None
-                    st.session_state.angle_df = None
-                    st.session_state.processed_video_path = None
                     st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
+                    st.cache_data.clear() # Xóa bộ nhớ đệm
                     st.rerun()
             
             # XỬ LÝ VIDEO
@@ -6131,18 +6137,6 @@ def main():
             
             elif st.session_state.has_data:
                 st.success("✅ Đã có kết quả phân tích! Hãy xem các tab PHÂN TÍCH và VIDEO & ẢNH.")
-                if user_role == "Bệnh nhân":
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("🔄 TẬP TIẾP BÀI TẬP KHÁC", width="stretch", type="secondary"):
-                        # Reset để quay về màn hình upload
-                        st.session_state.has_data = False
-                        st.session_state.stats = None
-                        st.session_state.angle_df = None
-                        st.session_state.processed_video_path = None
-                        st.session_state.current_df_csv_path = None
-                        st.session_state.uploaded_file_name = None
-                        st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
-                        st.rerun()
                 st.session_state.processing = False
 
             # HIỂN THỊ DANH SÁCH VIDEO CHO BÁC SĨ & NGHIÊN CỨU VIÊN
