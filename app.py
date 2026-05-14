@@ -4306,11 +4306,13 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
             
             if my_history_vids:
                 st.markdown("### 📅 CHỌN PHIÊN TẬP ĐỂ XEM CHI TIẾT")
-                # Cho phép bệnh nhân chọn phiên tập từ lịch sử
+                # Thêm tùy chọn trống ở đầu để không tự động nạp dữ liệu cũ
+                history_options = [None] + my_history_vids
+                
                 selected_v = st.selectbox(
                     "Chọn ngày và bài tập bạn muốn xem lại:",
-                    my_history_vids,
-                    format_func=lambda x: f"🕒 {x.get('time', 'N/A')} - Bài: {x.get('exercise', 'N/A')} (Đạt: {x.get('accuracy', 0)}%)",
+                    history_options,
+                    format_func=lambda x: f"🕒 {x.get('time', 'N/A')} - Bài: {x.get('exercise', 'N/A')} (Đạt: {x.get('accuracy', 0)}%)" if x else "--- Mời bạn chọn bài tập đã lưu để xem lại ---",
                     key="patient_history_selector"
                 )
                 
@@ -4326,6 +4328,12 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                     if selected_v.get('df_path') and os.path.exists(selected_v['df_path']):
                         try: st.session_state.angle_df = pd.read_csv(selected_v['df_path'])
                         except: pass
+                elif not st.session_state.get('has_data'):
+                    # Nếu chưa chọn gì và cũng không có bài tập mới đang xử lý -> Reset sạch session state
+                    st.session_state.stats = None
+                    st.session_state.angle_df = None
+                    st.session_state.processed_video_path = None
+                    st.session_state.uploaded_file_name = None
             else:
                 st.warning("ℹ️ Bạn chưa có dữ liệu phân tích chi tiết nào được gửi từ Nghiên cứu viên.")
 
