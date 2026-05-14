@@ -5873,8 +5873,6 @@ def main():
                         st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
             else:
                 file_upload = None
-            else:
-                file_upload = None
                 # Nút reset thủ công - BẮT BUỘC ĐỂ TẬP BÀI MỚI
                 st.markdown("### ✅ PHÂN TÍCH HOÀN TẤT")
                 st.info("💡 Bạn đã hoàn thành bài tập này. Hãy xem kết quả ở các Tab khác.")
