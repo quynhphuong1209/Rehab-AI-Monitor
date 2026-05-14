@@ -6104,8 +6104,18 @@ def main():
             
             elif st.session_state.has_data:
                 st.success("✅ Đã có kết quả phân tích! Hãy xem các tab PHÂN TÍCH và VIDEO & ẢNH.")
+                if user_role == "Bệnh nhân":
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("🔄 TẬP TIẾP BÀI TẬP KHÁC", width="stretch", type="secondary"):
+                        # Reset để quay về màn hình upload
+                        st.session_state.has_data = False
+                        st.session_state.stats = None
+                        st.session_state.angle_df = None
+                        st.session_state.processed_video_path = None
+                        st.session_state.current_df_csv_path = None
+                        st.session_state.uploaded_file_name = None
+                        st.rerun()
                 st.session_state.processing = False
-                # st.rerun() # Không cần rerun ở đây vì Streamlit sẽ tự update UI
 
             # HIỂN THỊ DANH SÁCH VIDEO CHO BÁC SĨ & NGHIÊN CỨU VIÊN
             if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
