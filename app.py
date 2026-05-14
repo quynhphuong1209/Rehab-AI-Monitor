@@ -4328,6 +4328,20 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                         except: pass
                     selected_v = latest
 
+                    # Nút LÀM MỚI hiện ngay dưới kết quả
+                    st.markdown("---")
+                    if st.button("🔄 LÀM MỚI ĐỂ TẬP BÀI KHÁC", width="stretch", type="primary", key="btn_lam_moi_bn"):
+                        for key in ['has_data', 'stats', 'angle_df', 'processed_video_path',
+                                    'current_df_csv_path', 'uploaded_file_name', 'all_frames_data_path',
+                                    'processing', 'temp_folder', 'zip_data', 'frame_paths', 'active_video_name']:
+                            if key in st.session_state:
+                                st.session_state[key] = None
+                        st.session_state.has_data = False
+                        st.session_state.fresh_session = True
+                        st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
+                        st.cache_data.clear()
+                        st.rerun()
+
                     with tab_charts:
                         st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI")
                         hien_thi_tab_phan_tich(key_suffix="pat_eval")
@@ -5918,27 +5932,6 @@ def main():
                     file_upload = None
                     if user_role != "Quản trị viên":
                         st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
-            elif user_role != "Bệnh nhân": # Chỉ hiện thông báo "Hoàn tất" cho NCV/Bác sĩ
-                file_upload = None
-                # Nút reset thủ công - BẮT BUỘC ĐỂ TẬP BÀI MỚI
-                st.markdown("### ✅ PHÂN TÍCH HOÀN TẤT")
-                st.info("💡 Bạn đã hoàn thành bài tập này. Hãy xem kết quả ở các Tab khác.")
-                if st.button("🔄 LÀM MỚI ĐỂ TẬP BÀI KHÁC", width="stretch", type="primary"):
-                    # Xóa sạch 100% dữ liệu của phiên tập hiện tại
-                    keys_to_clear = [
-                        'has_data', 'stats', 'angle_df', 'processed_video_path', 
-                        'current_df_csv_path', 'uploaded_file_name', 'all_frames_data_path',
-                        'processing', 'temp_folder', 'zip_data', 'frame_paths', 'active_video_name'
-                    ]
-                    for key in keys_to_clear:
-                        if key in st.session_state:
-                            st.session_state[key] = None
-                    
-                    st.session_state.has_data = False
-                    st.session_state.fresh_session = True  # Chuyển sang chế độ lịch sử
-                    st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
-                    st.cache_data.clear()
-                    st.rerun()
             else:
                 file_upload = None
             
