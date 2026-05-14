@@ -21,10 +21,10 @@ Hệ thống giúp tự động hóa việc giám sát và đánh giá các bài
 
 ## 🗺️ Cấu trúc Tab Điều hướng (Role-based)
 Hệ thống tự động thay đổi cấu trúc dựa trên vai trò người dùng:
-- **Bệnh nhân:** Tập luyện, xem kết quả bác sĩ, khai báo triệu chứng (VAS), xem lịch nhắc nhở và thông tin NCKH.
-- **Bác sĩ / KTV:** Quản lý danh sách BN, thực hiện đánh giá chuyên môn lâm sàng, xem kết quả AI hỗ trợ chẩn đoán.
-- **Nghiên cứu viên:** Phân tích sâu tọa độ AI, cấu hình mô hình, xuất dữ liệu CSV/ZIP và quản lý tập dữ liệu.
-- **Quản trị viên:** Quản lý tài khoản toàn hệ thống, dọn dẹp cơ sở dữ liệu và bảo trì runtime.
+- **Bệnh nhân:** Tập luyện, xem nhận xét từ Bác sĩ & AI, xem lịch sử tiến triển, khai báo VAS và theo dõi lịch nhắc nhở.
+- **Bác sĩ / KTV:** Quản lý BN, thực hiện đánh giá lâm sàng (Ground Truth), đối chiếu kết quả AI để đưa ra phác đồ điều trị.
+- **Nghiên cứu viên:** Phân tích sâu dữ liệu kỹ thuật, xem kết quả lâm sàng của Bác sĩ để hiệu chỉnh mô hình AI, quản lý Dataset.
+- **Quản trị viên:** Quản lý tài khoản, bảo trì hệ thống và dọn dẹp cơ sở dữ liệu.
 
 ## 🛠️ Công nghệ sử dụng
 - **AI Core:** MediaPipe (Pose), OpenCV, FFmpeg (Xử lý đa định dạng video MOV/MP4)

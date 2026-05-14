@@ -31,8 +31,8 @@ Hệ thống đã đạt đến độ hoàn thiện cao nhất (Production-ready
 ## 3. PHÂN TÍCH LUỒNG XỬ LÝ DỮ LIỆU LÂM SÀNG
 1. **Input:** Thu thập video (Webcam/Upload) và triệu chứng VAS từ bệnh nhân.
 2. **AI Processing:** Trích xuất khung xương, tính toán độ chính xác và gán nhãn Đúng/Sai/Gần đúng.
-3. **Clinical Integration:** Bác sĩ nhận dữ liệu tổng hợp -> Thực hiện đánh giá lâm sàng -> Hệ thống ghi nhận kết luận vào hồ sơ điện tử JSON.
-4. **Feedback Loop:** Bệnh nhân nhận kết quả phản hồi tức thì về kỹ thuật tập luyện và kế hoạch điều trị từ bác sĩ.
+3. **Clinical Integration:** Bác sĩ nhận dữ liệu tổng hợp -> Đánh giá lâm sàng (Ground Truth) -> Hệ thống đồng bộ kết quả cho cả BN và NCV.
+4. **Research Feedback Loop:** Nghiên cứu viên đối chiếu nhận xét của Bác sĩ với thông số AI để tối ưu hóa thuật toán và độ chính xác của mô hình.
 
 ---
 
