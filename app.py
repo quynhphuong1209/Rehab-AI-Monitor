@@ -632,16 +632,20 @@ if st.session_state.get('theme') == 'dark':
             color: white !important;
         }
 
-        /* Ép nền ứng dụng */
+        /* Ép nền ứng dụng (ĐÃ TẮT THEO YÊU CẦU) */
+        /*
         .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainViewContainer"] {
             background-color: #0d0d1a !important;
             color: white !important;
         }
+        */
         
-        /* Ép nền Sidebar */
+        /* Ép nền Sidebar (ĐÃ TẮT THEO YÊU CẦU) */
+        /*
         [data-testid="stSidebar"], [data-testid="stSidebarContent"] {
             background-color: #1a1a2e !important;
         }
+        */
         
         /* Ép nền Header */
         [data-testid="stHeader"] {
