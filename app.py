@@ -5852,7 +5852,8 @@ def main():
                     file_upload = st.file_uploader(
                         "Tải lên video thô (Raw Data)", 
                         type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
-                        key="video_uploader_ncv"
+                        help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
+                        key=f"video_uploader_ncv_v{st.session_state.uploader_id}"
                     )
                 else:
                     file_upload = None
@@ -5863,6 +5864,10 @@ def main():
                 st.success("✅ Video đã được tải lên và phân tích thành công!")
                 if st.button("🔄 Tải video khác", type="secondary"):
                     st.session_state.has_data = False
+                    st.session_state.stats = None
+                    st.session_state.angle_df = None
+                    st.session_state.processed_video_path = None
+                    st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
                     st.rerun()
             
             # XỬ LÝ VIDEO
