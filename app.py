@@ -432,6 +432,45 @@ st.markdown("""
         padding-top: 4rem !important;
     }
 
+    /* === STYLE HEADER & NÚT BẤM THÍCH ỨNG THEO CHỦ ĐỀ (THEME-AWARE) === */
+    [data-testid="stHeader"] {
+        background-color: var(--background-color) !important;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.1) !important;
+        color: var(--text-color) !important;
+    }
+
+    /* Style các nút hệ thống (Sidebar toggle, Toolbar, Menu) */
+    [data-testid="stToolbar"] button,
+    [data-testid="stSidebarCollapseButton"] button,
+    [data-testid="stExpandSidebarButton"] button {
+        border: 1px solid rgba(128, 128, 128, 0.2) !important;
+        border-radius: 8px !important;
+        background: rgba(128, 128, 128, 0.05) !important;
+        color: var(--text-color) !important;
+        padding: 4px 10px !important;
+        margin-left: 5px !important;
+        transition: all 0.2s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 32px !important;
+    }
+
+    [data-testid="stToolbar"] button:hover,
+    [data-testid="stSidebarCollapseButton"] button:hover,
+    [data-testid="stExpandSidebarButton"] button:hover {
+        background: rgba(128, 128, 128, 0.1) !important;
+        border-color: rgba(128, 128, 128, 0.3) !important;
+        transform: translateY(-1px);
+    }
+
+    /* Đảm bảo icon bên trong nút đổi màu theo theme */
+    [data-testid="stToolbar"] button svg,
+    [data-testid="stSidebarCollapseButton"] button svg,
+    [data-testid="stExpandSidebarButton"] button svg {
+        fill: var(--text-color) !important;
+    }
+
     /* FIX TRIỆT ĐỂ LỖI HIỆN NHIỀU NÚT "CHỌN VIDEO" */
     [data-testid="stFileUploader"] button {
         display: none !important; /* Ẩn mặc định tất cả các nút rác bên trong uploader */
@@ -647,42 +686,12 @@ if st.session_state.get('theme') == 'dark':
         }
         */
         
-        /* Ép nền Header trong suốt */
-        [data-testid="stHeader"] {
-            background-color: transparent !important;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-        }
-
-        /* STYLE CÁC NÚT HỆ THỐNG (SIDEBAR TOGGLE, TOOLBAR, MENU) GIỐNG ẢNH 2 */
-        [data-testid="stToolbar"] button,
-        [data-testid="stSidebarCollapseButton"] button,
-        [data-testid="stExpandSidebarButton"] button {
-            border: 1px solid rgba(0, 0, 0, 0.1) !important;
-            border-radius: 8px !important;
-            background: rgba(0, 0, 0, 0.03) !important;
-            color: #333 !important;
-            padding: 4px 10px !important;
-            margin-left: 5px !important;
-            transition: all 0.2s ease !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            height: 32px !important;
-        }
-
-        [data-testid="stToolbar"] button:hover,
-        [data-testid="stSidebarCollapseButton"] button:hover,
-        [data-testid="stExpandSidebarButton"] button:hover {
-            background: rgba(0, 0, 0, 0.08) !important;
-            border-color: rgba(0, 0, 0, 0.2) !important;
-            transform: translateY(-1px);
-        }
-
-        /* Đảm bảo các icon bên trong nút có màu đen/xám để dễ nhìn trên nền sáng */
-        [data-testid="stToolbar"] button svg,
-        [data-testid="stSidebarCollapseButton"] button svg,
-        [data-testid="stExpandSidebarButton"] button svg {
-            fill: #333 !important;
+        /* Ép nền Header trong suốt (ĐÃ CHUYỂN RA NGOÀI ĐỂ TỰ ĐỘNG THEO THEME) */
+        
+        /* Đảm bảo văn bản luôn trắng trong chế độ tối (Chỉ áp dụng khi session_state là dark) */
+        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div, small {
+            color: #ffffff !important;
+            text-shadow: none !important;
         }
         
         /* Đảm bảo văn bản luôn trắng trong chế độ tối */
