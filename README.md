@@ -24,7 +24,7 @@ Hệ thống tự động thay đổi cấu trúc dựa trên vai trò người 
 - **Bệnh nhân:** Tập luyện, xem nhận xét từ Bác sĩ & AI, xem lịch sử tiến triển, khai báo VAS và theo dõi lịch nhắc nhở.
 - **Bác sĩ / KTV:** Quản lý BN, thực hiện đánh giá lâm sàng (Ground Truth), đối chiếu kết quả AI để đưa ra phác đồ điều trị.
 - **Nghiên cứu viên:** Phân tích sâu dữ liệu kỹ thuật, xem kết quả lâm sàng của Bác sĩ để hiệu chỉnh mô hình AI, quản lý Dataset.
-- **Quản trị viên:** Quản lý tài khoản, bảo trì hệ thống và dọn dẹp cơ sở dữ liệu.
+- **Quản trị viên:** Quản lý tài khoản, bảo trì hệ thống, dọn dẹp cơ sở dữ liệu và theo dõi Nhật ký hoạt động toàn hệ thống (Log).
 
 ## 🛠️ Công nghệ sử dụng
 - **AI Core:** MediaPipe (Pose), OpenCV, FFmpeg (Xử lý đa định dạng video MOV/MP4)
