@@ -4189,38 +4189,128 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
         my_evals = [e for e in evals if e['patient_username'] == target_username]
         username = target_username
     else:
-        # Nếu không có target_username, mặc định lấy user hiện tại (cho BN) 
-        # hoặc lấy tất cả (cho NCV)
         if user_role == "Bệnh nhân":
             username = st.session_state.user_info['username']
             my_evals = [e for e in evals if e['patient_username'] == username]
         else:
-            # Cho NCV: Lấy tất cả đánh giá
             my_evals = evals
-            username = None # Sẽ lọc theo từng record trong loop
+            username = None 
     
-    # Hiển thị nếu có bất kỳ đánh giá nào (từ Bác sĩ hoặc AI/NCV)
-    if not my_evals:
-        st.info("🕒 Kết quả đánh giá chuyên môn của bạn đang được xử lý. Vui lòng quay lại sau khi Bác sĩ hoặc Nhóm Nghiên cứu hoàn tất đánh giá.")
-    else:
+    has_ai_eval = any(e.get('doctor_username') == "AI_Researcher" for e in my_evals)
+    
+    # 1. TẢI DỮ LIỆU LỊCH SỬ VIDEO ĐÃ ĐƯỢC PHÂN TÍCH
+    my_history_vids = []
+    if has_ai_eval:
+        all_vids = load_data(VIDEOS_FILE)
+        p_username = username if username else st.session_state.user_info['username']
+        all_evals = load_data(EVALUATIONS_FILE)
+        sent_video_names = [e.get('video_name') for e in all_evals 
+                            if e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == p_username]
+        my_history_vids = [v for v in reversed(all_vids) 
+                          if v.get('username') == p_username and v.get('metrics') and v.get('video_name') in sent_video_names]
 
+    # 2. XÁC ĐỊNH TRẠNG THÁI "CHỜ KẾT QUẢ" (FRESH SESSION)
+    is_fresh_session = st.session_state.get('fresh_session', False)
+    
+    # AUTO-LOAD: nếu video vừa nộp đã có kết quả
+    if is_fresh_session and st.session_state.get('active_video_name'):
+        if my_history_vids and my_history_vids[0].get('video_name') == st.session_state.get('active_video_name'):
+            st.session_state.fresh_session = False
+            is_fresh_session = False
+            st.session_state.active_video_name = None
 
-        # Xác định các loại tab hiển thị dựa trên dữ liệu có sẵn
-        selected_v = None
-        has_ai_eval = any(e.get('doctor_username') == "AI_Researcher" for e in my_evals)
-        
-        tab_labels = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
-        if has_ai_eval:
-            tab_labels += ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & HÌNH ẢNH"]
+    selected_v = None
+
+    # 3. HIỂN THỊ PHẦN ĐẦU (THÔNG BÁO HOẶC NÚT LÀM MỚI) & CHỌN LỊCH SỬ
+    if my_history_vids:
+        if is_fresh_session:
+            # Lấy giá trị của selectbox (nếu có)
+            current_selection = st.session_state.get('patient_history_selector_global')
+            is_viewing_history = current_selection is not None and current_selection.get('val') is not None
             
-        tabs = st.tabs(tab_labels)
-        tab_eval = tabs[0]
-        if has_ai_eval:
-            tab_charts = tabs[1]
-            tab_media = tabs[2]
+            # Chỉ hiện giao diện chờ đợi nếu CHƯA chọn xem lịch sử
+            if not is_viewing_history:
+                st.markdown("""
+                <div style="background: linear-gradient(135deg, rgba(0,114,255,0.08) 0%, rgba(0,198,255,0.08) 100%);
+                    border: 1px solid rgba(0,198,255,0.3); border-left: 5px solid #00c6ff; border-radius: 16px;
+                    padding: 28px 24px; text-align: center; margin: 0 0 20px 0;">
+                    <div style="font-size: 3rem; margin-bottom: 12px;">⏳</div>
+                    <h3 style="color: #00c6ff; margin: 0 0 10px 0; font-size: 1.3rem;">
+                        Đang chờ Nghiên cứu viên gửi kết quả bài tập mới
+                    </h3>
+                    <p style="color: #aaa; margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                        Bạn đã gửi video tập luyện. Nghiên cứu viên (NCV) đang phân tích và sẽ gửi kết quả AI cho bạn sớm nhất có thể.<br>
+                        <span style="color: #ffd700;">💡 Trong lúc chờ, bạn có thể xem lại lịch sử tập luyện bên dưới.</span>
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Selectbox lịch sử
+            st.markdown("### 📅 XEM LẠI LỊCH SỬ TẬP LUYỆN")
+            history_opts = [{"label": "--- Đang chờ kết quả mới (Ẩn lịch sử) ---", "val": None}] + [{"label": f"🕒 {v.get('time')} - Bài: {v.get('exercise')} (Đạt: {v.get('accuracy')}%)", "val": v} for v in my_history_vids]
+            
+            selected_opt = st.selectbox(
+                "Lựa chọn phiên tập:",
+                history_opts,
+                format_func=lambda x: x["label"],
+                key="patient_history_selector_global"
+            )
+            selected_v = selected_opt["val"]
+            
+            if selected_v:
+                # Nếu đã chọn lịch sử, hiện nút Làm mới để quay về màn hình chờ
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("🔄 LÀM MỚI (QUAY LẠI CHỜ KẾT QUẢ)", width="stretch", type="secondary"):
+                    del st.session_state['patient_history_selector_global']
+                    st.rerun()
 
-        with tab_eval:
-            for e in reversed(my_evals):
+        else:
+            # HIỆN KẾT QUẢ MỚI NHẤT & NÚT LÀM MỚI
+            selected_v = my_history_vids[0]
+            st.markdown("---")
+            if st.button("🔄 LÀM MỚI ĐỂ TẬP BÀI KHÁC", width="stretch", type="primary", key="btn_lam_moi_bn_global"):
+                for key in ['has_data', 'stats', 'angle_df', 'processed_video_path',
+                            'current_df_csv_path', 'uploaded_file_name', 'all_frames_data_path',
+                            'processing', 'temp_folder', 'zip_data', 'frame_paths', 'active_video_name',
+                            'patient_history_selector_global']:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.session_state.fresh_session = True
+                st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
+                st.cache_data.clear()
+                st.rerun()
+    elif not my_evals:
+        st.info("🕒 Kết quả đánh giá chuyên môn của bạn đang được xử lý. Vui lòng quay lại sau khi Bác sĩ hoặc Nhóm Nghiên cứu hoàn tất đánh giá.")
+        return
+
+    # NẠP DỮ LIỆU CỦA VIDEO ĐƯỢC CHỌN VÀO SESSION ĐỂ CÁC TAB SỬ DỤNG
+    if selected_v:
+        st.session_state.stats = selected_v.get('metrics')
+        st.session_state.processed_video_path = selected_v.get('processed_path')
+        st.session_state.all_frames_data_path = selected_v.get('all_frames_data_path')
+        st.session_state.uploaded_file_name = selected_v.get('video_name')
+        st.session_state.has_data = True
+        ex_name = selected_v.get('exercise', 'codman')
+        st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
+        if selected_v.get('df_path') and os.path.exists(selected_v.get('df_path', '')):
+            try: st.session_state.angle_df = pd.read_csv(selected_v['df_path'])
+            except: pass
+    
+    # 4. HIỂN THỊ CÁC TAB
+    tab_labels = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
+    if has_ai_eval:
+        tab_labels += ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & HÌNH ẢNH"]
+        
+    tabs = st.tabs(tab_labels)
+    tab_eval = tabs[0]
+    
+    with tab_eval:
+        if selected_v:
+            # CHỈ hiển thị nhận xét của video được chọn
+            v_evals = [e for e in reversed(my_evals) if e.get('video_name') == selected_v.get('video_name')]
+            if not v_evals:
+                st.info("Không có nhận xét nào cho video này.")
+            for e in v_evals:
                 is_ai = e.get('doctor_username') == "AI_Researcher"
                 title_color = "#00CED1" if is_ai else "#ffd700"
                 icon = "🤖" if is_ai else "👨‍⚕️"
@@ -4239,7 +4329,6 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                     with c2:
                         st.markdown(f"**Nguồn:** <span style='color: {title_color}; font-weight: bold;'>{e.get('doctor_name', 'Hệ thống AI')}</span>", unsafe_allow_html=True)
                         
-                        # Chỉ hiển thị lỗi sai nếu không phải AI hoặc nếu có lỗi thực sự (không phải warning kỹ thuật)
                         errors = [err for err in e.get('errors', []) if "WARNING" not in err.upper()]
                         if not is_ai and errors:
                             st.markdown(f"**Lỗi sai:** {', '.join(errors)}")
@@ -4250,175 +4339,48 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                             st.markdown(f"**Nhận xét:** {e.get('comments', 'Không có')}")
                             
                         st.markdown(f"**Kế hoạch:** {e.get('plan', 'N/A')}")
-                        
                         status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã phê duyệt"
                         st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic; margin-top:10px;">📩 {status_text}</p>', unsafe_allow_html=True)
             
-            # --- HIỂN THỊ THÊM KẾT QUẢ NCKH (NẾU CÓ) ---
+            # CHỈ hiển thị NCKH của video được chọn
             res_data = load_data(RESEARCH_DATA_FILE)
-            if user_role == "Bệnh nhân":
-                curr_user = username if username else st.session_state.user_info['username']
-                my_res = [d for d in res_data if d.get('patient_username') == curr_user or d.get('subject_code') == curr_user]
-            else:
-                # NCV thấy hết, nhưng ở đây ta lọc theo record hiện tại (e) để hiển thị đúng ngữ cảnh
-                p_user = e.get('patient_username')
-                my_res = [d for d in res_data if d.get('patient_username') == p_user or d.get('subject_code') == p_user]
-
-            if my_res:
+            v_res = [r for r in res_data if r.get('video_code') == selected_v.get('video_name') or r.get('timestamp') == selected_v.get('time')]
+            if v_res:
                 st.markdown("---")
                 st.markdown("### 📑 KẾT QUẢ ĐÁNH GIÁ KỸ THUẬT (NCKH)")
-                for r in reversed(my_res):
-                    with st.expander(f"📅 Phiếu ngày {r.get('timestamp', 'N/A')} - BN: {r.get('subject_code', 'N/A')} - KQ: {r.get('general_result', 'N/A')}", expanded=False):
+                for r in reversed(v_res):
+                    with st.expander(f"📅 Phiếu ngày {r.get('timestamp', 'N/A')} - KQ: {r.get('general_result', 'N/A')}", expanded=False):
                         rc1, rc2, rc3 = st.columns(3)
                         with rc1:
-                            st.markdown("**📌 Thông tin chung**")
                             st.write(f"• Người PV: {r.get('interviewer')}")
                             st.write(f"• Ngày PV: {r.get('interview_date')}")
-                            st.write(f"• Tuổi/Giới: {r.get('age')}/{r.get('gender')}")
-                            st.write(f"• Khu vực: {r.get('region')}")
                         with rc2:
-                            st.markdown("**🩺 Lâm sàng & Tập luyện**")
                             st.write(f"• Chẩn đoán: {r.get('diagnosis')}")
-                            st.write(f"• Thời gian bệnh: {r.get('duration')}")
-                            st.write(f"• Bài tập: {', '.join(r.get('exercises', [])) if isinstance(r.get('exercises'), list) else r.get('exercises')}")
                             st.write(f"• Đau (VAS): {r.get('pain_level')}")
                         with rc3:
-                            st.markdown("**📊 Đánh giá chuyên môn**")
                             st.write(f"• Kết quả: {r.get('general_result')}")
-                            st.write(f"• Số lần Đúng/Tổng: {r.get('correct_reps')}/{r.get('total_reps')}")
                             st.info(f"**Nhận xét:** {r.get('specialist_comment')}")
-                        
-                        if r.get('video_code'):
-                            st.caption(f"🎬 Mã video: {r.get('video_code')} | Thiết bị: {r.get('recording_device')} | Góc: {r.get('recording_angle')}")
+        else:
+            if is_fresh_session:
+                st.info("👆 Hãy chọn một phiên tập từ danh sách bên trên để xem nhận xét chi tiết.")
+
+    if has_ai_eval:
+        tab_charts = tabs[1]
+        tab_media = tabs[2]
         
-        if has_ai_eval:
-            # TỰ ĐỘNG LOAD DANH SÁCH VIDEO ĐÃ CÓ AI EVAL
-            all_vids = load_data(VIDEOS_FILE)
-            all_evals = load_data(EVALUATIONS_FILE)
-            p_username = username if username else st.session_state.user_info['username']
-            
-            # Lấy danh sách tên các video đã được NCV bấm GỬI
-            sent_video_names = [e.get('video_name') for e in all_evals 
-                                if e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == p_username]
-            
-            # Lọc tất cả video của BN này đã có metrics VÀ đã được gửi
-            my_history_vids = [v for v in reversed(all_vids) 
-                              if v.get('username') == p_username and v.get('metrics') and v.get('video_name') in sent_video_names]
-
-            # Kiểm tra trạng thái: Đã bấm "Làm mới" chưa?
-            # 'fresh_session' = True nghĩa là bệnh nhân đã bấm Làm mới -> hiện chờ đợi + lịch sử
-            is_fresh_session = st.session_state.get('fresh_session', False)
-
-            if my_history_vids:
-                if not is_fresh_session:
-                    # ===================================================
-                    # CHẾ ĐỘ XEM KẾT QUẢ: TỰ ĐỘNG LOAD BÀI MỚI NHẤT
-                    # ===================================================
-                    latest = my_history_vids[0]  # Đã reversed, phần tử 0 là mới nhất
-                    # Nạp dữ liệu bài mới nhất vào session
-                    st.session_state.stats = latest.get('metrics')
-                    st.session_state.processed_video_path = latest.get('processed_path')
-                    st.session_state.all_frames_data_path = latest.get('all_frames_data_path')
-                    st.session_state.uploaded_file_name = latest.get('video_name')
-                    st.session_state.has_data = True
-                    ex_name = latest.get('exercise', 'codman')
-                    st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
-                    if latest.get('df_path') and os.path.exists(latest.get('df_path', '')):
-                        try: st.session_state.angle_df = pd.read_csv(latest['df_path'])
-                        except: pass
-                    selected_v = latest
-
-                    # Nút LÀM MỚI hiện ngay dưới kết quả
-                    st.markdown("---")
-                    if st.button("🔄 LÀM MỚI ĐỂ TẬP BÀI KHÁC", width="stretch", type="primary", key="btn_lam_moi_bn"):
-                        for key in ['has_data', 'stats', 'angle_df', 'processed_video_path',
-                                    'current_df_csv_path', 'uploaded_file_name', 'all_frames_data_path',
-                                    'processing', 'temp_folder', 'zip_data', 'frame_paths', 'active_video_name']:
-                            if key in st.session_state:
-                                st.session_state[key] = None
-                        st.session_state.has_data = False
-                        st.session_state.fresh_session = True
-                        st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
-                        st.cache_data.clear()
-                        st.rerun()
-
-                    with tab_charts:
-                        st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI")
-                        hien_thi_tab_phan_tich(key_suffix="pat_eval")
-
-                    with tab_media:
-                        st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
-                        hien_thi_frames_day_du(key_suffix="pat_results")
-
-                else:
-                    # ===================================================
-                    # CHẾ ĐỘ LỊCH SỬ: Sau khi bấm Làm mới
-                    # Phần trên (tab_eval): Hiện thông báo chờ NCV gửi kết quả mới
-                    # Phần dưới (tab_charts + tab_media): Vẫn hiện lịch sử đầy đủ
-                    # ===================================================
-
-                    # --- PHẦN TRÊN (tab_eval): Thông báo chờ kết quả mới từ NCV ---
-                    st.markdown("---")
-                    st.markdown("""
-                    <div style="
-                        background: linear-gradient(135deg, rgba(0,114,255,0.08) 0%, rgba(0,198,255,0.08) 100%);
-                        border: 1px solid rgba(0,198,255,0.3);
-                        border-left: 5px solid #00c6ff;
-                        border-radius: 16px;
-                        padding: 28px 24px;
-                        text-align: center;
-                        margin: 20px 0;
-                    ">
-                        <div style="font-size: 3rem; margin-bottom: 12px;">⏳</div>
-                        <h3 style="color: #00c6ff; margin: 0 0 10px 0; font-size: 1.3rem;">
-                            Đang chờ Nghiên cứu viên gửi kết quả bài tập mới
-                        </h3>
-                        <p style="color: #aaa; margin: 0; font-size: 0.95rem; line-height: 1.6;">
-                            Bạn đã gửi video tập luyện. Nghiên cứu viên (NCV) đang phân tích và sẽ gửi kết quả AI cho bạn sớm nhất có thể.<br>
-                            <span style="color: #ffd700;">💡 Trong lúc chờ, bạn có thể xem lại lịch sử tập luyện bên dưới.</span>
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    # Hiện selectbox lịch sử ngay tại tab_eval (thay vì ở tab_charts)
-                    st.markdown("### 📅 XEM LẠI LỊCH SỬ TẬP LUYỆN")
-                    selected_v = st.selectbox(
-                        "Chọn ngày và bài tập bạn muốn xem lại:",
-                        my_history_vids,
-                        format_func=lambda x: f"🕒 {x.get('time', 'N/A')} - Bài: {x.get('exercise', 'N/A')} (Đạt: {x.get('accuracy', 0)}%)",
-                        key="patient_history_selector"
-                    )
-
-                    if selected_v:
-                        st.session_state.stats = selected_v.get('metrics')
-                        st.session_state.processed_video_path = selected_v.get('processed_path')
-                        st.session_state.all_frames_data_path = selected_v.get('all_frames_data_path')
-                        st.session_state.has_data = bool(selected_v.get('metrics'))
-                        ex_name = selected_v.get('exercise', 'codman')
-                        st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
-                        if selected_v.get('df_path') and os.path.exists(selected_v.get('df_path', '')):
-                            try: st.session_state.angle_df = pd.read_csv(selected_v['df_path'])
-                            except: pass
-
-                        # --- PHẦN LỊCH SỬ: Tab Phân tích và Tab Video đều hiện đầy đủ ---
-                        with tab_charts:
-                            st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LỊCH SỬ)")
-                            hien_thi_tab_phan_tich(key_suffix="pat_hist")
-                        with tab_media:
-                            st.markdown("### 🎬 VIDEO & HÌNH ẢNH (LỊCH SỬ)")
-                            hien_thi_frames_day_du(key_suffix="pat_hist_media")
-                    else:
-                        with tab_charts:
-                            st.info("🕒 Vui lòng chọn một phiên tập ở trên để xem chi tiết biểu đồ.")
-                        with tab_media:
-                            st.info("🎬 Vui lòng chọn một phiên tập ở trên để xem video và hình ảnh.")
+        with tab_charts:
+            if selected_v:
+                st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI")
+                hien_thi_tab_phan_tich(key_suffix="pat_eval")
             else:
-                selected_v = None
-                st.warning("ℹ️ Bạn chưa có dữ liệu phân tích chi tiết nào được gửi từ Nghiên cứu viên.")
-                with tab_charts:
-                    st.info("🕒 Kết quả đang chờ NCV xử lý và gửi cho bạn.")
-                with tab_media:
-                    st.info("🎬 Video khung xương sẽ xuất hiện tại đây sau khi NCV gửi kết quả.")
+                st.info("👆 Hãy chọn một phiên tập từ danh sách bên trên để xem biểu đồ.")
+
+        with tab_media:
+            if selected_v:
+                st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
+                hien_thi_frames_day_du(key_suffix="pat_results")
+            else:
+                st.info("👆 Hãy chọn một phiên tập từ danh sách bên trên để xem video và hình ảnh.")
 
 
 def hien_thi_tab_khai_bao_trieu_chung():
@@ -6206,7 +6168,7 @@ def main():
                         
                         # RESET VỀ CHẾ ĐỘ TỰ ĐỘNG (khi NCV gửi kết quả sẽ hiện ngay)
                         st.session_state.active_video_name = file_upload.name
-                        st.session_state.fresh_session = False  # Cho phép auto-load khi NCV gửi
+                        st.session_state.fresh_session = True  # <-- QUAN TRỌNG: Phải = True để hiện màn hình "Đang chờ NCV..."
                         st.session_state.has_data = False
                         time.sleep(2)
                         st.rerun()
