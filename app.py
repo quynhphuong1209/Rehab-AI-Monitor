@@ -5559,7 +5559,7 @@ def hien_thi_tab_quan_tri_vien():
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    tab_u1, tab_u2, tab_u3 = st.tabs(["👥 DANH SÁCH NGƯỜI DÙNG", "➕ TẠO TÀI KHOẢN MỚI", "🧹 DỌN DẸP HỆ THỐNG"])
+    tab_u1, tab_u2, tab_u3, tab_u4 = st.tabs(["👥 NGƯỜI DÙNG", "➕ TẠO TÀI KHOẢN", "📊 NHẬT KÝ HOẠT ĐỘNG", "🧹 DỌN DẸP"])
     
     with tab_u1:
         st.markdown("### 👥 Quản lý tài khoản")
@@ -5575,7 +5575,7 @@ def hien_thi_tab_quan_tri_vien():
         
         # Hiển thị bảng với tìm kiếm
         df_display = pd.DataFrame(df_users)
-        search_q = st.text_input("🔍 Tìm kiếm người dùng:", placeholder="Nhập tên hoặc username...")
+        search_q = st.text_input("🔍 Tìm kiếm người dùng:", placeholder="Nhập tên hoặc username...", key="search_user_admin")
         if search_q:
             df_display = df_display[df_display.apply(lambda row: search_q.lower() in str(row).lower(), axis=1)]
             
@@ -5640,7 +5640,87 @@ def hien_thi_tab_quan_tri_vien():
                 </p>
             </div>
             """, unsafe_allow_html=True)
+
     with tab_u3:
+        st.markdown("### 📊 NHẬT KÝ HOẠT ĐỘNG HỆ THỐNG")
+        st.info("💡 Bảng dưới đây tổng hợp tất cả các hoạt động của Bệnh nhân, Bác sĩ và NCV theo mốc thời gian.")
+        
+        # Load dữ liệu
+        v_list = load_data(VIDEOS_FILE)
+        e_list = load_data(EVALUATIONS_FILE)
+        s_list = load_data(SYMPTOMS_FILE)
+        
+        # Tạo danh sách hoạt động tổng hợp
+        all_activities = []
+        
+        # 1. Bệnh nhân Upload Video
+        for v in v_list:
+            all_activities.append({
+                "Thời gian": v.get('time', 'N/A'),
+                "Người thực hiện": v.get('full_name', v.get('username', 'N/A')),
+                "Vai trò": "Bệnh nhân",
+                "Hành động": "📤 Upload Video",
+                "Chi tiết": f"Bài tập: {v.get('exercise')} | File: {v.get('video_name')}"
+            })
+            
+        # 2. Bác sĩ & NCV Đánh giá
+        for e in e_list:
+            is_ai = e.get('doctor_username') == "AI_Researcher"
+            role = "Nghiên cứu viên" if is_ai else "Bác sĩ / KTV"
+            action = "🤖 NCV Gửi kết quả AI" if is_ai else "👨‍⚕️ Bác sĩ Đánh giá"
+            details = f"BN: {e.get('patient_username')} | KQ: {e.get('doctor_result')}"
+            if is_ai: details += f" | AI Acc: {e.get('ai_accuracy')}%"
+            
+            all_activities.append({
+                "Thời gian": e.get('time', 'N/A'),
+                "Người thực hiện": e.get('doctor_name', e.get('doctor_username', 'N/A')),
+                "Vai trò": role,
+                "Hành động": action,
+                "Chi tiết": details
+            })
+            
+        # 3. Bệnh nhân gửi triệu chứng
+        for s in s_list:
+            all_activities.append({
+                "Thời gian": s.get('time', 'N/A'),
+                "Người thực hiện": s.get('full_name', s.get('username', 'N/A')),
+                "Vai trò": "Bệnh nhân",
+                "Hành động": "🩺 Gửi Triệu chứng (VAS)",
+                "Chi tiết": f"Mức độ đau: {s.get('vas')}/10 | {s.get('symptoms')[:30]}..."
+            })
+            
+        if not all_activities:
+            st.info("📭 Hiện chưa có hoạt động nào được ghi nhận.")
+        else:
+            # Sắp xếp theo thời gian mới nhất (cần xử lý format thời gian vì nó không đồng nhất)
+            # Thử parse thời gian để sort chuẩn hơn
+            def parse_vn_time(t_str):
+                try:
+                    # Format 1: "H:M - d/m/Y"
+                    return datetime.strptime(t_str, "%H:%M - %d/%m/%Y")
+                except:
+                    try:
+                        # Format 2: "Y-m-d H:M:S" (từ đánh giá bác sĩ)
+                        return datetime.strptime(t_str, "%Y-%m-%d %H:%M:%S")
+                    except:
+                        return datetime.min
+
+            all_activities.sort(key=lambda x: parse_vn_time(x['Thời gian']), reverse=True)
+            
+            df_act = pd.DataFrame(all_activities)
+            
+            # Filter nhanh
+            f_role = st.multiselect("Lọc theo vai trò:", ["Bệnh nhân", "Bác sĩ / KTV", "Nghiên cứu viên"], default=["Bệnh nhân", "Bác sĩ / KTV", "Nghiên cứu viên"])
+            if f_role:
+                df_act = df_act[df_act["Vai trò"].isin(f_role)]
+                
+            st.dataframe(df_act, width="stretch", height=500)
+            
+            # Nút xuất log
+            csv_log = df_act.to_csv(index=False).encode('utf-8-sig')
+            st.download_button("📥 Xuất nhật ký hoạt động (CSV)", csv_log, "system_log.csv", "text/csv")
+
+    with tab_u4:
         st.markdown("### 🧹 Dọn dẹp dữ liệu hệ thống")
         st.warning("⚠️ CẢNH BÁO: Thao tác này sẽ xóa vĩnh viễn dữ liệu. Hãy cẩn thận!")
         

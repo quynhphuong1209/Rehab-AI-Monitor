@@ -30,6 +30,7 @@ Tài liệu này mô tả chi tiết về cấu trúc mã nguồn, thiết kế 
 ### 🏠 Trang Chủ & Dashboard
 - **Thiết kế:** Bố cục card-based với các thẻ thông tin bài tập (Thời gian, Số lần, Thông số chuẩn).
 - **Sidebar Phẳng:** Loại bỏ các container lồng nhau để tạo luồng thao tác phẳng (Thông tin BN -> Chọn bài tập -> Khai báo triệu chứng).
+- **Admin Log:** Bổ sung giao diện Nhật ký hoạt động hợp nhất cho Quản trị viên, hỗ trợ lọc và xuất dữ liệu CSV chuyên nghiệp.
 
 ### 🩺 Đánh Giá Chuyên Môn (Bác sĩ/KTV)
 - **Workflow Tối ưu:** Bác sĩ chọn video BN từ danh sách -> Hệ thống tự động chuyển sang Tab Đánh giá -> Nhận xét lâm sàng.
