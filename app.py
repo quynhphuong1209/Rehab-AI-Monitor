@@ -1984,6 +1984,33 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
     gan_dung_tong_the = bool(gan_dung_tong_the)
     
     return frame_output, goc_vai, goc_khuyu, tong_the, {"nearly_correct": gan_dung_tong_the, "shoulder_correct": vai_dung, "elbow_correct": khuyu_dung, "shoulder_ref": float(chuan_vai), "elbow_ref": float(chuan_khuyu)}, warnings_list
+    
+def ensure_voice_files():
+    import os
+    try:
+        from gtts import gTTS
+    except ImportError:
+        return None
+        
+    sounds_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sounds")
+    if not os.path.exists(sounds_dir):
+        os.makedirs(sounds_dir)
+        
+    files = {
+        "dung.mp3": "Đúng",
+        "gan_dung.mp3": "Gần đúng",
+        "sai.mp3": "Sai"
+    }
+    
+    for filename, text in files.items():
+        filepath = os.path.join(sounds_dir, filename)
+        if not os.path.exists(filepath):
+            try:
+                tts = gTTS(text=text, lang='vi')
+                tts.save(filepath)
+            except:
+                pass
+    return sounds_dir
 
 
 # ============================================
@@ -2063,6 +2090,9 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     last_progress = 0
     writer = None
     
+    audio_events = []
+    last_state = None
+    
     # Lấy giá trị skip từ session_state nếu có (NCV chỉnh), nếu không dùng mặc định
     skip_step = st.session_state.get('ncv_skip_frames', SKIP_FRAMES)
 
@@ -2094,6 +2124,20 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             try:
                 # Xử lý AI
                 xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(frame, model, chuan, frame_count, fps, dynamic_chuan=dynamic_chuan)
+                
+                # Xác định trạng thái âm thanh
+                current_state = "sai"
+                if dung:
+                    current_state = "dung"
+                elif eval_info and eval_info.get("nearly_correct"):
+                    current_state = "gan_dung"
+                
+                ts_frame = frame_count / fps
+                # Nếu đổi trạng thái, ghi nhận âm thanh
+                if current_state != last_state:
+                    audio_events.append({"time": ts_frame, "state": current_state})
+                    last_state = current_state
+                    
             except Exception as e:
                 print(f"Error processing frame {frame_count}: {e}")
                 continue
@@ -2145,7 +2189,35 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             except: pass
         gc.collect()
 
-    # SAU KHI XỬ LÝ XONG, TIẾN HÀNH ZIP VÀ LƯU JSON
+    # SAU KHI XỬ LÝ XONG, TIẾN HÀNH TRỘN ÂM THANH NẾU CÓ THAY ĐỔI
+    audio_mixed = False
+    mixed_audio_path = out_path.replace('.mp4', '_audio.wav')
+    
+    try:
+        from pydub import AudioSegment
+        sounds_dir = ensure_voice_files()
+        if sounds_dir and audio_events:
+            total_duration_ms = int((tong_frame / fps) * 1000) + 1000
+            final_audio = AudioSegment.silent(duration=total_duration_ms)
+            
+            sounds = {}
+            for s in ["dung", "gan_dung", "sai"]:
+                sp = os.path.join(sounds_dir, f"{s}.mp3")
+                if os.path.exists(sp):
+                    sounds[s] = AudioSegment.from_mp3(sp)
+            
+            for ev in audio_events:
+                state = ev['state']
+                time_ms = int(ev['time'] * 1000)
+                if state in sounds:
+                    final_audio = final_audio.overlay(sounds[state], position=time_ms)
+            
+            final_audio.export(mixed_audio_path, format="wav")
+            audio_mixed = True
+    except Exception as e:
+        print("Lỗi trộn âm thanh:", e)
+        
+    # TIẾN HÀNH ZIP VÀ LƯU JSON
     zip_path = os.path.join(tempfile.gettempdir(), f"f_{timestamp}.zip")
     try:
         import zipfile
@@ -2161,17 +2233,24 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     final_video_path = out_path
     final_h264 = out_path.replace('.mp4', '_f.mp4')
     try:
-        # Chuyển đổi sang H.264 tối ưu cực cao cho Web (Ultrafast + High Compression)
         cmd = [
-            'ffmpeg', '-y', '-i', out_path, 
+            'ffmpeg', '-y', '-i', out_path
+        ]
+        
+        if audio_mixed and os.path.exists(mixed_audio_path):
+            cmd.extend(['-i', mixed_audio_path])
+            cmd.extend(['-c:a', 'aac', '-map', '0:v:0', '-map', '1:a:0', '-shortest'])
+        
+        cmd.extend([
             '-vcodec', 'libx264', 
             '-pix_fmt', 'yuv420p', 
-            '-preset', 'ultrafast',  # Chuyển từ veryfast sang ultrafast
-            '-crf', '32',            # Tăng nén (CRF 28 -> 32) để file cực nhẹ, load web tức thì
-            '-movflags', 'faststart', # Cho phép xem ngay khi đang tải
-            '-threads', '0',         # Sử dụng toàn bộ CPU
+            '-preset', 'ultrafast',
+            '-crf', '32',
+            '-movflags', 'faststart',
+            '-threads', '0',
             final_h264
-        ]
+        ])
+        
         subprocess.run(cmd, capture_output=True)
         if os.path.exists(final_h264): final_video_path = final_h264
     except: pass

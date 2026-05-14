@@ -13,3 +13,5 @@ pandas
 plotly
 Pillow
 kaleido==0.2.1
+pydub
+gTTS
