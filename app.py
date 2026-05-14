@@ -5837,11 +5837,14 @@ def main():
                 if user_role == "Bệnh nhân":
                     st.markdown("### 📤 TẢI LÊN VIDEO TẬP LUYỆN")
                     st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
+                    if 'uploader_id' not in st.session_state:
+                        st.session_state.uploader_id = 0
+                    
                     file_upload = st.file_uploader(
                         "Tải lên video của bạn để AI phân tích và gửi kết quả cho Bác sĩ/NCV", 
                         type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
                         help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
-                        key="video_uploader_v2"
+                        key=f"video_uploader_v{st.session_state.uploader_id}"
                     )
                 elif user_role == "Nghiên cứu viên":
                     st.markdown("### 🧪 PHÂN TÍCH VIDEO NGHIÊN CỨU")
@@ -6114,6 +6117,7 @@ def main():
                         st.session_state.processed_video_path = None
                         st.session_state.current_df_csv_path = None
                         st.session_state.uploaded_file_name = None
+                        st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
                         st.rerun()
                 st.session_state.processing = False
 
