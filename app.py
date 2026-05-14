@@ -5873,8 +5873,8 @@ def main():
                         st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
             else:
                 file_upload = None
-                st.success("✅ Video đã được tải lên và phân tích thành công!")
-                if st.button("🔄 Tải video khác", type="secondary"):
+                # Nút reset thủ công (Nếu cần)
+                if st.button("🔄 Làm mới để tải video khác", type="secondary"):
                     st.session_state.has_data = False
                     st.session_state.stats = None
                     st.session_state.angle_df = None
@@ -5884,6 +5884,13 @@ def main():
             
             # XỬ LÝ VIDEO
             if file_upload is not None and not st.session_state.processing:
+                # NẾU FILE MỚI KHÁC FILE CŨ -> RESET DATA ĐỂ PHÂN TÍCH MỚI
+                if st.session_state.get('uploaded_file_name') != file_upload.name:
+                    st.session_state.has_data = False
+                    st.session_state.stats = None
+                    st.session_state.angle_df = None
+                    st.session_state.processed_video_path = None
+                
                 st.success(f"✅ Đã chọn file: {file_upload.name} ({file_upload.size / (1024*1024):.2f} MB)")
                 
                 if user_role == "Nghiên cứu viên":
