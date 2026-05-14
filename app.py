@@ -4291,7 +4291,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                             st.caption(f"🎬 Mã video: {r.get('video_code')} | Thiết bị: {r.get('recording_device')} | Góc: {r.get('recording_angle')}")
         
         if has_ai_eval:
-            # TỰ ĐỘNG LOAD DỮ LIỆU VIDEO MỚI NHẤT CÓ AI EVAL CHO PATIENT/DOCTOR
+            # TỰ ĐỘNG LOAD DANH SÁCH VIDEO ĐÃ CÓ AI EVAL
             all_vids = load_data(VIDEOS_FILE)
             all_evals = load_data(EVALUATIONS_FILE)
             p_username = username if username else st.session_state.user_info['username']
@@ -4300,22 +4300,34 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
             sent_video_names = [e.get('video_name') for e in all_evals 
                                 if e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == p_username]
             
-            # Tìm video mới nhất của BN này đã có metrics VÀ đã được gửi
-            latest_v = next((v for v in reversed(all_vids) 
-                             if v.get('username') == p_username and v.get('metrics') and v.get('video_name') in sent_video_names), None)
+            # Lọc tất cả video của BN này đã có metrics VÀ đã được gửi
+            my_history_vids = [v for v in reversed(all_vids) 
+                              if v.get('username') == p_username and v.get('metrics') and v.get('video_name') in sent_video_names]
             
-            if latest_v:
-                st.session_state.stats = latest_v['metrics']
-                st.session_state.processed_video_path = latest_v.get('processed_path')
-                st.session_state.all_frames_data_path = latest_v.get('all_frames_data_path')
-                st.session_state.uploaded_file_name = latest_v.get('video_name')
-                st.session_state.has_data = True
-                # Load bài tập
-                ex_name = latest_v.get('exercise', 'codman')
-                st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
-                if latest_v.get('df_path') and os.path.exists(latest_v['df_path']):
-                    try: st.session_state.angle_df = pd.read_csv(latest_v['df_path'])
-                    except: pass
+            if my_history_vids:
+                st.markdown("### 📅 CHỌN PHIÊN TẬP ĐỂ XEM CHI TIẾT")
+                # Cho phép bệnh nhân chọn phiên tập từ lịch sử
+                selected_v = st.selectbox(
+                    "Chọn ngày và bài tập bạn muốn xem lại:",
+                    my_history_vids,
+                    format_func=lambda x: f"🕒 {x.get('time', 'N/A')} - Bài: {x.get('exercise', 'N/A')} (Đạt: {x.get('accuracy', 0)}%)",
+                    key="patient_history_selector"
+                )
+                
+                if selected_v:
+                    st.session_state.stats = selected_v['metrics']
+                    st.session_state.processed_video_path = selected_v.get('processed_path')
+                    st.session_state.all_frames_data_path = selected_v.get('all_frames_data_path')
+                    st.session_state.uploaded_file_name = selected_v.get('video_name')
+                    st.session_state.has_data = True
+                    # Load bài tập
+                    ex_name = selected_v.get('exercise', 'codman')
+                    st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
+                    if selected_v.get('df_path') and os.path.exists(selected_v['df_path']):
+                        try: st.session_state.angle_df = pd.read_csv(selected_v['df_path'])
+                        except: pass
+            else:
+                st.warning("ℹ️ Bạn chưa có dữ liệu phân tích chi tiết nào được gửi từ Nghiên cứu viên.")
 
             with tab_charts:
                 st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
