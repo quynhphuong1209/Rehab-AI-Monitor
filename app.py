@@ -5761,6 +5761,93 @@ def hien_thi_tab_quan_tri_vien():
                 st.balloons()
                 st.rerun()
 
+def hien_thi_home_quan_tri_vien():
+    """Trang chủ chuyên biệt dành cho Quản trị viên (Admin Dashboard)"""
+    st.markdown("## 📊 HỆ THỐNG QUẢN TRỊ TỔNG THỂ")
+    
+    # Load dữ liệu
+    users = load_users()
+    v_list = load_data(VIDEOS_FILE)
+    e_list = load_data(EVALUATIONS_FILE)
+    s_list = load_data(SYMPTOMS_FILE)
+    
+    # Tính toán chỉ số
+    total_users = len(users)
+    patients = len([u for u in users.values() if u.get('role') == 'Bệnh nhân'])
+    doctors = len([u for u in users.values() if u.get('role') == 'Bác sĩ / KTV PHCN'])
+    ncvs = len([u for u in users.values() if u.get('role') == 'Nghiên cứu viên'])
+    
+    total_vids = len(v_list)
+    total_evals = len(e_list)
+    
+    # Tính tổng số frame AI đã xử lý (nếu có)
+    total_frames = 0
+    for v in v_list:
+        if v.get('metrics') and isinstance(v['metrics'], dict):
+            total_frames += v['metrics'].get('tong_frame', 0)
+            
+    # Hiển thị các Metric Card cao cấp
+    is_light = st.session_state.theme == 'light'
+    card_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.05)"
+    
+    m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+    with m_col1:
+        st.markdown(f"""<div class="metric-card" style="background:{card_bg};"><div class="metric-label">👥 Người dùng</div><div class="metric-value">{total_users}</div><div style="font-size:0.8rem; color:#888;">{patients} BN | {doctors} BS</div></div>""", unsafe_allow_html=True)
+    with m_col2:
+        st.markdown(f"""<div class="metric-card" style="background:{card_bg};"><div class="metric-label">🎬 Tổng Video</div><div class="metric-value">{total_vids}</div><div style="font-size:0.8rem; color:#888;">Video đã nhận</div></div>""", unsafe_allow_html=True)
+    with m_col3:
+        st.markdown(f"""<div class="metric-card" style="background:{card_bg};"><div class="metric-label">📝 Đánh giá</div><div class="metric-value">{total_evals}</div><div style="font-size:0.8rem; color:#888;">Bản ghi chuyên môn</div></div>""", unsafe_allow_html=True)
+    with m_col4:
+        st.markdown(f"""<div class="metric-card" style="background:{card_bg};"><div class="metric-label">⚡ Frames Xử lý</div><div class="metric-value">{total_frames:,}</div><div style="font-size:0.8rem; color:#888;">Dữ liệu qua AI</div></div>""", unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Biểu đồ thống kê
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.markdown("### 📈 Mức độ phổ biến của Bài tập")
+        if v_list:
+            ex_data = [v.get('exercise') for v in v_list if v.get('exercise')]
+            if ex_data:
+                ex_counts = pd.Series(ex_data).value_counts().reset_index()
+                ex_counts.columns = ['Bài tập', 'Số lượt']
+                fig_ex = px.bar(ex_counts, x='Bài tập', y='Số lượt', color='Bài tập',
+                               color_discrete_sequence=px.colors.qualitative.Pastel,
+                               template="plotly_dark" if not is_light else "plotly_white")
+                fig_ex.update_layout(margin=dict(l=0, r=0, t=20, b=0), height=350, showlegend=False)
+                st.plotly_chart(fig_ex, use_container_width=True)
+            else:
+                st.info("Chưa có dữ liệu bài tập.")
+        else:
+            st.info("Chưa có dữ liệu video.")
+            
+    with c2:
+        st.markdown("### 📊 Cơ cấu Vai trò Hệ thống")
+        role_data = [u.get('role') for u in users.values()]
+        role_counts = pd.Series(role_data).value_counts().reset_index()
+        role_counts.columns = ['Vai trò', 'Số lượng']
+        fig_role = px.pie(role_counts, values='Số lượng', names='Vai trò', hole=0.5,
+                         color_discrete_sequence=px.colors.qualitative.Bold,
+                         template="plotly_dark" if not is_light else "plotly_white")
+        fig_role.update_layout(margin=dict(l=0, r=0, t=20, b=0), height=350)
+        st.plotly_chart(fig_role, use_container_width=True)
+
+    # Thống kê hoạt động theo thời gian (giả lập hoặc từ logs)
+    st.markdown("### 🕒 Lưu lượng hoạt động gần đây")
+    if v_list or e_list or s_list:
+        # Lấy 10 hoạt động mới nhất
+        recent_acts = []
+        for v in v_list[-5:]: recent_acts.append({"Time": v.get('time'), "Event": "📤 Video Upload", "User": v.get('username')})
+        for e in e_list[-5:]: recent_acts.append({"Time": e.get('time'), "Event": "📝 Evaluation", "User": e.get('doctor_username')})
+        
+        # Sắp xếp thô theo chuỗi thời gian
+        recent_acts.sort(key=lambda x: str(x['Time']), reverse=True)
+        df_recent = pd.DataFrame(recent_acts[:8])
+        st.table(df_recent)
+    else:
+        st.info("Chưa có hoạt động nào.")
+
 # ============================================
 # HÀM HIỂN THỊ TAB ĐỔI MẬT KHẨU
 # ============================================
@@ -5901,6 +5988,34 @@ def main():
             ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
             bai_tap = BAI_TAP[ma_bai_tap]
             
+        elif user_role == "Quản trị viên":
+            st.markdown("### 👑 QUẢN TRỊ HỆ THỐNG")
+            st.markdown(f"""
+            <div style="background: rgba(255, 215, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid rgba(255, 215, 0, 0.2); margin-bottom: 15px;">
+                <p style="margin:0; font-weight:bold; color:#ffd700;">👤 {st.session_state.user_info.get('full_name', 'Administrator')}</p>
+                <p style="margin:0; font-size:0.8rem; color:#888;">Quyền hạn tối cao (Super User)</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.info("""
+            **Chức năng các Tab quản trị:**
+            1. **🏠 TRANG CHỦ**: Dashboard thống kê, biểu đồ và chỉ số hiệu suất hệ thống.
+            2. **🛠️ QUẢN TRỊ**: Cấp tài khoản mới, xóa người dùng và reset database.
+            3. **📊 NHẬT KÝ**: Xem log hoạt động chi tiết của tất cả người dùng.
+            4. **📖 HƯỚNG DẪN**: Quản lý tài liệu và video hướng dẫn sử dụng.
+            5. **🏥 KIẾN THỨC**: Thư viện nội dung chuyên môn về PHCN vai.
+            6. **🌐 CÔNG NGHỆ**: Thông số kỹ thuật về hạ tầng AI và Computer Vision.
+            """)
+            
+            st.markdown("### 🔍 TRA CỨU NHANH")
+            q_user = st.text_input("Tìm kiếm Username", placeholder="VD: patient01")
+            if q_user:
+                db_u = load_users()
+                if q_user in db_u:
+                    st.success(f"Tìm thấy: {db_u[q_user].get('full_name')} ({db_u[q_user].get('role')})")
+                else:
+                    st.error("Không tìm thấy người dùng.")
+
         else:
             if user_role == "Bác sĩ / KTV PHCN":
                 # 1. GIỚI THIỆU CÁC TAB CHO BÁC SĨ
@@ -6040,8 +6155,11 @@ def main():
     # ==================== TAB 1: TRANG CHỦ ====================
     if "🏠 TRANG CHỦ" in tab_map:
         with tab_map["🏠 TRANG CHỦ"]:
+            if user_role == "Quản trị viên":
+                hien_thi_home_quan_tri_vien()
+            
             # Nếu là Bác sĩ, cho phép chọn bài tập ngay tại đây vì Sidebar đã dọn dẹp
-            if user_role == "Bác sĩ / KTV PHCN":
+            elif user_role == "Bác sĩ / KTV PHCN":
                 c_bt1, c_bt2 = st.columns([2, 1])
                 with c_bt1:
                     ma_bai_tap = st.selectbox("🎯 CHỌN BÀI TẬP ĐANG THEO DÕI", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="doc_home_exercise")
