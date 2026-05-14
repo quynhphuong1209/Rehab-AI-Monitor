@@ -417,16 +417,19 @@ st.markdown("""
     /* === TẢI FONT BIỂU TƯỢNG TRỰC TIẾP TỪ GOOGLE === */
     @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-    /* === KHỬ CHỮ RÁC TRÊN NÚT SIDEBAR & TOOLBAR === */
-    [data-testid="stSidebarCollapseButton"] button, 
-    [data-testid="stExpandSidebarButton"] button,
-    [data-testid="stToolbar"] button {
-        color: transparent !important;
-        text-indent: -9999px !important;
-        overflow: hidden !important;
-        position: relative !important;
-        background: transparent !important;
-        border: none !important;
+    /* === ĐẢM BẢO HỆ THỐNG STREAMLIT (HEADER, FOOTER, MENU) LUÔN HIỂN THỊ === */
+    header[data-testid="stHeader"], 
+    footer, 
+    #MainMenu, 
+    [data-testid="stToolbar"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* ĐẨY GIAO DIỆN XUỐNG ĐỂ KHÔNG BỊ HEADER ĐÈ LÊN NẾU CẦN */
+    [data-testid="stAppViewBlockContainer"] {
+        padding-top: 4rem !important;
     }
 
     /* FIX TRIỆT ĐỂ LỖI HIỆN NHIỀU NÚT "CHỌN VIDEO" */
@@ -468,44 +471,13 @@ st.markdown("""
         display: none !important; 
     }
 
-    /* Vẽ lại mũi tên bằng pseudo-element để không bao giờ bị hiện chữ */
-    [data-testid="stSidebarCollapseButton"] button::after, 
-    [data-testid="stExpandSidebarButton"] button::after {
-        text-indent: 0 !important;
-        position: absolute !important;
-        left: 50% !important;
-        top: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        color: #0072ff !important; 
-        font-size: 28px !important;
-        font-weight: bold !important;
-        visibility: visible !important;
-        display: flex !important;
-    }
-
-    [data-testid="stExpandSidebarButton"] button::after {
-        content: "»" !important;
-    }
-
-    [data-testid="stSidebarCollapseButton"] button::after {
-        content: "«" !important;
-    }
-
-    /* ẨN TRIỆT ĐỂ CÁC BIỂU TƯỢNG MATERIAL BỊ LỖI HIỆN CHỮ (NHƯ 'arr', 'keyboard...') */
+    /* Đảm bảo các biểu tượng Material của Streamlit hiển thị bình thường */
     [data-testid="stIconMaterial"], 
     .stIconMaterial, 
-    span[data-testid="stIconMaterial"],
-    .st-emotion-cache-stIconMaterial {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-        font-size: 0 !important;
-    }
-
-    /* Fix lỗi chữ rác trong Expander và các Widget khác */
-    [data-testid="stExpander"] [data-testid="stIconMaterial"] {
-        display: none !important;
+    span[data-testid="stIconMaterial"] {
+        display: inline-block !important;
+        visibility: visible !important;
+        font-family: 'Material Icons' !important;
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
