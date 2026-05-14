@@ -2069,6 +2069,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     if not cap.isOpened(): raise Exception("Video Error")
     
     fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
+    fps_export = max(10, fps // 2) # LÀM CHẬM VIDEO XUỐNG CÒN 1 NỬA (0.5X SPEED)
     tong_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if MAX_FRAMES and tong_frame > MAX_FRAMES: tong_frame = MAX_FRAMES
     
@@ -2092,6 +2093,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     
     audio_events = []
     last_state = None
+    last_audio_time = -10.0
     
     # Lấy giá trị skip từ session_state nếu có (NCV chỉnh), nếu không dùng mặc định
     skip_step = st.session_state.get('ncv_skip_frames', SKIP_FRAMES)
@@ -2132,10 +2134,13 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 elif eval_info and eval_info.get("nearly_correct"):
                     current_state = "gan_dung"
                 
-                ts_frame = frame_count / fps
-                # Nếu đổi trạng thái, ghi nhận âm thanh
+                ts_frame = frame_count / fps_export # Dùng fps đã làm chậm để căn chuẩn xác thời gian
+                
+                # CHỈ phát âm thanh khi đổi trạng thái VÀ cách lần phát trước tối thiểu 1.5 giây
                 if current_state != last_state:
-                    audio_events.append({"time": ts_frame, "state": current_state})
+                    if ts_frame - last_audio_time >= 1.5:
+                        audio_events.append({"time": ts_frame, "state": current_state})
+                        last_audio_time = ts_frame
                     last_state = current_state
                     
             except Exception as e:
@@ -2144,7 +2149,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 
             if writer is None:
                 curr_h, curr_w = xu_ly.shape[:2]
-                writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (curr_w, curr_h))
+                writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps_export, (curr_w, curr_h))
                 
             writer.write(xu_ly)
             
@@ -2152,8 +2157,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             cv2.imwrite(frame_path, xu_ly, [cv2.IMWRITE_JPEG_QUALITY, 50])
             danh_sach_frame_paths.append(frame_path)
             
-            ts_frame = frame_count / fps
-            time_str = f"{int(ts_frame // 60):02d}:{int(ts_frame % 60):02d}"
+            ts_frame_goc = frame_count / fps # Dữ liệu tọa độ vẫn giữ theo thời gian thực tế để vẽ biểu đồ
+            time_str = f"{int(ts_frame_goc // 60):02d}:{int(ts_frame_goc % 60):02d}"
             
             if warnings_list: all_warnings.extend(warnings_list)
             
@@ -2167,7 +2172,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             
             if goc_v is not None:
                 du_lieu_goc.append({
-                    'frame': frame_count, 'timestamp': time_str, 'timestamp_seconds': ts_frame,
+                    'frame': frame_count, 'timestamp': time_str, 'timestamp_seconds': ts_frame_goc,
                     'goc_vai': goc_v, 'goc_khuyu': goc_k, 'dung': dung,
                     'gan_dung': eval_info['nearly_correct'] if eval_info else False,
                     'vai_dung': eval_info['shoulder_correct'] if eval_info else False,
@@ -2197,7 +2202,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         from pydub import AudioSegment
         sounds_dir = ensure_voice_files()
         if sounds_dir and audio_events:
-            total_duration_ms = int((tong_frame / fps) * 1000) + 1000
+            total_duration_ms = int((tong_frame / fps_export) * 1000) + 1000
             final_audio = AudioSegment.silent(duration=total_duration_ms)
             
             sounds = {}
