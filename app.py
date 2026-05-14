@@ -6449,15 +6449,15 @@ def main():
                                     st.session_state.processing = False
                                     time.sleep(0.5)
                                     st.rerun()
-                            else:
-                                st.error("❌ Không phát hiện khung xương! Vui lòng quay video rõ người tập hơn.")
+                                else:
+                                    st.error("❌ Không phát hiện khung xương! Vui lòng quay video rõ người tập hơn.")
+                                    st.session_state.processing = False
+                                    
+                            except Exception as e:
+                                st.error(f"❌ Lỗi xử lý: {str(e)}")
                                 st.session_state.processing = False
-                                
-                        except Exception as e:
-                            st.error(f"❌ Lỗi xử lý: {str(e)}")
-                            st.session_state.processing = False
-                            progress_bar.empty()
-                            status_text.empty()
+                                progress_bar.empty()
+                                status_text.empty()
 
                 if user_role == "Bệnh nhân":
                     if st.button("📤 GỬI VIDEO CHO BÁC SĨ - KTV VÀ NCV", width="stretch", type="primary"):
