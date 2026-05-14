@@ -4248,7 +4248,7 @@ def hien_thi_form_danh_gia_bac_si():
                     "plan": k_hoach,
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
-                evals = [e for e in evals if not (e.get('patient_username') == new_e['patient_username'] and e.get('video_name') == new_e['video_name'] and e.get('doctor_username') == new_e['doctor_username'])]
+                evals = [e for e in evals if not (e.get('patient_username') == new_e['patient_username'] and e.get('video_name') == new_e['video_name'] and e.get('exercise') == new_e['exercise'] and e.get('doctor_username') == new_e['doctor_username'])]
                 evals.append(new_e)
                 save_data(EVALUATIONS_FILE, evals)
                 st.session_state.re_eval_mode = False
@@ -4415,7 +4415,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     with tab_eval:
         if selected_v:
             # CHỈ hiển thị nhận xét của video được chọn
-            v_evals = [e for e in reversed(my_evals) if e.get('video_name') == selected_v.get('video_name')]
+            v_evals = [e for e in reversed(my_evals) if e.get('video_name') == selected_v.get('video_name') and e.get('exercise') == selected_v.get('exercise')]
             if not v_evals:
                 st.info("Không có nhận xét nào cho video này.")
             for e in v_evals:
@@ -6299,9 +6299,9 @@ def main():
                             
                             # Xác định xem đã có kết quả AI chưa để hiển thị text
                             evals_db = load_data(EVALUATIONS_FILE)
-                            v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('video_name') == v.get('video_name') for e in evals_db)
+                            v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise') for e in evals_db)
                             
-                            doc_eval = next((e for e in reversed(evals_db) if e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name')), None)
+                            doc_eval = next((e for e in reversed(evals_db) if e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
 
                             display_status = v['status']
                             if user_role == "Bác sĩ / KTV PHCN":
@@ -6324,7 +6324,7 @@ def main():
                                         st.write("**Độ chính xác AI:** ⏳ Chờ NCV phân tích")
                                     else:
                                         # Lấy accuracy mới nhất từ evals nếu có, nếu không lấy từ video
-                                        ai_eval_record = next((e for e in reversed(evals_db) if e.get('doctor_username') == "AI_Researcher" and e.get('video_name') == v.get('video_name')), None)
+                                        ai_eval_record = next((e for e in reversed(evals_db) if e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
                                         acc_val = ai_eval_record['ai_accuracy'] if ai_eval_record else v.get('accuracy', 0)
                                         acc_text = f"{acc_val}%" if acc_val > 0 else "Chưa phân tích"
                                         st.write(f"**Độ chính xác AI:** {acc_text}")
