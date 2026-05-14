@@ -4338,12 +4338,18 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                 st.warning("ℹ️ Bạn chưa có dữ liệu phân tích chi tiết nào được gửi từ Nghiên cứu viên.")
 
             with tab_charts:
-                st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LẦN TẬP GẦN NHẤT)")
-                hien_thi_tab_phan_tich(key_suffix="pat_eval")
+                if st.session_state.get('stats') and (selected_v or st.session_state.get('has_data')):
+                    st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI")
+                    hien_thi_tab_phan_tich(key_suffix="pat_eval")
+                else:
+                    st.info("🕒 Kết quả phân tích chi tiết đang được chờ Bác sĩ/NCV phê duyệt. Bạn có thể chọn các phiên tập cũ ở trên để xem lại.")
                 
             with tab_media:
-                st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
-                hien_thi_frames_day_du(key_suffix="pat_results")
+                if st.session_state.get('processed_video_path') and (selected_v or st.session_state.get('has_data')):
+                    st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
+                    hien_thi_frames_day_du(key_suffix="pat_results")
+                else:
+                    st.info("🎬 Video trích xuất khung xương sẽ hiển thị tại đây sau khi được Nhóm nghiên cứu gửi cho bạn.")
 
 def hien_thi_tab_khai_bao_trieu_chung():
     st.markdown("## 🩺 KHAI BÁO TRIỆU CHỨNG & CẢM NHẬN")
