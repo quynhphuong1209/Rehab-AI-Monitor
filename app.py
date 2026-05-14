@@ -4306,7 +4306,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                               if v.get('username') == p_username and v.get('metrics') and v.get('video_name') in sent_video_names]
 
             # Kiểm tra trạng thái: Đã bấm "Làm mới" chưa?
-            # 'fresh_session' = True nghĩa là bệnh nhân đã bấm Làm mới -> chỉ hiện lịch sử
+            # 'fresh_session' = True nghĩa là bệnh nhân đã bấm Làm mới -> hiện chờ đợi + lịch sử
             is_fresh_session = st.session_state.get('fresh_session', False)
 
             if my_history_vids:
@@ -4353,7 +4353,34 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                 else:
                     # ===================================================
                     # CHẾ ĐỘ LỊCH SỬ: Sau khi bấm Làm mới
+                    # Phần trên (tab_eval): Hiện thông báo chờ NCV gửi kết quả mới
+                    # Phần dưới (tab_charts + tab_media): Vẫn hiện lịch sử đầy đủ
                     # ===================================================
+
+                    # --- PHẦN TRÊN (tab_eval): Thông báo chờ kết quả mới từ NCV ---
+                    st.markdown("---")
+                    st.markdown("""
+                    <div style="
+                        background: linear-gradient(135deg, rgba(0,114,255,0.08) 0%, rgba(0,198,255,0.08) 100%);
+                        border: 1px solid rgba(0,198,255,0.3);
+                        border-left: 5px solid #00c6ff;
+                        border-radius: 16px;
+                        padding: 28px 24px;
+                        text-align: center;
+                        margin: 20px 0;
+                    ">
+                        <div style="font-size: 3rem; margin-bottom: 12px;">⏳</div>
+                        <h3 style="color: #00c6ff; margin: 0 0 10px 0; font-size: 1.3rem;">
+                            Đang chờ Nghiên cứu viên gửi kết quả bài tập mới
+                        </h3>
+                        <p style="color: #aaa; margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                            Bạn đã gửi video tập luyện. Nghiên cứu viên (NCV) đang phân tích và sẽ gửi kết quả AI cho bạn sớm nhất có thể.<br>
+                            <span style="color: #ffd700;">💡 Trong lúc chờ, bạn có thể xem lại lịch sử tập luyện bên dưới.</span>
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # Hiện selectbox lịch sử ngay tại tab_eval (thay vì ở tab_charts)
                     st.markdown("### 📅 XEM LẠI LỊCH SỬ TẬP LUYỆN")
                     selected_v = st.selectbox(
                         "Chọn ngày và bài tập bạn muốn xem lại:",
@@ -4361,6 +4388,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                         format_func=lambda x: f"🕒 {x.get('time', 'N/A')} - Bài: {x.get('exercise', 'N/A')} (Đạt: {x.get('accuracy', 0)}%)",
                         key="patient_history_selector"
                     )
+
                     if selected_v:
                         st.session_state.stats = selected_v.get('metrics')
                         st.session_state.processed_video_path = selected_v.get('processed_path')
@@ -4372,6 +4400,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
                             try: st.session_state.angle_df = pd.read_csv(selected_v['df_path'])
                             except: pass
 
+                        # --- PHẦN LỊCH SỬ: Tab Phân tích và Tab Video đều hiện đầy đủ ---
                         with tab_charts:
                             st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI (LỊCH SỬ)")
                             hien_thi_tab_phan_tich(key_suffix="pat_hist")
