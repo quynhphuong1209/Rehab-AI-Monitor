@@ -5877,13 +5877,19 @@ def main():
                 st.markdown("### ✅ PHÂN TÍCH HOÀN TẤT")
                 st.info("💡 Bạn đã hoàn thành bài tập này. Hãy xem kết quả ở các Tab khác.")
                 if st.button("🔄 LÀM MỚI ĐỂ TẬP BÀI KHÁC", width="stretch", type="primary"):
-                    # Xóa sạch 100% dữ liệu cũ
-                    for key in ['has_data', 'stats', 'angle_df', 'processed_video_path', 'current_df_csv_path', 'uploaded_file_name']:
+                    # Xóa sạch 100% dữ liệu của phiên tập hiện tại
+                    keys_to_clear = [
+                        'has_data', 'stats', 'angle_df', 'processed_video_path', 
+                        'current_df_csv_path', 'uploaded_file_name', 'all_frames_data_path',
+                        'processing', 'temp_folder', 'zip_data', 'frame_paths'
+                    ]
+                    for key in keys_to_clear:
                         if key in st.session_state:
                             st.session_state[key] = None
+                    
                     st.session_state.has_data = False
                     st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
-                    st.cache_data.clear() # Xóa bộ nhớ đệm
+                    st.cache_data.clear() # Xóa bộ nhớ đệm hình ảnh/biểu đồ
                     st.rerun()
             
             # XỬ LÝ VIDEO
