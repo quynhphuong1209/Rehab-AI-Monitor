@@ -37,6 +37,7 @@ Tài liệu này mô tả chi tiết về cấu trúc mã nguồn, thiết kế 
 
 ### 📊 Phân Tích Kỹ Thuật (Nghiên cứu viên)
 - **NCV Dashboard:** Truy cập sâu vào cấu hình mô hình (Confidence, Skip Frames), xem tọa độ khớp và trích xuất dữ liệu frame.
+- **Unified Results View:** NCV xem được cả nhận xét của Bác sĩ và kết quả AI trong cùng một màn hình tinh gọn để đối chiếu dữ liệu nghiên cứu mà không bị chồng chéo tính năng.
 - **Export:** Công cụ xuất CSV và ZIP frame được tích hợp sẵn để phục vụ báo cáo khoa học.
 
 ---
