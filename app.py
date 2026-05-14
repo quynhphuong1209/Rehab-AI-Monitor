@@ -417,10 +417,20 @@ st.markdown("""
     /* === TẢI FONT BIỂU TƯỢNG TRỰC TIẾP TỪ GOOGLE === */
     @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-    /* === KHỬ CHỮ RÁC TRÊN NÚT SIDEBAR & TOOLBAR === */
+    /* === ẨN HỆ THỐNG STREAMLIT (HEADER, FOOTER, MENU) === */
+    header[data-testid="stHeader"], 
+    footer, 
+    #MainMenu, 
+    [data-testid="stToolbar"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* === KHỬ CHỮ RÁC TRÊN NÚT SIDEBAR === */
     [data-testid="stSidebarCollapseButton"] button, 
-    [data-testid="stExpandSidebarButton"] button,
-    [data-testid="stToolbar"] button {
+    [data-testid="stExpandSidebarButton"] button {
         color: transparent !important;
         text-indent: -9999px !important;
         overflow: hidden !important;
@@ -564,7 +574,7 @@ st.markdown("""
 
     /* ĐẨY GIAO DIỆN LÊN CAO TỐI ĐA */
     .block-container {
-        padding-top: 2rem !important;
+        padding-top: 1rem !important;
         padding-bottom: 10rem !important; /* Thêm khoảng trống cuối trang để kéo xuống hết cỡ */
     }
     
