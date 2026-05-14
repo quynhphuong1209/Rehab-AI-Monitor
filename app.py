@@ -2203,19 +2203,41 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         sounds_dir = ensure_voice_files()
         if sounds_dir and audio_events:
             total_duration_ms = int((tong_frame / fps_export) * 1000) + 1000
-            final_audio = AudioSegment.silent(duration=total_duration_ms)
+            # GIẢI PHÁP CHỐNG SẬP WEB (OOM ERROR): Ghép âm thanh nối tiếp thay vì đè lên toàn bộ track
+            from pydub import AudioSegment
             
             sounds = {}
             for s in ["dung", "gan_dung", "sai"]:
                 sp = os.path.join(sounds_dir, f"{s}.mp3")
                 if os.path.exists(sp):
                     sounds[s] = AudioSegment.from_mp3(sp)
+                    
+            final_audio = AudioSegment.empty()
+            last_ms = 0
             
             for ev in audio_events:
                 state = ev['state']
                 time_ms = int(ev['time'] * 1000)
                 if state in sounds:
-                    final_audio = final_audio.overlay(sounds[state], position=time_ms)
+                    snd = sounds[state]
+                    silence_dur = time_ms - last_ms
+                    
+                    if silence_dur > 0:
+                        final_audio += AudioSegment.silent(duration=silence_dur)
+                    elif silence_dur < 0:
+                        continue # Tránh lỗi âm thanh bị đè nếu thao tác quá nhanh
+                        
+                    final_audio += snd
+                    last_ms = time_ms + len(snd)
+                    
+                    import gc
+                    gc.collect() # Dọn rác bộ nhớ ngay lập tức để không bị sập RAM
+            
+            # Thêm khoảng lặng cuối video nếu cần
+            if total_duration_ms > last_ms:
+                final_audio += AudioSegment.silent(duration=total_duration_ms - last_ms)
+            else:
+                final_audio = final_audio[:total_duration_ms]
             
             final_audio.export(mixed_audio_path, format="wav")
             audio_mixed = True
