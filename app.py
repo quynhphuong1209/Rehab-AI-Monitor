@@ -4307,12 +4307,24 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
             
             if my_history_vids:
                 st.markdown("### 📅 CHỌN PHIÊN TẬP ĐỂ XEM CHI TIẾT")
-                # Thêm tùy chọn trống ở đầu để không tự động nạp dữ liệu cũ
+                
+                # TỰ ĐỘNG TÌM BÀI TẬP ĐANG ACTIVE (VỪA GỬI XONG)
+                active_name = st.session_state.get('active_video_name')
+                default_index = 0 # Mặc định là None (phần tử đầu tiên)
+                
                 history_options = [None] + my_history_vids
                 
+                if active_name:
+                    # Nếu có bài đang active, tìm xem NCV đã gửi kết quả chưa
+                    for idx, v in enumerate(history_options):
+                        if v and v.get('video_name') == active_name:
+                            default_index = idx
+                            break
+
                 selected_v = st.selectbox(
                     "Chọn ngày và bài tập bạn muốn xem lại:",
                     history_options,
+                    index=default_index,
                     format_func=lambda x: f"🕒 {x.get('time', 'N/A')} - Bài: {x.get('exercise', 'N/A')} (Đạt: {x.get('accuracy', 0)}%)" if x else "--- Mời bạn chọn bài tập đã lưu để xem lại ---",
                     key="patient_history_selector"
                 )
@@ -5902,7 +5914,7 @@ def main():
                     keys_to_clear = [
                         'has_data', 'stats', 'angle_df', 'processed_video_path', 
                         'current_df_csv_path', 'uploaded_file_name', 'all_frames_data_path',
-                        'processing', 'temp_folder', 'zip_data', 'frame_paths'
+                        'processing', 'temp_folder', 'zip_data', 'frame_paths', 'active_video_name'
                     ]
                     for key in keys_to_clear:
                         if key in st.session_state:
@@ -6155,9 +6167,9 @@ def main():
                         st.success("✅ Đã gửi video cho BÁC SĨ - KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
                         st.balloons()
                         
-                        # RESET NGAY ĐỂ BỆNH NHÂN NỘP BÀI KHÁC
-                        st.session_state.has_data = False
-                        st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
+                        # GHI NHỚ BÀI ĐANG TẬP ĐỂ TỰ ĐỘNG HIỆN KẾT QUẢ KHI CÓ
+                        st.session_state.active_video_name = file_upload.name
+                        st.session_state.has_data = False # Đợi NCV gửi mới có data
                         time.sleep(2)
                         st.rerun()
 
