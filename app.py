@@ -6107,31 +6107,22 @@ def main():
         if has_video_output: tab_titles.append("🎬 VIDEO & ẢNH")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        # Bệnh nhân không dùng st.tabs hàng ngang, dùng biến patient_page
         tab_titles = [] 
     else: # Nghiên cứu viên
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
-    
-    # Chỉ tạo tab nếu không phải bệnh nhân
-    if user_role != "Bệnh nhân":
-        all_tabs = st.tabs(tab_titles)
-        tab_map = {title: all_tabs[i] for i, title in enumerate(tab_titles)}
-    else:
-        tab_map = {}
-        # Mô phỏng tab_map cho Bệnh nhân để code xử lý bên dưới không lỗi
-        # Nội dung sẽ được hiển thị trực tiếp trong container chính
-        page_to_show = st.session_state.get('patient_page', '🏠 TRANG CHỦ')
-    else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
-        
-    all_tabs = st.tabs(tab_titles)
     
     # === HỖ TRỢ CHUYỂN TAB TỰ ĐỘNG QUA SESSION STATE ===
     if st.session_state.get('trigger_tab_switch'):
         chuyen_tab_bang_js(st.session_state.trigger_tab_switch)
         st.session_state.trigger_tab_switch = None
-    # Tạo mapping để truy cập tab theo tên, tránh lỗi index khi số lượng tab thay đổi theo vai trò
-    tab_map = {title: all_tabs[i] for i, title in enumerate(tab_titles)}
+
+    # Khởi tạo tab_map
+    tab_map = {}
+    if user_role != "Bệnh nhân":
+        all_tabs = st.tabs(tab_titles)
+        tab_map = {title: all_tabs[i] for i, title in enumerate(tab_titles)}
+    else:
+        page_to_show = st.session_state.get('patient_page', '🏠 TRANG CHỦ')
     
     # ==================== TAB 1: TRANG CHỦ ====================
     if "🏠 TRANG CHỦ" in tab_map:
