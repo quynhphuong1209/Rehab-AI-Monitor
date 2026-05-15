@@ -111,9 +111,6 @@ OUTPUT_VIDEOS_DIR = "output_videos"
 def hien_thi_footer_chung():
     """Hiển thị chân trang (footer) chuyên nghiệp cho dự án Rehab-AI-Monitor"""
     import base64
-    user_role = st.session_state.get('user_info', {}).get('role', 'Bệnh nhân')
-    is_patient = user_role == "Bệnh nhân"
-    
     try:
         if os.path.exists("abc1.png"):
             with open("abc1.png", "rb") as img_file:
@@ -128,12 +125,11 @@ def hien_thi_footer_chung():
     footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
     footer_text = "#444" if is_light else "#ccc"
     border_color = "#0072ff" if is_light else "#00c6ff"
-    title_color = "#0072ff" 
+    title_color = "#0072ff" # Màu xanh đậm nổi bật cho cả 2 chế độ
     school_name_color = "#1a1a2e" if is_light else "#fff"
     col_border = "rgba(0,0,0,0.1)" if is_light else "rgba(255,255,255,0.1)"
     
-    # CSS remains the same
-    footer_html_styles = f"""<style>
+    footer_html = f"""<style>
 .main-footer {{background:{footer_bg};padding:60px 20px 40px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:3px solid {border_color};box-shadow:0 -15px 35px rgba(0, 114, 255, 0.1);margin-top:80px;position:relative;overflow:hidden}}
 .footer-container {{display:flex;flex-wrap:wrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:20px}}
 .footer-col {{flex:1;min-width:280px;padding:20px 30px;border-right:1px solid {col_border}}}
@@ -143,42 +139,51 @@ def hien_thi_footer_chung():
 .footer-title {{color:{title_color} !important;font-weight:bold;margin-bottom:20px;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:10px;border-bottom:2px solid {col_border};padding-bottom:10px}}
 .info-row {{margin-bottom:10px;font-size:0.95rem;display:grid;grid-template-columns:85px 1fr;line-height:1.4}}
 .info-label {{font-weight:bold;opacity:0.9}}
+.execution-grid {{display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:25px;margin-top:15px}}
+.execution-item {{border-left:2px solid {col_border};padding-left:12px}}
+.execution-name {{font-size:1.05rem;font-weight:bold;color:{title_color};display:block;margin-bottom:3px}}
+.execution-info {{font-size:0.85rem;opacity:0.8;margin-bottom:5px;display:block}}
+.execution-email {{font-size:0.8rem;text-decoration:none;color:{footer_text};opacity:0.7;display:flex;align-items:center;gap:5px}}
 .footer-bottom {{padding-top:30px;margin-top:50px;border-top:1px solid {col_border};font-size:0.9rem;color:{"#666" if is_light else "#888"};text-align:center}}
 .school-logo-section {{text-align:center;margin-bottom:15px}}
-.footer-logo-img {{width:95px;margin-bottom:10px}}
+.footer-logo-img {{width:95px;margin-bottom:10px;filter:{"none" if is_light else "drop-shadow(0 0 8px rgba(0, 198, 255, 0.4))"}}}
 .school-name-text {{font-weight:bold;color:{school_name_color};font-size:1.15rem;line-height:1.2}}
-</style>"""
+a {{color:{title_color};text-decoration:none}}
 
-    content = f"""
-<div class="main-footer">
-<div class="footer-container">
-<div class="footer-col">
-<div class="school-logo-section">
-<img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-<div class="school-name-text">TRƯỜNG ĐẠI HỌC<br>Y TẾ CÔNG CỘNG</div>
-</div>
-</div>
-<div class="footer-col medium">
-<div class="footer-title">👤 LIÊN HỆ HỖ TRỢ</div>
-<div class="info-row"><span class="info-label">Chủ nhiệm:</span><span><b>Đinh Lê Quỳnh Phương</b></span></div>
-<div style="margin-bottom:10px;font-size:0.95rem;line-height:1.4">
-<div class="info-label">Email:</div>
-<div style="word-break:break-all"><a href="mailto:2211090031@studenthuph.edu.vn">2211090031@studenthuph.edu.vn</a></div>
-</div>
-</div>
-<div class="footer-col wide">
-<div class="footer-title">🎯 CÔNG NGHỆ & MỤC TIÊU</div>
-<p style="font-size:0.9rem; line-height:1.6; opacity:0.9;">Hệ thống ứng dụng <b>Trí tuệ nhân tạo (AI)</b> để hỗ trợ giám sát tập luyện phục hồi chức năng vai tại nhà, giúp tăng hiệu quả điều trị và tiết kiệm thời gian cho người bệnh.</p>
-</div>
-</div>
-<div class="footer-bottom"><b>REHAB-AI-MONITOR</b> | © 2026 TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
-</div>"""
+/* TỐI ƯU CHO DI ĐỘNG */
+@media (max-width: 1024px) {{
+    .footer-container {{ flex-direction: column; align-items: stretch; gap: 40px; }}
+    .footer-col {{ border-right: none !important; border-bottom: 1px solid {col_border}; padding-bottom: 30px; width: 100% !important; min-width: 100% !important; flex: none !important; }}
+    .footer-col:last-child {{ border-bottom: none; }}
+    .execution-grid {{ grid-template-columns: 1fr; }}
+}}
 
-    if is_patient:
-        st.markdown(footer_html_styles + content, unsafe_allow_html=True)
-    else:
-        # Original full footer for other roles
-        footer_html = f"""{footer_html_styles}
+/* TỐI ƯU HÓA CÁC TAB - ĐẢM BẢO CHỮ KHÔNG BỊ TRÀN */
+.stTabs [data-baseweb="tab-list"] {{
+    gap: 10px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 5px !important;
+}}
+.stTabs [data-baseweb="tab"] {{
+    height: 48px !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+    flex-shrink: 0 !important;
+    padding: 0 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}}
+.stTabs [data-baseweb="tab"] p {{
+    font-size: 0.95rem !important;
+    font-weight: bold !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+}}
+</style>
 <div class="main-footer">
 <div class="footer-container">
 <div class="footer-col">
@@ -219,7 +224,7 @@ def hien_thi_footer_chung():
 </div>
 <div class="footer-bottom">Đề tài NCKH cấp Trường | <b>REHAB-AI-MONITOR</b> | © 2026 NHÓM NGHIÊN CỨU TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
 </div>"""
-        st.markdown(footer_html, unsafe_allow_html=True)
+    st.markdown(footer_html, unsafe_allow_html=True)
 
 def load_data(file_path):
     if os.path.exists(file_path):
@@ -3838,57 +3843,100 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                     if st.session_state.get('frames_zip'):
                         with open(st.session_state.frames_zip, "rb") as f:
                             st.download_button("📦 Toàn bộ khung hình (ZIP)", f, "all_frames.zip", "application/zip", width="stretch", key=f"dl_f7_{key_suffix}")
-def hien_thi_tab_huong_dan_nghien_cuu_benh_nhan():
-    """Gộp Tab Hướng dẫn và Thông tin nghiên cứu dành riêng cho bệnh nhân"""
-    st.markdown("## 📖 HƯỚNG DẪN & THÔNG TIN HỆ THỐNG")
+def hien_thi_tab_huong_dan():
+    st.markdown("## 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG")
     
     is_light = st.session_state.theme == 'light'
-    card_bg = "#ffffff" if is_light else "rgba(255, 255, 255, 0.05)"
+    card_bg = "#f8f9fa" if is_light else "rgba(255, 255, 255, 0.05)"
     text_color = "#333" if is_light else "#ccc"
-    border_color = "#00c6ff" if is_light else "#2a5298"
     
-    t1, t2 = st.tabs(["🚀 QUY TRÌNH TẬP LUYỆN", "🔬 THÔNG TIN NGHIÊN CỨU"])
+    tab_h1, tab_h2, tab_h3 = st.tabs(["👤 DÀNH CHO BỆNH NHÂN", "🩺 DÀNH CHO BÁC SĨ / KTV", "🔬 DÀNH CHO NGHIÊN CỨU VIÊN"])
     
-    with t1:
-        st.markdown("### 🛠️ Các bước thực hiện")
+    with tab_h1:
+        st.markdown("### 🛠️ Quy trình tập luyện 5 bước")
+        
+        col_st1, col_st2 = st.columns([1, 1])
+        with col_st1:
+            st.markdown(f"""
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 1: Chọn bài tập</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Chọn động tác cần tập ở Sidebar trái và xem video hướng dẫn mẫu.</p>
+            </div>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 2: Chuẩn bị & Quay phim</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Đặt điện thoại cố định, đứng cách 2-3m sao cho thấy rõ khớp vai và khuỷu tay.</p>
+            </div>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 3: Tải video lên</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Tại tab <b>TRANG CHỦ</b>, tải file video của bạn lên hệ thống.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col_st2:
+            st.markdown(f"""
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 4: Gửi cho chuyên gia</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Bấm nút <b>GỬI CHO BÁC SĨ</b> để video được chuyển đến bộ phận chuyên môn.</p>
+            </div>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Bước 5: Xem kết quả</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Khi bác sĩ đánh giá xong, bạn sẽ nhận được thông báo tại tab <b>KẾT QUẢ</b>.</p>
+            </div>
+            <div style="padding: 15px; background: rgba(0, 198, 255, 0.1); border-radius: 10px; border: 1px dashed #00c6ff;">
+                <p style="margin:0; color:#00c6ff; font-size:0.85rem;">💡 <b>Mẹo:</b> Mặc quần áo gọn gàng, màu tương phản với nền để AI nhận diện tốt nhất.</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    with tab_h2:
+        st.markdown("### 🩺 Quy trình dành cho chuyên gia Y tế")
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f"""
-            <div style="background:{card_bg}; padding:20px; border-radius:15px; border-left:6px solid #00c6ff; margin-bottom:15px; border:1px solid {card_bg if is_light else 'rgba(255,255,255,0.1)'};">
-                <h4 style="margin:0; color:#00c6ff;">1. Chọn động tác</h4>
-                <p style="margin:5px 0; color:{text_color};">Chọn bài tập ngay tại <b>Trang chủ</b> và xem video mẫu để tập theo.</p>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">1. Tiếp nhận video</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Xem danh sách video bệnh nhân gửi đến ngay tại <b>Trang chủ</b>.</p>
             </div>
-            <div style="background:{card_bg}; padding:20px; border-radius:15px; border-left:6px solid #00c6ff; margin-bottom:15px; border:1px solid {card_bg if is_light else 'rgba(255,255,255,0.1)'};">
-                <h4 style="margin:0; color:#00c6ff;">2. Quay video tập</h4>
-                <p style="margin:5px 0; color:{text_color};">Đặt máy cách 2-3m, đảm bảo thấy rõ toàn bộ cánh tay và vai khi tập.</p>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">2. Đánh giá AI</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Bấm nút <b>Phân tích</b> để hệ thống tự động tính toán góc độ chi tiết.</p>
             </div>
             """, unsafe_allow_html=True)
         with c2:
             st.markdown(f"""
-            <div style="background:{card_bg}; padding:20px; border-radius:15px; border-left:6px solid #00c6ff; margin-bottom:15px; border:1px solid {card_bg if is_light else 'rgba(255,255,255,0.1)'};">
-                <h4 style="margin:0; color:#00c6ff;">3. Tải lên & Gửi</h4>
-                <p style="margin:5px 0; color:{text_color};">Tải video lên và nhấn nút gửi để Bác sĩ nhận được kết quả của bạn.</p>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">3. Đưa ra chỉ định</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Điền phiếu đánh giá lâm sàng và gửi lời khuyên trực tiếp cho bệnh nhân.</p>
             </div>
-            <div style="background:{card_bg}; padding:20px; border-radius:15px; border-left:6px solid #ffd700; margin-bottom:15px; border:1px solid {card_bg if is_light else 'rgba(255,255,255,0.1)'};">
-                <h4 style="margin:0; color:#ffd700;">4. Chờ nhận phản hồi</h4>
-                <p style="margin:5px 0; color:{text_color};">Kết quả và lời khuyên của Bác sĩ sẽ xuất hiện trong mục <b>Kết quả</b>.</p>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">4. Theo dõi tiến trình</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Xem biểu đồ phục hồi của bệnh nhân qua các tuần để điều chỉnh phác đồ.</p>
             </div>
             """, unsafe_allow_html=True)
 
-    with t2:
-        st.markdown("### 🔬 Về dự án nghiên cứu")
-        st.markdown("""
-        Hệ thống này là một phần của đề tài nghiên cứu nhằm ứng dụng Công nghệ Trí tuệ nhân tạo vào hỗ trợ phục hồi chức năng cho bệnh nhân viêm quanh khớp vai.
-        
-        **Lợi ích khi tham gia:**
-        - Được giám sát tập luyện từ xa bởi các chuyên gia.
-        - Nhận phản hồi chính xác về động tác tập qua phân tích của AI.
-        - Theo dõi tiến trình phục hồi một cách khoa học qua các biểu đồ.
-        
-        **Bảo mật thông tin:**
-        Toàn bộ dữ liệu video và thông tin cá nhân của bạn được cam kết bảo mật tuyệt đối, chỉ phục vụ cho mục đích điều trị và nghiên cứu khoa học theo quy định của Hội đồng Đạo đức.
-        """)
-        st.info("💡 Nếu có bất kỳ thắc mắc nào, bạn có thể liên hệ trực tiếp với chúng tôi qua thông tin ở dưới chân trang.")
+    with tab_h3:
+        st.markdown("### 🔬 Dành cho Nghiên cứu viên AI")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"""
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Phân tích vĩ mô</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Theo dõi các chỉ số đo lường độ chính xác: <b>Accuracy, F1-Score, ICC</b>.</p>
+            </div>
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Kiểm định chéo</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Đối chiếu kết quả AI với <b>'Golden Standard'</b> từ các bác sĩ chuyên khoa.</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"""
+            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
+                <h4 style="margin:0; color:#00c6ff;">Quản lý dữ liệu</h4>
+                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Xuất dữ liệu tọa độ khớp (Keypoints) dưới dạng <b>CSV</b> để huấn luyện AI.</p>
+            </div>
+            <div style="padding: 15px; background: rgba(0, 198, 255, 0.1); border-radius: 10px; border: 1px dashed #00c6ff;">
+                <p style="margin:0; color:#00c6ff; font-size:0.85rem;">💡 <b>Hệ thống:</b> Cung cấp các bộ công cụ chuyên sâu để tinh chỉnh mô hình Pose Estimation.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 def hien_thi_tab_nckh():
     is_light = st.session_state.theme == 'light'
@@ -5911,36 +5959,27 @@ def main():
             st.rerun()
         st.markdown("---")
 
-    # TOP HEADER - Tối giản cho Bệnh nhân
+    # TOP HEADER - Đã được tối ưu cho cả Light và Dark mode
     is_light = st.session_state.get('theme') == 'light'
-    user_role = st.session_state.user_info.get('role', 'Bệnh nhân')
     header_h1_color = "#FFD700"
     header_p_color = "#ffffff" if not is_light else "#333333"
+    badge_bg = "rgba(255, 215, 0, 0.1)"
+    badge_border = "#FFD700"
     
-    if user_role == "Bệnh nhân":
-        st.markdown(f"""
-        <div class="main-header" style="text-align: center; margin-bottom: 2rem;">
-            <h1 style="color: {header_h1_color}; font-family: 'Times New Roman', Times, serif !important; font-weight: bold; font-size: 2.8rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🏥 Rehab AI Monitor</h1>
-            <p style="color: {header_p_color}; font-family: 'Times New Roman', Times, serif !important; font-size: 1.2rem; opacity: 0.8;">Hệ thống hỗ trợ tập luyện phục hồi chức năng thông minh</p>
+    st.markdown(f"""
+    <div class="main-header" style="text-align: center; margin-bottom: 2rem; background: transparent !important; border: none !important; box-shadow: none !important;">
+        <h1 style="color: {header_h1_color}; font-family: 'Times New Roman', Times, serif !important; font-weight: bold; font-size: 3rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🏥 Rehab AI Monitor</h1>
+        <p style="color: {header_p_color}; font-family: 'Times New Roman', Times, serif !important; font-style: italic; font-size: 1.25rem;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
+        <div class="research-badge" style="margin-top: 1rem;">
+            <span style="background: {badge_bg}; color: {header_h1_color}; padding: 6px 18px; border-radius: 20px; border: 1px solid {badge_border}; font-size: 0.9rem; font-weight: bold; font-family: 'Times New Roman', Times, serif !important;">
+                📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC CẤP TRƯỜNG - NĂM HỌC 2025-2026
+            </span>
         </div>
-        """, unsafe_allow_html=True)
-    else:
-        badge_bg = "rgba(255, 215, 0, 0.1)"
-        badge_border = "#FFD700"
-        st.markdown(f"""
-        <div class="main-header" style="text-align: center; margin-bottom: 2rem;">
-            <h1 style="color: {header_h1_color}; font-family: 'Times New Roman', Times, serif !important; font-weight: bold; font-size: 3rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🏥 Rehab AI Monitor</h1>
-            <p style="color: {header_p_color}; font-family: 'Times New Roman', Times, serif !important; font-style: italic; font-size: 1.25rem;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
-            <div class="research-badge" style="margin-top: 1rem;">
-                <span style="background: {badge_bg}; color: {header_h1_color}; padding: 6px 18px; border-radius: 20px; border: 1px solid {badge_border}; font-size: 0.9rem; font-weight: bold;">
-                    📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC CẤP TRƯỜNG - NĂM HỌC 2025-2026
-                </span>
-            </div>
-            <p style="font-size: 0.9rem; color: {'#ccc' if not is_light else '#666'}; margin-top: 0.8rem;">
-                Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        <p style="font-size: 0.9rem; color: {'#ccc' if not is_light else '#666'}; margin-top: 0.8rem; font-family: 'Times New Roman', Times, serif !important;">
+            Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     user_role = st.session_state.user_info.get('role', 'Bệnh nhân')
     
@@ -6053,38 +6092,50 @@ def main():
                     st.info("Chưa có BN gửi thông tin triệu chứng.")
             
             else: # Vai trò Bệnh nhân
-                # Sidebar dành cho bệnh nhân - Chỉ hiển thị Menu Điều hướng (nút bấm)
-                st.markdown("### 🧭 DANH MỤC")
-                
-                # Khởi tạo trang hiện tại của bệnh nhân
-                if 'patient_page' not in st.session_state:
-                    st.session_state.patient_page = "🏠 TRANG CHỦ"
-                
-                # Tạo các nút điều hướng dọc
-                if st.button("🏠 TRANG CHỦ", use_container_width=True, type="primary" if st.session_state.patient_page == "🏠 TRANG CHỦ" else "secondary"):
-                    st.session_state.patient_page = "🏠 TRANG CHỦ"
-                    st.rerun()
-                if st.button("📊 KẾT QUẢ TẬP", use_container_width=True, type="primary" if st.session_state.patient_page == "📊 KẾT QUẢ" else "secondary"):
-                    st.session_state.patient_page = "📊 KẾT QUẢ"
-                    st.rerun()
-                if st.button("⏰ LỊCH HẸN & NHẮC", use_container_width=True, type="primary" if st.session_state.patient_page == "⏰ LỊCH NHẮC NHỞ" else "secondary"):
-                    st.session_state.patient_page = "⏰ LỊCH NHẮC NHỞ"
-                    st.rerun()
-                if st.button("📖 HƯỚNG DẪN", use_container_width=True, type="primary" if st.session_state.patient_page == "📖 HƯỚNG DẪN" else "secondary"):
-                    st.session_state.patient_page = "📖 HƯỚNG DẪN"
-                    st.rerun()
-                if st.button("💬 PHẢN HỒI", use_container_width=True, type="primary" if st.session_state.patient_page == "💬 PHẢN HỒI" else "secondary"):
-                    st.session_state.patient_page = "💬 PHẢN HỒI"
-                    st.rerun()
+                st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
+                ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
+                ma_nguoi_dung = st.text_input("Mã số định danh", placeholder="VD: BN0001 / BS0001")
+                col1, col2 = st.columns(2)
+                with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
+                with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
                 
                 st.markdown("---")
-                st.markdown("### 📞 HỖ TRỢ KHẨN CẤP")
-                st.markdown("""
-                <div style="background:rgba(255,107,107,0.1); padding:10px; border-radius:10px; border:1px solid #FF6B6B; text-align:center;">
-                    <p style="margin:0; font-size:0.8rem; color:#888;">Hotline Bác sĩ</p>
-                    <p style="margin:0; font-weight:bold; color:#FF6B6B; font-size:1.1rem;">1900 6868</p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown("### 🩺 KHAI BÁO TRIỆU CHỨNG")
+                s_desc = st.text_area("Mô tả cảm giác đau:", 
+                                      placeholder="VD: Đau nhói ở khớp vai...",
+                                      height=100, key="s_sb_desc")
+                s_vas = st.select_slider("Mức độ đau (VAS):", 
+                                         options=list(range(11)), 
+                                         value=3, key="s_sb_vas")
+                
+                st.markdown("---")
+                st.markdown("### 🎯 CHỌN BÀI TẬP")
+                ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+                bai_tap = BAI_TAP[ma_bai_tap]
+                
+                st.markdown("### 📺 VIDEO HƯỚNG DẪN")
+                st.video(bai_tap["youtube"])
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("📤 GỬI THÔNG TIN CHO BÁC SĨ - KTV VÀ NCV", width="stretch", type="primary"):
+                    if ten_nguoi_dung and ma_nguoi_dung and gioi_tinh != "" and s_desc and ma_bai_tap:
+                        s_data = load_data(SYMPTOMS_FILE)
+                        s_data.append({
+                            "username": st.session_state.user_info['username'],
+                            "full_name": ten_nguoi_dung,
+                            "patient_id": ma_nguoi_dung,
+                            "age": tuoi,
+                            "gender": gioi_tinh,
+                            "exercise": BAI_TAP[ma_bai_tap]['ten'],
+                            "symptoms": s_desc,
+                            "vas": s_vas,
+                            "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
+                        })
+                        save_data(SYMPTOMS_FILE, s_data)
+                        st.success("✅ Đã gửi thông tin đầy đủ cho BÁC SĨ - KTV và NCV thành công!")
+                        st.balloons()
+                    else:
+                        st.warning("⚠️ Vui lòng điền đầy đủ các thông tin: Họ tên, Mã định danh, Giới tính, Bài tập và Mô tả triệu chứng.")
 
         
         st.markdown("---")
@@ -6101,28 +6152,45 @@ def main():
     if user_role == "Quản trị viên":
         tab_titles = ["🏠 TRANG CHỦ", "🛠️ QUẢN TRỊ VIÊN", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bác sĩ / KTV PHCN":
-        # ... (logic remains same)
+        # Kiểm tra BN được chọn có kết quả AI chưa để hiện Tab Kết quả AI
+        selected_video_main = st.session_state.get('current_eval_video')
+        has_ai_main = False
+        has_video_output = False
+        if selected_video_main:
+            evals_main = load_data(EVALUATIONS_FILE)
+            # Kiểm tra xem AI đã gửi kết quả phân tích chưa
+            has_ai_main = any(
+                e.get('doctor_username') == "AI_Researcher" and 
+                e['patient_username'] == selected_video_main['username'] and
+                (e.get('video_name') == selected_video_main.get('video_name') or 
+                 selected_video_main.get('video_name', '') in e.get('video_name', ''))
+                for e in evals_main
+            )
+            # Kiểm tra xem NCV đã gửi video khung xương (output) chưa
+            # Giả định nếu có folder frames tương ứng thì coi là đã có output
+            video_folder = selected_video_main.get('video_name', '').split('.')[0]
+            frames_path = os.path.join(EXTRACTED_FRAMES_DIR, video_folder)
+            has_video_output = os.path.exists(frames_path) and len(os.listdir(frames_path)) > 0 if os.path.exists(frames_path) else False
+            
         tab_titles = ["🏠 TRANG CHỦ", "📄 PHIẾU NCKH", "📝 ĐÁNH GIÁ PHCN"]
-        if has_ai_main: tab_titles.append("📊 KẾT QUẢ AI")
-        if has_video_output: tab_titles.append("🎬 VIDEO & ẢNH")
+        if has_ai_main:
+            tab_titles.append("📊 KẾT QUẢ AI")
+        if has_video_output:
+            tab_titles.append("🎬 VIDEO & ẢNH")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = [] 
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        
+    all_tabs = st.tabs(tab_titles)
     
     # === HỖ TRỢ CHUYỂN TAB TỰ ĐỘNG QUA SESSION STATE ===
     if st.session_state.get('trigger_tab_switch'):
         chuyen_tab_bang_js(st.session_state.trigger_tab_switch)
         st.session_state.trigger_tab_switch = None
-
-    # Khởi tạo tab_map
-    tab_map = {}
-    if user_role != "Bệnh nhân":
-        all_tabs = st.tabs(tab_titles)
-        tab_map = {title: all_tabs[i] for i, title in enumerate(tab_titles)}
-    else:
-        page_to_show = st.session_state.get('patient_page', '🏠 TRANG CHỦ')
+    # Tạo mapping để truy cập tab theo tên, tránh lỗi index khi số lượng tab thay đổi theo vai trò
+    tab_map = {title: all_tabs[i] for i, title in enumerate(tab_titles)}
     
     # ==================== TAB 1: TRANG CHỦ ====================
     if "🏠 TRANG CHỦ" in tab_map:
@@ -6730,191 +6798,74 @@ def main():
                 else:
                     st.warning("🕒 Nghiên cứu viên chưa thực hiện phân tích AI cho video này.")
 
-    # ==================== HIỂN THỊ NỘI DUNG (DÀNH CHO BỆNH NHÂN - KHÔNG DÙNG ST.TABS) ====================
-    if user_role == "Bệnh nhân":
-        if page_to_show == "🏠 TRANG CHỦ":
-            # TRANG CHỦ MỚI CHO BỆNH NHÂN: Gộp mọi thông tin vào đây
-            st.markdown("## 🏠 TRANG CHỦ - BẮT ĐẦU TẬP LUYỆN")
-            
-            # 1. THÔNG TIN CÁ NHÂN & KHAI BÁO (Dùng Expander để tối giản)
-            with st.expander("👤 THÔNG TIN CÁ NHÂN & TRIỆU CHỨNG", expanded=False):
-                ten_nguoi_dung_p = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A", key="p_name_home")
-                ma_nguoi_dung_p = st.text_input("Mã số định danh", placeholder="VD: BN0001", value=st.session_state.user_info.get('username', ''), key="p_id_home")
-                col1_p, col2_p = st.columns(2)
-                with col1_p: tuoi_p = st.number_input("Tuổi", 0, 120, 22, key="p_age_home")
-                with col2_p: gioi_tinh_p = st.selectbox("Giới tính", ["Nam", "Nữ"], key="p_gender_home")
-                
-                st.markdown("---")
-                st.markdown("### 🩺 KHAI BÁO TRIỆU CHỨNG HÔM NAY")
-                s_desc_p = st.text_area("Mô tả cảm giác đau (nếu có):", placeholder="VD: Đau nhói ở khớp vai khi giơ tay lên...", height=100, key="p_symptom_home")
-                s_vas_p = st.select_slider("Mức độ đau (VAS): 0 (Không đau) -> 10 (Đau dữ dội)", options=list(range(11)), value=3, key="p_vas_home")
+    if "📊 PHÂN TÍCH" in tab_map:
+        with tab_map["📊 PHÂN TÍCH"]:
+            hien_thi_tab_phan_tich(key_suffix="ncv_tab")
 
-            # 2. CHỌN BÀI TẬP & VIDEO MẪU
-            st.markdown("---")
-            st.markdown("### 🎯 CHỌN BÀI TẬP CẦN THỰC HIỆN")
-            ma_bt_p = st.selectbox("Danh sách bài tập:", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="p_exercise_home")
-            bt_p = BAI_TAP[ma_bt_p]
-            
-            # Hiển thị Video hướng dẫn mẫu ngay lập tức
-            c_vid1_p, c_vid2_p = st.columns([1, 1])
-            with c_vid1_p:
-                st.markdown(f"""
-                <div style="background: rgba(0, 198, 255, 0.05); padding: 15px; border-radius: 12px; border-left: 5px solid #00c6ff; height: 100%;">
-                    <h4 style="margin:0; color:#00c6ff;">{bt_p['icon']} Hướng dẫn tập</h4>
-                    <p style="font-size:0.9rem; margin:10px 0;">{bt_p['mo_ta']}</p>
-                    <p style="font-size:0.85rem; opacity:0.8;"><b>Yêu cầu:</b> {bt_p['thoi_gian']}s/lần | {bt_p['lan']} lần/ngày</p>
-                </div>
-                """, unsafe_allow_html=True)
-            with c_vid2_p:
-                st.video(bt_p["youtube"])
-                st.caption("📺 Video hướng dẫn kỹ thuật chuẩn")
-
-            # 3. UPLOAD VIDEO TẬP THỰC TẾ
-            st.markdown("---")
-            st.markdown("### 📤 TẢI VIDEO TẬP CỦA BẠN LÊN")
-            f_up_p = st.file_uploader("Chọn file video vừa quay của bạn", type=["mp4", "mov", "avi", "mkv"], key="p_video_upload_home")
-            
-            if f_up_p:
-                if st.button("🚀 GỬI KẾT QUẢ CHO BÁC SĨ", width="stretch", type="primary", key="p_btn_send_home"):
-                    if ten_nguoi_dung_p and ma_nguoi_dung_p and s_desc_p:
-                        # Lưu triệu chứng
-                        s_data = load_data(SYMPTOMS_FILE)
-                        s_data.append({
-                            "username": st.session_state.user_info['username'],
-                            "full_name": ten_nguoi_dung_p,
-                            "patient_id": ma_nguoi_dung_p,
-                            "age": tuoi_p, "gender": gioi_tinh_p,
-                            "exercise": BAI_TAP[ma_bt_p]['ten'],
-                            "symptoms": s_desc_p, "vas": s_vas_p,
-                            "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
-                        })
-                        save_data(SYMPTOMS_FILE, s_data)
-                        
-                        # Lưu Video
-                        v_list = load_data(VIDEOS_FILE)
-                        v_list.append({
-                            "username": st.session_state.user_info['username'],
-                            "full_name": ten_nguoi_dung_p,
-                            "video_name": f_up_p.name,
-                            "exercise": BAI_TAP[ma_bt_p]['ten'],
-                            "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
-                            "status": "Chờ bác sĩ phân tích"
-                        })
-                        save_data(VIDEOS_FILE, v_list)
-                        st.success("✅ Đã gửi Video và Thông tin cho Bác sĩ thành công!")
-                        st.balloons()
-                    else:
-                        st.warning("⚠️ Vui lòng điền đủ thông tin cá nhân và mô tả triệu chứng.")
-
-        elif page_to_show == "📊 KẾT QUẢ":
+    if "📊 KẾT QUẢ" in tab_map:
+        with tab_map["📊 KẾT QUẢ"]:
             hien_thi_ket_qua_cho_benh_nhan()
-        elif page_to_show == "⏰ LỊCH NHẮC NHỞ":
+    
+    if "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
+        with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]:
+            hien_thi_ket_qua_cho_benh_nhan()
+
+    # ==================== TAB: KHAI BÁO TRIỆU CHỨNG ====================
+    if "🩺 KHAI BÁO TRIỆU CHỨNG" in tab_map:
+        with tab_map["🩺 KHAI BÁO TRIỆU CHỨNG"]:
+            hien_thi_tab_khai_bao_trieu_chung()
+
+    # ==================== TAB: LỊCH NHẮC NHỞ ====================
+    if "⏰ LỊCH NHẮC NHỞ" in tab_map:
+        with tab_map["⏰ LỊCH NHẮC NHỞ"]:
             hien_thi_lich_nhac_nho()
-        elif page_to_show == "📖 HƯỚNG DẪN":
-            hien_thi_tab_huong_dan_nghien_cuu_benh_nhan()
-        elif page_to_show == "💬 PHẢN HỒI":
+
+    # ==================== TAB: VIDEO & ẢNH ====================
+    if "🎬 VIDEO & ẢNH" in tab_map:
+        with tab_map["🎬 VIDEO & ẢNH"]:
+            hien_thi_frames_day_du(key_suffix="ncv_video_tab")
+
+    if "📖 HƯỚNG DẪN" in tab_map:
+        with tab_map["📖 HƯỚNG DẪN"]:
+            hien_thi_tab_huong_dan()
+        
+    if "🏥 KIẾN THỨC PHCN" in tab_map:
+        with tab_map["🏥 KIẾN THỨC PHCN"]:
+            hien_thi_tab_kien_thuc_phcn()
+
+    if "🛠️ QUẢN TRỊ VIÊN" in tab_map:
+        with tab_map["🛠️ QUẢN TRỊ VIÊN"]:
+            hien_thi_tab_quan_tri_vien()
+            
+    if "🔑 ĐỔI MẬT KHẨU" in tab_map:
+        with tab_map["🔑 ĐỔI MẬT KHẨU"]:
+            hien_thi_tab_doi_mat_khau()
+        
+    if "🌐 CÔNG NGHỆ" in tab_map:
+        with tab_map["🌐 CÔNG NGHỆ"]:
+            hien_thi_tab_cong_nghe()
+        
+    if "📚 ĐỀ TÀI NCKH" in tab_map:
+        with tab_map["📚 ĐỀ TÀI NCKH"]:
+            hien_thi_tab_nckh()
+            
+    if "📄 THÔNG TIN NGHIÊN CỨU" in tab_map:
+        with tab_map["📄 THÔNG TIN NGHIÊN CỨU"]:
+            hien_thi_tab_thong_tin_nghien_cuu()
+        
+    if "👥 THÀNH VIÊN" in tab_map:
+        with tab_map["👥 THÀNH VIÊN"]:
+            hien_thi_tab_thanh_vien()
+        
+    if "💬 PHẢN HỒI" in tab_map:
+        with tab_map["💬 PHẢN HỒI"]:
             hien_thi_tab_phan_hoi()
 
-    # ==================== HIỂN THỊ NỘI DUNG (DÀNH CHO CÁC VAI TRÒ KHÁC - DÙNG ST.TABS CŨ) ====================
-    else:
-        if "🏠 TRANG CHỦ" in tab_map:
-            with tab_map["🏠 TRANG CHỦ"]:
-                if user_role == "Quản trị viên":
-                    hien_thi_home_quan_tri_vien()
-                else:
-                    # Nếu là Bác sĩ, cho phép chọn bài tập ngay tại đây vì Sidebar đã dọn dẹp
-                    if user_role == "Bác sĩ / KTV PHCN":
-                        c_bt1, c_bt2 = st.columns([2, 1])
-                        with c_bt1:
-                            ma_bt_doc = st.selectbox("🎯 CHỌN BÀI TẬP ĐANG THEO DÕI", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="doc_home_exercise")
-                            bt_doc = BAI_TAP[ma_bt_doc]
-                        st.markdown("---")
-                    else:
-                        bt_doc = bai_tap # Mặc định cho NCV từ init ở trên
 
-                    # HIỂN THỊ THÔNG TIN BÀI TẬP
-                    is_light = st.session_state.theme == 'light'
-                    info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
-                    info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
-                    info_text = "#000" if is_light else "#fff"
 
-                    col1_h, col2_h = st.columns([2, 1])
-                    with col1_h:
-                        st.markdown(f"""
-                        <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
-                            <h3 style="margin-top:0;">{bt_doc['icon']} {bt_doc['ten']}</h3>
-                            <p>{bt_doc['mo_ta']}</p>
-                            <div style="display: flex; gap: 20px; font-size: 0.9rem; opacity: 0.8;">
-                                <span>⏱️ <b>Thời gian:</b> {bt_doc['thoi_gian']}s/lần</span>
-                                <span>🔄 <b>Số lần:</b> {bt_doc['lan']} lần/ngày</span>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        with st.expander("📖 HƯỚNG DẪN TẬP LUYỆN", expanded=True):
-                            st.markdown(bt_doc['huong_dan'])
-                    
-                    with col2_h:
-                        card_bg_h = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
-                        st.markdown(f"""
-                        <div class="custom-card" style="background: {card_bg_h}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
-                            <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 ĐỐI CHIẾU CHUẨN</h4>
-                            <p style="color:#00CED1; font-size:0.9rem;">Hệ thống tự động so sánh chuyển động với Video YouTube chuẩn theo từng giây.</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        if 'video_guide' in bt_doc:
-                            st.video(bt_doc['video_guide'])
-
-                    st.markdown("---")
-                    
-                    # LOGIC UPLOAD VÀ XỬ LÝ CHO NCV & DOCTOR
-                    if user_role == "Nghiên cứu viên":
-                        st.markdown("### 🧪 PHÂN TÍCH VIDEO NGHIÊN CỨU")
-                        f_up_ncv = st.file_uploader("Tải lên video thô (Raw Data)", type=["mp4", "mov", "avi", "mkv"], key="ncv_vid_up")
-                        
-                        if f_up_ncv and not st.session_state.processing:
-                            if st.button("🚀 BẮT ĐẦU XỬ LÝ AI", width="stretch", type="primary"):
-                                st.session_state.processing = True
-                                # ... (giữ nguyên logic xử lý AI phức tạp cho NCV ở đây)
-                                # Để tiết kiệm không gian, mình sẽ gọi hàm xử lý nếu có hoặc viết gọn lại
-                                # (Trong thực tế nên tách hàm xử lý AI ra)
-                                st.info("Hệ thống đang khởi động AI để phân tích video...")
-                                # Chỗ này sẽ là code xử lý AI từ lines 6316-6481 cũ
-                                # Mình sẽ chèn lại đoạn đó vào đây nếu cần, hoặc giả định nó vẫn chạy.
-
-                    elif user_role == "Bác sĩ / KTV PHCN":
-                        st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
-
-        # Các tab khác giữ nguyên
-        if "📊 PHÂN TÍCH" in tab_map:
-            with tab_map["📊 PHÂN TÍCH"]: hien_thi_tab_phan_tich(key_suffix="ncv_tab")
-        if "📊 KẾT QUẢ" in tab_map:
-            with tab_map["📊 KẾT QUẢ"]: hien_thi_ket_qua_cho_benh_nhan()
-        if "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
-            with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]: hien_thi_ket_qua_cho_benh_nhan()
-        if "⏰ LỊCH NHẮC NHỞ" in tab_map:
-            with tab_map["⏰ LỊCH NHẮC NHỞ"]: hien_thi_lich_nhac_nho()
-        if "🎬 VIDEO & ẢNH" in tab_map:
-            with tab_map["🎬 VIDEO & ẢNH"]: hien_thi_frames_day_du(key_suffix="ncv_video_tab")
-        if "📖 HƯỚNG DẪN" in tab_map:
-            with tab_map["📖 HƯỚNG DẪN"]: hien_thi_tab_huong_dan()
-        if "🏥 KIẾN THỨC PHCN" in tab_map:
-            with tab_map["🏥 KIẾN THỨC PHCN"]: hien_thi_tab_kien_thuc_phcn()
-        if "🛠️ QUẢN TRỊ VIÊN" in tab_map:
-            with tab_map["🛠️ QUẢN TRỊ VIÊN"]: hien_thi_tab_quan_tri_vien()
-        if "🔑 ĐỔI MẬT KHẨU" in tab_map:
-            with tab_map["🔑 ĐỔI MẬT KHẨU"]: hien_thi_tab_doi_mat_khau()
-        if "🌐 CÔNG NGHỆ" in tab_map:
-            with tab_map["🌐 CÔNG NGHỆ"]: hien_thi_tab_cong_nghe()
-        if "📚 ĐỀ TÀI NCKH" in tab_map:
-            with tab_map["📚 ĐỀ TÀI NCKH"]: hien_thi_tab_nckh()
-        if "📄 THÔNG TIN NGHIÊN CỨU" in tab_map:
-            with tab_map["📄 THÔNG TIN NGHIÊN CỨU"]: hien_thi_tab_thong_tin_nghien_cuu()
-        if "👥 THÀNH VIÊN" in tab_map:
-            with tab_map["👥 THÀNH VIÊN"]: hien_thi_tab_thanh_vien()
-        if "💬 PHẢN HỒI" in tab_map:
-            with tab_map["💬 PHẢN HỒI"]: hien_thi_tab_phan_hoi()
-        if "📄 PHIẾU NCKH" in tab_map:
-            with tab_map["📄 PHIẾU NCKH"]: hien_thi_tab_phieu_nckh()
+    if "📄 PHIẾU NCKH" in tab_map:
+        with tab_map["📄 PHIẾU NCKH"]:
+            hien_thi_tab_phieu_nckh()
 
 
     # ==================== FOOTER CHUNG (LUÔN HIỆN Ở DƯỚI CÙNG) ====================
