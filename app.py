@@ -6219,7 +6219,7 @@ def main():
             tab_titles.append("📊 KẾT QUẢ AI")
         if has_video_output:
             tab_titles.append("🎬 VIDEO & ẢNH")
-        tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
+        tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "📞 THÔNG TIN LIÊN HỆ", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "📞 THÔNG TIN LIÊN HỆ", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
