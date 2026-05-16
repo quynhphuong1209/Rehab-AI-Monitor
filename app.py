@@ -1740,7 +1740,7 @@ def hien_thi_tab_thong_tin_tong_hop():
     st_sub_tabs = st.tabs(sub_tab_titles)
     
     with st_sub_tabs[0]:
-        hien_thi_tab_huong_dan()
+        hien_thi_tab_huong_dan(role=st.session_state.user_role)
     with st_sub_tabs[1]:
         hien_thi_tab_kien_thuc_phcn()
     with st_sub_tabs[2]:
