@@ -1770,28 +1770,37 @@ def hien_thi_tab_thong_tin_tong_hop_benh_nhan():
         hien_thi_tab_huong_dan(role="Bệnh nhân")
 
 def hien_thi_tab_lien_he():
-    """Tab Thông tin liên hệ khẩn cấp - Fix HTML & Emoji"""
-    st.markdown("""
-    <div style='background: rgba(255, 255, 255, 0.05); padding: 30px; border-radius: 15px; border: 1px solid rgba(0, 198, 255, 0.3); backdrop-filter: blur(10px);'>
-        <h3 style='color: #00c6ff; margin-bottom: 20px; display: flex; align-items: center;'>
-            <span style='margin-right: 10px;'>👩‍🔬</span> Nghiên cứu viên chính
-        </h3>
-        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Họ tên:</b> Đinh Lê Quỳnh Phương</p>
-        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Email:</b> <a href='mailto:2211090031@studenthuph.edu.vn' style='color: #00c6ff; text-decoration: none;'>2211090031@studenthuph.edu.vn</a></p>
-        <p style='font-size: 1.1rem; margin: 5px 0;'><b>SĐT:</b> <a href='tel:0382665916' style='color: #00c6ff; text-decoration: none;'>0382665916</a></p>
-        
-        <hr style='border: 0; height: 1px; background: linear-gradient(to right, transparent, rgba(0, 198, 255, 0.5), transparent); margin: 30px 0;'>
-        
-        <h3 style='color: #00c6ff; margin-bottom: 20px; display: flex; align-items: center;'>
-            <span style='margin-right: 10px;'>⚖️</span> Hội đồng đạo đức
-        </h3>
-        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</p>
-        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Email:</b> <a href='mailto:irb@huph.edu.vn' style='color: #00c6ff; text-decoration: none;'>irb@huph.edu.vn</a></p>
-        <p style='font-size: 1.1rem; margin: 5px 0;'><b>SĐT:</b> <a href='tel:02462663024' style='color: #00c6ff; text-decoration: none;'>024 62663024</a></p>
-    </div>
-    """, unsafe_allow_html=True)
+    """Tab Thông tin liên hệ khẩn cấp - Simplified HTML for better rendering"""
+    st.info("📞 **THÔNG TIN LIÊN HỆ KHẨN CẤP**")
+    
+    # Sử dụng các khối markdown chuẩn kết hợp HTML đơn giản
+    st.markdown("### 👩‍🔬 Nghiên cứu viên chính")
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        st.write("**Họ tên:**")
+        st.write("**Địa chỉ:**")
+        st.write("**Email:**")
+        st.write("**SĐT:**")
+    with col2:
+        st.write("Đinh Lê Quỳnh Phương")
+        st.write("Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội")
+        st.write("2211090031@studenthuph.edu.vn")
+        st.write("0382665916")
+
+    st.markdown("---")
+    
+    st.markdown("### ⚖️ Hội đồng đạo đức")
+    col3, col4 = st.columns([1, 3])
+    with col3:
+        st.write("**Tên:**")
+        st.write("**Địa chỉ:**")
+        st.write("**Email:**")
+        st.write("**SĐT:**")
+    with col4:
+        st.write("HĐĐĐ Trường ĐH Y tế Công cộng")
+        st.write("Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội")
+        st.write("irb@huph.edu.vn")
+        st.write("024 62663024")
 
 def hien_thi_tab_danh_gia_va_nckh_bac_si():
     """Gộp tab Phiếu NCKH và Đánh giá PHCN cho Bác sĩ"""
@@ -6809,15 +6818,10 @@ def main():
         with tab_map["🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"]:
             hien_thi_tab_phan_tich_va_video_ncv()
 
-    if "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
-        with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]:
-            hien_thi_tab_danh_gia_tong_hop_benh_nhan()
-
     if "📊 KẾT QUẢ" in tab_map:
         with tab_map["📊 KẾT QUẢ"]:
             hien_thi_ket_qua_cho_benh_nhan()
-    
-    if "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
+    elif "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
         with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]:
             hien_thi_ket_qua_cho_benh_nhan()
 
