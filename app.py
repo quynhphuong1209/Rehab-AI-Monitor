@@ -519,20 +519,11 @@ st.markdown("""
         font-family: 'Material Icons' !important;
     }
 
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(255, 255, 255, 0.04) !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
-        padding: 25px !important;
-    }
+    /* Đã chuyển styling container vào các block theme-aware phía dưới */
+
     
-    .stTextInput input {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 10px !important;
-        color: white !important;
-    }
+    /* Đã chuyển styling input vào các block theme-aware phía dưới để tránh lỗi tàng hình chữ trong Light Mode */
+
     
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -540,21 +531,8 @@ st.markdown("""
         overflow-x: auto;
     }
 
-    .stTabs [data-baseweb="tab"] {
-        height: 50px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        background-color: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        color: white;
-        transition: all 0.3s;
-        border: 1px solid transparent;
-        min-width: fit-content !important; 
-        width: auto !important;
-        padding: 0 25px !important;
-        white-space: nowrap !important;
-    }
+    /* Đã chuyển styling tab vào các block theme-aware phía dưới để tránh lỗi tàng hình chữ trong Light Mode */
+
 
     .stTabs [data-baseweb="tab"] div,
     .stTabs [data-baseweb="tab"] p {
@@ -742,6 +720,23 @@ if st.session_state.get('theme') == 'dark':
             background-color: rgba(255, 255, 255, 0.02) !important;
             margin-bottom: 1rem !important;
         }
+
+        /* Styling Tabs trong chế độ tối */
+        .stTabs [data-baseweb="tab"] {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            color: white !important;
+            border-radius: 10px !important;
+            margin-right: 5px !important;
+        }
+
+        /* Styling Containers trong chế độ tối */
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            background: rgba(255, 255, 255, 0.04) !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+        }
+        
         [data-testid="stExpander"] summary {
             border: none !important;
             padding: 10px 15px !important;
@@ -1035,11 +1030,18 @@ if st.session_state.get('theme') == 'light':
             box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
         }
 
-        /* Fix Text Input contrast */
+        /* Fix Text Input contrast & Caret visibility */
         .stTextInput input, .stTextArea textarea, .stNumberInput input {
             background-color: #ffffff !important;
             color: #000000 !important;
             border: 1px solid #ced4da !important;
+            caret-color: #0072ff !important; /* Dấu nháy màu xanh chuyên nghiệp, hiển thị rõ trên nền trắng */
+        }
+        
+        /* Hiệu ứng khi nhấn vào ô nhập liệu (Focus) */
+        .stTextInput input:focus, .stTextArea textarea:focus {
+            border-color: #0072ff !important;
+            box-shadow: 0 0 0 2px rgba(0, 114, 255, 0.2) !important;
         }
         .stTextInput label, .stSelectbox label, .stNumberInput label {
             color: #212529 !important;
@@ -1048,6 +1050,28 @@ if st.session_state.get('theme') == 'light':
         .info-box, .metric-card, .member-card, .lecturer-card, .custom-card { 
             background: #ffffff !important; 
             border: 1px solid #e0e0e0 !important; 
+            color: #333333 !important;
+        }
+        
+        /* Fix Tabs in Light Mode */
+        .stTabs [data-baseweb="tab"] {
+            background-color: #f1f3f5 !important;
+            color: #495057 !important;
+            border-radius: 10px !important;
+            margin-right: 5px !important;
+        }
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
+            color: white !important;
+        }
+        
+        /* Fix Vertical Blocks in Light Mode */
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            background: #ffffff !important;
+            border-radius: 20px !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+        }
             box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; 
             color: #000000 !important; 
         }
