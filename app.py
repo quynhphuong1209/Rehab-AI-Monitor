@@ -1866,7 +1866,7 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
     
     tab_list = ["📝 ĐÁNH GIÁ PHCN", "📄 PHIẾU NCKH"]
     if has_ai:
-        tab_list.append("🔬 KẾT QUẢ TỪ NCV (AI)")
+        tab_list.extend(["🔬 KẾT QUẢ TỪ NCV (AI)", "🎬 VIDEO & HÌNH ẢNH"])
         
     sub_tabs = st.tabs(tab_list)
     
@@ -1875,22 +1875,35 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
     with sub_tabs[1]:
         hien_thi_tab_phieu_nckh()
     if has_ai:
-        with sub_tabs[2]:
-            # Load dữ liệu AI để hiển thị cho Bác sĩ
-            v_list_db = load_data(VIDEOS_FILE)
-            v_ai = next((v for v in v_list_db if v['username'] == selected_video['username'] and v['video_name'] == selected_video['video_name']), None)
+        # Load dữ liệu AI để hiển thị cho Bác sĩ
+        v_list_db = load_data(VIDEOS_FILE)
+        v_ai = next((v for v in v_list_db if v['username'] == selected_video['username'] and v['video_name'] == selected_video['video_name']), None)
+        
+        if v_ai:
+            # Đồng bộ session_state để các hàm hiển thị dùng chung
+            st.session_state.stats = v_ai.get('metrics')
+            st.session_state.processed_video_path = v_ai.get('processed_path')
+            st.session_state.all_frames_data_path = v_ai.get('all_frames_data_path')
+            st.session_state.uploaded_file_name = v_ai.get('video_name')
+            st.session_state.frames_zip = v_ai.get('frames_zip')
             
-            if v_ai and 'metrics' in v_ai and v_ai['metrics']:
-                df_ncv = None
-                if 'df_path' in v_ai and os.path.exists(v_ai['df_path']):
-                    try: df_ncv = pd.read_csv(v_ai['df_path'])
-                    except: pass
-                
-                ex_ai = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v_ai['exercise']), BAI_TAP['codman'])
-                hien_thi_tab_phan_tich(key_suffix="doc_view_ncv_sub", stats_ext=v_ai['metrics'], df_ext=df_ncv, exercise_ext=ex_ai)
-            else:
-                st.warning("⚠️ NCV đã gửi báo cáo nhưng dữ liệu biểu đồ chi tiết chưa được đồng bộ hoặc bị lỗi file.")
-                st.info("💡 Bạn vẫn có thể xem tóm tắt kết quả tại tab KẾT QUẢ ĐÁNH GIÁ của bệnh nhân.")
+            with sub_tabs[2]:
+                if v_ai.get('metrics'):
+                    df_ncv = None
+                    if 'df_path' in v_ai and os.path.exists(v_ai['df_path']):
+                        try: df_ncv = pd.read_csv(v_ai['df_path'])
+                        except: pass
+                    
+                    ex_ai = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v_ai['exercise']), BAI_TAP['codman'])
+                    hien_thi_tab_phan_tich(key_suffix="doc_view_ncv_sub", stats_ext=v_ai['metrics'], df_ext=df_ncv, exercise_ext=ex_ai)
+                else:
+                    st.warning("⚠️ NCV đã gửi báo cáo nhưng dữ liệu biểu đồ chi tiết chưa được đồng bộ hoặc bị lỗi file.")
+            
+            with sub_tabs[3]:
+                hien_thi_frames_day_du(key_suffix="doc_view_ncv_vid")
+        else:
+            with sub_tabs[2]:
+                st.warning("⚠️ Không tìm thấy dữ liệu video AI tương ứng.")
 
 
 # ============================================
@@ -4019,8 +4032,8 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             with exp_data:
                 data_col1, data_col2 = st.columns(2)
                 with data_col1:
-                    if 'angle_df' in st.session_state:
-                        csv_data = st.session_state.angle_df.to_csv(index=False).encode('utf-8')
+                    if df is not None:
+                        csv_data = df.to_csv(index=False).encode('utf-8')
                         st.download_button("📄 Tọa độ góc khớp (CSV)", csv_data, "angle_data.csv", "text/csv", width="stretch", key=f"dl_f6_{key_suffix}")
                 with data_col2:
                     # Nút tải Zip Frames nếu có
