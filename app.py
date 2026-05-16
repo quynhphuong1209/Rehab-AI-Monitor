@@ -1759,6 +1759,17 @@ def hien_thi_tab_danh_gia_tong_hop_benh_nhan():
     with sub_tabs[1]:
         hien_thi_tab_thong_tin_nghien_cuu()
 
+def hien_thi_tab_danh_gia_va_nckh_bac_si():
+    """Gộp tab Phiếu NCKH và Đánh giá PHCN cho Bác sĩ"""
+    st.markdown("## 📊 QUẢN LÝ ĐÁNH GIÁ LÂM SÀNG & DỮ LIỆU NCKH")
+    
+    sub_tabs = st.tabs(["📝 ĐÁNH GIÁ PHCN", "📄 PHIẾU NCKH"])
+    
+    with sub_tabs[0]:
+        hien_thi_form_danh_gia_bac_si()
+    with sub_tabs[1]:
+        hien_thi_tab_phieu_nckh()
+
 
 # ============================================
 # HÀM TÍNH GÓC
@@ -6222,7 +6233,7 @@ def main():
             frames_path = os.path.join(EXTRACTED_FRAMES_DIR, video_folder)
             has_video_output = os.path.exists(frames_path) and len(os.listdir(frames_path)) > 0 if os.path.exists(frames_path) else False
             
-        tab_titles = ["🏠 TRANG CHỦ", "📄 PHIẾU NCKH", "📝 ĐÁNH GIÁ PHCN"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"]
         if has_ai_main:
             tab_titles.append("📊 KẾT QUẢ AI")
         if has_video_output:
@@ -6486,7 +6497,8 @@ def main():
                                             chuyen_tab_bang_js("📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN")
                                     else: # Bác sĩ
                                         if st.button("📊 XEM ĐÁNH GIÁ LÂM SÀNG", width="stretch", type="primary"):
-                                            chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
+                                            st.toast("🚀 Đang chuyển sang tab 📊 QUẢN LÝ ĐÁNH GIÁ & NCKH...", icon="🔄")
+                                            chuyen_tab_bang_js("📊 QUẢN LÝ ĐÁNH GIÁ & NCKH")
                                     
                                     # TỰ ĐỘNG LƯU VIDEO VÀO HỆ THỐNG (Dành cho NCV & Bác sĩ)
                                     if user_role != "Bệnh nhân":
@@ -6670,7 +6682,8 @@ def main():
                                             
                                             
                                             if user_role == "Bác sĩ / KTV PHCN":
-                                                st.session_state.trigger_tab_switch = "📝 ĐÁNH GIÁ PHCN"
+                                                st.toast("🚀 Đang chuyển sang tab 📊 QUẢN LÝ ĐÁNH GIÁ & NCKH...", icon="🔄")
+                                                st.session_state.trigger_tab_switch = "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"
                                             else: # Nghiên cứu viên
                                                 st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU...", icon="🔄")
                                                 st.session_state.trigger_tab_switch = "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"
@@ -6805,6 +6818,10 @@ def main():
                 st.markdown("<br>", unsafe_allow_html=True)
     
     # ==================== TAB: PHÂN TÍCH / ĐÁNH GIÁ ====================
+    if "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH" in tab_map:
+        with tab_map["📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"]:
+            hien_thi_tab_danh_gia_va_nckh_bac_si()
+
     if "📝 ĐÁNH GIÁ PHCN" in tab_map:
         with tab_map["📝 ĐÁNH GIÁ PHCN"]:
             hien_thi_form_danh_gia_bac_si()
