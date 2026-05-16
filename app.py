@@ -6351,51 +6351,103 @@ def main():
 
                 # HIỂN THỊ THÔNG TIN BÀI TẬP (CHỈ HIỆN CHO BN - BS/NCV ĐÃ BIẾT NÊN CẮT BỎ ĐỂ TRÁNH RỐI)
                 if user_role == "Bệnh nhân":
-                    is_light = st.session_state.theme == 'light'
-                    info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
-                    info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
-                    info_text = "#000" if is_light else "#fff"
-
-                    # 1. HÀNG ĐẦU: THÔNG TIN VÀ CHỈ SỐ
-                    col1, col2 = st.columns([2, 1])
-                    with col1:
-                        st.markdown(f"""
-                        <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text};">
-                            <h3 style="margin-top:0;">{bai_tap['icon']} {bai_tap['ten']}</h3>
-                            <p>{bai_tap['mo_ta']}</p>
-                            <div style="display: flex; gap: 20px; font-size: 0.9rem; opacity: 0.8;">
-                                <span>⏱️ <b>Thời gian:</b> {bai_tap['thoi_gian']}s/lần</span>
-                                <span>🔄 <b>Số lần:</b> {bai_tap['lan']} lần/ngày</span>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        with st.expander("📖 HƯỚNG DẪN TẬP LUYỆN", expanded=True):
-                            st.markdown(bai_tap['huong_dan'])
-                        
-                        with st.expander("✨ LỢI ÍCH CỦA BÀI TẬP", expanded=False):
-                            for loi_ich in bai_tap['loi_ich']:
-                                st.markdown(f"- {loi_ich}")
+                    # --- KHAI BÁO THÔNG TIN NGƯỚI DÙNG + TRIỆU CHỨNG + CHỌN BÀI TẬP ---
+                    st.markdown("## 📝 THÔNG TIN KHÁM & TẬP LUYLN")
                     
-                    with col2:
-                        chuan = bai_tap['chuan']
-                        card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
-                        st.markdown(f"""
-                        <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
-                            <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 ĐỐI CHIẾU VIDEO CHUẨN</h4>
-                            <p style="color:#00CED1; margin-bottom:8px; font-size:0.95rem;">⚡ Hệ thống tự động so sánh chuyển động của bạn với <b>Video YouTube chuẩn</b> theo từng giây.</p>
-                            <p style="color:#FF6B6B; margin-bottom:12px; font-size:0.95rem;">📊 Độ chính xác được tính dựa trên sai số khoảng cách (Euclidean) và biên độ tọa độ khớp thực tế.</p>
-                            <div style="font-size:0.85rem; opacity:0.8; border-top:1px solid {info_border}; padding-top:10px;">
-                                <p style="margin-bottom:5px;">✅ <b>Đạt:</b> Chuyển động khớp với biên độ của video mẫu.</p>
-                                <p style="margin-bottom:0;">❌ <b>Cần cải thiện:</b> Động tác sai lệch đáng kể so với video mẫu.</p>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    with st.container(border=True):
+                        st.markdown("### 📋 THÔNG TIN NGƯỚI DÙNG")
+                        bn_col1, bn_col2 = st.columns(2)
+                        with bn_col1:
+                            ten_nguoi_dung = st.text_input("Họ và tên (*)", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A", key="bn_tab_ten")
+                            tuoi = st.number_input("Tuổi (*)", 0, 120, 22, key="bn_tab_tuoi")
+                        with bn_col2:
+                            ma_nguoi_dung = st.text_input("Mã số định danh (*)", placeholder="VD: BN0001", key="bn_tab_ma")
+                            gioi_tinh = st.selectbox("Giới tính (*)", ["", "Nam", "Nữ"], key="bn_tab_gt")
+                    
+                    st.markdown("---")
+                    with st.container(border=True):
+                        st.markdown("### 🩺 KHAI BÁO TRIỆU CHỨNG")
+                        s_desc = st.text_area("Mô tả cảm giác đau:",
+                                              placeholder="VD: Đau nhói ở khớp vai khi nâng tay lên cao...",
+                                              height=100, key="bn_tab_desc")
+                        s_vas = st.select_slider("📊 Mức độ đau (VAS 0-10):",
+                                                  options=list(range(11)),
+                                                  value=3, key="bn_tab_vas")
+                        vas_labels = {
+                            0: "Đ 0: Không đau", 1: "Đ 1-3: Đau nhẹ", 4: "Đ 4-6: Đau vừa", 7: "Đ 7-9: Đau nặng", 10: "Đ 10: Đau dữ dội"
+                        }
+                        closest = min(vas_labels, key=lambda x: abs(x - s_vas))
+                        st.caption(f"💡 {vas_labels[closest]}")
+                    
+                    st.markdown("---")
+                    with st.container(border=True):
+                        st.markdown("### 🎯 CHỌN BÀI TẬP VÀ XEM HƯỚNG DẪN")
+                        ma_bai_tap = st.selectbox("🎯 Chọn bài tập", list(BAI_TAP.keys()),
+                                                   format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
+                                                   key="bn_tab_bt")
+                        bai_tap = BAI_TAP[ma_bai_tap]
                         
-                        # Video hướng dẫn mẫu
-                        if 'video_guide' in bai_tap:
-                            st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
-                            st.video(bai_tap['video_guide'])
+                        is_light = st.session_state.theme == 'light'
+                        info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
+                        info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
+                        info_text = "#000" if is_light else "#fff"
+                        
+                        ex_col1, ex_col2 = st.columns([3, 2])
+                        with ex_col1:
+                            st.markdown(f"""
+                            <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text}; padding: 15px; border-radius: 10px;">
+                                <h3 style="margin-top:0;">{bai_tap['icon']} {bai_tap['ten']}</h3>
+                                <p>{bai_tap['mo_ta']}</p>
+                                <div style="display: flex; gap: 20px; font-size: 0.9rem; opacity: 0.8;">
+                                    <span>⏱️ <b>Thời gian:</b> {bai_tap['thoi_gian']}s/lần</span>
+                                    <span>🔄 <b>Số lần:</b> {bai_tap['lan']} lần/ngày</span>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            with st.expander("📖 HƯỚNG DẪN TẬP LUYLN", expanded=True):
+                                st.markdown(bai_tap['huong_dan'])
+                            with st.expander("✨ LỢI ÍCH CỦA BÀI TẬP", expanded=False):
+                                for loi_ich in bai_tap['loi_ich']:
+                                    st.markdown(f"- {loi_ich}")
+                        
+                        with ex_col2:
+                            card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
+                            st.markdown(f"""
+                            <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
+                                <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 ĐỐI CHIẾU VIDEO CHUẨN</h4>
+                                <p style="color:#00CED1; margin-bottom:8px; font-size:0.9rem;">⚡ Hệ thống tự động so sánh chuyển động của bạn với <b>Video chuẩn</b>.</p>
+                                <p style="color:#FF6B6B; margin-bottom:10px; font-size:0.9rem;">📊 Độ chính xác dựa trên sai số Euclidean và biên độ khớp.</p>
+                                <div style="font-size:0.85rem; border-top:1px solid {info_border}; padding-top:10px;">
+                                    <p style="margin-bottom:5px;">✅ <b>Đạt:</b> Chuyển động khớp với video mẫu.</p>
+                                    <p style="margin-bottom:0;">❌ <b>Cần cải thiện:</b> Động tác sai lệch.</p>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            if 'video_guide' in bai_tap:
+                                st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
+                                st.video(bai_tap['video_guide'])
+                    
+                    st.markdown("---")
+                    if st.button("📤 GỬi THÔNG TIN CHO BÁC SĨ/KTV VÀ NCV", type="primary", use_container_width=True):
+                        if ten_nguoi_dung and ma_nguoi_dung and gioi_tinh != "" and s_desc and ma_bai_tap:
+                            s_data = load_data(SYMPTOMS_FILE)
+                            s_data.append({
+                                "username": st.session_state.user_info['username'],
+                                "full_name": ten_nguoi_dung,
+                                "patient_id": ma_nguoi_dung,
+                                "age": tuoi,
+                                "gender": gioi_tinh,
+                                "exercise": BAI_TAP[ma_bai_tap]['ten'],
+                                "symptoms": s_desc,
+                                "vas": s_vas,
+                                "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
+                            })
+                            save_data(SYMPTOMS_FILE, s_data)
+                            st.success("✅ Đã gửi thông tin đầy đủ cho BÁC SĨ - KTV và NCV thành công!")
+                            st.balloons()
+                        else:
+                            st.warning("⚠️ Vui lòng điền đầy đủ các thông tin: Họ tên, Mã định danh, Giới tính, Bài tập và Mô tả triệu chứng.")
+                    
 
                 # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
                 if user_role == "Bệnh nhân":
