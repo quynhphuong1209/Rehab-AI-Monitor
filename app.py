@@ -1730,8 +1730,8 @@ def hien_thi_tab_cong_nghe():
     </div>
     """, unsafe_allow_html=True)
 
-def hien_thi_tab_thong_tin_tong_hop():
-    """Gộp các tab Hướng dẫn, Kiến thức và Công nghệ cho Nghiên cứu viên"""
+def hien_thi_tab_thong_tin_tong_hop(role):
+    """Gộp các tab Hướng dẫn, Kiến thức và Công nghệ cho Nghiên cứu viên/Bác sĩ"""
     st.markdown("## 📚 TỔNG HỢP THÔNG TIN & HƯỚNG DẪN")
     st.info("💡 Đây là khu vực tổng hợp các tài liệu hướng dẫn, kiến thức chuyên môn và công nghệ cốt lõi của hệ thống Rehab-AI-Monitor.")
     
@@ -1740,7 +1740,7 @@ def hien_thi_tab_thong_tin_tong_hop():
     st_sub_tabs = st.tabs(sub_tab_titles)
     
     with st_sub_tabs[0]:
-        hien_thi_tab_huong_dan(role=st.session_state.user_role)
+        hien_thi_tab_huong_dan(role=role)
     with st_sub_tabs[1]:
         hien_thi_tab_kien_thuc_phcn()
     with st_sub_tabs[2]:
@@ -6925,7 +6925,7 @@ def main():
             if user_role == "Bệnh nhân":
                 hien_thi_tab_thong_tin_tong_hop_benh_nhan()
             else:
-                hien_thi_tab_thong_tin_tong_hop()
+                hien_thi_tab_thong_tin_tong_hop(user_role)
         
     if "📞 THÔNG TIN LIÊN HỆ" in tab_map:
         with tab_map["📞 THÔNG TIN LIÊN HỆ"]:
