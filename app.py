@@ -1359,23 +1359,31 @@ def hien_thi_tab_tien_trien():
 # ============================================
 # HÀM HIỂN THỊ TAB: HƯỚNG DẪN SỬ DỤNG (MỚI)
 # ============================================
-def hien_thi_tab_huong_dan():
-    """Hướng dẫn sử dụng hệ thống"""
+def hien_thi_tab_huong_dan(role="Bệnh nhân"):
+    """Hướng dẫn sử dụng hệ thống tùy biến theo vai trò"""
     st.markdown("### 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG CHUẨN")
     
-    steps = [
-        ("1️⃣ Chuẩn bị không gian", "Đứng cách camera 2-3 mét, đảm bảo ánh sáng đủ tốt và thấy rõ toàn thân."),
-        ("2️⃣ Chọn bài tập", "Tại TRANG CHỦ, chọn động tác cần tập (Vai, Khuỷu...) để AI áp dụng chuẩn góc tương ứng."),
-        ("3️⃣ Upload Video", "Tải file video tập luyện lên. Hệ thống hỗ trợ MP4, MOV. Video không nên quá 3000 frame."),
-        ("4️⃣ Phân tích kết quả", "Chờ AI xử lý và xem chi tiết tại tab PHÂN TÍCH để biết mình tập đúng hay sai ở đâu."),
-        ("5️⃣ Theo dõi & Nhắc nhở", "Sử dụng tab TIẾN TRIỂN để xem sự thay đổi và đặt lịch tại tab LỊCH NHẮC NHỞ.")
-    ]
+    if role == "Bệnh nhân":
+        steps = [
+            ("1️⃣ Chuẩn bị không gian", "Đứng cách camera 2-3 mét, đảm bảo ánh sáng đủ tốt và thấy rõ toàn thân."),
+            ("2️⃣ Chọn bài tập", "Tại TRANG CHỦ, chọn động tác cần tập (Vai, Khuỷu...) để hệ thống chuẩn bị bộ lọc tương ứng."),
+            ("3️⃣ Upload Video", "Tải file video tập luyện lên. Hệ thống hỗ trợ MP4, MOV."),
+            ("4️⃣ Xem kết quả", "Chờ Nghiên cứu viên phân tích và xem nhận xét chi tiết của Bác sĩ tại tab KẾT QUẢ ĐÁNH GIÁ."),
+            ("5️⃣ Đặt lịch nhắc nhở", "Sử dụng tab LỊCH NHẮC NHỞ để không bỏ lỡ các buổi tập luyện tiếp theo.")
+        ]
+    else: # NCV / Bác sĩ
+        steps = [
+            ("1️⃣ Tiếp nhận Video", "Kiểm tra danh sách video bệnh nhân gửi đến tại TRANG CHỦ."),
+            ("2️⃣ Phân tích AI", "Sử dụng công cụ trích xuất khung xương AI để lấy dữ liệu góc khớp."),
+            ("3️⃣ Đánh giá chuyên môn", "Xem biểu đồ ROM và đưa ra nhận xét lâm sàng/nghiên cứu."),
+            ("4️⃣ Gửi báo cáo", "Nhấn nút Gửi kết quả để bệnh nhân có thể xem được phản hồi tại giao diện của họ.")
+        ]
     
     for title, desc in steps:
         with st.expander(title, expanded=True):
             st.write(desc)
             
-    st.warning("⚠️ **Lưu ý:** Không nên mặc quần áo quá rộng hoặc quá tối màu để AI nhận diện khớp chính xác nhất.")
+    st.warning("⚠️ **Lưu ý:** Không nên mặc quần áo quá rộng hoặc quá tối màu để hệ thống nhận diện khớp chính xác nhất.")
 
 # ============================================
 # HÀM HIỂN THỊ TAB: PHẢN HỒI (MỚI)
@@ -1750,37 +1758,38 @@ def hien_thi_tab_nckh_va_thanh_vien_ncv():
 
 def hien_thi_tab_danh_gia_tong_hop_benh_nhan():
     """Gộp tab Kết quả đánh giá cho Bệnh nhân (Chỉ hiện kết quả bác sĩ/ncv)"""
-    st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ CHUYÊN MÔN")
+    # Xóa header thừa ở đây vì tab đã có tiêu đề
     hien_thi_ket_qua_cho_benh_nhan()
 
 def hien_thi_tab_thong_tin_tong_hop_benh_nhan():
     """Tab Thông tin tổng hợp cho Bệnh nhân"""
-    st.markdown("## 📚 THÔNG TIN NGHIÊN CỨU & HƯỚNG DẪN")
     t1, t2 = st.tabs(["📄 THÔNG TIN NGHIÊN CỨU", "📖 HƯỚNG DẪN SỬ DỤNG"])
     with t1:
         hien_thi_tab_thong_tin_nghien_cuu()
     with t2:
-        hien_thi_tab_huong_dan()
+        hien_thi_tab_huong_dan(role="Bệnh nhân")
 
 def hien_thi_tab_lien_he():
-    """Tab Thông tin liên hệ khẩn cấp"""
-    st.markdown("## 📞 THÔNG TIN LIÊN HỆ KHẨN CẤP")
-    
+    """Tab Thông tin liên hệ khẩn cấp - Fix HTML & Emoji"""
     st.markdown("""
-    <div class='glass-card' style='padding: 30px; border-radius: 15px;'>
-        <h3 style='color: #00c6ff; margin-bottom: 20px;'>👩‍🔬 Nghiên cứu viên chính</h3>
-        <p style='font-size: 1.1rem;'><b>Họ tên:</b> Đinh Lê Quỳnh Phương</p>
-        <p style='font-size: 1.1rem;'><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-        <p style='font-size: 1.1rem;'><b>Email:</b> <a href='mailto:2211090031@studenthuph.edu.vn' style='color: #00c6ff;'>2211090031@studenthuph.edu.vn</a></p>
-        <p style='font-size: 1.1rem;'><b>SĐT:</b> <a href='tel:0382665916' style='color: #00c6ff;'>0382665916</a></p>
+    <div style='background: rgba(255, 255, 255, 0.05); padding: 30px; border-radius: 15px; border: 1px solid rgba(0, 198, 255, 0.3); backdrop-filter: blur(10px);'>
+        <h3 style='color: #00c6ff; margin-bottom: 20px; display: flex; align-items: center;'>
+            <span style='margin-right: 10px;'>👩‍🔬</span> Nghiên cứu viên chính
+        </h3>
+        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Họ tên:</b> Đinh Lê Quỳnh Phương</p>
+        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Email:</b> <a href='mailto:2211090031@studenthuph.edu.vn' style='color: #00c6ff; text-decoration: none;'>2211090031@studenthuph.edu.vn</a></p>
+        <p style='font-size: 1.1rem; margin: 5px 0;'><b>SĐT:</b> <a href='tel:0382665916' style='color: #00c6ff; text-decoration: none;'>0382665916</a></p>
         
-        <hr style='border: 0.5px solid rgba(255,255,255,0.1); margin: 30px 0;'>
+        <hr style='border: 0; height: 1px; background: linear-gradient(to right, transparent, rgba(0, 198, 255, 0.5), transparent); margin: 30px 0;'>
         
-        <h3 style='color: #00c6ff; margin-bottom: 20px;'>⚖️ Hội đồng đạo đức</h3>
-        <p style='font-size: 1.1rem;'><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</p>
-        <p style='font-size: 1.1rem;'><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-        <p style='font-size: 1.1rem;'><b>Email:</b> <a href='mailto:irb@huph.edu.vn' style='color: #00c6ff;'>irb@huph.edu.vn</a></p>
-        <p style='font-size: 1.1rem;'><b>SĐT:</b> <a href='tel:02462663024' style='color: #00c6ff;'>024 62663024</a></p>
+        <h3 style='color: #00c6ff; margin-bottom: 20px; display: flex; align-items: center;'>
+            <span style='margin-right: 10px;'>⚖️</span> Hội đồng đạo đức
+        </h3>
+        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</p>
+        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+        <p style='font-size: 1.1rem; margin: 5px 0;'><b>Email:</b> <a href='mailto:irb@huph.edu.vn' style='color: #00c6ff; text-decoration: none;'>irb@huph.edu.vn</a></p>
+        <p style='font-size: 1.1rem; margin: 5px 0;'><b>SĐT:</b> <a href='tel:02462663024' style='color: #00c6ff; text-decoration: none;'>024 62663024</a></p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -6920,7 +6929,7 @@ def main():
 
     if "📖 HƯỚNG DẪN" in tab_map:
         with tab_map["📖 HƯỚNG DẪN"]:
-            hien_thi_tab_huong_dan()
+            hien_thi_tab_huong_dan(role=user_role)
         
     if "🏥 KIẾN THỨC PHCN" in tab_map:
         with tab_map["🏥 KIẾN THỨC PHCN"]:
