@@ -1725,6 +1725,18 @@ def hien_thi_tab_thong_tin_tong_hop():
     with st_sub_tabs[2]:
         hien_thi_tab_cong_nghe()
 
+def hien_thi_tab_phan_tich_va_video_ncv():
+    """Gộp tab Phân tích và Video cho Nghiên cứu viên"""
+    st.markdown("## 🔬 PHÂN TÍCH CHUYÊN SÂU & DỮ LIỆU KHUNG XƯƠNG")
+    
+    # Tạo sub-tabs bên trong
+    sub_tabs = st.tabs(["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & ẢNH FRAME"])
+    
+    with sub_tabs[0]:
+        hien_thi_tab_phan_tich(key_suffix="ncv_combined_tab")
+    with sub_tabs[1]:
+        hien_thi_frames_day_du(key_suffix="ncv_combined_video_tab")
+
 
 # ============================================
 # HÀM TÍNH GÓC
@@ -6197,7 +6209,7 @@ def main():
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📚 THÔNG TIN TỔNG HỢP", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "🔬 PHÂN TÍCH & VIDEO", "📚 THÔNG TIN TỔNG HỢP", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     
@@ -6420,14 +6432,12 @@ def main():
                                     
                                     # Điều hướng linh hoạt theo vai trò
                                     if user_role == "Nghiên cứu viên":
-                                        c_nav1, c_nav2, c_nav3 = st.columns(3)
+                                        c_nav1, c_nav2 = st.columns(2)
                                         with c_nav1:
-                                            if st.button("📊 XEM BÁO CÁO PHÂN TÍCH", width="stretch", type="primary"):
-                                                chuyen_tab_bang_js("📊 PHÂN TÍCH")
+                                            if st.button("🔬 XEM PHÂN TÍCH & VIDEO", width="stretch", type="primary"):
+                                                st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & VIDEO...", icon="🔄")
+                                                chuyen_tab_bang_js("🔬 PHÂN TÍCH & VIDEO")
                                         with c_nav2:
-                                            if st.button("🎬 XEM VIDEO & ẢNH FRAME", width="stretch", type="primary"):
-                                                chuyen_tab_bang_js("🎬 VIDEO & ẢNH")
-                                        with c_nav3:
                                             if st.button("📤 GỬI KẾT QUẢ CHO BN", width="stretch", type="secondary"):
                                                 acc = round(metrics["ty_le_tong_the"], 1)
                                                 clinical_res = "Đúng" if acc >= 85 else ("Gần đúng" if acc >= 60 else "Sai")
@@ -6639,7 +6649,8 @@ def main():
                                             if user_role == "Bác sĩ / KTV PHCN":
                                                 st.session_state.trigger_tab_switch = "📝 ĐÁNH GIÁ PHCN"
                                             else: # Nghiên cứu viên
-                                                st.session_state.trigger_tab_switch = "PHÂN TÍCH"
+                                                st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & VIDEO...", icon="🔄")
+                                                st.session_state.trigger_tab_switch = "🔬 PHÂN TÍCH & VIDEO"
                                             st.rerun()
                                         
                                         if st.button("🗑️ Xóa video này", key=f"del_video_{idx}", width="stretch"):
@@ -6814,9 +6825,9 @@ def main():
                 else:
                     st.warning("🕒 Nghiên cứu viên chưa thực hiện phân tích AI cho video này.")
 
-    if "📊 PHÂN TÍCH" in tab_map:
-        with tab_map["📊 PHÂN TÍCH"]:
-            hien_thi_tab_phan_tich(key_suffix="ncv_tab")
+    if "🔬 PHÂN TÍCH & VIDEO" in tab_map:
+        with tab_map["🔬 PHÂN TÍCH & VIDEO"]:
+            hien_thi_tab_phan_tich_va_video_ncv()
 
     if "📊 KẾT QUẢ" in tab_map:
         with tab_map["📊 KẾT QUẢ"]:
@@ -6836,9 +6847,7 @@ def main():
         with tab_map["⏰ LỊCH NHẮC NHỞ"]:
             hien_thi_lich_nhac_nho()
     # ==================== TAB: VIDEO & ẢNH ====================
-    if "🎬 VIDEO & ẢNH" in tab_map:
-        with tab_map["🎬 VIDEO & ẢNH"]:
-            hien_thi_frames_day_du(key_suffix="ncv_video_tab")
+    # Tab Video & Ảnh đã được gộp vào Phân tích & Video cho NCV
 
     if "📖 HƯỚNG DẪN" in tab_map:
         with tab_map["📖 HƯỚNG DẪN"]:
