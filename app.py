@@ -1361,7 +1361,7 @@ def hien_thi_tab_tien_trien():
 # ============================================
 def hien_thi_tab_huong_dan(role="Bệnh nhân"):
     """Hướng dẫn sử dụng hệ thống tùy biến theo vai trò"""
-    st.markdown("### 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG CHUẨN")
+    # Xóa header thừa
     
     if role == "Bệnh nhân":
         steps = [
@@ -3938,100 +3938,6 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                     if st.session_state.get('frames_zip'):
                         with open(st.session_state.frames_zip, "rb") as f:
                             st.download_button("📦 Toàn bộ khung hình (ZIP)", f, "all_frames.zip", "application/zip", width="stretch", key=f"dl_f7_{key_suffix}")
-def hien_thi_tab_huong_dan():
-    st.markdown("## 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG")
-    
-    is_light = st.session_state.theme == 'light'
-    card_bg = "#f8f9fa" if is_light else "rgba(255, 255, 255, 0.05)"
-    text_color = "#333" if is_light else "#ccc"
-    
-    tab_h1, tab_h2, tab_h3 = st.tabs(["👤 DÀNH CHO BỆNH NHÂN", "🩺 DÀNH CHO BÁC SĨ / KTV", "🔬 DÀNH CHO NGHIÊN CỨU VIÊN"])
-    
-    with tab_h1:
-        st.markdown("### 🛠️ Quy trình tập luyện 5 bước")
-        
-        col_st1, col_st2 = st.columns([1, 1])
-        with col_st1:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 1: Chọn bài tập</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Chọn động tác cần tập ở Sidebar trái và xem video hướng dẫn mẫu.</p>
-            </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 2: Chuẩn bị & Quay phim</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Đặt điện thoại cố định, đứng cách 2-3m sao cho thấy rõ khớp vai và khuỷu tay.</p>
-            </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 3: Tải video lên</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Tại tab <b>TRANG CHỦ</b>, tải file video của bạn lên hệ thống.</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with col_st2:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 4: Gửi cho chuyên gia</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Bấm nút <b>GỬI CHO BÁC SĨ</b> để video được chuyển đến bộ phận chuyên môn.</p>
-            </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 5: Xem kết quả</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Khi bác sĩ đánh giá xong, bạn sẽ nhận được thông báo tại tab <b>KẾT QUẢ</b>.</p>
-            </div>
-            <div style="padding: 15px; background: rgba(0, 198, 255, 0.1); border-radius: 10px; border: 1px dashed #00c6ff;">
-                <p style="margin:0; color:#00c6ff; font-size:0.85rem;">💡 <b>Mẹo:</b> Mặc quần áo gọn gàng, màu tương phản với nền để AI nhận diện tốt nhất.</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-    with tab_h2:
-        st.markdown("### 🩺 Quy trình dành cho chuyên gia Y tế")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">1. Tiếp nhận video</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Xem danh sách video bệnh nhân gửi đến ngay tại <b>Trang chủ</b>.</p>
-            </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">2. Đánh giá AI</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Bấm nút <b>Phân tích</b> để hệ thống tự động tính toán góc độ chi tiết.</p>
-            </div>
-            """, unsafe_allow_html=True)
-        with c2:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">3. Đưa ra chỉ định</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Điền phiếu đánh giá lâm sàng và gửi lời khuyên trực tiếp cho bệnh nhân.</p>
-            </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">4. Theo dõi tiến trình</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Xem biểu đồ phục hồi của bệnh nhân qua các tuần để điều chỉnh phác đồ.</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-    with tab_h3:
-        st.markdown("### 🔬 Dành cho Nghiên cứu viên AI")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Phân tích vĩ mô</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Theo dõi các chỉ số đo lường độ chính xác: <b>Accuracy, F1-Score, ICC</b>.</p>
-            </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Kiểm định chéo</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Đối chiếu kết quả AI với <b>'Golden Standard'</b> từ các bác sĩ chuyên khoa.</p>
-            </div>
-            """, unsafe_allow_html=True)
-        with c2:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Quản lý dữ liệu</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Xuất dữ liệu tọa độ khớp (Keypoints) dưới dạng <b>CSV</b> để huấn luyện AI.</p>
-            </div>
-            <div style="padding: 15px; background: rgba(0, 198, 255, 0.1); border-radius: 10px; border: 1px dashed #00c6ff;">
-                <p style="margin:0; color:#00c6ff; font-size:0.85rem;">💡 <b>Hệ thống:</b> Cung cấp các bộ công cụ chuyên sâu để tinh chỉnh mô hình Pose Estimation.</p>
-            </div>
-            """, unsafe_allow_html=True)
 
 def hien_thi_tab_nckh():
     is_light = st.session_state.theme == 'light'
