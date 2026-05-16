@@ -6764,103 +6764,104 @@ def main():
                                     save_data(VIDEOS_FILE, video_list)
                                     st.rerun()
 
-                # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
-                st.markdown("---")
-                st.markdown("<h3 style='color: #00c6ff; text-align: center; margin-bottom: 25px;'>⚙️ QUY TRÌNH XỬ LÝ DỮ LIỆU NCKH</h3>", unsafe_allow_html=True)
-            
-                # CSS cho các thẻ Quy trình
-                st.markdown("""
-                <style>
-                .step-container {
-                    display: flex;
-                    gap: 15px;
-                    margin-bottom: 20px;
-                    flex-wrap: wrap;
-                }
-                .step-box {
-                    flex: 1;
-                    min-width: 200px;
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid rgba(0, 198, 255, 0.3);
-                    border-radius: 12px;
-                    padding: 18px;
-                    text-align: center;
-                    transition: all 0.3s;
-                    border-top: 3px solid #00c6ff;
-                }
-                .step-box:hover {
-                    transform: translateY(-5px);
-                    background: rgba(0, 198, 255, 0.08);
-                    border-color: #00c6ff;
-                    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-                }
-                .step-num {
-                    background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
-                    color: white;
-                    width: 30px;
-                    height: 30px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin: 0 auto 10px;
-                    font-weight: bold;
-                    font-size: 0.9rem;
-                }
-                .step-txt-title {
-                    color: #00c6ff;
-                    font-weight: bold;
-                    font-size: 1rem;
-                    margin-bottom: 8px;
-                    display: block;
-                }
-                .step-txt-desc {
-                    color: #aaa;
-                    font-size: 0.8rem;
-                    line-height: 1.4;
-                }
-                </style>
-                """, unsafe_allow_html=True)
+                # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC (CHỈ HIỆN CHO BỆNH NHÂN) ===
+                if user_role == "Bệnh nhân":
+                    st.markdown("---")
+                    st.markdown("<h3 style='color: #00c6ff; text-align: center; margin-bottom: 25px;'>⚙️ QUY TRÌNH XỬ LÝ DỮ LIỆU NCKH</h3>", unsafe_allow_html=True)
+                
+                    # CSS cho các thẻ Quy trình
+                    st.markdown("""
+                    <style>
+                    .step-container {
+                        display: flex;
+                        gap: 15px;
+                        margin-bottom: 20px;
+                        flex-wrap: wrap;
+                    }
+                    .step-box {
+                        flex: 1;
+                        min-width: 200px;
+                        background: rgba(255, 255, 255, 0.03);
+                        border: 1px solid rgba(0, 198, 255, 0.3);
+                        border-radius: 12px;
+                        padding: 18px;
+                        text-align: center;
+                        transition: all 0.3s;
+                        border-top: 3px solid #00c6ff;
+                    }
+                    .step-box:hover {
+                        transform: translateY(-5px);
+                        background: rgba(0, 198, 255, 0.08);
+                        border-color: #00c6ff;
+                        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+                    }
+                    .step-num {
+                        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+                        color: white;
+                        width: 30px;
+                        height: 30px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin: 0 auto 10px;
+                        font-weight: bold;
+                        font-size: 0.9rem;
+                    }
+                    .step-txt-title {
+                        color: #00c6ff;
+                        font-weight: bold;
+                        font-size: 1rem;
+                        margin-bottom: 8px;
+                        display: block;
+                    }
+                    .step-txt-desc {
+                        color: #aaa;
+                        font-size: 0.8rem;
+                        line-height: 1.4;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
 
-                c1, c2, c3, c4 = st.columns(4)
-                
-                with c1:
-                    st.markdown("""
-                    <div class="step-box">
-                        <div class="step-num">1</div>
-                        <span class="step-txt-title">📸 GHI HÌNH</span>
-                        <p class="step-txt-desc">Camera đặt ngang vai (90°), tối thiểu 30 FPS, đủ ánh sáng.</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    c1, c2, c3, c4 = st.columns(4)
                     
-                with c2:
-                    st.markdown("""
-                    <div class="step-box">
-                        <div class="step-num">2</div>
-                        <span class="step-txt-title">⚙️ TRÍCH XUẤT</span>
-                        <p class="step-txt-desc">Sử dụng MediaPipe Heavy trích xuất 33 điểm Landmarks.</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    with c1:
+                        st.markdown("""
+                        <div class="step-box">
+                            <div class="step-num">1</div>
+                            <span class="step-txt-title">📸 GHI HÌNH</span>
+                            <p class="step-txt-desc">Camera đặt ngang vai (90°), tối thiểu 30 FPS, đủ ánh sáng.</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                    with c2:
+                        st.markdown("""
+                        <div class="step-box">
+                            <div class="step-num">2</div>
+                            <span class="step-txt-title">⚙️ TRÍCH XUẤT</span>
+                            <p class="step-txt-desc">Sử dụng MediaPipe Heavy trích xuất 33 điểm Landmarks.</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                    with c3:
+                        st.markdown("""
+                        <div class="step-box">
+                            <div class="step-num">3</div>
+                            <span class="step-txt-title">📊 PHÂN TÍCH</span>
+                            <p class="step-txt-desc">Tính toán Vector góc Vai/Khuỷu và làm mượt dữ liệu.</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                    with c4:
+                        st.markdown("""
+                        <div class="step-box">
+                            <div class="step-num">4</div>
+                            <span class="step-txt-title">💾 LƯU TRỮ</span>
+                            <p class="step-txt-desc">Số hóa dữ liệu sang JSON/CSV phục vụ báo cáo NCKH.</p>
+                        </div>
+                        """, unsafe_allow_html=True)
                     
-                with c3:
-                    st.markdown("""
-                    <div class="step-box">
-                        <div class="step-num">3</div>
-                        <span class="step-txt-title">📊 PHÂN TÍCH</span>
-                        <p class="step-txt-desc">Tính toán Vector góc Vai/Khuỷu và làm mượt dữ liệu.</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                with c4:
-                    st.markdown("""
-                    <div class="step-box">
-                        <div class="step-num">4</div>
-                        <span class="step-txt-title">💾 LƯU TRỮ</span>
-                        <p class="step-txt-desc">Số hóa dữ liệu sang JSON/CSV phục vụ báo cáo NCKH.</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
     
     # ==================== TAB: PHÂN TÍCH / ĐÁNH GIÁ ====================
     if "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH" in tab_map:
