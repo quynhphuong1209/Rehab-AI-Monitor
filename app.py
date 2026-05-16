@@ -4618,6 +4618,11 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
             icon = "🤖" if is_ai else "👨‍⚕️"
             
             with st.expander(f"{icon} Đánh giá ngày {e.get('time', 'N/A')} - Bài tập: {e.get('exercise', 'N/A')}", expanded=True):
+                is_light = st.session_state.theme == 'light'
+                eval_card_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(0,0,0,0.2)"
+                eval_card_border = "#eee" if is_light else f"{title_color}44"
+                eval_text_color = "#333" if is_light else "#888"
+
                 c1, c2 = st.columns([1, 2.5])
                 with c1:
                     if is_ai:
@@ -4626,17 +4631,17 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                         elif isinstance(acc_val, str) and acc_val.replace('.','',1).isdigit(): acc_val = round(float(acc_val), 1)
                         
                         st.markdown(f"""
-                        <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid {title_color}44;">
-                            <p style="margin:0; color:#888; font-size:0.8rem;">ĐỘ CHÍNH XÁC</p>
+                        <div style="text-align: center; background: {eval_card_bg}; padding: 15px; border-radius: 12px; border: 1px solid {eval_card_border}; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                            <p style="margin:0; color:{eval_text_color}; font-size:0.8rem;">ĐỘ CHÍNH XÁC</p>
                             <h2 style="margin:0; color:{title_color};">{acc_val}%</h2>
-                            <hr style="margin:10px 0; border:0; border-top:1px solid #333;">
+                            <hr style="margin:10px 0; border:0; border-top:1px solid {"#eee" if is_light else "#333"};">
                             <h4 style="margin:0; color:{title_color};">{e.get('doctor_result', 'N/A')}</h4>
                         </div>
                         """, unsafe_allow_html=True)
                     else:
                         st.markdown(f"""
-                        <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid {title_color}44;">
-                            <p style="margin:0; color:#888; font-size:0.8rem;">KẾT QUẢ ĐÁNH GIÁ</p>
+                        <div style="text-align: center; background: {eval_card_bg}; padding: 15px; border-radius: 12px; border: 1px solid {eval_card_border}; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                            <p style="margin:0; color:{eval_text_color}; font-size:0.8rem;">KẾT QUẢ ĐÁNH GIÁ</p>
                             <h2 style="margin:0; color:{title_color}; padding: 10px 0;">{e.get('doctor_result', 'N/A')}</h2>
                         </div>
                         """, unsafe_allow_html=True)
@@ -5271,8 +5276,13 @@ def hien_thi_frames_day_du(key_suffix=""):
             st.info("ℹ️ Đang tải hoặc không tìm thấy video trích xuất khung xương.")
             
     with v_col2:
+        is_light = st.session_state.theme == 'light'
+        v_stats_bg = "#ffffff" if is_light else "rgba(15, 23, 42, 0.6)"
+        v_stats_border = "#eee" if is_light else "rgba(100, 116, 139, 0.2)"
+        v_stats_text = "#000000" if is_light else "#ffffff"
+        
         st.markdown(f"""
-        <div style='background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(100, 116, 139, 0.2); border-radius: 16px; padding: 20px;'>
+        <div style='background: {v_stats_bg}; border: 1px solid {v_stats_border}; border-radius: 16px; padding: 20px; color: {v_stats_text}; box-shadow: 0 4px 15px rgba(0,0,0,{"0.05" if is_light else "0.3"});'>
             <h4 style='color:#38bdf8; margin-top:0;'>📊 Thông số Video</h4>
             <div style='margin-bottom:10px;'><b>Tên:</b> {filename}</div>
             <div style='margin-bottom:10px;'><b>Độ chính xác:</b> <span style='color:#22c55e; font-size:1.2rem; font-weight:bold;'>{ai_acc:.1f}%</span></div>
