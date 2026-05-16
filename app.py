@@ -647,6 +647,31 @@ st.markdown("""
             background: #f8f9fa !important;
         }
     }
+
+    /* === ÉP MÀU NÚT BẤM LUÔN CÓ CHỮ TRẮNG (DÙ LÀ THEME SÁNG HAY TỐI) === */
+    .stButton button, .stDownloadButton button, [data-testid="stBaseButton-secondary"],
+    [data-testid="stFormSubmitButton"] button, [data-testid="stBaseButton-primary"] {
+        color: white !important;
+        background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%) !important;
+        border: none !important;
+        border-radius: 30px !important; /* Bo tròn pill-shape như ảnh BN gửi */
+        padding: 0.5rem 2rem !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .stButton button:hover, .stDownloadButton button:hover, [data-testid="stBaseButton-secondary"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(0, 198, 255, 0.4) !important;
+        background: linear-gradient(135deg, #0056b3 0%, #00c6ff 100%) !important;
+        color: white !important;
+    }
+
+    /* Đảm bảo chữ bên trong không bị đổi màu bởi Streamlit default */
+    .stButton button p, .stDownloadButton button p {
+        color: white !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -892,24 +917,14 @@ if st.session_state.get('theme') == 'dark':
             color: white !important;
         }
         
-        /* Fix bất kỳ button nào bị trắng nền đột xuất */
-        .stButton button, .stDownloadButton button, [data-testid="stBaseButton-secondary"],
-        [data-testid="stFormSubmitButton"] button, [data-testid="stBaseButton-primary"],
-        [data-testid="stBaseButton-headerNoPadding"], [data-testid="stBaseButton-header"] {
-            background-color: #1a1a2e !important;
+        /* Nút tăng giảm của ô nhập số */
+        .stNumberInput button {
+            background-color: #2a5298 !important;
             color: white !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            box-shadow: none !important;
+            border-radius: 5px !important;
         }
 
-        /* Đặc biệt ép màu cho nút Primary để không bị biến sắc */
-        [data-testid="stBaseButton-primary"], button[kind="primary"] {
-            background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%) !important;
-            color: white !important;
-            border: none !important;
-        }
-        
-        /* Fix placeholder color in Dark Mode */
+        /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
         ::placeholder {
             color: rgba(255, 255, 255, 0.4) !important;
         }
