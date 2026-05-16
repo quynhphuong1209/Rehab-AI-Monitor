@@ -6306,9 +6306,9 @@ def main():
                     st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN MỚI NHẤT")
                     symptoms_data = load_data(SYMPTOMS_FILE)
                     if symptoms_data:
-                        # Hiển thị 3 bản ghi mới nhất dưới dạng Grid hoặc Expander
+                        # Hiển thị TẤT CẢ bản ghi, mới nhất lên đầu
                         symp_cols = st.columns(3)
-                        for i, s in enumerate(reversed(symptoms_data[-3:])):
+                        for i, s in enumerate(reversed(symptoms_data)):
                             with symp_cols[i % 3]:
                                 with st.container(border=True):
                                     st.markdown(f"**👤 {s['full_name']}**")
