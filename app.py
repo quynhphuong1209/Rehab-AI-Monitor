@@ -1749,15 +1749,40 @@ def hien_thi_tab_nckh_va_thanh_vien_ncv():
         hien_thi_tab_thanh_vien()
 
 def hien_thi_tab_danh_gia_tong_hop_benh_nhan():
-    """Gộp tab Kết quả và Thông tin nghiên cứu cho Bệnh nhân"""
-    st.markdown("## 📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN & THÔNG TIN NGHIÊN CỨU")
-    
-    sub_tabs = st.tabs(["📝 KẾT QUẢ ĐÁNH GIÁ", "📄 THÔNG TIN NGHIÊN CỨU"])
-    
-    with sub_tabs[0]:
-        hien_thi_ket_qua_cho_benh_nhan()
-    with sub_tabs[1]:
+    """Gộp tab Kết quả đánh giá cho Bệnh nhân (Chỉ hiện kết quả bác sĩ/ncv)"""
+    st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ CHUYÊN MÔN")
+    hien_thi_ket_qua_cho_benh_nhan()
+
+def hien_thi_tab_thong_tin_tong_hop_benh_nhan():
+    """Tab Thông tin tổng hợp cho Bệnh nhân"""
+    st.markdown("## 📚 THÔNG TIN NGHIÊN CỨU & HƯỚNG DẪN")
+    t1, t2 = st.tabs(["📄 THÔNG TIN NGHIÊN CỨU", "📖 HƯỚNG DẪN SỬ DỤNG"])
+    with t1:
         hien_thi_tab_thong_tin_nghien_cuu()
+    with t2:
+        hien_thi_tab_huong_dan()
+
+def hien_thi_tab_lien_he():
+    """Tab Thông tin liên hệ khẩn cấp"""
+    st.markdown("## 📞 THÔNG TIN LIÊN HỆ KHẨN CẤP")
+    
+    st.markdown("""
+    <div class='glass-card' style='padding: 30px; border-radius: 15px;'>
+        <h3 style='color: #00c6ff; margin-bottom: 20px;'>👩‍🔬 Nghiên cứu viên chính</h3>
+        <p style='font-size: 1.1rem;'><b>Họ tên:</b> Đinh Lê Quỳnh Phương</p>
+        <p style='font-size: 1.1rem;'><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+        <p style='font-size: 1.1rem;'><b>Email:</b> <a href='mailto:2211090031@studenthuph.edu.vn' style='color: #00c6ff;'>2211090031@studenthuph.edu.vn</a></p>
+        <p style='font-size: 1.1rem;'><b>SĐT:</b> <a href='tel:0382665916' style='color: #00c6ff;'>0382665916</a></p>
+        
+        <hr style='border: 0.5px solid rgba(255,255,255,0.1); margin: 30px 0;'>
+        
+        <h3 style='color: #00c6ff; margin-bottom: 20px;'>⚖️ Hội đồng đạo đức</h3>
+        <p style='font-size: 1.1rem;'><b>Tên:</b> HĐĐĐ Trường ĐH Y tế Công cộng</p>
+        <p style='font-size: 1.1rem;'><b>Địa chỉ:</b> Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+        <p style='font-size: 1.1rem;'><b>Email:</b> <a href='mailto:irb@huph.edu.vn' style='color: #00c6ff;'>irb@huph.edu.vn</a></p>
+        <p style='font-size: 1.1rem;'><b>SĐT:</b> <a href='tel:02462663024' style='color: #00c6ff;'>024 62663024</a></p>
+    </div>
+    """, unsafe_allow_html=True)
 
 def hien_thi_tab_danh_gia_va_nckh_bac_si():
     """Gộp tab Phiếu NCKH và Đánh giá PHCN cho Bác sĩ"""
@@ -6240,7 +6265,7 @@ def main():
             tab_titles.append("🎬 VIDEO & ẢNH")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = ["🏠 TRANG CHỦ", "📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN", "⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "📞 THÔNG TIN LIÊN HỆ", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
         
@@ -6493,8 +6518,8 @@ def main():
                                                 st.success("✅ Đã gửi kết quả cho Bệnh nhân!")
                                     elif user_role == "Bệnh nhân":
                                         if st.button("📝 ĐÁNH GIÁ CHUYÊN MÔN PHCN", width="stretch", type="primary"):
-                                            st.toast("🚀 Đang chuyển sang tab 📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN...", icon="🔄")
-                                            chuyen_tab_bang_js("📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN")
+                                            st.toast("🚀 Đang chuyển sang tab 📊 KẾT QUẢ ĐÁNH GIÁ...", icon="🔄")
+                                            chuyen_tab_bang_js("📊 KẾT QUẢ ĐÁNH GIÁ")
                                     else: # Bác sĩ
                                         if st.button("📊 XEM ĐÁNH GIÁ LÂM SÀNG", width="stretch", type="primary"):
                                             st.toast("🚀 Đang chuyển sang tab 📊 QUẢN LÝ ĐÁNH GIÁ & NCKH...", icon="🔄")
@@ -6869,8 +6894,8 @@ def main():
         with tab_map["🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"]:
             hien_thi_tab_phan_tich_va_video_ncv()
 
-    if "📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN" in tab_map:
-        with tab_map["📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN"]:
+    if "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
+        with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]:
             hien_thi_tab_danh_gia_tong_hop_benh_nhan()
 
     if "📊 KẾT QUẢ" in tab_map:
@@ -6915,8 +6940,15 @@ def main():
             
     if "📚 THÔNG TIN TỔNG HỢP" in tab_map:
         with tab_map["📚 THÔNG TIN TỔNG HỢP"]:
-            hien_thi_tab_thong_tin_tong_hop()
+            if user_role == "Bệnh nhân":
+                hien_thi_tab_thong_tin_tong_hop_benh_nhan()
+            else:
+                hien_thi_tab_thong_tin_tong_hop()
         
+    if "📞 THÔNG TIN LIÊN HỆ" in tab_map:
+        with tab_map["📞 THÔNG TIN LIÊN HỆ"]:
+            hien_thi_tab_lien_he()
+            
     if "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA" in tab_map:
         with tab_map["👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA"]:
             hien_thi_tab_nckh_va_thanh_vien_ncv()
