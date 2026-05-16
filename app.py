@@ -6171,28 +6171,6 @@ def main():
                 4. **📊 KẾT QUẢ AI**: Tham khảo phân tích tự động từ mô hình máy học.
                 5. **⏰ LỊCH NHẮC NHỞ**: Quản lý lịch hẹn tái khám và nhắc nhở tập luyện.
                 """)
-                
-                st.markdown("---")
-                # 2. DANH SÁCH TRIỆU CHỨNG BỆNH NHÂN (Dành cho Bác sĩ)
-                st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN")
-                symptoms_data = load_data(SYMPTOMS_FILE)
-                if symptoms_data:
-                    for idx, s in enumerate(reversed(symptoms_data[-10:])): # Hiện 10 tin mới nhất
-                        col_s1, col_s2 = st.columns([5, 1])
-                        with col_s1:
-                            with st.expander(f"👤 {s['full_name']}"):
-                                st.caption(f"🕒 {s['time']}")
-                                st.write(f"**Mã BN:** {s.get('patient_id', 'N/A')} | **Tuổi:** {s['age']}")
-                                st.write(f"**Bài tập:** {s.get('exercise', 'N/A')}")
-                                st.info(f"**Triệu chứng:** {s['symptoms']}")
-                                st.warning(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
-                        with col_s2:
-                            if st.button("❌", key=f"del_symp_{idx}", help="Xóa thông báo này"):
-                                symptoms_data.pop(len(symptoms_data)-1-idx)
-                                save_data(SYMPTOMS_FILE, symptoms_data)
-                                st.rerun()
-                else:
-                    st.info("Chưa có BN gửi thông tin triệu chứng.")
             
             else: # Vai trò Bệnh nhân
                 st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
@@ -6301,6 +6279,33 @@ def main():
             else:
                 # Nếu là Bác sĩ, cho phép chọn bài tập ngay tại đây vì Sidebar đã dọn dẹp
                 if user_role == "Bác sĩ / KTV PHCN":
+                    # --- DANH SÁCH TRIỆU CHỨNG BN (CHUYỂN TỪ SIDEBAR SANG ĐÂY) ---
+                    st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN MỚI NHẤT")
+                    symptoms_data = load_data(SYMPTOMS_FILE)
+                    if symptoms_data:
+                        # Hiển thị 3 bản ghi mới nhất dưới dạng Grid hoặc Expander
+                        symp_cols = st.columns(3)
+                        for i, s in enumerate(reversed(symptoms_data[-3:])):
+                            with symp_cols[i % 3]:
+                                with st.container(border=True):
+                                    st.markdown(f"**👤 {s['full_name']}**")
+                                    st.caption(f"🕒 {s['time']}")
+                                    st.write(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
+                                    with st.expander("Chi tiết triệu chứng"):
+                                        st.write(f"**Tuổi:** {s['age']} | **Mã:** {s.get('patient_id', 'N/A')}")
+                                        st.write(f"**Bài tập:** {s.get('exercise', 'N/A')}")
+                                        st.info(s['symptoms'])
+                                        if st.button("Xóa thông báo", key=f"del_symp_main_{i}"):
+                                            # Tìm index thực tế để xóa
+                                            actual_idx = len(symptoms_data) - 1 - i
+                                            symptoms_data.pop(actual_idx)
+                                            save_data(SYMPTOMS_FILE, symptoms_data)
+                                            st.rerun()
+                    else:
+                        st.info("ℹ️ Hiện chưa có thông tin khai báo triệu chứng mới từ bệnh nhân.")
+                    
+                    st.markdown("---")
+                    
                     c_bt1, c_bt2 = st.columns([2, 1])
                     with c_bt1:
                         ma_bai_tap = st.selectbox("🎯 CHỌN BÀI TẬP ĐANG THEO DÕI", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="doc_home_exercise")
