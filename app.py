@@ -1709,6 +1709,22 @@ def hien_thi_tab_cong_nghe():
     </div>
     """, unsafe_allow_html=True)
 
+def hien_thi_tab_thong_tin_tong_hop():
+    """Gộp các tab Hướng dẫn, Kiến thức và Công nghệ cho Nghiên cứu viên"""
+    st.markdown("## 📚 TỔNG HỢP THÔNG TIN & HƯỚNG DẪN")
+    st.info("💡 Đây là khu vực tổng hợp các tài liệu hướng dẫn, kiến thức chuyên môn và công nghệ cốt lõi của hệ thống Rehab-AI-Monitor.")
+    
+    # Sử dụng sub-tabs để gộp 3 nội dung
+    sub_tab_titles = ["📖 HƯỚNG DẪN SỬ DỤNG", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ AI"]
+    st_sub_tabs = st.tabs(sub_tab_titles)
+    
+    with st_sub_tabs[0]:
+        hien_thi_tab_huong_dan()
+    with st_sub_tabs[1]:
+        hien_thi_tab_kien_thuc_phcn()
+    with st_sub_tabs[2]:
+        hien_thi_tab_cong_nghe()
+
 
 # ============================================
 # HÀM TÍNH GÓC
@@ -6181,7 +6197,7 @@ def main():
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "📊 PHÂN TÍCH", "🎬 VIDEO & ẢNH", "📚 THÔNG TIN TỔNG HỢP", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     
@@ -6843,6 +6859,10 @@ def main():
     if "🌐 CÔNG NGHỆ" in tab_map:
         with tab_map["🌐 CÔNG NGHỆ"]:
             hien_thi_tab_cong_nghe()
+            
+    if "📚 THÔNG TIN TỔNG HỢP" in tab_map:
+        with tab_map["📚 THÔNG TIN TỔNG HỢP"]:
+            hien_thi_tab_thong_tin_tong_hop()
         
     if "📚 ĐỀ TÀI NCKH" in tab_map:
         with tab_map["📚 ĐỀ TÀI NCKH"]:
