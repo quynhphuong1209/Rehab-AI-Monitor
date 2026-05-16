@@ -2886,14 +2886,14 @@ def lay_nhan_dinh_lam_sang(goc_vai, goc_khuyu, bt, v_chuan=None, k_chuan=None):
     if goc_vai > cv + ss:
         nhan_dinh.append({
             "loai": "VAI - QUÁ BIÊN ĐỘ",
-            "chi_so": f"{goc_vai:.1f}° > {cv+ss}°",
+            "chi_so": f"{goc_vai:.1f}° > {cv+ss:.1f}°",
             "canh_bao": "Nguy cơ trật khớp vai hoặc tổn thương bao khớp phía trước.",
             "loi_khuyen": "Cần kiểm soát cơ delta tốt hơn, tránh vung tay quá đà."
         })
     elif goc_vai < cv - ss:
         nhan_dinh.append({
             "loai": "VAI - THIẾU BIÊN ĐỘ",
-            "chi_so": f"{goc_vai:.1f}° < {cv-ss}°",
+            "chi_so": f"{goc_vai:.1f}° < {cv-ss:.1f}°",
             "canh_bao": "Dấu hiệu của hội chứng đông cứng khớp vai hoặc đau do chạm (Impingement).",
             "loi_khuyen": "Thực hiện các bài tập kéo giãn nhẹ nhàng trước khi tập chính thức."
         })
@@ -2902,14 +2902,14 @@ def lay_nhan_dinh_lam_sang(goc_vai, goc_khuyu, bt, v_chuan=None, k_chuan=None):
     if goc_khuyu > ck + ss:
         nhan_dinh.append({
             "loai": "KHUỶU - QUÁ DUỖI",
-            "chi_so": f"{goc_khuyu:.1f}° > {ck+ss}°",
+            "chi_so": f"{goc_khuyu:.1f}° > {ck+ss:.1f}°",
             "canh_bao": "Gây áp lực lên mỏm khuỷu và dây chằng bên trong.",
             "loi_khuyen": "Giữ khớp khuỷu hơi gập nhẹ (micro-bend) để bảo vệ khớp."
         })
     elif goc_khuyu < ck - ss:
         nhan_dinh.append({
             "loai": "KHUỶU - QUÁ GẬP",
-            "chi_so": f"{goc_khuyu:.1f}° < {ck-ss}°",
+            "chi_so": f"{goc_khuyu:.1f}° < {ck-ss:.1f}°",
             "canh_bao": "Căng cơ nhị đầu quá mức, nguy cơ viêm gân vùng khuỷu.",
             "loi_khuyen": "Thả lỏng cánh tay và tập trung vào cơ mục tiêu."
         })
@@ -3923,10 +3923,10 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             stab = 100 - (tk.get('std_goc_vai', 0) + tk.get('std_goc_khuyu', 0))
             ai_c1, ai_c2 = st.columns([1, 2])
             with ai_c1:
-                st.metric("🎯 F1-Score", f"{tk.get('f1_score', 0):.2f}")
+                st.metric("🎯 F1-Score", f"{tk.get('f1_score', 0):.1f}")
                 st.metric("📉 Độ mượt", f"{max(0, stab):.1f}/100")
             with ai_c2:
-                st.info(f"**ICC:** {tk.get('icc', 0):.2f} | **MAE:** {tk.get('mae_tong', 0):.1f}°\n\n{'✅ Đạt chuẩn NCKH' if tk.get('icc', 0) > 0.75 else '⚠️ Cần kiểm tra tín hiệu'}")
+                st.info(f"**ICC:** {tk.get('icc', 0):.1f} | **MAE:** {tk.get('mae_tong', 0):.1f}°\n\n{'✅ Đạt chuẩn NCKH' if tk.get('icc', 0) > 0.75 else '⚠️ Cần kiểm tra tín hiệu'}")
 
     # === TAB 5: CHỈ SỐ NGHIÊN CỨU ===
     if "🔬 CHỈ SỐ NGHIÊN CỨU" in t_map:
@@ -3960,37 +3960,37 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
                             <td style="padding: 10px;">Sai số tuyệt đối trung bình</td>
                             <td style="padding: 10px; text-align: center;"><b>MAE</b></td>
-                            <td style="padding: 10px; text-align: center; color: #f43f5e;">{tk.get('mae_tong', 0):.2f}°</td>
+                            <td style="padding: 10px; text-align: center; color: #f43f5e;">{tk.get('mae_tong', 0):.1f}°</td>
                             <td style="padding: 10px;">{'✅ Tốt' if tk.get('mae_tong', 0) < 5 else '⚠️ Sai số cao'}</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
                             <td style="padding: 10px;">Sai số bình phương trung bình</td>
                             <td style="padding: 10px; text-align: center;"><b>RMSE</b></td>
-                            <td style="padding: 10px; text-align: center; color: #f43f5e;">{rmse_val:.2f}°</td>
+                            <td style="padding: 10px; text-align: center; color: #f43f5e;">{rmse_val:.1f}°</td>
                             <td style="padding: 10px;">Độ lệch chuẩn sai số</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
                             <td style="padding: 10px;">Hệ số tương quan nội lớp</td>
                             <td style="padding: 10px; text-align: center;"><b>ICC</b></td>
-                            <td style="padding: 10px; text-align: center; color: #38bdf8;">{tk.get('icc', 0):.3f}</td>
+                            <td style="padding: 10px; text-align: center; color: #38bdf8;">{tk.get('icc', 0):.1f}</td>
                             <td style="padding: 10px;">{'✅ Rất tốt' if tk.get('icc', 0) >= 0.75 else '⚠️ Trung bình'}</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
                             <td style="padding: 10px;">Độ nhạy phân loại</td>
                             <td style="padding: 10px; text-align: center;"><b>Recall</b></td>
-                            <td style="padding: 10px; text-align: center;">{tk.get('recall', 0):.2f}</td>
+                            <td style="padding: 10px; text-align: center;">{tk.get('recall', 0):.1f}</td>
                             <td style="padding: 10px;">Khả năng phát hiện lỗi</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
                             <td style="padding: 10px;">Độ đặc hiệu phân loại</td>
                             <td style="padding: 10px; text-align: center;"><b>Precision</b></td>
-                            <td style="padding: 10px; text-align: center;">{tk.get('precision', 0):.2f}</td>
+                            <td style="padding: 10px; text-align: center;">{tk.get('precision', 0):.1f}</td>
                             <td style="padding: 10px;">Độ chính xác cảnh báo</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
                             <td style="padding: 10px;">Chỉ số cân bằng F1</td>
                             <td style="padding: 10px; text-align: center;"><b>F1-Score</b></td>
-                            <td style="padding: 10px; text-align: center; color: #fbbf24;">{tk.get('f1_score', 0):.3f}</td>
+                            <td style="padding: 10px; text-align: center; color: #fbbf24;">{tk.get('f1_score', 0):.1f}</td>
                             <td style="padding: 10px;">Hiệu suất AI tổng hợp</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
