@@ -6113,14 +6113,25 @@ def main():
             st.slider("Độ nhạy chuyển động (Sensitivity)", 0.0, 1.0, 0.7, key="ncv_sensitivity", help="Ảnh hưởng đến việc tính toán vận tốc khớp.")
             
             st.markdown("### 📊 THỐNG KÊ HỆ THỐNG")
-            # Giả lập các con số cho NCV
+            # TÍNH TOÁN CÁC CON SỐ THỰC TẾ
             v_list = load_data(VIDEOS_FILE)
-            total_frames = sum([v.get('accuracy', 0) * 10 for v in v_list]) # Chỉ là giả lập
+            evals_db = load_data(EVALUATIONS_FILE)
+            
+            # 1. Video chưa phân tích AI
+            pending_ai = len([v for v in v_list if not v.get('metrics')])
+            
+            # 2. Độ chính xác trung bình của AI
+            ai_evals = [e.get('ai_accuracy', 0) for e in evals_db if e.get('doctor_username') == "AI_Researcher"]
+            avg_acc = sum(ai_evals) / len(ai_evals) if ai_evals else 0
+            
+            # 3. Tổng số video trong hệ thống
+            total_vids = len(v_list)
+            
             st.markdown(f"""
-            <div style="background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px;">
-                <p style="margin:0; font-size:0.85rem;">📁 Video chờ xử lý: <b>{len([v for v in v_list if v['status'] == 'Chờ bác sĩ phân tích'])}</b></p>
-                <p style="margin:0; font-size:0.85rem;">🤖 Phiên bản AI: <b>v2.4.1-stable</b></p>
-                <p style="margin:0; font-size:0.85rem;">⚡ Độ trễ trung bình: <b>45ms</b></p>
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <p style="margin:0; font-size:0.85rem; color: #aaa;">📁 Video chờ xử lý: <b style="color: #00c6ff;">{pending_ai}</b></p>
+                <p style="margin:5px 0; font-size:0.85rem; color: #aaa;">🎯 Accuracy TB: <b style="color: #00ff00;">{avg_acc:.1f}%</b></p>
+                <p style="margin:0; font-size:0.85rem; color: #aaa;">📚 Tổng dữ liệu: <b style="color: #ffd700;">{total_vids} Video</b></p>
             </div>
             """, unsafe_allow_html=True)
             
