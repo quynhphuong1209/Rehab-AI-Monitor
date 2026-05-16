@@ -6200,7 +6200,7 @@ def main():
     if not isinstance(res_data_list, list): res_data_list = []
 
     if user_role == "Quản trị viên":
-        tab_titles = ["🏠 TRANG CHỦ", "🛠️ QUẢN TRỊ VIÊN", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "🛠️ QUẢN TRỊ VIÊN", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
     elif user_role == "Bác sĩ / KTV PHCN":
         # Kiểm tra BN được chọn có kết quả AI chưa để hiện Tab Kết quả AI
         selected_video_main = st.session_state.get('current_eval_video')
@@ -6227,7 +6227,7 @@ def main():
             tab_titles.append("📊 KẾT QUẢ AI")
         if has_video_output:
             tab_titles.append("🎬 VIDEO & ẢNH")
-        tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN", "⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
