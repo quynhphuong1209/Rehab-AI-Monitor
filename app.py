@@ -1876,7 +1876,21 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
         hien_thi_tab_phieu_nckh()
     if has_ai:
         with sub_tabs[2]:
-            hien_thi_tab_phan_tich(key_suffix="doc_view_ncv_sub")
+            # Load dữ liệu AI để hiển thị cho Bác sĩ
+            v_list_db = load_data(VIDEOS_FILE)
+            v_ai = next((v for v in v_list_db if v['username'] == selected_video['username'] and v['video_name'] == selected_video['video_name']), None)
+            
+            if v_ai and 'metrics' in v_ai and v_ai['metrics']:
+                df_ncv = None
+                if 'df_path' in v_ai and os.path.exists(v_ai['df_path']):
+                    try: df_ncv = pd.read_csv(v_ai['df_path'])
+                    except: pass
+                
+                ex_ai = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v_ai['exercise']), BAI_TAP['codman'])
+                hien_thi_tab_phan_tich(key_suffix="doc_view_ncv_sub", stats_ext=v_ai['metrics'], df_ext=df_ncv, exercise_ext=ex_ai)
+            else:
+                st.warning("⚠️ NCV đã gửi báo cáo nhưng dữ liệu biểu đồ chi tiết chưa được đồng bộ hoặc bị lỗi file.")
+                st.info("💡 Bạn vẫn có thể xem tóm tắt kết quả tại tab KẾT QUẢ ĐÁNH GIÁ của bệnh nhân.")
 
 
 # ============================================
@@ -3472,25 +3486,27 @@ st.markdown(f"""
 # ============================================
 # HÀM HIỂN THỊ TAB 2 - THIẾT KẾ LẠI
 # ============================================
-def hien_thi_tab_phan_tich(key_suffix=""):
+def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_ext=None):
     """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
     user_role = st.session_state.user_info.get('role')
     
-    # TỰ ĐỘNG CHỌN VIDEO MỚI NHẤT NẾU CHƯA CHỌN (Dành cho Nghiên cứu viên)
-    if not st.session_state.get('has_data') and not st.session_state.get('current_eval_video'):
-        video_list = load_data(VIDEOS_FILE)
-        if video_list:
-            # Ưu tiên video chưa phân tích
-            pending = [v for v in video_list if v.get('accuracy', 0) == 0]
-            if pending:
-                st.session_state.current_eval_video = pending[-1]
-            else:
-                st.session_state.current_eval_video = video_list[-1]
+    # Nếu không có dữ liệu truyền vào -> Kiểm tra tải tự động (Dành cho NCV)
+    if stats_ext is None and df_ext is None:
+        # TỰ ĐỘNG CHỌN VIDEO MỚI NHẤT NẾU CHƯA CHỌN (Dành cho Nghiên cứu viên)
+        if not st.session_state.get('has_data') and not st.session_state.get('current_eval_video'):
+            video_list = load_data(VIDEOS_FILE)
+            if video_list:
+                # Ưu tiên video chưa phân tích
+                pending = [v for v in video_list if v.get('accuracy', 0) == 0]
+                if pending:
+                    st.session_state.current_eval_video = pending[-1]
+                else:
+                    st.session_state.current_eval_video = video_list[-1]
 
-    # TỰ ĐỘNG LOAD DỮ LIỆU NẾU ĐANG CHỌN VIDEO TỪ DANH SÁCH
-    if not st.session_state.get('has_data') or not st.session_state.get('stats'):
-        if st.session_state.get('current_eval_video'):
-            v = st.session_state.current_eval_video
+        # TỰ ĐỘNG LOAD DỮ LIỆU NẾU ĐANG CHỌN VIDEO TỪ DANH SÁCH
+        if not st.session_state.get('has_data') or not st.session_state.get('stats'):
+            if st.session_state.get('current_eval_video'):
+                v = st.session_state.current_eval_video
             
             # Nếu video ĐÃ CÓ metrics -> Cho phép NCV quyết định có tải lại hay không
             if 'metrics' in v and v['metrics']:
@@ -3610,10 +3626,11 @@ def hien_thi_tab_phan_tich(key_suffix=""):
             st.info("ℹ️ Chưa có video nào để phân tích. Vui lòng upload video ở tab TRANG CHỦ hoặc chờ bệnh nhân gửi video.")
             return
     
-    bt = st.session_state.get('exercise', BAI_TAP['codman'])
+    # Lấy dữ liệu (Ưu tiên tham số truyền vào từ Doctor/Patient view)
+    bt = exercise_ext if exercise_ext is not None else st.session_state.get('exercise', BAI_TAP['codman'])
     if bt is None: bt = BAI_TAP['codman']
-    tk = st.session_state.get('stats')
-    df = st.session_state.get('angle_df')
+    tk = stats_ext if stats_ext is not None else st.session_state.get('stats')
+    df = df_ext if df_ext is not None else st.session_state.get('angle_df')
     
     if tk is None or df is None:
         st.warning("⚠️ Dữ liệu phân tích chi tiết không khả dụng hoặc chưa được tải.")
