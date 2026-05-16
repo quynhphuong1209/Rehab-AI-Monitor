@@ -3508,28 +3508,26 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             if st.session_state.get('current_eval_video'):
                 v = st.session_state.current_eval_video
             
-            # Nếu video ĐÃ CÓ metrics -> Cho phép NCV quyết định có tải lại hay không
-            if 'metrics' in v and v['metrics']:
-                st.info("💡 Video này đã được phân tích trước đó. Để áp dụng hệ thống đối soát DYNAMIC (Bản chuẩn Youtube) mới, vui lòng chạy lại phân tích ở bên dưới.")
-                col_load1, col_load2 = st.columns(2)
-                with col_load1:
-                    if st.button("🔄 TẢI LẠI KẾT QUẢ ĐÃ LƯU", width="stretch", key=f"btn_reload_cached_{key_suffix}"):
-                        st.session_state.stats = v['metrics']
-                        st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
-                        st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
-                        st.session_state.all_frames_data_path = v.get('all_frames_data_path')
-                        st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP['codman'])
-                        st.session_state.has_data = True
-                        if 'df_path' in v and os.path.exists(v['df_path']):
-                            try: st.session_state.angle_df = pd.read_csv(v['df_path'])
-                            except: pass
-                        st.rerun()
-                with col_load2:
-                    st.write("Hoặc bạn có thể chạy lại phân tích mới ở bên dưới.")
-            
-            # Nếu video CHƯA CÓ metrics hoặc NCV muốn chạy lại
-            if True: 
-
+                # Nếu video ĐÃ CÓ metrics -> Cho phép NCV quyết định có tải lại hay không
+                if 'metrics' in v and v['metrics']:
+                    st.info("💡 Video này đã được phân tích trước đó. Để áp dụng hệ thống đối soát DYNAMIC (Bản chuẩn Youtube) mới, vui lòng chạy lại phân tích ở bên dưới.")
+                    col_load1, col_load2 = st.columns(2)
+                    with col_load1:
+                        if st.button("🔄 TẢI LẠI KẾT QUẢ ĐÃ LƯU", width="stretch", key=f"btn_reload_cached_{key_suffix}"):
+                            st.session_state.stats = v['metrics']
+                            st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
+                            st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
+                            st.session_state.all_frames_data_path = v.get('all_frames_data_path')
+                            st.session_state.exercise = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP['codman'])
+                            st.session_state.has_data = True
+                            if 'df_path' in v and os.path.exists(v['df_path']):
+                                try: st.session_state.angle_df = pd.read_csv(v['df_path'])
+                                except: pass
+                            st.rerun()
+                    with col_load2:
+                        st.write("Hoặc bạn có thể chạy lại phân tích mới ở bên dưới.")
+                
+                # Nếu video CHƯA CÓ metrics hoặc NCV muốn chạy lại
                 st.warning(f"⚠️ Video '{v.get('video_name')}' của BN {v.get('full_name')} chưa được phân tích.")
                 col_v1, col_v2 = st.columns([2, 1])
                 with col_v1:
@@ -3622,9 +3620,9 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         finally:
                             st.session_state.processing = False
                 return
-        else:
-            st.info("ℹ️ Chưa có video nào để phân tích. Vui lòng upload video ở tab TRANG CHỦ hoặc chờ bệnh nhân gửi video.")
-            return
+            else:
+                st.info("ℹ️ Chưa có video nào để phân tích. Vui lòng chọn một video ở trang chủ hoặc upload video mới.")
+                return
     
     # Lấy dữ liệu (Ưu tiên tham số truyền vào từ Doctor/Patient view)
     bt = exercise_ext if exercise_ext is not None else st.session_state.get('exercise', BAI_TAP['codman'])
