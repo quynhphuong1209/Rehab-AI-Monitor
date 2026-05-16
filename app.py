@@ -5637,30 +5637,10 @@ def hien_thi_dang_nhap_dang_ky():
             # GIAO DIỆN CHÍNH (TABS)
             login_role = st.selectbox("🎭 Bạn truy cập với vai trò:", ["Bệnh nhân", "Bác sĩ / KTV PHCN", "Nghiên cứu viên", "Quản trị viên"], key="login_role_main")
             
-            tab_list = ["🚀 GOOGLE ID", "🔐 ĐĂNG NHẬP", "📋 ĐĂNG KÝ"]
+            tab_list = ["🔐 ĐĂNG NHẬP", "📋 ĐĂNG KÝ", "🚀 GOOGLE ID"]
             all_login_tabs = st.tabs(tab_list)
             t_map = {name: all_login_tabs[i] for i, name in enumerate(tab_list)}
             
-            if "🚀 GOOGLE ID" in t_map:
-                with t_map["🚀 GOOGLE ID"]:
-                    st.markdown(f"""
-                    <div style="text-align: center; padding: 20px 10px; background: {"rgba(0,198,255,0.05)" if is_light else "rgba(255,255,255,0.02)"}; border-radius: 15px; border: 1px dashed {"#0072ff" if is_light else "#00c6ff"}; margin: 15px 0;">
-                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="48" style="margin-bottom: 10px;">
-                        <h4 style="color: {"#0072ff" if is_light else "#ffd700"}; margin-bottom: 5px; font-family: 'Times New Roman', serif;">TRUY CẬP NHANH DÀNH CHO BỆNH NHÂN</h4>
-                        <p style="color: {sub_color}; font-size: 0.9rem; opacity: 0.8;">Sử dụng tài khoản Google để kích hoạt và vào hệ thống ngay lập tức.</p>
-                        <div style="background: {"#e3f2fd" if is_light else "rgba(0,198,255,0.1)"}; color: {"#0d47a1" if is_light else "#00c6ff"}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-size: 0.8rem; font-weight: bold; margin-top: 10px;">
-                            ✨ KHUYÊN DÙNG (CHẾ ĐỘ TỰ ĐỘNG)
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button("🌐 TIẾP TỤC VỚI GOOGLE (VÀO THẲNG DASHBOARD)", width="stretch", type="primary"):
-                        try:
-                            st.session_state.auth_initiated = True
-                            st.login("google")
-                        except Exception as e:
-                            st.error(f"⚠️ Lỗi kết nối Google: {e}. Vui lòng thử lại hoặc dùng Đăng nhập thủ công.")
-
             if "🔐 ĐĂNG NHẬP" in t_map:
                 with t_map["🔐 ĐĂNG NHẬP"]:
                     # CHẾ ĐỘ ĐỔI MẬT KHẨU TRONG LOGIN
@@ -5752,6 +5732,26 @@ def hien_thi_dang_nhap_dang_ky():
                                 }
                                 save_users(users)
                                 st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay.")
+
+            if "🚀 GOOGLE ID" in t_map:
+                with t_map["🚀 GOOGLE ID"]:
+                    st.markdown(f"""
+                    <div style="text-align: center; padding: 20px 10px; background: {"rgba(0,198,255,0.05)" if is_light else "rgba(255,255,255,0.02)"}; border-radius: 15px; border: 1px dashed {"#0072ff" if is_light else "#00c6ff"}; margin: 15px 0;">
+                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="48" style="margin-bottom: 10px;">
+                        <h4 style="color: {"#0072ff" if is_light else "#ffd700"}; margin-bottom: 5px; font-family: 'Times New Roman', serif;">TRUY CẬP NHANH DÀNH CHO BỆNH NHÂN</h4>
+                        <p style="color: {sub_color}; font-size: 0.9rem; opacity: 0.8;">Sử dụng tài khoản Google để kích hoạt và vào hệ thống ngay lập tức.</p>
+                        <div style="background: {"#e3f2fd" if is_light else "rgba(0,198,255,0.1)"}; color: {"#0d47a1" if is_light else "#00c6ff"}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-size: 0.8rem; font-weight: bold; margin-top: 10px;">
+                            ✨ KHUYÊN DÙNG (CHẾ ĐỘ TỰ ĐỘNG)
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button("🌐 TIẾP TỤC VỚI GOOGLE (VÀO THẲNG DASHBOARD)", width="stretch", type="primary"):
+                        try:
+                            st.session_state.auth_initiated = True
+                            st.login("google")
+                        except Exception as e:
+                            st.error(f"⚠️ Lỗi kết nối Google: {e}. Vui lòng thử lại hoặc dùng Đăng nhập thủ công.")
 
 # ============================================
 # HÀM HIỂN TRỊ TAB QUẢN TRỊ VIÊN
