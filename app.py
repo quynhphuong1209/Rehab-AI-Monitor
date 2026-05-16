@@ -1371,12 +1371,25 @@ def hien_thi_tab_huong_dan(role="Bệnh nhân"):
             ("4️⃣ Xem kết quả", "Chờ Nghiên cứu viên phân tích và xem nhận xét chi tiết của Bác sĩ tại tab KẾT QUẢ ĐÁNH GIÁ."),
             ("5️⃣ Đặt lịch nhắc nhở", "Sử dụng tab LỊCH NHẮC NHỞ để không bỏ lỡ các buổi tập luyện tiếp theo.")
         ]
-    else: # NCV / Bác sĩ
+    elif role == "Bác sĩ / KTV PHCN":
         steps = [
-            ("1️⃣ Tiếp nhận Video", "Kiểm tra danh sách video bệnh nhân gửi đến tại TRANG CHỦ."),
-            ("2️⃣ Phân tích AI", "Sử dụng công cụ trích xuất khung xương AI để lấy dữ liệu góc khớp."),
-            ("3️⃣ Đánh giá chuyên môn", "Xem biểu đồ ROM và đưa ra nhận xét lâm sàng/nghiên cứu."),
-            ("4️⃣ Gửi báo cáo", "Nhấn nút Gửi kết quả để bệnh nhân có thể xem được phản hồi tại giao diện của họ.")
+            ("1️⃣ Tiếp nhận Video", "Xem danh sách video bệnh nhân gửi đến tại TRANG CHỦ."),
+            ("2️⃣ Đánh giá lâm sàng", "Sử dụng tab QUẢN LÝ ĐÁNH GIÁ để điền kết quả dựa trên chuyên môn của bạn."),
+            ("3️⃣ Tham khảo AI", "Xem sub-tab KẾT QUẢ TỪ NCV (nếu có) để có thêm dữ liệu khách quan về góc khớp."),
+            ("4️⃣ Phản hồi cho BN", "Nhấn Gửi kết quả để bệnh nhân nhận được lời khuyên và phác đồ điều trị.")
+        ]
+    elif role == "Quản trị viên":
+        steps = [
+            ("1️⃣ Quản lý tài khoản", "Thêm mới hoặc khóa tài khoản của Bác sĩ, NCV và Bệnh nhân."),
+            ("2️⃣ Giám sát hệ thống", "Theo dõi lưu lượng video và tính ổn định của server."),
+            ("3️⃣ Cấu hình tham số", "Điều chỉnh các ngưỡng cảnh báo góc khớp chuẩn cho toàn hệ thống.")
+        ]
+    else: # Nghiên cứu viên (NCV)
+        steps = [
+            ("1️⃣ Trích xuất dữ liệu", "Sử dụng công cụ AI để trích xuất khung xương từ video của bệnh nhân."),
+            ("2️⃣ Kiểm định Metrics", "Kiểm tra các chỉ số MAE, ICC, F1-Score để đảm bảo độ chính xác của mô hình."),
+            ("3️⃣ Xuất báo cáo", "Tải xuống dữ liệu CSV hoặc ảnh biểu đồ cho mục đích viết bài báo khoa học."),
+            ("4️⃣ Chuyển tiếp", "Gửi kết quả phân tích AI để Bác sĩ có cơ sở đưa ra đánh giá lâm sàng.")
         ]
     
     for title, desc in steps:
