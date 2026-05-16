@@ -6161,16 +6161,46 @@ def main():
 
         else:
             if user_role == "Bác sĩ / KTV PHCN":
-                # 1. GIỚI THIỆU CÁC TAB CHO BÁC SĨ
-                st.markdown("### 🏥 GIỚI THIỆU GIAO DIỆN")
-                st.info("""
-                **Hệ thống hỗ trợ Bác sĩ/KTV với 5 Tab chính:**
-                1. **🏠 TRANG CHỦ**: Xem danh sách video bệnh nhân gửi và chọn bài tập.
-                2. **📄 PHIẾU NCKH**: Thu thập dữ liệu kỹ thuật (Ground Truth) cho nghiên cứu AI.
-                3. **📝 ĐÁNH GIÁ PHCN**: Đưa ra nhận xét lâm sàng và kế hoạch điều trị.
-                4. **📊 KẾT QUẢ AI**: Tham khảo phân tích tự động từ mô hình máy học.
-                5. **⏰ LỊCH NHẮC NHỞ**: Quản lý lịch hẹn tái khám và nhắc nhở tập luyện.
-                """)
+                # 1. HỒ SƠ CHUYÊN GIA TRONG SIDEBAR
+                st.markdown("### 🩺 HỒ SƠ CHUYÊN GIA")
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, rgba(0, 198, 255, 0.1) 0%, rgba(0, 114, 255, 0.1) 100%); 
+                            padding: 15px; border-radius: 12px; border: 1px solid rgba(0, 198, 255, 0.2); margin-bottom: 10px;">
+                    <p style="margin:0; font-weight:bold; color:#00c6ff; font-size: 1.05rem;">👨‍⚕️ {st.session_state.user_info.get('full_name', 'Bác sĩ / KTV')}</p>
+                    <p style="margin:0; font-size:0.8rem; color:#888; margin-top: 4px;">Chuyên gia Phục hồi chức năng</p>
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid rgba(0, 198, 255, 0.2);">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa;">
+                        <span>Cơ sở:</span>
+                        <span style="color: #fff;">ĐH Y tế Công cộng</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # THỐNG KÊ NHANH CHO BÁC SĨ
+                v_list = load_data(VIDEOS_FILE)
+                # Tính số video chưa được bác sĩ này đánh giá (giả định bác sĩ hiện tại là người đánh giá)
+                evals_db = load_data(EVALUATIONS_FILE)
+                current_doctor = st.session_state.user_info.get('username')
+                
+                # Đếm số video chưa có đánh giá của bác sĩ
+                pending_eval = 0
+                for v in v_list:
+                    has_eval = any(e.get('doctor_username') == current_doctor and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') for e in evals_db)
+                    if not has_eval:
+                        pending_eval += 1
+
+                st.markdown(f"""
+                <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                    <div style="flex:1; background: rgba(255,255,255,0.03); padding: 12px 8px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+                        <p style="margin:0; font-size: 0.65rem; color: #888; font-weight: bold;">CHỜ ĐÁNH GIÁ</p>
+                        <p style="margin:5px 0 0; font-size: 1.3rem; font-weight: bold; color: #ff4b4b;">{pending_eval}</p>
+                    </div>
+                    <div style="flex:1; background: rgba(255,255,255,0.03); padding: 12px 8px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+                        <p style="margin:0; font-size: 0.65rem; color: #888; font-weight: bold;">TỔNG BỆNH NHÂN</p>
+                        <p style="margin:5px 0 0; font-size: 1.3rem; font-weight: bold; color: #00c6ff;">{len(set([v['username'] for v in v_list]))}</p>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
             
             else: # Vai trò Bệnh nhân
                 st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
