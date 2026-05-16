@@ -108,55 +108,10 @@ RESEARCH_DATA_FILE = "research_data.json"
 EXTRACTED_FRAMES_DIR = "extracted_frames"
 OUTPUT_VIDEOS_DIR = "output_videos"
 
-def hien_thi_footer_chung():
-    """Hiển thị chân trang (footer) chuyên nghiệp cho dự án Rehab-AI-Monitor"""
-    import base64
-    try:
-        if os.path.exists("abc1.png"):
-            with open("abc1.png", "rb") as img_file:
-                logo_b64 = base64.b64encode(img_file.read()).decode()
-                logo_src = f"data:image/png;base64,{logo_b64}"
-        else:
-            logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
-    except:
-        logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
-    is_light = st.session_state.get('theme') == 'light'
-    footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
-    footer_text = "#444" if is_light else "#ccc"
-    border_color = "#0072ff" if is_light else "#00c6ff"
-    title_color = "#0072ff" # Màu xanh đậm nổi bật cho cả 2 chế độ
-    school_name_color = "#1a1a2e" if is_light else "#fff"
-    col_border = "rgba(0,0,0,0.1)" if is_light else "rgba(255,255,255,0.1)"
-    
-    footer_html = f"""<style>
-.main-footer {{background:{footer_bg};padding:60px 20px 40px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:3px solid {border_color};box-shadow:0 -15px 35px rgba(0, 114, 255, 0.1);margin-top:80px;position:relative;overflow:hidden}}
-.footer-container {{display:flex;flex-wrap:wrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:20px}}
-.footer-col {{flex:1;min-width:280px;padding:20px 30px;border-right:1px solid {col_border}}}
-.footer-col:last-child {{border-right:none}}
-.footer-col.medium {{flex:1.2;min-width:280px}}
-.footer-col.wide {{flex:2.5;min-width:300px}}
-.footer-title {{color:{title_color} !important;font-weight:bold;margin-bottom:20px;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:10px;border-bottom:2px solid {col_border};padding-bottom:10px}}
-.info-row {{margin-bottom:10px;font-size:0.95rem;display:grid;grid-template-columns:85px 1fr;line-height:1.4}}
-.info-label {{font-weight:bold;opacity:0.9}}
-.execution-grid {{display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:25px;margin-top:15px}}
-.execution-item {{border-left:2px solid {col_border};padding-left:12px}}
-.execution-name {{font-size:1.05rem;font-weight:bold;color:{title_color};display:block;margin-bottom:3px}}
-.execution-info {{font-size:0.85rem;opacity:0.8;margin-bottom:5px;display:block}}
-.execution-email {{font-size:0.8rem;text-decoration:none;color:{footer_text};opacity:0.7;display:flex;align-items:center;gap:5px}}
-.footer-bottom {{padding-top:30px;margin-top:50px;border-top:1px solid {col_border};font-size:0.9rem;color:{"#666" if is_light else "#888"};text-align:center}}
-.school-logo-section {{text-align:center;margin-bottom:15px}}
-.footer-logo-img {{width:95px;margin-bottom:10px;filter:{"none" if is_light else "drop-shadow(0 0 8px rgba(0, 198, 255, 0.4))"}}}
-.school-name-text {{font-weight:bold;color:{school_name_color};font-size:1.15rem;line-height:1.2}}
-a {{color:{title_color};text-decoration:none}}
-
-/* TỐI ƯU CHO DI ĐỘNG */
-@media (max-width: 1024px) {{
-    .footer-container {{ flex-direction: column; align-items: stretch; gap: 40px; }}
-    .footer-col {{ border-right: none !important; border-bottom: 1px solid {col_border}; padding-bottom: 30px; width: 100% !important; min-width: 100% !important; flex: none !important; }}
-    .footer-col:last-child {{ border-bottom: none; }}
-    .execution-grid {{ grid-template-columns: 1fr; }}
-}}
+# ============================================
+# CẤU HÌNH HỆ THỐNG & ĐƯỜNG DẪN
+# ============================================
 
 /* TỐI ƯU HÓA CÁC TAB - ĐẢM BẢO CHỮ KHÔNG BỊ TRÀN */
 .stTabs [data-baseweb="tab-list"] {{
@@ -412,783 +367,315 @@ st.set_page_config(
 # ============================================
 # CSS CUSTOM - GIAO DIỆN HIỆN ĐẠI
 # ============================================
+# ============================================
+# CSS PREMIUM DESIGN SYSTEM - VERSION 3.0
+# ============================================
 st.markdown("""
 <style>
-    /* === TẢI FONT BIỂU TƯỢNG TRỰC TIẾP TỪ GOOGLE === */
-    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+    /* 1. TẢI FONT & BIỂU TƯỢNG CAO CẤP */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/icon?family=Material+Icons+Round');
 
-    /* === ĐẢM BẢO HỆ THỐNG STREAMLIT (HEADER, FOOTER, MENU) LUÔN HIỂN THỊ === */
-    header[data-testid="stHeader"], 
-    footer, 
-    #MainMenu, 
+    /* 2. ĐỊNH NGHĨA BIẾN HỆ THỐNG (DESIGN TOKENS) */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%);
+        --secondary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --accent-gradient: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+        --glass-bg: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        --premium-font: 'Outfit', 'Inter', sans-serif;
+    }
+
+    /* 3. RESET & PHONG CÁCH CHUNG */
+    * {
+        font-family: var(--premium-font) !important;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    .stApp {
+        background: radial-gradient(circle at top right, #1a1a2e, #0d0d1a) !important;
+        color: #ffffff !important;
+    }
+
+    /* 4. HEADER & TOOLBAR CỰC XỊN */
+    header[data-testid="stHeader"] {
+        background: rgba(13, 13, 26, 0.8) !important;
+        backdrop-filter: blur(12px) !important;
+        border-bottom: 1px solid var(--glass-border) !important;
+        height: 70px !important;
+    }
+
     [data-testid="stToolbar"] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
+        right: 1.5rem !important;
+        top: 0.75rem !important;
     }
 
-    /* ĐẨY GIAO DIỆN XUỐNG ĐỂ KHÔNG BỊ HEADER ĐÈ LÊN NẾU CẦN */
-    [data-testid="stAppViewBlockContainer"] {
-        padding-top: 4rem !important;
+    /* 5. SIDEBAR PHONG CÁCH FLOATING GLASS */
+    [data-testid="stSidebar"] {
+        background-color: rgba(26, 26, 46, 0.95) !important;
+        border-right: 1px solid var(--glass-border) !important;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.5) !important;
     }
 
-    /* === STYLE HEADER & NÚT BẤM THÍCH ỨNG THEO CHỦ ĐỀ (THEME-AWARE) === */
-    [data-testid="stHeader"] {
-        background-color: var(--background-color) !important;
-        border-bottom: 1px solid rgba(128, 128, 128, 0.1) !important;
-        color: var(--text-color) !important;
+    [data-testid="stSidebarContent"] {
+        padding: 2rem 1rem !important;
     }
 
-    /* Style các nút hệ thống (Sidebar toggle, Toolbar, Menu) */
-    [data-testid="stToolbar"] button,
-    [data-testid="stSidebarCollapseButton"] button,
-    [data-testid="stExpandSidebarButton"] button {
-        border: 1px solid rgba(128, 128, 128, 0.2) !important;
-        border-radius: 8px !important;
-        background: rgba(128, 128, 128, 0.05) !important;
-        color: var(--text-color) !important;
-        padding: 4px 10px !important;
-        margin-left: 5px !important;
-        transition: all 0.2s ease !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        height: 32px !important;
+    /* Menu Sidebar Items */
+    [data-testid="stSidebar"] .stSelectbox label, 
+    [data-testid="stSidebar"] .stRadio label {
+        color: #00c6ff !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.8rem !important;
+        margin-bottom: 1rem !important;
     }
 
-    [data-testid="stToolbar"] button:hover,
-    [data-testid="stSidebarCollapseButton"] button:hover,
-    [data-testid="stExpandSidebarButton"] button:hover {
-        background: rgba(128, 128, 128, 0.1) !important;
-        border-color: rgba(128, 128, 128, 0.3) !important;
-        transform: translateY(-1px);
-    }
-
-    /* Đảm bảo icon bên trong nút đổi màu theo theme */
-    [data-testid="stToolbar"] button svg,
-    [data-testid="stSidebarCollapseButton"] button svg,
-    [data-testid="stExpandSidebarButton"] button svg {
-        fill: var(--text-color) !important;
-    }
-
-    /* FIX TRIỆT ĐỂ LỖI HIỆN NHIỀU NÚT "CHỌN VIDEO" */
-    [data-testid="stFileUploader"] button {
-        display: none !important; /* Ẩn mặc định tất cả các nút rác bên trong uploader */
-    }
-
-    /* Chỉ hiện duy nhất nút "Duyệt file" chính và vẽ lại nó */
-    [data-testid="stFileUploader"] section button[data-testid="stBaseButton-secondary"] {
-        display: block !important;
-        color: transparent !important;
-        text-indent: -9999px !important;
-        overflow: hidden !important;
-        position: relative !important;
-        background: #0072ff !important;
-        border-radius: 8px !important;
-        padding: 10px 20px !important;
-        min-width: 150px !important;
-        margin: 0 auto !important;
-    }
-
-    [data-testid="stFileUploader"] section button[data-testid="stBaseButton-secondary"]::after {
-        content: "📂 Chọn Video" !important;
-        text-indent: 0 !important;
-        position: absolute !important;
-        left: 50% !important;
-        top: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        color: white !important;
-        font-size: 14px !important;
-        font-weight: bold !important;
-        visibility: visible !important;
-        width: 100% !important;
-        text-align: center !important;
-    }
-
-    /* Đảm bảo nút xóa (X) vẫn hiển thị nếu cần, hoặc ẩn hẳn nếu muốn sạch sẽ */
-    [data-testid="stFileUploaderDeleteBtn"] {
-        display: none !important; 
-    }
-
-    /* Đảm bảo các biểu tượng Material của Streamlit hiển thị bình thường */
-    [data-testid="stIconMaterial"], 
-    .stIconMaterial, 
-    span[data-testid="stIconMaterial"] {
-        display: inline-block !important;
-        visibility: visible !important;
-        font-family: 'Material Icons' !important;
-    }
-
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(255, 255, 255, 0.04) !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
-        padding: 25px !important;
-    }
-    
-    .stTextInput input {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 10px !important;
-        color: white !important;
-    }
-    
+    /* 6. TABS TRÔNG NHƯ NAVBAR HIỆN ĐẠI */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: transparent;
-        overflow-x: auto;
+        gap: 12px !important;
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        padding: 8px !important;
+        border-radius: 16px !important;
+        border: 1px solid var(--glass-border) !important;
+        margin-bottom: 2rem !important;
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 50px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        background-color: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        color: white;
-        transition: all 0.3s;
-        border: 1px solid transparent;
-        min-width: fit-content !important; 
-        width: auto !important;
-        padding: 0 25px !important;
-        white-space: nowrap !important;
-    }
-
-    .stTabs [data-baseweb="tab"] div,
-    .stTabs [data-baseweb="tab"] p {
-        font-size: 0.95rem !important;
-        margin: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 6px !important;
-        font-weight: bold !important;
+        height: 45px !important;
+        border-radius: 12px !important;
+        background-color: transparent !important;
+        border: none !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        padding: 0 20px !important;
+        color: rgba(255, 255, 255, 0.6) !important;
     }
 
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
-        border: 1px solid #00c6ff !important;
-        box-shadow: 0 0 15px rgba(0, 198, 255, 0.4);
+        background: var(--primary-gradient) !important;
+        color: white !important;
+        box-shadow: 0 4px 15px rgba(0, 198, 255, 0.4) !important;
+        transform: scale(1.05);
     }
 
-    /* ĐẨY GIAO DIỆN LÊN CAO TỐI ĐA */
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 10rem !important; /* Thêm khoảng trống cuối trang để kéo xuống hết cỡ */
-    }
-    
-    .main-header h1 {
-        font-size: clamp(1.8rem, 5vw, 3rem) !important;
-    }
-    .main-header p {
-        font-size: clamp(0.9rem, 2.5vw, 1.25rem) !important;
-    }
-    .research-badge span {
-        font-size: clamp(0.7rem, 2vw, 0.9rem) !important;
-        display: inline-block;
-        max-width: 100%;
+    .stTabs [data-baseweb="tab"]:hover:not([aria-selected="true"]) {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: white !important;
     }
 
-    .google-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: white;
-        color: #444;
-        padding: 12px;
-        border-radius: 12px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s;
-        border: none;
-        width: 100%;
-        margin-top: 10px;
+    /* 7. PREMIUM CARDS (GLASSMORPHISM) */
+    .metric-card, .custom-card, .info-box, .step-box, [data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 24px !important;
+        padding: 24px !important;
+        box-shadow: var(--card-shadow) !important;
+        transition: all 0.3s ease !important;
+        margin-bottom: 1.5rem !important;
     }
-    
-    /* CUSTOM CARD ĐỂ DÙNG CHUNG */
-    .custom-card {
-        padding: 1.2rem;
-        border-radius: 16px;
-        text-align: center;
-        border: 1px solid #2a5298;
+
+    .metric-card:hover, .custom-card:hover {
+        transform: translateY(-8px) scale(1.01);
+        border-color: rgba(0, 198, 255, 0.4) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        box-shadow: 0 12px 40px rgba(0, 198, 255, 0.15) !important;
     }
-    
-    .google-btn:hover {
-        background: #f1f1f1;
-        box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+
+    .metric-value {
+        font-size: 2.2rem !important;
+        font-weight: 800 !important;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px !important;
+    }
+
+    .metric-label {
+        font-size: 0.95rem !important;
+        color: #94a3b8 !important;
+        font-weight: 500 !important;
+        letter-spacing: 0.5px;
+    }
+
+    /* 8. NÚT BẤM (PREMIUM BUTTONS) */
+    .stButton button, .stDownloadButton button {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: white !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 14px !important;
+        padding: 12px 24px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+        transition: all 0.3s !important;
+        text-transform: none !important;
+    }
+
+    .stButton button:hover {
+        background: var(--primary-gradient) !important;
+        border-color: transparent !important;
+        box-shadow: 0 8px 20px rgba(0, 114, 255, 0.3) !important;
         transform: translateY(-2px);
     }
 
-    /* === BẢNG CHỈ SỐ NGHIÊN CỨU - THÍCH ỨNG THEO THEME === */
-    .research-table-container {
-        padding: 1.5rem;
-        border-radius: 18px;
-        border: 1px solid rgba(100, 116, 139, 0.2);
-        background: var(--secondary-background-color);
-        transition: all 0.3s ease;
+    /* Primary buttons */
+    div[data-testid="stBaseButton-primary"] button {
+        background: var(--primary-gradient) !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(0, 198, 255, 0.3) !important;
+    }
+
+    /* 9. Ô NHẬP LIỆU HIỆN ĐẠI */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 14px !important;
+        color: white !important;
+        padding: 10px 16px !important;
+        transition: all 0.3s !important;
+    }
+
+    .stTextInput input:focus {
+        border-color: #00c6ff !important;
+        box-shadow: 0 0 0 3px rgba(0, 198, 255, 0.2) !important;
+    }
+
+    /* 10. PHONG CÁCH "DÂN TRÍ/BÁO CHÍ" CHO TEXT */
+    h1 {
+        font-weight: 800 !important;
+        letter-spacing: -1px !important;
+        margin-bottom: 1.5rem !important;
+        background: linear-gradient(135deg, #fff 0%, #888 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    h2, h3 {
+        font-weight: 700 !important;
+        color: #f8fafc !important;
+    }
+
+    p {
+        line-height: 1.7 !important;
+        color: #cbd5e1 !important;
+        font-size: 1.05rem !important;
+    }
+
+    /* 11. BẢNG DỮ LIỆU SANG TRỌNG */
+    [data-testid="stTable"], [data-testid="stDataFrame"] {
+        border-radius: 20px !important;
+        overflow: hidden !important;
+        border: 1px solid var(--glass-border) !important;
+    }
+
+    table {
+        background-color: transparent !important;
+    }
+
+    th {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #00c6ff !important;
+        text-transform: uppercase;
+        font-size: 0.8rem !important;
+        letter-spacing: 1px !important;
+        padding: 15px !important;
+    }
+
+    td {
+        padding: 15px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+    }
+
+    /* 12. SCROLLBAR HIỆN ĐẠI */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 198, 255, 0.3);
+    }
+
+    /* 13. ANIMATION MỀM MẠI */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stMarkdown, .stImage, .stPlotlyChart {
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+
+    /* 14. EXPANDER GLASS */
+    .stExpander {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 18px !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .stExpander summary {
+        padding: 15px 20px !important;
+        font-weight: 600 !important;
+        color: #00c6ff !important;
+    }
+
+    /* 15. CHẾ ĐỘ SÁNG (LIGHT MODE) - ĐƯỢC TINH CHỈNH SANG TRỌNG */
+    [data-test-script-state="running"] .stApp,
+    body.light .stApp {
+        background: #f8fafc !important;
+        color: #1e293b !important;
+    }
+
+    body.light .metric-card, body.light .custom-card, body.light [data-testid="stVerticalBlockBorderWrapper"] {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important;
+    }
+
+    body.light h1 {
+        background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    body.light p {
+        color: #475569 !important;
     }
     
-    /* Khi ở chế độ sáng */
-    @media (prefers-color-scheme: light) {
-        .research-table-container {
-            background: white !important;
-            border: 1px solid black !important;
-            color: black !important;
-        }
-        .research-table-container table {
-            color: black !important;
-        }
-        .research-table-container tr {
-            border-bottom: 1px solid black !important;
-        }
-        .research-table-container thead {
-            background: #f8f9fa !important;
-        }
+    body.light .stTabs [data-baseweb="tab-list"] {
+        background-color: #f1f5f9 !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    
+    body.light .stTabs [data-baseweb="tab"] {
+        color: #64748b !important;
+    }
+
+    /* ĐẶC BIỆT: ÉP MÀU CHO FILE UPLOADER */
+    [data-testid="stFileUploader"] section {
+        background: rgba(0, 198, 255, 0.03) !important;
+        border: 2px dashed rgba(0, 198, 255, 0.3) !important;
+        border-radius: 20px !important;
+        padding: 40px !important;
+        transition: all 0.3s !important;
+    }
+
+    [data-testid="stFileUploader"] section:hover {
+        background: rgba(0, 198, 255, 0.05) !important;
+        border-color: #00c6ff !important;
     }
 </style>
 """, unsafe_allow_html=True)
-
-# === CSS CHO CHẾ ĐỘ TỐI (DARK MODE FORCED) ===
-# Ép giao diện luôn tối kể cả khi Chrome/Hệ thống đang ở chế độ Sáng
-if st.session_state.get('theme') == 'dark':
-    st.markdown("""
-    <style>
-        /* Khai báo hệ màu tối cho toàn bộ trình duyệt - Đã loại bỏ color-scheme để k ảnh hưởng Chrome */
-        html, body {
-            caret-color: white !important; /* Đảm bảo con trỏ luôn sáng */
-        }
-        
-        /* ÉP CON TRỎ GÕ CHỮ TRÊN TẤT CẢ PHẦN TỬ */
-        * {
-            caret-color: white !important;
-        }
-        
-        /* Chỉnh màu khi bôi đen văn bản */
-        ::selection {
-            background-color: #2a5298 !important;
-            color: white !important;
-        }
-
-        /* Ép nền ứng dụng (ĐÃ TẮT THEO YÊU CẦU) */
-        /*
-        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainViewContainer"] {
-            background-color: #0d0d1a !important;
-            color: white !important;
-        }
-        */
-        
-        /* Ép nền Sidebar (ĐÃ TẮT THEO YÊU CẦU) */
-        /*
-        [data-testid="stSidebar"], [data-testid="stSidebarContent"] {
-            background-color: #1a1a2e !important;
-        }
-        */
-        
-        /* Ép nền Header trong suốt (ĐÃ CHUYỂN RA NGOÀI ĐỂ TỰ ĐỘNG THEO THEME) */
-        
-        /* Đảm bảo văn bản luôn trắng trong chế độ tối (Chỉ áp dụng khi session_state là dark) */
-        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div, small {
-            color: #ffffff !important;
-            text-shadow: none !important;
-        }
-        
-        /* Đảm bảo văn bản luôn trắng trong chế độ tối */
-        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div, small {
-            color: #ffffff !important;
-            text-shadow: none !important;
-        }
-        
-        /* ĐỒNG BỘ HÓA HÌNH DÁNG (KHÔNG ĐỔI MÀU) THEO BANNER */
-        /* CHỈ BO GÓC Ô NHẬP LIỆU - KHÔNG BO GÓC NHÃN TIÊU ĐỀ */
-        /* KHỬ VIỀN KHUNG BAO NGOÀI CỦA CÁC Ô THÔNG BÁO (INFO, SUCCESS, WARNING) */
-        [data-testid="stNotification"], 
-        [data-testid="stNotification"] > div {
-            border: none !important;
-            box-shadow: none !important;
-            border-radius: 12px !important;
-        }
-
-        /* PHỤC HỒI KHUÔN HÌNH CHUẨN (BO GÓC & VIỀN MẢNH) */
-        [data-testid="stExpander"] {
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 12px !important;
-            background-color: rgba(255, 255, 255, 0.02) !important;
-            margin-bottom: 1rem !important;
-        }
-        [data-testid="stExpander"] summary {
-            border: none !important;
-            padding: 10px 15px !important;
-        }
-
-        /* KHỬ VIỀN KHUNG BAO NGOÀI CỦA STREAMLIT (XÓA LỚP CHỮ NHẬT THỪA) */
-        div[data-testid="stTextInput"] > div,
-        div[data-testid="stTextArea"] > div,
-        div[data-testid="stSelectbox"] > div,
-        div[data-testid="stNumberInput"] > div,
-        div[data-testid="stMultiSelect"] > div {
-            border: none !important;
-            background-color: transparent !important;
-            box-shadow: none !important;
-        }
-
-        /* CHỈ ĐỊNH PHONG CÁCH CHO Ô NHẬP LIỆU LÕI (INPUT CORE) */
-        div[data-baseweb="input"], 
-        div[data-baseweb="select"], 
-        div[data-baseweb="textarea"],
-        div[data-baseweb="checkbox"],
-        div[data-baseweb="base-input"] {
-            background-color: #1a1a2e !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 10px !important;
-            color: white !important;
-        }
-
-        /* KHỬ HOÀN TOÀN VIỀN/NỀN TRÊN CÁC CHỮ TIÊU ĐỀ (LABELS) */
-        [data-testid="stWidgetLabel"], 
-        [data-testid="stWidgetLabel"] *,
-        div[class*="StyledWidgetLabel"] {
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin-bottom: 5px !important;
-        }
-
-        /* Nút tăng giảm của ô nhập số */
-        .stNumberInput button {
-            background-color: #2a5298 !important;
-            color: white !important;
-            border-radius: 5px !important;
-        }
-
-        /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
-
-        /* Ép màu DROPDOWN MENU & POPOVER (Sửa lỗi mảng trắng khi chọn) */
-        div[data-baseweb="popover"], div[role="listbox"], ul[data-baseweb="menu"], 
-        div[data-baseweb="popover"] *, [data-baseweb="menu-item"],
-        div[data-baseweb="select"] > div, 
-        div[data-baseweb="select"] * {
-            background-color: #1a1a2e !important;
-            color: white !important;
-        }
-        /* Sửa lỗi chữ trong ô selectbox bị mờ hoặc sai màu */
-        div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
-            color: white !important;
-        }
-        div[data-baseweb="select"] svg {
-            fill: white !important;
-        }
-        [data-baseweb="menu-item"]:hover {
-            background-color: #2a5298 !important;
-        }
-        
-        /* Loại bỏ các mảng trắng nền của BaseWeb Popover */
-        div[data-baseweb="popover"] > div {
-            background-color: #1a1a2e !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        }
-
-        /* Ép màu Expander (Cực kỳ quan trọng cho NCKH tab) */
-
-        /* ĐỊNH NGHĨA KHUÔN HÌNH CHUẨN CHO CÁC THẺ (CARDS) */
-        .metric-card {
-            background-color: rgba(255, 255, 255, 0.05) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 15px !important;
-            padding: 20px !important;
-            text-align: center !important;
-            margin-bottom: 15px !important;
-        }
-        
-        .stApp[data-test-script-state="running"] .metric-card,
-        body.light .metric-card {
-            background-color: white !important;
-            border: 1px solid #eee !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
-        }
-
-        .metric-value {
-            font-size: 1.8rem !important;
-            font-weight: 800 !important;
-            margin-bottom: 5px !important;
-            color: #ffd700 !important;
-        }
-        
-        body.light .metric-value {
-            color: #0072ff !important;
-        }
-
-        .metric-label {
-            font-size: 0.9rem !important;
-            color: #aaa !important;
-        }
-        
-        body.light .metric-label {
-            color: #666 !important;
-        }
-        .stExpander, [data-testid="stExpander"], .st-emotion-cache-1839j81 {
-            background-color: #16213e !important;
-            border: 1px solid rgba(0, 198, 255, 0.2) !important;
-            color: white !important;
-        }
-        .stExpander summary, .stExpander summary * {
-            background-color: #1a1a2e !important;
-            color: #00c6ff !important;
-            font-weight: bold !important;
-        }
-        
-        /* Ép màu Sidebar triệt để */
-        [data-testid="stSidebar"] {
-            background-color: #0d0d1a !important;
-            border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
-        }
-        [data-testid="stSidebar"] * {
-            color: white !important;
-        }
-
-        /* Fix lỗi chữ mờ (Antialiasing) */
-        * {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
-        }
-
-        /* Fix các khối info-box, metric-card bị trắng */
-        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card, .step-box, .stAlert,
-        [data-testid="stMetric"], [data-testid="stTable"], [data-testid="stDataFrame"] {
-            background-color: rgba(255, 255, 255, 0.05) !important;
-            color: white !important;
-            border: 1px solid rgba(0, 198, 255, 0.3) !important;
-        }
-
-        /* ÉP MÀU CHO BẢNG (TABLE) */
-        table, th, td {
-            background-color: #1a1a2e !important;
-            color: white !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-        }
-        thead th {
-            background-color: #2a5298 !important;
-        }
-
-        /* ÉP MÀU CHO RADIO, CHECKBOX, SLIDER */
-        [data-testid="stRadio"] label, [data-testid="stCheckbox"] label, [data-testid="stSlider"] label {
-            color: white !important;
-        }
-        div[role="radiogroup"] div, div[role="checkbox"] {
-            color: white !important;
-        }
-        /* Slider track and thumb */
-        div[data-baseweb="slider"] > div {
-            background-color: #2a5298 !important;
-        }
-
-        /* ÉP MÀU CHO CÁC THÔNG BÁO (SUCCESS, ERROR, INFO) */
-        [data-testid="stNotificationContentSuccess"], [data-testid="stNotificationContentError"], 
-        [data-testid="stNotificationContentInfo"], [data-testid="stNotificationContentWarning"] {
-            background-color: #1a1a2e !important;
-            color: white !important;
-        }
-        
-        /* Fix bất kỳ button nào bị trắng nền đột xuất */
-        .stButton button, .stDownloadButton button, [data-testid="stBaseButton-secondary"],
-        [data-testid="stFormSubmitButton"] button, [data-testid="stBaseButton-primary"],
-        [data-testid="stBaseButton-headerNoPadding"], [data-testid="stBaseButton-header"] {
-            background-color: #1a1a2e !important;
-            color: white !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            box-shadow: none !important;
-        }
-
-        /* Đặc biệt ép màu cho nút Primary để không bị biến sắc */
-        [data-testid="stBaseButton-primary"], button[kind="primary"] {
-            background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%) !important;
-            color: white !important;
-            border: none !important;
-        }
-        
-        /* Fix placeholder color in Dark Mode */
-        ::placeholder {
-            color: rgba(255, 255, 255, 0.4) !important;
-        }
-
-        /* ÉP MÀU CHO KHU VỰC UPLOAD FILE (QUAN TRỌNG) */
-        [data-testid="stFileUploader"] section {
-            background-color: #1a1a2e !important;
-            border: 1px dashed #00c6ff !important;
-            color: white !important;
-        }
-        [data-testid="stFileUploader"] section div, 
-        [data-testid="stFileUploader"] section span,
-        [data-testid="stFileUploader"] section small {
-            color: #ccc !important;
-        }
-        /* Nút bấm bên trong uploader */
-        [data-testid="stFileUploader"] button {
-            background-color: #2a5298 !important;
-            color: white !important;
-            border: none !important;
-        }
-
-        /* ÉP MÀU CHO DANH SÁCH FILE ĐÃ UPLOAD (TỐI ƯU CỰC MẠNH) */
-        [data-testid="stFileUploader"] ul, 
-        [data-testid="stFileUploader"] ul li,
-        [data-testid="stFileUploader"] div[data-testid="stFileUploaderFile"],
-        [data-testid="stFileUploader"] div[data-testid="stFileUploaderFile"] > div,
-        [data-testid="stFileUploader"] div[data-baseweb="block"],
-        [data-testid="stFileUploaderFile"] {
-            background-color: #1a1a2e !important;
-            color: white !important;
-            border: 1px solid #00c6ff !important;
-        }
-        
-        /* ============================================================ */
-        /* BẢN KHÔI PHỤC SỰ ỔN ĐỊNH - XÓA BỎ CSS GÂY LỖI TREO THANH CHỌN */
-        /* ============================================================ */
-        
-        /* ============================================================ */
-        /* BẢN KHÔI PHỤC BANNER VÀ TAB - CHỈ XÓA VIỀN THỪA CÓ CHỌN LỌC */
-        /* ============================================================ */
-        
-        /* 1. Chỉ xóa viền và nền của các nhãn Widget (Họ tên, Tuổi,...) */
-        div[data-testid="stWidgetLabel"], 
-        div[data-testid="stWidgetLabel"] *,
-        span[data-baseweb="tag"],
-        [data-baseweb="tag"] * {
-            background-color: transparent !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-
-        /* 2. Giữ nguyên màu nền cho các khối Markdown (Banner, Thông báo) */
-        /* Không áp dụng lệnh transparent cho stMarkdownContainer chung */
-
-        /* 3. Đảm bảo các ô nhập liệu có khung viền chuẩn */
-        div[data-baseweb="input"], 
-        div[data-baseweb="select"], 
-        div[data-baseweb="textarea"] {
-            background-color: #1a1a2e !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 4px !important;
-        }
-
-        /* 4. Đảm bảo chữ trắng sạch sẽ cho các vùng văn bản chính */
-        .stMarkdown p, .stMarkdown span, label {
-            color: white !important;
-        }
-
-        /* Sidebar tối giản */
-        [data-testid="stSidebarContent"] {
-            background-color: #1a1a2e !important;
-        }
-
-        /* ĐẢM BẢO VÒNG XOAY LOADING (SPINNER) LUÔN TRẮNG */
-        div[data-testid="stLoading"] svg, .stSpinner svg {
-            stroke: white !important;
-            fill: white !important;
-        }
-
-        [data-testid="stFileUploader"] ul li * {
-            color: white !important;
-        }
-
-        /* ÉP TRẠNG THÁI HOVER ĐỂ KHÔNG BỊ TRẮNG */
-        button:hover {
-            background-color: #2a5298 !important;
-            color: #ffd700 !important;
-            border-color: #ffd700 !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-# === CSS CHO CHẾ ĐỘ SÁNG (LIGHT MODE OVERRIDE) ===
-if st.session_state.get('theme') == 'light':
-    st.markdown("""
-    <style>
-        .stApp { background: #f8f9fa !important; color: #333 !important; }
-        .main-header { background: #ffffff !important; border: 1px solid #ddd !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important; }
-        .main-header h1 { color: #000000 !important; }
-        .main-header p { color: #333333 !important; }
-        
-        /* Fix container background in Light Mode */
-        [data-testid="stVerticalBlockBorderWrapper"] {
-            background: #ffffff !important;
-            border: 1px solid #dee2e6 !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
-        }
-
-        /* Fix Text Input contrast */
-        .stTextInput input, .stTextArea textarea, .stNumberInput input {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            border: 1px solid #ced4da !important;
-        }
-        .stTextInput label, .stSelectbox label, .stNumberInput label {
-            color: #212529 !important;
-        }
-
-        .info-box, .metric-card, .member-card, .lecturer-card, .custom-card { 
-            background: #ffffff !important; 
-            border: 1px solid #e0e0e0 !important; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; 
-            color: #000000 !important; 
-        }
-        .metric-value { color: #0072ff !important; }
-        .metric-label { color: #444444 !important; }
-        
-        /* Ensure all text is dark */
-        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div { color: #212529 !important; }
-        
-        .stTabs [data-baseweb="tab"] { 
-            background-color: #f1f3f5 !important; 
-            color: #495057 !important; 
-            border: 1px solid #dee2e6 !important;
-        }
-        .stTabs [aria-selected="true"] { 
-            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important; 
-            color: #ffffff !important;
-        }
-        .footer-container, .footer-col, .footer-bottom { color: #444 !important; }
-        .main-footer { background: #f8f9fa !important; border-top: 4px solid #0072ff !important; box-shadow: 0 -5px 15px rgba(0,0,0,0.05) !important; }
-        .school-name { color: #1a1a2e !important; }
-        .school-subname { color: #0072ff !important; }
-        .footer-title { color: #0072ff !important; }
-        .stExpander { background: #fff !important; border: 1px solid #eee !important; border-radius: 12px !important; }
-        .stExpander summary { background: #f8f9fa !important; color: #000 !important; }
-        .stExpander summary:hover { background: #eee !important; }
-        [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #eee !important; }
-        [data-testid="stSidebar"] * { color: #333 !important; }
-        
-        /* Làm cho nút gạt (toggle) hiện rõ màu xám khi ở chế độ Sáng */
-        div[role="switch"][aria-checked="false"] {
-            background-color: #bdc3c7 !important;
-        }
-        div[role="switch"][aria-checked="false"] > div {
-            background-color: #ffffff !important;
-        }
-        [data-testid="stTable"] th { background-color: #f1f3f5 !important; color: #000 !important; }
-        [data-testid="stMetric"] { background: #ffffff !important; border: 1px solid #eee !important; padding: 10px !important; border-radius: 12px !important; }
-        /* Fix Form elements */
-        textarea, input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #ccc !important; }
-        [data-testid="stForm"] { background-color: #ffffff !important; border: 1px solid #eee !important; border-radius: 15px !important; }
-        
-        /* FIX ALL BUTTONS */
-        .stButton button, .stDownloadButton button, [data-testid="stFormSubmitButton"] button,
-        .stNumberInput button, [data-testid="stFileUploader"] button { 
-            background-color: #f1f3f5 !important; 
-            color: #000000 !important; 
-            border: 1px solid #ccc !important;
-            font-weight: bold !important;
-        }
-        .stButton button:hover, .stDownloadButton button:hover, [data-testid="stFormSubmitButton"] button:hover,
-        .stNumberInput button:hover, [data-testid="stFileUploader"] button:hover { 
-            background-color: #e9ecef !important; 
-            color: #0072ff !important; 
-            border: 1px solid #0072ff !important;
-        }
-        /* GLOBAL LIGHT MODE OVERRIDES */
-        .stApp, [data-testid="stAppViewContainer"] {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }
-
-        /* Fix Tabs for Light Mode */
-        .stTabs [data-baseweb="tab-list"] {
-            background-color: #f8f9fa !important;
-            border-radius: 10px 10px 0 0 !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            color: #495057 !important;
-        }
-        .stTabs [aria-selected="true"] {
-            color: #0072ff !important;
-            font-weight: bold !important;
-        }
-
-        /* Fix ALL Selectboxes, MultiSelect, TextInputs, and TextAreas in Light Mode */
-        .stSelectbox div[data-baseweb="select"],
-        .stSelectbox div[data-baseweb="select"] *,
-        .stMultiSelect div[data-baseweb="select"],
-        .stMultiSelect div[data-baseweb="select"] *,
-        .stTextInput input, 
-        .stTextArea textarea,
-        .stNumberInput input,
-        .stNumberInput div[data-baseweb="input"],
-        .stNumberInput div[data-baseweb="input"] * {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            border-color: #ced4da !important;
-        }
-
-        /* Fix MultiSelect Tags (selected items) */
-        span[data-baseweb="tag"] {
-            background-color: #e9ecef !important;
-            color: #000000 !important;
-            border: 1px solid #0072ff !important;
-        }
-        span[data-baseweb="tag"] * {
-            color: #000000 !important;
-        }
-
-        /* Fix Placeholder text color for Light Mode */
-        .stTextInput input::placeholder, 
-        .stTextArea textarea::placeholder,
-        .stNumberInput input::placeholder {
-            color: #666666 !important;
-            opacity: 0.8 !important;
-        }
-        
-        /* Fix the actual dropdown list and items */
-        div[data-baseweb="popover"] div, 
-        div[data-baseweb="popover"] ul, 
-        div[data-baseweb="popover"] li {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }
-
-        /* Fix Sidebar specifically */
-        [data-testid="stSidebar"] section[data-testid="stSidebarContent"] {
-            background-color: #ffffff !important;
-        }
-
-        /* Fix Sidebar Labels and Titles */
-        [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-            color: #212529 !important;
-            font-weight: 600 !important;
-        }
-
-        /* Fix File Uploader */
-        [data-testid="stFileUploader"] section {
-            background-color: #f8f9fa !important;
-            border: 1px dashed #0072ff !important;
-            color: #333 !important;
-        }
-        [data-testid="stFileUploader"] section div { color: #333 !important; }
-        
-        /* Fix pagination number input buttons */
-        .stNumberInput button {
-            background-color: #f1f3f5 !important;
-            color: #000000 !important;
-        }
-
-        /* metric-card Light Mode styling */
-        .metric-card {
-            background-color: #ffffff !important;
-            border: 1px solid #ced4da !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
-        }
-        .metric-label {
-            color: #495057 !important;
-        }
-        .metric-value {
-            color: #0072ff !important;
-            text-shadow: none !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
 
 MAX_FILE_SIZE_MB = 500
 
@@ -1610,40 +1097,22 @@ def hien_thi_tab_kien_thuc_phcn():
 # HÀM HIỂN THỊ TAB 7: THÔNG TIN & CÔNG NGHỆ
 # ============================================
 def hien_thi_tab_cong_nghe():
-    """Thiết kế Tab 7 với phong cách công nghệ cao cấp"""
-    
-    # Cấu hình màu sắc theo Theme
-    is_light = st.session_state.theme == 'light'
-    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
-    text_color = "#000000" if is_light else "#ffd700"
-    sub_color = "#0072ff" if is_light else "#00CED1"
-    border_color = "#0072ff" if is_light else "#ffd700"
-    shadow = "rgba(0, 114, 255, 0.1)" if is_light else "rgba(255, 215, 0, 0.1)"
-
-    # 1. HEADER CHƯƠNG TRÌNH
-    st.markdown(f"""
-    <div style="background: {bg_gradient}; 
-                padding: 2.5rem; border-radius: 25px; text-align: center; 
-                border: 1px solid {border_color}; box-shadow: 0 15px 35px {shadow};
-                margin-bottom: 2rem;">
-        <h1 style="color: {text_color}; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
-        <p style="color: {sub_color}; font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">
-            Sự kết hợp hoàn hảo giữa Phục hồi chức năng và Trí tuệ nhân tạo (AI)
-        </p>
+    """Hiển thị thông tin công nghệ với thiết kế Premium"""
+    st.markdown("""
+    <div class="glass-card" style="padding: 40px; text-align: center; margin-bottom: 40px;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 10px;">🌐 HỆ SINH THÁI CÔNG NGHỆ Y TẾ</h1>
+        <p style="color: #00c6ff; font-weight: 600; font-size: 1.2rem;">Sự kết hợp hoàn hảo giữa Phục hồi chức năng và Trí tuệ nhân tạo (AI)</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. PHẦN 1: PHỤC HỒI CHỨC NĂNG 4.0
-    st.markdown("### 🏥 PHỤC HỒI CHỨC NĂNG TỪ XA (TELEREHABILITATION)")
-    
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.markdown("""
-        <div class="metric-card" style="height: 250px; border-top: 4px solid #00CED1;">
-            <div style="font-size: 3rem; margin-bottom: 10px;">🌍</div>
-            <h4 style="color: #fff;">Tiếp cận toàn cầu</h4>
-            <p style="color: #aaa; font-size: 0.9rem;">
+        <div class="custom-card" style="height: 280px; border-top: 4px solid #00c6ff;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">🌍</div>
+            <h3 style="margin-bottom: 15px;">Tiếp cận toàn cầu</h3>
+            <p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.6;">
                 Theo tiêu chuẩn WHO 2022, Telerehab giúp bệnh nhân ở vùng sâu tiếp cận y tế chất lượng cao mà không cần di chuyển.
             </p>
         </div>
@@ -1651,10 +1120,10 @@ def hien_thi_tab_cong_nghe():
 
     with col2:
         st.markdown("""
-        <div class="metric-card" style="height: 250px; border-top: 4px solid #ffd700;">
-            <div style="font-size: 3rem; margin-bottom: 10px;">📉</div>
-            <h4 style="color: #fff;">Tối ưu chi phí</h4>
-            <p style="color: #aaa; font-size: 0.9rem;">
+        <div class="custom-card" style="height: 280px; border-top: 4px solid #ffd700;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">📉</div>
+            <h3 style="margin-bottom: 15px;">Tối ưu chi phí</h3>
+            <p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.6;">
                 Giảm 40% chi phí điều trị nội trú nhờ duy trì chương trình tập luyện tại nhà được giám sát tự động qua AI.
             </p>
         </div>
@@ -1662,52 +1131,54 @@ def hien_thi_tab_cong_nghe():
 
     with col3:
         st.markdown("""
-        <div class="metric-card" style="height: 250px; border-top: 4px solid #FF6B6B;">
-            <div style="font-size: 3rem; margin-bottom: 10px;">🎯</div>
-            <h4 style="color: #fff;">Cá nhân hóa</h4>
-            <p style="color: #aaa; font-size: 0.9rem;">
+        <div class="custom-card" style="height: 280px; border-top: 4px solid #ff4b4b;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">🎯</div>
+            <h3 style="margin-bottom: 15px;">Cá nhân hóa</h3>
+            <p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.6;">
                 Dữ liệu từ cảm biến AI giúp bác sĩ điều chỉnh phác đồ theo từng milimet biên độ vận động của bệnh nhân.
             </p>
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # 3. PHẦN 2: CÔNG NGHỆ MEDIAPIPE
     col_text, col_img = st.columns([1.2, 1])
     
     with col_text:
-        st.markdown("### 🤖 CỐT LÕI AI: GOOGLE MEDIAPIPE")
         st.markdown("""
-        Hệ thống sử dụng kiến trúc **BlazePose** mạnh mẽ nhất từ Google Research, mang lại khả năng theo dõi cơ thể người với độ chính xác cấp độ nghiên cứu.
-        
-        #### ✨ Các tính năng ưu việt:
-        *   **33 Body Landmarks:** Theo dõi toàn diện từ khuôn mặt, tay chân đến tư thế cột sống.
-        *   **Real-time Inference:** Xử lý hơn 30 khung hình/giây ngay trên trình duyệt, không cần máy chủ mạnh.
-        *   **BlazePose Topology:** Khả năng nhận diện hướng của khớp vai và khuỷu tay trong không gian 3D, vượt xa các thuật toán Pose truyền thống.
-        *   **Robustness:** Hoạt động ổn định trong nhiều điều kiện ánh sáng và trang phục khác nhau.
-        """)
-        
-        st.info("💡 **Bạn có biết?** MediaPipe Pose được sử dụng trong các ứng dụng Fitness hàng đầu thế giới để chấm điểm động tác Yoga và Gym tự động.")
+        <div class="glass-card" style="padding: 30px;">
+            <h2 style="color: #00c6ff; margin-bottom: 20px;">🤖 CỐT LÕI AI: GOOGLE MEDIAPIPE</h2>
+            <p style="font-size: 1.05rem; line-height: 1.7; color: #cbd5e1;">
+                Hệ thống sử dụng kiến trúc <b>BlazePose</b> mạnh mẽ nhất từ Google Research, mang lại khả năng theo dõi cơ thể người với độ chính xác cấp độ nghiên cứu.
+            </p>
+            <ul style="color: #94a3b8; line-height: 2; margin-top: 20px;">
+                <li>✨ <b>33 Body Landmarks:</b> Theo dõi toàn diện từ tư thế cột sống đến tứ chi.</li>
+                <li>⚡ <b>Real-time Inference:</b> Xử lý mượt mà ngay trên thiết bị người dùng.</li>
+                <li>📐 <b>3D Topology:</b> Nhận diện hướng khớp vai trong không gian 3 chiều.</li>
+                <li>🛡️ <b>Robustness:</b> Hoạt động ổn định trong mọi điều kiện ánh sáng.</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        st.info("💡 **Bạn có biết?** MediaPipe Pose được sử dụng trong các ứng dụng Fitness hàng đầu thế giới để chấm điểm động tác tự động.")
 
     with col_img:
         st.markdown("""
-        <div style="background: rgba(0,206,209,0.05); padding: 20px; border-radius: 20px; border: 1px dashed #00CED1; text-align: center;">
-            <h4 style="color: #00CED1;">BLAZEPOSE LANDMARKS MAP</h4>
-            <img src="https://mediapipe.dev/images/mobile/pose_tracking_full_body_landmarks.png" style="width: 100%; border-radius: 10px; margin-top: 10px;">
-            <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">Sơ đồ 33 điểm mốc được AI trích xuất thời gian thực</p>
+        <div style="background: rgba(255, 255, 255, 0.03); padding: 25px; border-radius: 24px; border: 1px dashed rgba(0, 198, 255, 0.4); text-align: center;">
+            <h4 style="color: #00c6ff; margin-bottom: 15px;">BLAZEPOSE LANDMARKS MAP</h4>
+            <img src="https://mediapipe.dev/images/mobile/pose_tracking_full_body_landmarks.png" style="width: 100%; border-radius: 15px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));">
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 15px;">Sơ đồ 33 điểm mốc được AI trích xuất thời gian thực</p>
         </div>
         """, unsafe_allow_html=True)
 
-    # 4. FOOTER THÔNG TIN
     st.markdown("""
-    <div style="margin-top: 3rem; padding: 1.5rem; background: rgba(255,215,0,0.05); border-radius: 15px; text-align: center;">
-        <p style="color: #aaa; font-style: italic;">
+    <div style="margin-top: 50px; padding: 30px; background: linear-gradient(90deg, rgba(0,198,255,0.1) 0%, rgba(0,114,255,0.1) 100%); border-radius: 20px; text-align: center; border-left: 5px solid #00c6ff;">
+        <p style="color: #cbd5e1; font-style: italic; font-size: 1.1rem; margin-bottom: 10px;">
             "Công nghệ không thay thế bác sĩ, nhưng bác sĩ sử dụng công nghệ sẽ thay thế những bác sĩ không sử dụng."
         </p>
-        <p style="color: #ffd700; font-weight: bold; margin-top: 0.5rem;">— Rehab AI Monitor Team —</p>
+        <p style="color: #00c6ff; font-weight: 800; letter-spacing: 1px;">— REHAB AI MONITOR ECOSYSTEM —</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 # ============================================
@@ -3114,190 +2585,8 @@ BAI_TAP = {
 }
 
 
-# ============================================
-# CSS KẾT HỢP ĐẦY ĐỦ
-# ============================================
-# Cấu hình màu sắc bổ sung theo Theme cho các class custom
-is_light = st.session_state.get('theme') == 'light'
-header_bg = "linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%)"
-header_text = "#000000" if is_light else "#ffffff"
-sub_text = "#333333" if is_light else "#aaaaaa"
-card_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(26,26,46,0.8)"
-card_border = "#dee2e6" if is_light else "#2a5298"
-app_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%)" if is_light else "linear-gradient(135deg, #0a0a0a 0%, #0f0f1a 50%, #1a1a2e 100%)"
-metric_bg = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, rgba(26,26,46,0.95) 0%, rgba(22,33,62,0.95) 100%)"
+# CSS LÀM MỚI ĐÃ ĐƯỢC CHUYỂN LÊN ĐẦU TRANG TRONG PREMIUM DESIGN SYSTEM
 
-st.markdown(f"""
-<style>
-    * {{ font-family: 'Times New Roman', Times, serif !important; }}
-    .stApp {{ background: {app_bg}; }}
-    
-    /* HEADER */
-    .main-header {{
-        background: {header_bg};
-        padding: 2rem;
-        border-radius: 20px;
-        text-align: center;
-        margin-bottom: 2rem;
-        border: 1px solid {card_border};
-        box-shadow: 0 4px 15px rgba(0,0,0,{"0.05" if is_light else "0.3"});
-    }}
-    .main-header h1 {{ color: {header_text} !important; font-size: 1.8rem; margin: 0; }}
-    .main-header p {{ color: {sub_text} !important; margin: 0.5rem 0 0 0; }}
-    
-    /* RESEARCH BADGE */
-    .research-badge {{
-        background: linear-gradient(135deg, #2a5298, #1a73e8);
-        padding: 0.3rem 1rem;
-        border-radius: 50px;
-        display: inline-block;
-        margin-top: 0.5rem;
-    }}
-    .research-badge span {{ color: white; font-size: 0.8rem; font-weight: bold; }}
-    
-    /* INFO BOX */
-    .info-box {{
-        background: {card_bg};
-        padding: 1.2rem;
-        border-radius: 16px;
-        border-left: 4px solid #2a5298;
-        margin-bottom: 1rem;
-        border-top: 1px solid {card_border};
-        border-right: 1px solid {card_border};
-        border-bottom: 1px solid {card_border};
-        color: {header_text};
-    }}
-    
-    /* BUTTON - CÓ HOVER EFFECT */
-    .stButton > button {{
-        background: linear-gradient(135deg, #2a5298 0%, #1a73e8 100%) !important;
-        color: white !important;
-        border-radius: 30px !important;
-        font-weight: bold !important;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }}
-    .stButton > button:hover {{
-        transform: scale(1.02);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }}
-    
-    /* MEMBER CARD */
-    .member-card {{
-        background: {metric_bg};
-        padding: 1.2rem;
-        border-radius: 16px;
-        text-align: center;
-        margin-bottom: 1rem;
-        border: 1px solid {card_border};
-    }}
-    .member-name {{ color: {header_text}; font-size: 1.1rem; font-weight: bold; }}
-    .member-role {{ color: #0072ff; font-size: 0.85rem; }}
-    
-    /* LECTURER CARD */
-    .lecturer-card {{
-        background: {header_bg};
-        padding: 1.5rem;
-        border-radius: 20px;
-        text-align: center;
-        margin-bottom: 2rem;
-        border: 2px solid #ffd700;
-    }}
-    .lecturer-name {{ color: {"#b8860b" if is_light else "#ffd700"}; font-size: 1.3rem; font-weight: bold; }}
-    
-    /* FRAME THUMBNAIL */
-    .frame-thumbnail {{
-        transition: transform 0.3s;
-        cursor: pointer;
-        width: 100%;
-        border-radius: 12px;
-    }}
-    .frame-thumbnail:hover {{
-        transform: scale(1.02);
-    }}
-    
-    /* VIDEO */
-    video {{
-        width: 100%;
-        border-radius: 16px;
-        background: black;
-        max-height: 70vh;
-    }}
-    
-    /* WARNING BOX */
-    .warning-box {{
-        background: rgba(255,100,0,0.1);
-        border-left: 4px solid #FFA500;
-        padding: 10px;
-        border-radius: 8px;
-        margin: 10px 0;
-        color: {header_text};
-    }}
-    
-    /* TABS STYLE - CHỐNG TRÀN CHỮ TRÊN DI ĐỘNG */
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 10px !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        display: flex !important;
-        flex-wrap: nowrap !important;
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        height: 48px !important;
-        white-space: nowrap !important;
-        min-width: fit-content !important;
-        flex-shrink: 0 !important;
-        padding: 0 20px !important;
-    }}
-    .stTabs [data-baseweb="tab"] p {{
-        font-size: 0.95rem !important;
-        font-weight: bold !important;
-        white-space: nowrap !important;
-    }}
-    
-    /* METRIC CARD */
-    .metric-card {{
-        background: {metric_bg};
-        border-radius: 16px;
-        padding: 1rem;
-        text-align: center;
-        border: 1px solid {card_border};
-        transition: all 0.3s ease;
-    }}
-    .metric-card:hover {{
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,{"0.1" if is_light else "0.2"});
-        border-color: #ffd700;
-    }}
-    .metric-value {{
-        font-size: 2rem;
-        font-weight: bold;
-        color: #0072ff;
-    }}
-    .metric-label {{
-        font-size: 0.85rem;
-        color: {sub_text};
-        margin-top: 0.5rem;
-    }}
-    
-    /* CUSTOM SCROLLBAR */
-    ::-webkit-scrollbar {{
-        width: 8px;
-        height: 8px;
-    }}
-    ::-webkit-scrollbar-track {{
-        background: {"#f1f3f5" if is_light else "#1a1a2e"};
-        border-radius: 10px;
-    }}
-    ::-webkit-scrollbar-thumb {{
-        background: #2a5298;
-        border-radius: 10px;
-    }}
-    ::-webkit-scrollbar-thumb:hover {{
-        background: #1a73e8;
-    }}
-</style>
-""", unsafe_allow_html=True)
 
 
 # ============================================
@@ -3844,163 +3133,163 @@ def hien_thi_tab_phan_tich(key_suffix=""):
                         with open(st.session_state.frames_zip, "rb") as f:
                             st.download_button("📦 Toàn bộ khung hình (ZIP)", f, "all_frames.zip", "application/zip", width="stretch", key=f"dl_f7_{key_suffix}")
 def hien_thi_tab_huong_dan():
-    st.markdown("## 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG")
+    st.markdown("""
+    <div class="glass-card" style="padding: 30px; text-align: center; margin-bottom: 30px;">
+        <h1 style="font-size: 2.2rem; margin-bottom: 10px;">📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG</h1>
+        <p style="color: #94a3b8;">Cẩm nang chi tiết dành cho người dùng và chuyên gia y tế</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    is_light = st.session_state.theme == 'light'
-    card_bg = "#f8f9fa" if is_light else "rgba(255, 255, 255, 0.05)"
-    text_color = "#333" if is_light else "#ccc"
-    
-    tab_h1, tab_h2, tab_h3 = st.tabs(["👤 DÀNH CHO BỆNH NHÂN", "🩺 DÀNH CHO BÁC SĨ / KTV", "🔬 DÀNH CHO NGHIÊN CỨU VIÊN"])
+    tab_h1, tab_h2, tab_h3 = st.tabs(["👤 BỆNH NHÂN", "🩺 BÁC SĨ / KTV", "🔬 NGHIÊN CỨU VIÊN"])
     
     with tab_h1:
-        st.markdown("### 🛠️ Quy trình tập luyện 5 bước")
+        st.markdown("<h3 style='margin-bottom: 20px;'>🛠️ Quy trình tập luyện 5 bước</h3>", unsafe_allow_html=True)
         
-        col_st1, col_st2 = st.columns([1, 1])
-        with col_st1:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 1: Chọn bài tập</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Chọn động tác cần tập ở Sidebar trái và xem video hướng dẫn mẫu.</p>
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("""
+            <div class="custom-card" style="border-left: 5px solid #00c6ff; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #00c6ff; margin-bottom: 10px;">01. Chọn bài tập</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Chọn động tác cần tập ở Sidebar trái và xem video hướng dẫn mẫu để nắm vững kỹ thuật.</p>
             </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 2: Chuẩn bị & Quay phim</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Đặt điện thoại cố định, đứng cách 2-3m sao cho thấy rõ khớp vai và khuỷu tay.</p>
+            <div class="custom-card" style="border-left: 5px solid #00c6ff; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #00c6ff; margin-bottom: 10px;">02. Chuẩn bị & Quay phim</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Đặt camera cố định ngang tầm vai, đứng cách 2-3m sao cho toàn bộ cánh tay và thân trên nằm trong khung hình.</p>
             </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 3: Tải video lên</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Tại tab <b>TRANG CHỦ</b>, tải file video của bạn lên hệ thống.</p>
+            <div class="custom-card" style="border-left: 5px solid #00c6ff; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #00c6ff; margin-bottom: 10px;">03. Tải video lên</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Tại tab <b>TRANG CHỦ</b>, tải file video của bạn lên hệ thống để AI bắt đầu phân tích sơ bộ.</p>
             </div>
             """, unsafe_allow_html=True)
             
-        with col_st2:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 4: Gửi cho chuyên gia</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Bấm nút <b>GỬI CHO BÁC SĨ</b> để video được chuyển đến bộ phận chuyên môn.</p>
+        with c2:
+            st.markdown("""
+            <div class="custom-card" style="border-left: 5px solid #00c6ff; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #00c6ff; margin-bottom: 10px;">04. Gửi cho chuyên gia</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Bấm nút <b>GỬI CHO BÁC SĨ</b> để video và kết quả AI được chuyển đến đội ngũ chuyên môn đánh giá lâm sàng.</p>
             </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Bước 5: Xem kết quả</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Khi bác sĩ đánh giá xong, bạn sẽ nhận được thông báo tại tab <b>KẾT QUẢ</b>.</p>
+            <div class="custom-card" style="border-left: 5px solid #00c6ff; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #00c6ff; margin-bottom: 10px;">05. Xem kết quả</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Khi bác sĩ hoàn tất đánh giá, bạn sẽ nhận được thông báo và báo cáo chi tiết tại tab <b>KẾT QUẢ</b>.</p>
             </div>
-            <div style="padding: 15px; background: rgba(0, 198, 255, 0.1); border-radius: 10px; border: 1px dashed #00c6ff;">
-                <p style="margin:0; color:#00c6ff; font-size:0.85rem;">💡 <b>Mẹo:</b> Mặc quần áo gọn gàng, màu tương phản với nền để AI nhận diện tốt nhất.</p>
+            <div style="padding: 20px; background: rgba(0, 198, 255, 0.05); border-radius: 15px; border: 1px dashed #00c6ff; margin-top: 10px;">
+                <p style="margin:0; color:#00c6ff; font-size:0.9rem; line-height: 1.6;">
+                    💡 <b>Mẹo tối ưu:</b> Mặc quần áo gọn gàng, màu sắc tương phản với nền tường và đảm bảo ánh sáng đủ tốt để AI nhận diện các khớp xương chính xác nhất.
+                </p>
             </div>
             """, unsafe_allow_html=True)
 
     with tab_h2:
-        st.markdown("### 🩺 Quy trình dành cho chuyên gia Y tế")
+        st.markdown("<h3 style='margin-bottom: 20px;'>🩺 Quy trình dành cho chuyên gia Y tế</h3>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">1. Tiếp nhận video</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Xem danh sách video bệnh nhân gửi đến ngay tại <b>Trang chủ</b>.</p>
+            st.markdown("""
+            <div class="custom-card" style="border-left: 5px solid #ffd700; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700; margin-bottom: 10px;">1. Tiếp nhận video</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Theo dõi danh sách video bệnh nhân gửi đến theo thời gian thực tại Dashboard <b>TRANG CHỦ</b>.</p>
             </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">2. Đánh giá AI</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Bấm nút <b>Phân tích</b> để hệ thống tự động tính toán góc độ chi tiết.</p>
+            <div class="custom-card" style="border-left: 5px solid #ffd700; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700; margin-bottom: 10px;">2. Phân tích AI</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Sử dụng công cụ <b>Phân tích</b> để hệ thống tự động tính toán góc độ, biên độ và so sánh với dữ liệu chuẩn.</p>
             </div>
             """, unsafe_allow_html=True)
         with c2:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">3. Đưa ra chỉ định</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Điền phiếu đánh giá lâm sàng và gửi lời khuyên trực tiếp cho bệnh nhân.</p>
+            st.markdown("""
+            <div class="custom-card" style="border-left: 5px solid #ffd700; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700; margin-bottom: 10px;">3. Đánh giá chuyên môn</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Dựa trên dữ liệu AI, bác sĩ đưa ra nhận định lâm sàng và lời khuyên điều trị trực tiếp trên phiếu đánh giá.</p>
             </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">4. Theo dõi tiến trình</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Xem biểu đồ phục hồi của bệnh nhân qua các tuần để điều chỉnh phác đồ.</p>
+            <div class="custom-card" style="border-left: 5px solid #ffd700; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700; margin-bottom: 10px;">4. Giám sát tiến triển</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Truy cập tab <b>LỊCH SỬ</b> để so sánh các lần tập qua từng tuần, đánh giá mức độ phục hồi của bệnh nhân.</p>
             </div>
             """, unsafe_allow_html=True)
 
     with tab_h3:
-        st.markdown("### 🔬 Dành cho Nghiên cứu viên AI")
+        st.markdown("<h3 style='margin-bottom: 20px;'>🔬 Dành cho Nghiên cứu viên AI</h3>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Phân tích vĩ mô</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Theo dõi các chỉ số đo lường độ chính xác: <b>Accuracy, F1-Score, ICC</b>.</p>
+            st.markdown("""
+            <div class="custom-card" style="border-left: 5px solid #ff4b4b; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #ff4b4b; margin-bottom: 10px;">Phân tích vĩ mô</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Đánh giá hiệu năng mô hình qua các chỉ số: <b>Accuracy, F1-Score, ICC, MAE</b> để tinh chỉnh thuật toán.</p>
             </div>
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Kiểm định chéo</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Đối chiếu kết quả AI với <b>'Golden Standard'</b> từ các bác sĩ chuyên khoa.</p>
+            <div class="custom-card" style="border-left: 5px solid #ff4b4b; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #ff4b4b; margin-bottom: 10px;">Kiểm định chéo</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Đối chiếu kết quả phân tích AI với <b>'Golden Standard'</b> (Ground Truth) từ các bác sĩ chuyên khoa.</p>
             </div>
             """, unsafe_allow_html=True)
         with c2:
-            st.markdown(f"""
-            <div class="custom-card" style="background: {card_bg}; padding: 15px; margin-bottom: 10px; border-left: 5px solid #00c6ff;">
-                <h4 style="margin:0; color:#00c6ff;">Quản lý dữ liệu</h4>
-                <p style="margin:5px 0; color:{text_color}; font-size:0.9rem;">Xuất dữ liệu tọa độ khớp (Keypoints) dưới dạng <b>CSV</b> để huấn luyện AI.</p>
+            st.markdown("""
+            <div class="custom-card" style="border-left: 5px solid #ff4b4b; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #ff4b4b; margin-bottom: 10px;">Khai thác dữ liệu</div>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Xuất dữ liệu tọa độ khớp (33 Landmarks) dưới dạng <b>CSV/JSON</b> để huấn luyện lại các mô hình Deep Learning.</p>
             </div>
-            <div style="padding: 15px; background: rgba(0, 198, 255, 0.1); border-radius: 10px; border: 1px dashed #00c6ff;">
-                <p style="margin:0; color:#00c6ff; font-size:0.85rem;">💡 <b>Hệ thống:</b> Cung cấp các bộ công cụ chuyên sâu để tinh chỉnh mô hình Pose Estimation.</p>
+            <div style="padding: 20px; background: rgba(255, 75, 75, 0.05); border-radius: 15px; border: 1px dashed #ff4b4b; margin-top: 10px;">
+                <p style="margin:0; color:#ff4b4b; font-size:0.9rem; line-height: 1.6;">
+                    🚀 <b>Hệ thống:</b> Tích hợp API MediaPipe BlazePose Heavy cho độ chính xác cấp độ nghiên cứu khoa học.
+                </p>
             </div>
             """, unsafe_allow_html=True)
 
-def hien_thi_tab_nckh():
-    is_light = st.session_state.theme == 'light'
-    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
-    text_color = "#000" if is_light else "white"
-    sub_color = "#0072ff" if is_light else "#ffd700"
-    border_color = "#0072ff" if is_light else "#2a5298"
 
-    st.markdown(f"""
-    <div style="background: {bg_gradient}; padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid {border_color};">
-        <h2 style="color: {text_color}; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
-        <p style="color: {sub_color}; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
-        <p style="color: {"#333" if is_light else "#ccc"};">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
-        <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
+def hien_thi_tab_nckh():
+    st.markdown("""
+    <div class="glass-card" style="padding: 40px; text-align: center; margin-bottom: 40px; border-left: 6px solid #00c6ff;">
+        <h1 style="font-size: 2.2rem; margin-bottom: 15px;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h1>
+        <h3 style="color: #00c6ff; font-weight: 600; line-height: 1.4;">PHÁT TRIỂN MÔ HÌNH THỬ NGHIỆM GIÁM SÁT TẬP LUYỆN PHỤC HỒI CHỨC NĂNG TỪ XA DỰA TRÊN TRÍ TUỆ NHÂN TẠO VÀ THỊ GIÁC MÁY TÍNH</h3>
+        <p style="color: #94a3b8; font-size: 1rem; margin-top: 15px;">Bệnh viện Đa khoa Phạm Ngọc Thạch — Trường Đại học Y tế Công cộng (2025–2026)</p>
     </div>
     """, unsafe_allow_html=True)
     
     with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
         st.markdown("""
-        Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
-        
-        Theo Tổ chức Y tế Thế giới (WHO), hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng, chiếm gần một phần ba dân số toàn cầu. Tại Việt Nam, theo Hội Phục hồi chức năng Việt Nam (2023), có khoảng 7,06% dân số từ 2 tuổi trở lên là người khuyết tật, trong đó phần lớn cần được can thiệp PHCN.
-        
-        Mặc dù nhu cầu PHCN lớn, song năng lực cung cấp dịch vụ này tại Việt Nam vẫn còn hạn chế. Trung bình 10.000 người dân chỉ có 0,25 nhân viên phục hồi chức năng, thấp hơn đáng kể so với khuyến nghị của WHO là 0,5-1 người/10.000 dân. Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà sau khi xuất viện mà thiếu sự giám sát chuyên môn.
-        
-        Xuất phát từ thực tiễn trên, nhóm nghiên cứu quyết định thực hiện đề tài: **"Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)"**.
-        """)
+        <div style="line-height: 1.8; color: #cbd5e1; text-align: justify;">
+            Trong những năm gần đây, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao do sự gia tăng của các bệnh lý cơ xương khớp và đột quỵ. 
+            Theo <b>WHO</b>, hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng. Tại Việt Nam, năng lực cung cấp dịch vụ này vẫn còn hạn chế với chỉ 0,25 nhân viên PHCN/10.000 dân. 
+            Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà mà thiếu sự giám sát chuyên môn, dẫn đến hiệu quả điều trị thấp hoặc chấn thương thứ phát.
+        </div>
+        """, unsafe_allow_html=True)
     
     with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
         st.markdown("""
-        **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập phục hồi chức năng cho bệnh nhân viêm quanh khớp vai, bao gồm:
-        - Bài tập con lắc Codman
-        - Bài tập với gậy
-        - Bài tập với dây kháng lực
-        
-        **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công trên một tập dữ liệu nhỏ.
-        """)
+        <div style="background: rgba(0, 198, 255, 0.03); padding: 20px; border-radius: 12px; border-left: 4px solid #00c6ff;">
+            <p style="margin-bottom: 10px;">✅ <b>Mục tiêu 1:</b> Xây dựng mô hình AI nhận diện và đánh giá 3 bài tập PHCN khớp vai (Codman, Gậy, Dây kháng lực).</p>
+            <p style="margin: 0;">✅ <b>Mục tiêu 2:</b> So sánh độ chính xác của mô hình với đánh giá 'Golden Standard' từ các chuyên gia lâm sàng.</p>
+        </div>
+        """, unsafe_allow_html=True)
     
-    with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP NGHIÊN CỨU", expanded=True):
+    with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP", expanded=True):
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("""
+            **👥 Đối tượng:**
+            - 05 bệnh nhân viêm quanh khớp vai.
+            - Nhóm chuyên gia PHCN tại BV Phạm Ngọc Thạch.
+            """)
+        with c2:
+            st.markdown("""
+            **🛠️ Công nghệ lõi:**
+            - Google MediaPipe Pose Estimation.
+            - Python (OpenCV, NumPy, Pandas).
+            - Streamlit & Plotly Framework.
+            """)
+    
+    with st.expander("📊 KẾT QUẢ DỰ KIẾN (KPIs)", expanded=True):
         st.markdown("""
-        **Đối tượng nghiên cứu:** 05 bệnh nhân viêm quanh khớp vai + nhóm chuyên gia PHCN tại Khoa Phục hồi chức năng, Bệnh viện Đa khoa Phạm Ngọc Thạch.
-        
-        **Thiết kế nghiên cứu:** Nghiên cứu định lượng, phát triển mô hình học máy.
-        
-        **Công nghệ sử dụng:** 
-        - MediaPipe Pose Estimation cho ước lượng tư thế
-        - Python và các thư viện xử lý ảnh (OpenCV, NumPy, Pandas)
-        - Streamlit cho giao diện người dùng
-        - Plotly cho trực quan hóa dữ liệu
-        
-        **Cỡ mẫu dự kiến:** 500-1000 chuỗi chuyển động.
-        """)
-    
-    with st.expander("📊 KẾT QUẢ DỰ KIẾN", expanded=True):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Độ chính xác (Accuracy)", "≥ 90%")
-            st.metric("F1-Score", "≥ 0.85")
-        with col2:
-            st.metric("Sai số MAE", "< 5°")
-            st.metric("Hệ số ICC", "≥ 0.75")
-        with col3:
-            st.metric("Precision", "≥ 0.85")
-            st.metric("Recall", "≥ 0.85")
+        <style>
+            .kpi-container { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
+            .kpi-box { flex: 1; min-width: 150px; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 15px; text-align: center; border: 1px solid rgba(0, 198, 255, 0.2); }
+            .kpi-val { font-size: 1.8rem; font-weight: 800; color: #00c6ff; margin-bottom: 5px; }
+            .kpi-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        </style>
+        <div class="kpi-container">
+            <div class="kpi-box"><div class="kpi-val">≥ 90%</div><div class="kpi-label">Accuracy</div></div>
+            <div class="kpi-box"><div class="kpi-val">≥ 0.85</div><div class="kpi-label">F1-Score</div></div>
+            <div class="kpi-box"><div class="kpi-val">&lt; 5°</div><div class="kpi-label">MAE Error</div></div>
+            <div class="kpi-box"><div class="kpi-val">≥ 0.75</div><div class="kpi-label">ICC Reliability</div></div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
         st.markdown("""
@@ -4122,51 +3411,55 @@ def hien_thi_tab_thong_tin_nghien_cuu():
     
 
 def hien_thi_tab_thanh_vien():
+    st.markdown("""
+    <div class="glass-card" style="padding: 30px; text-align: center; margin-bottom: 40px; border-bottom: 4px solid #ffd700;">
+        <h1 style="font-size: 2.2rem; margin-bottom: 10px;">🛡️ ĐỘI NGŨ PHÁT TRIỂN & NGHIÊN CỨU</h1>
+        <p style="color: #94a3b8;">Dự án Nghiên cứu Khoa học Sinh viên - Trường ĐH Sư phạm Kỹ thuật TP.HCM</p>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("### 👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN")
-    gv_col1, gv_col2 = st.columns(2)
-    with gv_col1:
+    c_l1, c_l2 = st.columns(2)
+    with c_l1:
         st.markdown("""
-        <div class="lecturer-card">
-            <div class="lecturer-name">TS. Trần Hồng Việt 🎓</div>
-            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn Khoa học Dữ Liệu</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
-            <a href="mailto:thviet79@gmail.com" style="text-decoration:none; color:#00CED1; font-size:0.9rem;">📧 thviet79@gmail.com</a>
+        <div class="custom-card" style="border-top: 4px solid #ffd700; text-align: center;">
+            <div style="font-size: 2.5rem; margin-bottom: 10px;">🎓</div>
+            <h3 style="color: #ffd700;">TS. Trần Hồng Việt</h3>
+            <p style="color: #cbd5e1; font-weight: 600;">Giảng viên hướng dẫn chính</p>
+            <p style="color: #64748b; font-size: 0.9rem;">Khoa Điện - Điện tử, HCMUTE</p>
         </div>
         """, unsafe_allow_html=True)
-    with gv_col2:
+    with c_l2:
         st.markdown("""
-        <div class="lecturer-card" style="border-color: #00CED1;">
-            <div class="lecturer-name" style="color: #00CED1;">Cô Nguyễn Thị Thùy Chi 🎓</div>
-            <p style="color: #ccc; margin-top: 0.5rem;">Giảng viên hướng dẫn Lâm Sàng</p>
-            <p style="color: #aaa; font-size: 0.9rem;">Trường Đại học Y tế Công cộng</p>
-            <a href="mailto:chi.ntt@huph.edu.vn" style="text-decoration:none; color:#00CED1; font-size:0.9rem;">📧 chi.ntt@huph.edu.vn</a>
+        <div class="custom-card" style="border-top: 4px solid #ffd700; text-align: center;">
+            <div style="font-size: 2.5rem; margin-bottom: 10px;">🎓</div>
+            <h3 style="color: #ffd700;">Nguyễn Thị Thùy Chi</h3>
+            <p style="color: #cbd5e1; font-weight: 600;">Giảng viên hướng dẫn</p>
+            <p style="color: #64748b; font-size: 0.9rem;">Khoa Điện - Điện tử, HCMUTE</p>
         </div>
         """, unsafe_allow_html=True)
+
+    st.markdown("<br>### 🚀 CHỦ NHIỆM ĐỀ TÀI", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="custom-card" style="border-top: 4px solid #00c6ff; max-width: 500px; margin: 0 auto; text-align: center;">
+        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white;">QP</div>
+        <h3 style="color: #00c6ff;">Đinh Lê Quỳnh Phương</h3>
+        <p style="color: #cbd5e1; font-weight: 700; letter-spacing: 1px;">CHỦ NHIỆM ĐỀ TÀI</p>
+        <p style="color: #64748b; font-size: 0.9rem; margin-top: 10px;">MSSV: 2211090031</p>
+        <a href="mailto:2211090031@studenthuph.edu.vn" style="color: #00c6ff; text-decoration: none; font-size: 0.9rem;">📧 2211090031@studenthuph.edu.vn</a>
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.markdown("### 👩‍⚕️ CHỦ NHIỆM ĐỀ TÀI")
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
-        <div class="member-card" style="border-color: #ffd700; border: 2px solid #ffd700;">
-            <div class="member-name">Đinh Lê Quỳnh Phương 🛡️</div>
-            <div class="member-role">⭐ Chủ nhiệm đề tài ⭐</div>
-            <div class="member-id">MSSV: 2211090031</div>
-            <a href="mailto:2211090031@studenthuph.edu.vn" style="text-decoration:none; color:#0072ff; font-size:0.85rem;">📧 2211090031@studenthuph.edu.vn</a>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.markdown("### 👥 THÀNH VIÊN NGHIÊN CỨU")
+    st.markdown("<br>### 👥 THÀNH VIÊN NGHIÊN CỨU", unsafe_allow_html=True)
     thanh_vien = [
-        ("Kim Mạnh Hưng 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090016", "2211090016@studenthuph.edu.vn"),
-        ("Nguyễn Hải An 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090001", "2211090001@studenthuph.edu.vn"),
-        ("Phan Vân Anh 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090004", "2211090004@studenthuph.edu.vn"),
-        ("Nguyễn Thị Thanh Nga 🛡️", "Thành viên", "CNCQ KHDL1-1A", "2211090027", "2211090027@studenthuph.edu.vn"),
-        ("Nguyễn Thị Thơm 🛡️", "Thành viên nghiên cứu", "CNCQ KTPHCN3-1A", "2216030122", "2216030122@studenthuph.edu.vn"),
-        ("Nguyễn Thị Thu Hương 🛡️", "Thành viên nghiên cứu", "CNCQ YTCC22-1A", "2317010071", "2317010071@studenthuph.edu.vn"),
+        ("Kim Mạnh Hưng", "Thành viên", "CNCQ KHDL1-1A", "2211090016", "2211090016@studenthuph.edu.vn"),
+        ("Nguyễn Hải An", "Thành viên", "CNCQ KHDL1-1A", "2211090001", "2211090001@studenthuph.edu.vn"),
+        ("Phan Vân Anh", "Thành viên", "CNCQ KHDL1-1A", "2211090004", "2211090004@studenthuph.edu.vn"),
+        ("Nguyễn Thị Thanh Nga", "Thành viên", "CNCQ KHDL1-1A", "2211090027", "2211090027@studenthuph.edu.vn"),
+        ("Nguyễn Thị Thơm", "Thành viên nghiên cứu", "CNCQ KTPHCN3-1A", "2216030122", "2216030122@studenthuph.edu.vn"),
+        ("Nguyễn Thị Thu Hương", "Thành viên nghiên cứu", "CNCQ YTCC22-1A", "2317010071", "2317010071@studenthuph.edu.vn"),
     ]
     
-    # Hiển thị grid 3 cột cho 6 thành viên
     for i in range(0, len(thanh_vien), 3):
         cols = st.columns(3)
         for j in range(3):
@@ -4174,29 +3467,26 @@ def hien_thi_tab_thanh_vien():
                 ten, vai_tro, lop, mssv, email = thanh_vien[i+j]
                 with cols[j]:
                     st.markdown(f"""
-                    <div class="member-card">
-                        <div class="member-name">{ten}</div>
-                        <div class="member-role">{vai_tro}</div>
-                        <div class="member-class">{lop}</div>
-                        <div class="member-id">MSSV: {mssv}</div>
-                        <a href="mailto:{email}" style="text-decoration:none; color:#00CED1; font-size:0.8rem;">📧 {email}</a>
+                    <div class="custom-card" style="text-align: center; height: 100%;">
+                        <h4 style="color: #fff; margin-bottom: 5px;">{ten}</h4>
+                        <p style="color: #00c6ff; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px;">{vai_tro}</p>
+                        <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; font-size: 0.85rem; color: #94a3b8; text-align: left;">
+                            <p style="margin-bottom: 5px;">📍 <b>Lớp:</b> {lop}</p>
+                            <p style="margin-bottom: 5px;">🆔 <b>MSSV:</b> {mssv}</p>
+                        </div>
+                        <a href="mailto:{email}" style="display: block; margin-top: 15px; color: #64748b; font-size: 0.75rem; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📧 {email}</a>
                     </div>
                     """, unsafe_allow_html=True)
     
-    st.markdown("---")
-    st.markdown("### 🏥 ĐƠN VỊ PHỐI HỢP")
-    is_light = st.session_state.theme == 'light'
-    partner_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
-    partner_text = "#333" if is_light else "#ccc"
-    partner_title = "#0072ff" if is_light else "#ffd700"
-    
-    st.markdown(f"""
-    <div style="background: {partner_bg}; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #2a5298;">
-        <p style="color: {partner_title}; font-weight: bold;">Bệnh viện Đa khoa Phạm Ngọc Thạch</p>
-        <p style="color: {partner_text};">Khoa Phục hồi chức năng</p>
-        <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
+    st.markdown("<br>### 🏥 ĐƠN VỊ PHỐI HỢP", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="glass-card" style="padding: 25px; text-align: center; border-left: 5px solid #00c6ff;">
+        <h3 style="color: #fff; margin-bottom: 10px;">Bệnh viện Đa khoa Phạm Ngọc Thạch</h3>
+        <p style="color: #00c6ff; font-weight: 600; margin-bottom: 5px;">Khoa Phục hồi chức năng</p>
+        <p style="color: #64748b; font-size: 0.9rem;">📍 Địa chỉ: 1A Đ. Đức Thắng, Đông Ngạc, Hà Nội</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 # ==================== CÁC HÀM HỖ TRỢ VAI TRÒ MỚI ====================
 
@@ -6658,101 +5948,48 @@ def main():
 
                 # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC ===
                 st.markdown("---")
-                st.markdown("<h3 style='color: #00c6ff; text-align: center; margin-bottom: 25px;'>⚙️ QUY TRÌNH XỬ LÝ DỮ LIỆU NCKH</h3>", unsafe_allow_html=True)
+                st.markdown("<h2 style='color: #00c6ff; text-align: center; margin-bottom: 40px; font-weight: 800;'>⚙️ QUY TRÌNH XỬ LÝ DỮ LIỆU NCKH</h2>", unsafe_allow_html=True)
             
-                # CSS cho các thẻ Quy trình
-                st.markdown("""
-                <style>
-                .step-container {
-                    display: flex;
-                    gap: 15px;
-                    margin-bottom: 20px;
-                    flex-wrap: wrap;
-                }
-                .step-box {
-                    flex: 1;
-                    min-width: 200px;
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid rgba(0, 198, 255, 0.3);
-                    border-radius: 12px;
-                    padding: 18px;
-                    text-align: center;
-                    transition: all 0.3s;
-                    border-top: 3px solid #00c6ff;
-                }
-                .step-box:hover {
-                    transform: translateY(-5px);
-                    background: rgba(0, 198, 255, 0.08);
-                    border-color: #00c6ff;
-                    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-                }
-                .step-num {
-                    background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
-                    color: white;
-                    width: 30px;
-                    height: 30px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin: 0 auto 10px;
-                    font-weight: bold;
-                    font-size: 0.9rem;
-                }
-                .step-txt-title {
-                    color: #00c6ff;
-                    font-weight: bold;
-                    font-size: 1rem;
-                    margin-bottom: 8px;
-                    display: block;
-                }
-                .step-txt-desc {
-                    color: #aaa;
-                    font-size: 0.8rem;
-                    line-height: 1.4;
-                }
-                </style>
-                """, unsafe_allow_html=True)
-
                 c1, c2, c3, c4 = st.columns(4)
                 
                 with c1:
                     st.markdown("""
-                    <div class="step-box">
-                        <div class="step-num">1</div>
-                        <span class="step-txt-title">📸 GHI HÌNH</span>
-                        <p class="step-txt-desc">Camera đặt ngang vai (90°), tối thiểu 30 FPS, đủ ánh sáng.</p>
+                    <div class="custom-card" style="text-align: center; border-top: 4px solid #00c6ff; height: 100%;">
+                        <div style="background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-weight: 800;">1</div>
+                        <h4 style="color: #00c6ff; margin-bottom: 15px;">📸 GHI HÌNH</h4>
+                        <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.5;">Camera đặt ngang vai (90°), tối thiểu 30 FPS, đủ ánh sáng tiêu chuẩn phòng Lab.</p>
                     </div>
                     """, unsafe_allow_html=True)
                     
                 with c2:
                     st.markdown("""
-                    <div class="step-box">
-                        <div class="step-num">2</div>
-                        <span class="step-txt-title">⚙️ TRÍCH XUẤT</span>
-                        <p class="step-txt-desc">Sử dụng MediaPipe Heavy trích xuất 33 điểm Landmarks.</p>
+                    <div class="custom-card" style="text-align: center; border-top: 4px solid #00c6ff; height: 100%;">
+                        <div style="background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-weight: 800;">2</div>
+                        <h4 style="color: #00c6ff; margin-bottom: 15px;">⚙️ TRÍCH XUẤT</h4>
+                        <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.5;">Sử dụng MediaPipe Heavy trích xuất 33 điểm Landmarks tọa độ 3D thời gian thực.</p>
                     </div>
                     """, unsafe_allow_html=True)
                     
                 with c3:
                     st.markdown("""
-                    <div class="step-box">
-                        <div class="step-num">3</div>
-                        <span class="step-txt-title">📊 PHÂN TÍCH</span>
-                        <p class="step-txt-desc">Tính toán Vector góc Vai/Khuỷu và làm mượt dữ liệu.</p>
+                    <div class="custom-card" style="text-align: center; border-top: 4px solid #00c6ff; height: 100%;">
+                        <div style="background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-weight: 800;">3</div>
+                        <h4 style="color: #00c6ff; margin-bottom: 15px;">📊 PHÂN TÍCH</h4>
+                        <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.5;">Tính toán Vector góc Vai/Khuỷu và áp dụng thuật toán làm mượt dữ liệu Kalman.</p>
                     </div>
                     """, unsafe_allow_html=True)
                     
                 with c4:
                     st.markdown("""
-                    <div class="step-box">
-                        <div class="step-num">4</div>
-                        <span class="step-txt-title">💾 LƯU TRỮ</span>
-                        <p class="step-txt-desc">Số hóa dữ liệu sang JSON/CSV phục vụ báo cáo NCKH.</p>
+                    <div class="custom-card" style="text-align: center; border-top: 4px solid #00c6ff; height: 100%;">
+                        <div style="background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-weight: 800;">4</div>
+                        <h4 style="color: #00c6ff; margin-bottom: 15px;">💾 LƯU TRỮ</h4>
+                        <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.5;">Số hóa dữ liệu sang JSON/CSV, tích hợp vào Database phục vụ báo cáo NCKH cấp Bộ.</p>
                     </div>
                     """, unsafe_allow_html=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
+
     
     # ==================== TAB: PHÂN TÍCH / ĐÁNH GIÁ ====================
     if "📝 ĐÁNH GIÁ PHCN" in tab_map:
@@ -6866,9 +6103,58 @@ def main():
     if "📄 PHIẾU NCKH" in tab_map:
         with tab_map["📄 PHIẾU NCKH"]:
             hien_thi_tab_phieu_nckh()
+def hien_thi_footer_chung():
+    """Hiển thị Footer cao cấp đa cột (Glassmorphism)"""
+    st.markdown("""
+    <footer style="margin-top: 80px; padding-top: 60px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px; margin-bottom: 50px;">
+            <!-- Column 1: Project -->
+            <div>
+                <h3 style="color: #00c6ff; margin-bottom: 20px; font-weight: 800; letter-spacing: 1px;">REHAB AI MONITOR</h3>
+                <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.8;">
+                    Hệ thống giám sát phục hồi chức năng từ xa ứng dụng Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision) thế hệ mới.
+                </p>
+            </div>
 
+            <!-- Column 2: Quick Links -->
+            <div>
+                <h4 style="color: #fff; margin-bottom: 20px;">KHÁM PHÁ</h4>
+                <ul style="list-style: none; padding: 0; color: #94a3b8; font-size: 0.9rem; line-height: 2;">
+                    <li>• Hệ sinh thái Công nghệ AI</li>
+                    <li>• Thư viện Kiến thức PHCN</li>
+                    <li>• Đề tài Nghiên cứu Khoa học</li>
+                    <li>• Hướng dẫn sử dụng</li>
+                </ul>
+            </div>
 
-    # ==================== FOOTER CHUNG (LUÔN HIỆN Ở DƯỚI CÙNG) ====================
+            <!-- Column 3: Academic -->
+            <div>
+                <h4 style="color: #fff; margin-bottom: 20px;">ĐƠN VỊ CHỦ QUẢN</h4>
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 10px;"><b>Trường ĐH Sư phạm Kỹ thuật TP.HCM</b></p>
+                <p style="color: #64748b; font-size: 0.85rem;">Khoa Điện - Điện tử / Khoa học Dữ liệu</p>
+                <p style="color: #64748b; font-size: 0.85rem; margin-top: 15px;"><b>Cố vấn chuyên môn:</b></p>
+                <p style="color: #94a3b8; font-size: 0.85rem;">TS. Trần Hồng Việt</p>
+                <p style="color: #94a3b8; font-size: 0.85rem;">Cô Nguyễn Thị Thùy Chi</p>
+            </div>
+
+            <!-- Column 4: Partners -->
+            <div>
+                <h4 style="color: #fff; margin-bottom: 20px;">ĐỐI TÁC CHIẾN LƯỢC</h4>
+                <p style="color: #94a3b8; font-size: 0.9rem;"><b>BV Đa khoa Phạm Ngọc Thạch</b></p>
+                <p style="color: #64748b; font-size: 0.85rem;">Khoa Phục hồi chức năng</p>
+                <div style="margin-top: 20px; padding: 15px; background: rgba(0, 198, 255, 0.05); border-radius: 12px; border: 1px dashed rgba(0, 198, 255, 0.3);">
+                    <p style="margin: 0; color: #00c6ff; font-size: 0.8rem; font-weight: 600;">DỰ ÁN PHỤC VỤ CỘNG ĐỒNG 2025</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; padding: 30px 0; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+            <p style="color: #64748b; font-size: 0.85rem;">
+                © 2025 Rehab-AI-Monitor Team. All Rights Reserved. Crafted with ❤️ and AI technology.
+            </p>
+        </div>
+    </footer>
+    """, unsafe_allow_html=True)
     hien_thi_footer_chung()
 
 
