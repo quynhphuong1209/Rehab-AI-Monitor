@@ -6386,7 +6386,7 @@ def main():
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
-                            with st.expander("📖 HƯỚNG DẪN TẬP LUYLN", expanded=True):
+                            with st.expander("📖 HƯỚNG DẪN TẬP LUYỆN", expanded=True):
                                 st.markdown(bai_tap['huong_dan'])
                             with st.expander("✨ LỢI ÍCH CỦA BÀI TẬP", expanded=False):
                                 for loi_ich in bai_tap['loi_ich']:
