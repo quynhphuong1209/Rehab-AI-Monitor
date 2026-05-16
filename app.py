@@ -6127,9 +6127,9 @@ def main():
             st.markdown("### 🎯 CHỌN MÔ HÌNH")
             st.selectbox("Mô hình Pose", ["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"], key="ncv_model_type")
             
-            st.markdown("### 🎯 CHỌN BÀI TẬP")
-            ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
-            bai_tap = BAI_TAP[ma_bai_tap]
+            # st.markdown("### 🎯 CHỌN BÀI TẬP") # Cắt bỏ chọn bài tập ở sidebar cho NCV
+            # ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
+            # bai_tap = BAI_TAP[ma_bai_tap]
             
         elif user_role == "Quản trị viên":
             st.markdown("### 👑 QUẢN TRỊ HỆ THỐNG")
@@ -6306,14 +6306,10 @@ def main():
                     
                     st.markdown("---")
                     
-                    c_bt1, c_bt2 = st.columns([2, 1])
-                    with c_bt1:
-                        ma_bai_tap = st.selectbox("🎯 CHỌN BÀI TẬP ĐANG THEO DÕI", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}", key="doc_home_exercise")
-                        bai_tap = BAI_TAP[ma_bai_tap]
-                    st.markdown("---")
+                    pass # Đã cắt bỏ chọn bài tập ở trang chủ cho Bác sĩ theo yêu cầu
 
-                # HIỂN THỊ THÔNG TIN BÀI TẬP (CHỈ CHO BS, NCV, BN - KHÔNG CHO ADMIN)
-                if user_role != "Quản trị viên":
+                # HIỂN THỊ THÔNG TIN BÀI TẬP (CHỈ HIỆN CHO BN - BS/NCV ĐÃ BIẾT NÊN CẮT BỎ ĐỂ TRÁNH RỐI)
+                if user_role == "Bệnh nhân":
                     is_light = st.session_state.theme == 'light'
                     info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
                     info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
