@@ -1748,6 +1748,17 @@ def hien_thi_tab_nckh_va_thanh_vien_ncv():
     with sub_tabs[1]:
         hien_thi_tab_thanh_vien()
 
+def hien_thi_tab_danh_gia_tong_hop_benh_nhan():
+    """Gộp tab Kết quả và Thông tin nghiên cứu cho Bệnh nhân"""
+    st.markdown("## 📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN & THÔNG TIN NGHIÊN CỨU")
+    
+    sub_tabs = st.tabs(["📝 KẾT QUẢ ĐÁNH GIÁ", "📄 THÔNG TIN NGHIÊN CỨU"])
+    
+    with sub_tabs[0]:
+        hien_thi_ket_qua_cho_benh_nhan()
+    with sub_tabs[1]:
+        hien_thi_tab_thong_tin_nghien_cuu()
+
 
 # ============================================
 # HÀM TÍNH GÓC
@@ -6218,7 +6229,7 @@ def main():
             tab_titles.append("🎬 VIDEO & ẢNH")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "🏥 KIẾN THỨC PHCN", "🌐 CÔNG NGHỆ", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     elif user_role == "Bệnh nhân":
-        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN", "⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
         
@@ -6470,8 +6481,9 @@ def main():
                                                 save_data(EVALUATIONS_FILE, evals)
                                                 st.success("✅ Đã gửi kết quả cho Bệnh nhân!")
                                     elif user_role == "Bệnh nhân":
-                                        if st.button("📊 XEM KẾT QUẢ CHI TIẾT", width="stretch", type="primary"):
-                                            chuyen_tab_bang_js("KẾT QUẢ")
+                                        if st.button("📝 ĐÁNH GIÁ CHUYÊN MÔN PHCN", width="stretch", type="primary"):
+                                            st.toast("🚀 Đang chuyển sang tab 📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN...", icon="🔄")
+                                            chuyen_tab_bang_js("📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN")
                                     else: # Bác sĩ
                                         if st.button("📊 XEM ĐÁNH GIÁ LÂM SÀNG", width="stretch", type="primary"):
                                             chuyen_tab_bang_js("ĐÁNH GIÁ PHCN")
@@ -6839,6 +6851,10 @@ def main():
     if "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU" in tab_map:
         with tab_map["🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"]:
             hien_thi_tab_phan_tich_va_video_ncv()
+
+    if "📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN" in tab_map:
+        with tab_map["📊 PHIẾU ĐÁNH GIÁ CHUYÊN MÔN"]:
+            hien_thi_tab_danh_gia_tong_hop_benh_nhan()
 
     if "📊 KẾT QUẢ" in tab_map:
         with tab_map["📊 KẾT QUẢ"]:
