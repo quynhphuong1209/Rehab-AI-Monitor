@@ -1026,8 +1026,8 @@ if st.session_state.get('theme') == 'light':
         /* Fix container background in Light Mode */
         [data-testid="stVerticalBlockBorderWrapper"] {
             background: #ffffff !important;
-            border: 1px solid #dee2e6 !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+            border: 1px solid #ced4da !important; /* Đậm hơn để hiển thị rõ viền */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
         }
 
         /* Fix Text Input contrast & Caret visibility */
@@ -1069,7 +1069,7 @@ if st.session_state.get('theme') == 'light':
         [data-testid="stVerticalBlockBorderWrapper"] {
             background: #ffffff !important;
             border-radius: 20px !important;
-            border: 1px solid #dee2e6 !important;
+            border: 1px solid #ced4da !important;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
         }
 
@@ -1085,7 +1085,7 @@ if st.session_state.get('theme') == 'light':
         .stTabs [data-baseweb="tab"] { 
             background-color: #f1f3f5 !important; 
             color: #495057 !important; 
-            border: 1px solid #dee2e6 !important;
+            border: 1px solid #ced4da !important;
         }
         .stTabs [aria-selected="true"] { 
             background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important; 
@@ -1096,11 +1096,19 @@ if st.session_state.get('theme') == 'light':
         .school-name { color: #1a1a2e !important; }
         .school-subname { color: #0072ff !important; }
         .footer-title { color: #0072ff !important; }
-        .stExpander { background: #fff !important; border: 1px solid #eee !important; border-radius: 12px !important; }
-        .stExpander summary { background: #f8f9fa !important; color: #000 !important; }
+        .stExpander { background: #fff !important; border: 1px solid #ced4da !important; border-radius: 12px !important; }
+        .stExpander summary { background: #f8f9fa !important; color: #000 !important; border-bottom: 1px solid #ced4da !important; }
         .stExpander summary:hover { background: #eee !important; }
-        [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #eee !important; }
+        [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #ced4da !important; }
         [data-testid="stSidebar"] * { color: #333 !important; }
+        
+        /* Cải thiện viền cho thanh gạch ngang (Horizontal Rule) */
+        hr {
+            border: 0 !important;
+            border-top: 1px solid #ced4da !important;
+            margin: 1rem 0 !important;
+            opacity: 1 !important;
+        }
         
         /* Làm cho nút gạt (toggle) hiện rõ màu xám khi ở chế độ Sáng */
         div[role="switch"][aria-checked="false"] {
@@ -1110,10 +1118,10 @@ if st.session_state.get('theme') == 'light':
             background-color: #ffffff !important;
         }
         [data-testid="stTable"] th { background-color: #f1f3f5 !important; color: #000 !important; }
-        [data-testid="stMetric"] { background: #ffffff !important; border: 1px solid #eee !important; padding: 10px !important; border-radius: 12px !important; }
+        [data-testid="stMetric"] { background: #ffffff !important; border: 1px solid #ced4da !important; padding: 10px !important; border-radius: 12px !important; }
         /* Fix Form elements */
-        textarea, input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #ccc !important; }
-        [data-testid="stForm"] { background-color: #ffffff !important; border: 1px solid #eee !important; border-radius: 15px !important; }
+        textarea, input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #adb5bd !important; }
+        [data-testid="stForm"] { background-color: #ffffff !important; border: 1px solid #adb5bd !important; border-radius: 15px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important; }
         
         /* FIX ALL BUTTONS */
         .stButton button, .stDownloadButton button, [data-testid="stFormSubmitButton"] button,
