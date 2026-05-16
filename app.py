@@ -306,7 +306,7 @@ if 'processed_video_path' not in st.session_state:
 if 'theme' not in st.session_state:
     st.session_state.theme = 'dark'
 
-# === KIỂM TRA ĐĂNG NHẬP GOOGLE (Hỗ trợ Streamlit Cloud Identity - Kích hoạt vào được luôn) ===
+# KIỂM TRA ĐĂNG NHẬP GOOGLE (Hỗ trợ Streamlit Cloud Identity)
 if not st.session_state.get('logged_in'):
     try:
         user_detected = None
@@ -318,25 +318,21 @@ if not st.session_state.get('logged_in'):
             user_detected = st.experimental_user
             
         if user_detected and user_detected.email:
-            # TỰ ĐỘNG KÍCH HOẠT VÀO LUÔN (Theo yêu cầu của BN)
             st.session_state.logged_in = True
             st.session_state.user_info = {
                 "username": getattr(user_detected, 'name', None) or user_detected.email.split("@")[0],
                 "email": user_detected.email,
-                "role": "Bệnh nhân", # Mặc định cho login Google là Bệnh nhân (NCKH)
+                "role": "Bệnh nhân", # Mặc định cho login Google là Bệnh nhân
                 "auth_type": "google"
             }
-            # Dọn dẹp trạng thái và vào thẳng dashboard
+            # Dọn dẹp trạng thái
             st.session_state.show_login_dialog = False
             if 'auth_initiated' in st.session_state:
                 del st.session_state['auth_initiated']
             
-            # Thông báo ngắn gọn và chuyển trang ngay lập tức
-            st.success(f"✅ Đã nhận diện Google ID: {user_detected.email}. Đang vào hệ thống...")
-            time.sleep(0.5)
             st.rerun() 
     except Exception as e:
-        # st.error(f"Lỗi nhận diện Google: {e}") 
+        # st.error(f"Lỗi nhận diện Google: {e}") # Debug nếu cần
         pass
 
 
@@ -1493,39 +1489,14 @@ def hien_thi_tab_phan_hoi():
                 else:
                     st.warning("⚠️ Vui lòng nhập đầy đủ tên và nội dung.")
 
-        # PHẦN THÔNG TIN HỖ TRỢ CHUYÊN NGHIỆP (THEME-AWARE)
+        st.markdown("#### 📞 Thông tin hỗ trợ kỹ thuật")
         is_light = st.session_state.theme == 'light'
-        card_bg = "#ffffff" if is_light else "rgba(255, 255, 255, 0.03)"
-        card_border = "#ced4da" if is_light else "rgba(0, 198, 255, 0.4)"
-        text_color = "#000000" if is_light else "#ffffff"
-        label_color = "#666666" if is_light else "#888888"
-        accent_color = "#0072ff" if is_light else "#00c6ff"
-        
+        box_bg = "rgba(0,114,255,0.05)" if is_light else "rgba(255,255,255,0.05)"
         st.markdown(f"""
-        <div style="background: {card_bg}; border: 1px solid {card_border}; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-top: 10px;">
-            <h4 style="color: {accent_color}; margin-bottom: 15px; border-bottom: 2px solid {accent_color}; padding-bottom: 8px; font-family: 'Times New Roman', serif;">
-                👩‍🔬 Nghiên cứu viên chính
-            </h4>
-            <div style="margin-bottom: 12px;">
-                <p style="color: {label_color}; font-size: 0.8rem; margin-bottom: 2px; text-transform: uppercase;">Họ và tên</p>
-                <p style="font-size: 1.1rem; font-weight: bold; color: {text_color}; font-family: 'Times New Roman', serif;">Đinh Lê Quỳnh Phương</p>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <p style="color: {label_color}; font-size: 0.8rem; margin-bottom: 2px; text-transform: uppercase;">Đơn vị</p>
-                <p style="font-size: 0.95rem; color: {text_color};">Trường Đại học Y tế Công cộng</p>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <p style="color: {label_color}; font-size: 0.8rem; margin-bottom: 2px; text-transform: uppercase;">Email & Hotline</p>
-                <p style="font-size: 0.95rem; color: {accent_color};">2211090031@studenthuph.edu.vn</p>
-                <p style="font-size: 1.1rem; font-weight: bold; color: {accent_color}; margin-top: 5px;">0382665916</p>
-            </div>
-            <hr style="border: 0; border-top: 1px solid {card_border}; margin: 15px 0;">
-            <h4 style="color: #ffd700; margin-bottom: 10px; font-family: 'Times New Roman', serif; font-size: 1.1rem;">
-                ⚖️ Hội đồng đạo đức (IRB)
-            </h4>
-            <p style="color: {text_color}; font-size: 0.85rem; margin-bottom: 5px;"><b>Cơ quan:</b> HĐĐĐ Trường ĐH Y tế Công cộng</p>
-            <p style="color: {text_color}; font-size: 0.85rem; margin-bottom: 5px;"><b>Hotline:</b> 024 62663024</p>
-            <p style="color: {text_color}; font-size: 0.85rem;"><b>Email:</b> irb@huph.edu.vn</p>
+        <div style="background: {box_bg}; padding: 1.2rem; border-radius: 15px; border: 1px solid #2a5298;">
+            <p>📧 <b>Email:</b> 2211090031@studenthuph.edu.vn</p>
+            <p>🏫 <b>Đơn vị:</b> Khoa KHDL Y sinh - HUPH</p>
+            <p>📍 <b>Vị trí:</b> 1A Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
         </div>
         """, unsafe_allow_html=True)
             
@@ -1860,73 +1831,66 @@ def hien_thi_tab_thong_tin_tong_hop_benh_nhan():
         hien_thi_tab_huong_dan(role="Bệnh nhân")
 
 def hien_thi_tab_lien_he():
-    """Giao diện liên hệ xịn xò (Premium Design) - Cập nhật cho Thesis Defense"""
-    is_light = st.session_state.theme == 'light'
-    text_color = "#000000" if is_light else "#ffffff"
-    sub_text_color = "#333333" if is_light else "#cccccc"
-    label_color = "#666666" if is_light else "#888888"
-    card_bg = "#ffffff" if is_light else "rgba(255, 255, 255, 0.03)"
-    card_border = "#ced4da" if is_light else "rgba(0, 198, 255, 0.4)"
+    """Giao diện liên hệ xịn xò (Premium Design)"""
     
     # Header xịn
-    st.markdown(f"""
+    st.markdown("""
         <div style="text-align: center; padding: 10px 20px 30px 20px; margin-bottom: 10px;">
             <h1 style="color: #00c6ff; font-family: 'Times New Roman', serif; text-shadow: 2px 2px 10px rgba(0,198,255,0.3);">📞 THÔNG TIN LIÊN HỆ KHẨN CẤP</h1>
-            <p style="color: {label_color}; font-style: italic; font-size: 1.1rem;">Hệ thống luôn sẵn sàng hỗ trợ bạn trong quá trình nghiên cứu và tập luyện.</p>
+            <p style="color: #aaa; font-style: italic; font-size: 1.1rem;">Hệ thống luôn sẵn sàng hỗ trợ bạn trong quá trình nghiên cứu và tập luyện.</p>
         </div>
     """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown(f"""
-        <div style="background: {card_bg}; border: 1px solid {card_border}; border-radius: 20px; padding: 30px; min-height: 480px; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.1); backdrop-filter: blur(10px);">
+        st.markdown("""
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 198, 255, 0.4); border-radius: 20px; padding: 30px; min-height: 480px; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.4); backdrop-filter: blur(10px);">
             <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(0, 198, 255, 0.1); border-radius: 50%;"></div>
             <h2 style="color: #00c6ff; margin-bottom: 30px; border-bottom: 3px solid #00c6ff; padding-bottom: 15px; display: flex; align-items: center;">
                 <span style="margin-right: 15px; font-size: 2rem;">👩‍🔬</span> Nghiên cứu viên chính
             </h2>
             <div style="margin-bottom: 20px;">
-                <p style="color: {label_color}; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Họ và tên</p>
-                <p style="font-size: 1.4rem; font-weight: bold; color: {text_color}; font-family: 'Times New Roman', serif;">Đinh Lê Quỳnh Phương</p>
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Họ và tên</p>
+                <p style="font-size: 1.4rem; font-weight: bold; color: white; font-family: 'Times New Roman', serif;">Đinh Lê Quỳnh Phương</p>
             </div>
             <div style="margin-bottom: 20px;">
-                <p style="color: {label_color}; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Đơn vị công tác</p>
-                <p style="font-size: 1.1rem; color: {sub_text_color};">Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Đơn vị công tác</p>
+                <p style="font-size: 1.1rem; color: #ccc;">Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
             </div>
             <div style="margin-bottom: 20px;">
-                <p style="color: {label_color}; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Email liên hệ</p>
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Email liên hệ</p>
                 <p style="font-size: 1.2rem;"><a href="mailto:2211090031@studenthuph.edu.vn" style="color: #00c6ff; text-decoration: none; border-bottom: 1px dashed #00c6ff;">2211090031@studenthuph.edu.vn</a></p>
             </div>
             <div style="margin-top: 30px; padding: 15px; background: rgba(0, 198, 255, 0.1); border-radius: 12px; border-left: 5px solid #00c6ff;">
-                <p style="color: {label_color}; font-size: 1rem; margin-bottom: 5px;">Số điện thoại khẩn cấp</p>
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px;">Số điện thoại khẩn cấp</p>
                 <p style="font-size: 1.6rem; font-weight: bold; color: #00c6ff; margin: 0;">0382665916</p>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
     with col2:
-        irb_accent = "#ffd700" if not is_light else "#d4af37"
-        st.markdown(f"""
-        <div style="background: {card_bg}; border: 1px solid {card_border}; border-radius: 20px; padding: 30px; min-height: 480px; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.1); backdrop-filter: blur(10px);">
+        st.markdown("""
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 215, 0, 0.4); border-radius: 20px; padding: 30px; min-height: 480px; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.4); backdrop-filter: blur(10px);">
             <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255, 215, 0, 0.1); border-radius: 50%;"></div>
-            <h2 style="color: {irb_accent}; margin-bottom: 30px; border-bottom: 3px solid {irb_accent}; padding-bottom: 15px; display: flex; align-items: center;">
+            <h2 style="color: #ffd700; margin-bottom: 30px; border-bottom: 3px solid #ffd700; padding-bottom: 15px; display: flex; align-items: center;">
                 <span style="margin-right: 15px; font-size: 2rem;">⚖️</span> Hội đồng đạo đức
             </h2>
             <div style="margin-bottom: 20px;">
-                <p style="color: {label_color}; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Tên cơ quan</p>
-                <p style="font-size: 1.4rem; font-weight: bold; color: {text_color}; font-family: 'Times New Roman', serif;">HĐĐĐ Trường ĐH Y tế Công cộng</p>
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Tên cơ quan</p>
+                <p style="font-size: 1.4rem; font-weight: bold; color: white; font-family: 'Times New Roman', serif;">HĐĐĐ Trường ĐH Y tế Công cộng</p>
             </div>
             <div style="margin-bottom: 20px;">
-                <p style="color: {label_color}; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Địa chỉ trụ sở</p>
-                <p style="font-size: 1.1rem; color: {sub_text_color};">Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Địa chỉ trụ sở</p>
+                <p style="font-size: 1.1rem; color: #ccc;">Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
             </div>
             <div style="margin-bottom: 20px;">
-                <p style="color: {label_color}; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Email hỗ trợ</p>
-                <p style="font-size: 1.2rem;"><a href="mailto:irb@huph.edu.vn" style="color: {irb_accent}; text-decoration: none; border-bottom: 1px dashed {irb_accent};">irb@huph.edu.vn</a></p>
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Email hỗ trợ</p>
+                <p style="font-size: 1.2rem;"><a href="mailto:irb@huph.edu.vn" style="color: #ffd700; text-decoration: none; border-bottom: 1px dashed #ffd700;">irb@huph.edu.vn</a></p>
             </div>
-            <div style="margin-top: 30px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 12px; border-left: 5px solid {irb_accent};">
-                <p style="color: {label_color}; font-size: 1rem; margin-bottom: 5px;">Đường dây nóng</p>
-                <p style="font-size: 1.6rem; font-weight: bold; color: {irb_accent}; margin: 0;">024 62663024</p>
+            <div style="margin-top: 30px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 12px; border-left: 5px solid #ffd700;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px;">Đường dây nóng</p>
+                <p style="font-size: 1.6rem; font-weight: bold; color: #ffd700; margin: 0;">024 62663024</p>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -4632,29 +4596,22 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     else:
         # Bệnh nhân và Bác sĩ xem theo Tab
         show_extra_tabs = has_ai_eval and user_role != "Quản trị viên"
-        # THAY THẾ ST.TABS BẰNG SELECTBOX ĐỂ CÓ DẠNG DROPDOWN NHƯ ẢNH 2
-        st.markdown("### 📂 CHỌN NỘI DUNG XEM CHI TIẾT")
-        sub_tab_options = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
-        if has_ai_eval and user_role != "Quản trị viên":
-            sub_tab_options += ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & HÌNH ẢNH"]
+        tab_labels = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
+        if show_extra_tabs:
+            tab_labels += ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & HÌNH ẢNH"]
             
-        selected_sub_tab = st.selectbox(
-            "Chọn mục xem chi tiết:",
-            sub_tab_options,
-            label_visibility="collapsed",
-            key="sub_tab_selector_ket_qua"
-        )
+        tabs = st.tabs(tab_labels)
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        if selected_sub_tab == "📝 NHẬN XÉT CỦA BÁC SĨ & AI":
+        with tabs[0]:
             hien_thi_noi_dung_ket_qua(selected_v, my_evals)
-        elif selected_sub_tab == "📊 BIỂU ĐỒ PHÂN TÍCH":
-            st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI")
-            hien_thi_tab_phan_tich(key_suffix="pat_eval")
-        elif selected_sub_tab == "🎬 VIDEO & HÌNH ẢNH":
-            st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
-            hien_thi_frames_day_du(key_suffix="pat_results")
+        
+        if show_extra_tabs:
+            with tabs[1]:
+                st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI")
+                hien_thi_tab_phan_tich(key_suffix="pat_eval")
+            with tabs[2]:
+                st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
+                hien_thi_frames_day_du(key_suffix="pat_results")
 
 def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
     """Hàm phụ hiển thị các nhận xét và kết quả NCKH (Dùng chung cho cả Tab và View trực tiếp)"""
@@ -5739,26 +5696,23 @@ def hien_thi_dang_nhap_dang_ky():
                                 }
                                 save_users(users)
                                 st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay.")
-
+                                
             if "🚀 GOOGLE ID" in t_map:
                 with t_map["🚀 GOOGLE ID"]:
-                    st.markdown(f"""
-                    <div style="text-align: center; padding: 20px 10px; background: {"rgba(0,198,255,0.05)" if is_light else "rgba(255,255,255,0.02)"}; border-radius: 15px; border: 1px dashed {"#0072ff" if is_light else "#00c6ff"}; margin: 15px 0;">
-                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="48" style="margin-bottom: 10px;">
-                        <h4 style="color: {"#0072ff" if is_light else "#ffd700"}; margin-bottom: 5px; font-family: 'Times New Roman', serif;">TRUY CẬP NHANH DÀNH CHO BỆNH NHÂN</h4>
-                        <p style="color: {sub_color}; font-size: 0.9rem; opacity: 0.8;">Sử dụng tài khoản Google để kích hoạt và vào hệ thống ngay lập tức.</p>
-                        <div style="background: {"#e3f2fd" if is_light else "rgba(0,198,255,0.1)"}; color: {"#0d47a1" if is_light else "#00c6ff"}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-size: 0.8rem; font-weight: bold; margin-top: 10px;">
-                            ✨ KHUYÊN DÙNG (CHẾ ĐỘ TỰ ĐỘNG)
-                        </div>
+                    st.markdown("""
+                    <div style="text-align: center; padding: 10px;">
+                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="40" style="margin-bottom: 5px;">
+                        <h5 style="color: white;">Đăng nhập nhanh</h5>
+                        <p style="color: #888; font-size: 0.85rem;">Truy cập an toàn qua Google ID</p>
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    if st.button("🌐 TIẾP TỤC VỚI GOOGLE (VÀO THẲNG DASHBOARD)", width="stretch", type="primary"):
+                    if st.button("🌐 TIẾP TỤC ĐĂNG NHẬP VỚI GOOGLE", width="stretch", type="primary"):
                         try:
                             st.session_state.auth_initiated = True
                             st.login("google")
                         except Exception as e:
-                            st.error(f"⚠️ Lỗi kết nối Google: {e}. Vui lòng thử lại hoặc dùng Đăng nhập thủ công.")
+                            st.error(f"⚠️ Lỗi Google: {e}")
 
 # ============================================
 # HÀM HIỂN TRỊ TAB QUẢN TRỊ VIÊN
