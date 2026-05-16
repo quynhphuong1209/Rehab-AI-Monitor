@@ -4632,22 +4632,29 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     else:
         # Bệnh nhân và Bác sĩ xem theo Tab
         show_extra_tabs = has_ai_eval and user_role != "Quản trị viên"
-        tab_labels = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
-        if show_extra_tabs:
-            tab_labels += ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & HÌNH ẢNH"]
+        # THAY THẾ ST.TABS BẰNG SELECTBOX ĐỂ CÓ DẠNG DROPDOWN NHƯ ẢNH 2
+        st.markdown("### 📂 CHỌN NỘI DUNG XEM CHI TIẾT")
+        sub_tab_options = ["📝 NHẬN XÉT CỦA BÁC SĨ & AI"]
+        if has_ai_eval and user_role != "Quản trị viên":
+            sub_tab_options += ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & HÌNH ẢNH"]
             
-        tabs = st.tabs(tab_labels)
+        selected_sub_tab = st.selectbox(
+            "Chọn mục xem chi tiết:",
+            sub_tab_options,
+            label_visibility="collapsed",
+            key="sub_tab_selector_ket_qua"
+        )
         
-        with tabs[0]:
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        if selected_sub_tab == "📝 NHẬN XÉT CỦA BÁC SĨ & AI":
             hien_thi_noi_dung_ket_qua(selected_v, my_evals)
-        
-        if show_extra_tabs:
-            with tabs[1]:
-                st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI")
-                hien_thi_tab_phan_tich(key_suffix="pat_eval")
-            with tabs[2]:
-                st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
-                hien_thi_frames_day_du(key_suffix="pat_results")
+        elif selected_sub_tab == "📊 BIỂU ĐỒ PHÂN TÍCH":
+            st.markdown("### 📈 CHI TIẾT PHÂN TÍCH AI")
+            hien_thi_tab_phan_tich(key_suffix="pat_eval")
+        elif selected_sub_tab == "🎬 VIDEO & HÌNH ẢNH":
+            st.markdown("### 🎬 VIDEO & HÌNH ẢNH KHUNG XƯƠNG CỦA BẠN")
+            hien_thi_frames_day_du(key_suffix="pat_results")
 
 def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
     """Hàm phụ hiển thị các nhận xét và kết quả NCKH (Dùng chung cho cả Tab và View trực tiếp)"""
