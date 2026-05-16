@@ -108,10 +108,55 @@ RESEARCH_DATA_FILE = "research_data.json"
 EXTRACTED_FRAMES_DIR = "extracted_frames"
 OUTPUT_VIDEOS_DIR = "output_videos"
 
+def hien_thi_footer_chung():
+    """Hiển thị chân trang (footer) chuyên nghiệp cho dự án Rehab-AI-Monitor"""
+    import base64
+    try:
+        if os.path.exists("abc1.png"):
+            with open("abc1.png", "rb") as img_file:
+                logo_b64 = base64.b64encode(img_file.read()).decode()
+                logo_src = f"data:image/png;base64,{logo_b64}"
+        else:
+            logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
+    except:
+        logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
-# ============================================
-# CẤU HÌNH HỆ THỐNG & ĐƯỜNG DẪN
-# ============================================
+    is_light = st.session_state.get('theme') == 'light'
+    footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+    footer_text = "#444" if is_light else "#ccc"
+    border_color = "#0072ff" if is_light else "#00c6ff"
+    title_color = "#0072ff" # Màu xanh đậm nổi bật cho cả 2 chế độ
+    school_name_color = "#1a1a2e" if is_light else "#fff"
+    col_border = "rgba(0,0,0,0.1)" if is_light else "rgba(255,255,255,0.1)"
+    
+    footer_html = f"""<style>
+.main-footer {{background:{footer_bg};padding:60px 20px 40px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:3px solid {border_color};box-shadow:0 -15px 35px rgba(0, 114, 255, 0.1);margin-top:80px;position:relative;overflow:hidden}}
+.footer-container {{display:flex;flex-wrap:wrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:20px}}
+.footer-col {{flex:1;min-width:280px;padding:20px 30px;border-right:1px solid {col_border}}}
+.footer-col:last-child {{border-right:none}}
+.footer-col.medium {{flex:1.2;min-width:280px}}
+.footer-col.wide {{flex:2.5;min-width:300px}}
+.footer-title {{color:{title_color} !important;font-weight:bold;margin-bottom:20px;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:10px;border-bottom:2px solid {col_border};padding-bottom:10px}}
+.info-row {{margin-bottom:10px;font-size:0.95rem;display:grid;grid-template-columns:85px 1fr;line-height:1.4}}
+.info-label {{font-weight:bold;opacity:0.9}}
+.execution-grid {{display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:25px;margin-top:15px}}
+.execution-item {{border-left:2px solid {col_border};padding-left:12px}}
+.execution-name {{font-size:1.05rem;font-weight:bold;color:{title_color};display:block;margin-bottom:3px}}
+.execution-info {{font-size:0.85rem;opacity:0.8;margin-bottom:5px;display:block}}
+.execution-email {{font-size:0.8rem;text-decoration:none;color:{footer_text};opacity:0.7;display:flex;align-items:center;gap:5px}}
+.footer-bottom {{padding-top:30px;margin-top:50px;border-top:1px solid {col_border};font-size:0.9rem;color:{"#666" if is_light else "#888"};text-align:center}}
+.school-logo-section {{text-align:center;margin-bottom:15px}}
+.footer-logo-img {{width:95px;margin-bottom:10px;filter:{"none" if is_light else "drop-shadow(0 0 8px rgba(0, 198, 255, 0.4))"}}}
+.school-name-text {{font-weight:bold;color:{school_name_color};font-size:1.15rem;line-height:1.2}}
+a {{color:{title_color};text-decoration:none}}
+
+/* TỐI ƯU CHO DI ĐỘNG */
+@media (max-width: 1024px) {{
+    .footer-container {{ flex-direction: column; align-items: stretch; gap: 40px; }}
+    .footer-col {{ border-right: none !important; border-bottom: 1px solid {col_border}; padding-bottom: 30px; width: 100% !important; min-width: 100% !important; flex: none !important; }}
+    .footer-col:last-child {{ border-bottom: none; }}
+    .execution-grid {{ grid-template-columns: 1fr; }}
+}}
 
 /* TỐI ƯU HÓA CÁC TAB - ĐẢM BẢO CHỮ KHÔNG BỊ TRÀN */
 .stTabs [data-baseweb="tab-list"] {{
@@ -3234,62 +3279,68 @@ def hien_thi_tab_huong_dan():
 
 
 def hien_thi_tab_nckh():
-    st.markdown("""
-    <div class="glass-card" style="padding: 40px; text-align: center; margin-bottom: 40px; border-left: 6px solid #00c6ff;">
-        <h1 style="font-size: 2.2rem; margin-bottom: 15px;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h1>
-        <h3 style="color: #00c6ff; font-weight: 600; line-height: 1.4;">PHÁT TRIỂN MÔ HÌNH THỬ NGHIỆM GIÁM SÁT TẬP LUYỆN PHỤC HỒI CHỨC NĂNG TỪ XA DỰA TRÊN TRÍ TUỆ NHÂN TẠO VÀ THỊ GIÁC MÁY TÍNH</h3>
-        <p style="color: #94a3b8; font-size: 1rem; margin-top: 15px;">Bệnh viện Đa khoa Phạm Ngọc Thạch — Trường Đại học Y tế Công cộng (2025–2026)</p>
+    is_light = st.session_state.theme == 'light'
+    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+    text_color = "#000" if is_light else "white"
+    sub_color = "#0072ff" if is_light else "#ffd700"
+    border_color = "#0072ff" if is_light else "#2a5298"
+
+    st.markdown(f"""
+    <div style="background: {bg_gradient}; padding: 2rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; border: 1px solid {border_color};">
+        <h2 style="color: {text_color}; margin: 0;">📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC</h2>
+        <p style="color: {sub_color}; font-size: 1.1rem; margin-top: 0.5rem;">Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa</p>
+        <p style="color: {"#333" if is_light else "#ccc"};">Dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)</p>
+        <p style="color: {"#666" if is_light else "#aaa"}; font-size: 0.9rem;">Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng (2025-2026)</p>
     </div>
     """, unsafe_allow_html=True)
     
     with st.expander("📌 ĐẶT VẤN ĐỀ", expanded=True):
         st.markdown("""
-        <div style="line-height: 1.8; color: #cbd5e1; text-align: justify;">
-            Trong những năm gần đây, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao do sự gia tăng của các bệnh lý cơ xương khớp và đột quỵ. 
-            Theo <b>WHO</b>, hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng. Tại Việt Nam, năng lực cung cấp dịch vụ này vẫn còn hạn chế với chỉ 0,25 nhân viên PHCN/10.000 dân. 
-            Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà mà thiếu sự giám sát chuyên môn, dẫn đến hiệu quả điều trị thấp hoặc chấn thương thứ phát.
-        </div>
-        """, unsafe_allow_html=True)
+        Trong những năm gần đây, cùng với sự gia tăng của các bệnh lý cơ xương khớp, chấn thương thể thao và đột quỵ, nhu cầu phục hồi chức năng (PHCN) trên toàn thế giới ngày càng tăng cao. 
+        
+        Theo Tổ chức Y tế Thế giới (WHO), hiện có khoảng 2,4 tỷ người cần ít nhất một hình thức phục hồi chức năng, chiếm gần một phần ba dân số toàn cầu. Tại Việt Nam, theo Hội Phục hồi chức năng Việt Nam (2023), có khoảng 7,06% dân số từ 2 tuổi trở lên là người khuyết tật, trong đó phần lớn cần được can thiệp PHCN.
+        
+        Mặc dù nhu cầu PHCN lớn, song năng lực cung cấp dịch vụ này tại Việt Nam vẫn còn hạn chế. Trung bình 10.000 người dân chỉ có 0,25 nhân viên phục hồi chức năng, thấp hơn đáng kể so với khuyến nghị của WHO là 0,5-1 người/10.000 dân. Thực tế này khiến nhiều bệnh nhân phải tự tập luyện tại nhà sau khi xuất viện mà thiếu sự giám sát chuyên môn.
+        
+        Xuất phát từ thực tiễn trên, nhóm nghiên cứu quyết định thực hiện đề tài: **"Phát triển Mô hình thử nghiệm giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision)"**.
+        """)
     
     with st.expander("🎯 MỤC TIÊU NGHIÊN CỨU", expanded=True):
         st.markdown("""
-        <div style="background: rgba(0, 198, 255, 0.03); padding: 20px; border-radius: 12px; border-left: 4px solid #00c6ff;">
-            <p style="margin-bottom: 10px;">✅ <b>Mục tiêu 1:</b> Xây dựng mô hình AI nhận diện và đánh giá 3 bài tập PHCN khớp vai (Codman, Gậy, Dây kháng lực).</p>
-            <p style="margin: 0;">✅ <b>Mục tiêu 2:</b> So sánh độ chính xác của mô hình với đánh giá 'Golden Standard' từ các chuyên gia lâm sàng.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        **Mục tiêu 1:** Xây dựng mô hình nhận diện và đánh giá 3 bài tập phục hồi chức năng cho bệnh nhân viêm quanh khớp vai, bao gồm:
+        - Bài tập con lắc Codman
+        - Bài tập với gậy
+        - Bài tập với dây kháng lực
+        
+        **Mục tiêu 2:** So sánh độ chính xác của mô hình với đánh giá thủ công trên một tập dữ liệu nhỏ.
+        """)
     
-    with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP", expanded=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("""
-            **👥 Đối tượng:**
-            - 05 bệnh nhân viêm quanh khớp vai.
-            - Nhóm chuyên gia PHCN tại BV Phạm Ngọc Thạch.
-            """)
-        with c2:
-            st.markdown("""
-            **🛠️ Công nghệ lõi:**
-            - Google MediaPipe Pose Estimation.
-            - Python (OpenCV, NumPy, Pandas).
-            - Streamlit & Plotly Framework.
-            """)
-    
-    with st.expander("📊 KẾT QUẢ DỰ KIẾN (KPIs)", expanded=True):
+    with st.expander("🔬 ĐỐI TƯỢNG VÀ PHƯƠNG PHÁP NGHIÊN CỨU", expanded=True):
         st.markdown("""
-        <style>
-            .kpi-container { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
-            .kpi-box { flex: 1; min-width: 150px; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 15px; text-align: center; border: 1px solid rgba(0, 198, 255, 0.2); }
-            .kpi-val { font-size: 1.8rem; font-weight: 800; color: #00c6ff; margin-bottom: 5px; }
-            .kpi-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-        </style>
-        <div class="kpi-container">
-            <div class="kpi-box"><div class="kpi-val">≥ 90%</div><div class="kpi-label">Accuracy</div></div>
-            <div class="kpi-box"><div class="kpi-val">≥ 0.85</div><div class="kpi-label">F1-Score</div></div>
-            <div class="kpi-box"><div class="kpi-val">&lt; 5°</div><div class="kpi-label">MAE Error</div></div>
-            <div class="kpi-box"><div class="kpi-val">≥ 0.75</div><div class="kpi-label">ICC Reliability</div></div>
-        </div>
-        """, unsafe_allow_html=True)
+        **Đối tượng nghiên cứu:** 05 bệnh nhân viêm quanh khớp vai + nhóm chuyên gia PHCN tại Khoa Phục hồi chức năng, Bệnh viện Đa khoa Phạm Ngọc Thạch.
+        
+        **Thiết kế nghiên cứu:** Nghiên cứu định lượng, phát triển mô hình học máy.
+        
+        **Công nghệ sử dụng:** 
+        - MediaPipe Pose Estimation cho ước lượng tư thế
+        - Python và các thư viện xử lý ảnh (OpenCV, NumPy, Pandas)
+        - Streamlit cho giao diện người dùng
+        - Plotly cho trực quan hóa dữ liệu
+        
+        **Cỡ mẫu dự kiến:** 500-1000 chuỗi chuyển động.
+        """)
+    
+    with st.expander("📊 KẾT QUẢ DỰ KIẾN", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Độ chính xác (Accuracy)", "≥ 90%")
+            st.metric("F1-Score", "≥ 0.85")
+        with col2:
+            st.metric("Sai số MAE", "< 5°")
+            st.metric("Hệ số ICC", "≥ 0.75")
+        with col3:
+            st.metric("Precision", "≥ 0.85")
+            st.metric("Recall", "≥ 0.85")
 
     with st.expander("🎁 ĐÓNG GÓP CỦA ĐỀ TÀI", expanded=True):
         st.markdown("""
@@ -6103,58 +6154,9 @@ def main():
     if "📄 PHIẾU NCKH" in tab_map:
         with tab_map["📄 PHIẾU NCKH"]:
             hien_thi_tab_phieu_nckh()
-def hien_thi_footer_chung():
-    """Hiển thị Footer cao cấp đa cột (Glassmorphism)"""
-    st.markdown("""
-    <footer style="margin-top: 80px; padding-top: 60px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px; margin-bottom: 50px;">
-            <!-- Column 1: Project -->
-            <div>
-                <h3 style="color: #00c6ff; margin-bottom: 20px; font-weight: 800; letter-spacing: 1px;">REHAB AI MONITOR</h3>
-                <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.8;">
-                    Hệ thống giám sát phục hồi chức năng từ xa ứng dụng Trí tuệ nhân tạo (AI) và Thị giác máy tính (Computer Vision) thế hệ mới.
-                </p>
-            </div>
 
-            <!-- Column 2: Quick Links -->
-            <div>
-                <h4 style="color: #fff; margin-bottom: 20px;">KHÁM PHÁ</h4>
-                <ul style="list-style: none; padding: 0; color: #94a3b8; font-size: 0.9rem; line-height: 2;">
-                    <li>• Hệ sinh thái Công nghệ AI</li>
-                    <li>• Thư viện Kiến thức PHCN</li>
-                    <li>• Đề tài Nghiên cứu Khoa học</li>
-                    <li>• Hướng dẫn sử dụng</li>
-                </ul>
-            </div>
 
-            <!-- Column 3: Academic -->
-            <div>
-                <h4 style="color: #fff; margin-bottom: 20px;">ĐƠN VỊ CHỦ QUẢN</h4>
-                <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 10px;"><b>Trường ĐH Sư phạm Kỹ thuật TP.HCM</b></p>
-                <p style="color: #64748b; font-size: 0.85rem;">Khoa Điện - Điện tử / Khoa học Dữ liệu</p>
-                <p style="color: #64748b; font-size: 0.85rem; margin-top: 15px;"><b>Cố vấn chuyên môn:</b></p>
-                <p style="color: #94a3b8; font-size: 0.85rem;">TS. Trần Hồng Việt</p>
-                <p style="color: #94a3b8; font-size: 0.85rem;">Cô Nguyễn Thị Thùy Chi</p>
-            </div>
-
-            <!-- Column 4: Partners -->
-            <div>
-                <h4 style="color: #fff; margin-bottom: 20px;">ĐỐI TÁC CHIẾN LƯỢC</h4>
-                <p style="color: #94a3b8; font-size: 0.9rem;"><b>BV Đa khoa Phạm Ngọc Thạch</b></p>
-                <p style="color: #64748b; font-size: 0.85rem;">Khoa Phục hồi chức năng</p>
-                <div style="margin-top: 20px; padding: 15px; background: rgba(0, 198, 255, 0.05); border-radius: 12px; border: 1px dashed rgba(0, 198, 255, 0.3);">
-                    <p style="margin: 0; color: #00c6ff; font-size: 0.8rem; font-weight: 600;">DỰ ÁN PHỤC VỤ CỘNG ĐỒNG 2025</p>
-                </div>
-            </div>
-        </div>
-        
-        <div style="text-align: center; padding: 30px 0; border-top: 1px solid rgba(255, 255, 255, 0.05);">
-            <p style="color: #64748b; font-size: 0.85rem;">
-                © 2025 Rehab-AI-Monitor Team. All Rights Reserved. Crafted with ❤️ and AI technology.
-            </p>
-        </div>
-    </footer>
-    """, unsafe_allow_html=True)
+    # ==================== FOOTER CHUNG (LUÔN HIỆN Ở DƯỚI CÙNG) ====================
     hien_thi_footer_chung()
 
 
