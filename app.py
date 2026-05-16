@@ -1737,6 +1737,17 @@ def hien_thi_tab_phan_tich_va_video_ncv():
     with sub_tabs[1]:
         hien_thi_frames_day_du(key_suffix="ncv_combined_video_tab")
 
+def hien_thi_tab_nckh_va_thanh_vien_ncv():
+    """Gộp tab Đề tài NCKH và Thành viên cho Nghiên cứu viên"""
+    st.markdown("## 👥 THÔNG TIN ĐỀ TÀI & ĐỘI NGŨ NGHIÊN CỨU")
+    
+    sub_tabs = st.tabs(["📚 NỘI DUNG ĐỀ TÀI", "👥 THÀNH VIÊN DỰ ÁN"])
+    
+    with sub_tabs[0]:
+        hien_thi_tab_nckh()
+    with sub_tabs[1]:
+        hien_thi_tab_thanh_vien()
+
 
 # ============================================
 # HÀM TÍNH GÓC
@@ -6209,7 +6220,7 @@ def main():
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "🔬 PHÂN TÍCH & VIDEO", "📚 THÔNG TIN TỔNG HỢP", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "🔬 PHÂN TÍCH & VIDEO", "📚 THÔNG TIN TỔNG HỢP", "👥 ĐỀ TÀI & NHÂN SỰ", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     
@@ -6873,6 +6884,10 @@ def main():
         with tab_map["📚 THÔNG TIN TỔNG HỢP"]:
             hien_thi_tab_thong_tin_tong_hop()
         
+    if "👥 ĐỀ TÀI & NHÂN SỰ" in tab_map:
+        with tab_map["👥 ĐỀ TÀI & NHÂN SỰ"]:
+            hien_thi_tab_nckh_va_thanh_vien_ncv()
+            
     if "📚 ĐỀ TÀI NCKH" in tab_map:
         with tab_map["📚 ĐỀ TÀI NCKH"]:
             hien_thi_tab_nckh()
