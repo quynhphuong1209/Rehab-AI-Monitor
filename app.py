@@ -6426,6 +6426,13 @@ def main():
                             if 'video_guide' in bai_tap:
                                 st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
                                 st.video(bai_tap['video_guide'])
+                            elif bai_tap.get('youtube'):
+                                st.markdown("### 📺 VIDEO YOUTUBE THAM KHẢO")
+                                st.video(bai_tap['youtube'])
+                            # Luôn hiện YouTube nếu có, kể cả khi đã có video_guide
+                            if 'video_guide' in bai_tap and bai_tap.get('youtube'):
+                                st.markdown("### 📺 VIDEO YOUTUBE THAM KHẢO")
+                                st.video(bai_tap['youtube'])
                     
                     st.markdown("---")
                     if st.button("📤 GỬi THÔNG TIN CHO BÁC SĨ/KTV VÀ NCV", type="primary", use_container_width=True):
