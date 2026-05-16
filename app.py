@@ -1835,15 +1835,35 @@ def hien_thi_tab_lien_he():
         """, unsafe_allow_html=True)
 
 def hien_thi_tab_danh_gia_va_nckh_bac_si():
-    """Gộp tab Phiếu NCKH và Đánh giá PHCN cho Bác sĩ"""
+    """Gộp tab Phiếu NCKH và Đánh giá PHCN cho Bác sĩ (Thêm kết quả từ NCV)"""
     st.markdown("## 📊 QUẢN LÝ ĐÁNH GIÁ LÂM SÀNG & DỮ LIỆU NCKH")
     
-    sub_tabs = st.tabs(["📝 ĐÁNH GIÁ PHCN", "📄 PHIẾU NCKH"])
+    # Kiểm tra xem có kết quả AI chưa để hiện thêm sub-tab
+    selected_video = st.session_state.get('current_eval_video')
+    has_ai = False
+    if selected_video:
+        evals = load_data(EVALUATIONS_FILE)
+        has_ai = any(
+            e.get('doctor_username') == "AI_Researcher" and 
+            e['patient_username'] == selected_video['username'] and 
+            (e.get('video_name') == selected_video.get('video_name') or 
+             selected_video.get('video_name', '') in e.get('video_name', ''))
+            for e in evals
+        )
+    
+    tab_list = ["📝 ĐÁNH GIÁ PHCN", "📄 PHIẾU NCKH"]
+    if has_ai:
+        tab_list.append("🔬 KẾT QUẢ TỪ NCV (AI)")
+        
+    sub_tabs = st.tabs(tab_list)
     
     with sub_tabs[0]:
         hien_thi_form_danh_gia_bac_si()
     with sub_tabs[1]:
         hien_thi_tab_phieu_nckh()
+    if has_ai:
+        with sub_tabs[2]:
+            hien_thi_tab_phan_tich(key_suffix="doc_view_ncv_sub")
 
 
 # ============================================
@@ -6215,8 +6235,6 @@ def main():
             has_video_output = os.path.exists(frames_path) and len(os.listdir(frames_path)) > 0 if os.path.exists(frames_path) else False
             
         tab_titles = ["🏠 TRANG CHỦ", "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"]
-        if has_ai_main:
-            tab_titles.append("📊 KẾT QUẢ AI")
         if has_video_output:
             tab_titles.append("🎬 VIDEO & ẢNH")
         tab_titles += ["⏰ LỊCH NHẮC NHỞ", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "📞 THÔNG TIN LIÊN HỆ", "💬 PHẢN HỒI"]
