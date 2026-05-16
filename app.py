@@ -306,7 +306,7 @@ if 'processed_video_path' not in st.session_state:
 if 'theme' not in st.session_state:
     st.session_state.theme = 'dark'
 
-# KIỂM TRA ĐĂNG NHẬP GOOGLE (Hỗ trợ Streamlit Cloud Identity)
+# === KIỂM TRA ĐĂNG NHẬP GOOGLE (Hỗ trợ Streamlit Cloud Identity - Kích hoạt vào được luôn) ===
 if not st.session_state.get('logged_in'):
     try:
         user_detected = None
@@ -318,21 +318,25 @@ if not st.session_state.get('logged_in'):
             user_detected = st.experimental_user
             
         if user_detected and user_detected.email:
+            # TỰ ĐỘNG KÍCH HOẠT VÀO LUÔN (Theo yêu cầu của BN)
             st.session_state.logged_in = True
             st.session_state.user_info = {
                 "username": getattr(user_detected, 'name', None) or user_detected.email.split("@")[0],
                 "email": user_detected.email,
-                "role": "Bệnh nhân", # Mặc định cho login Google là Bệnh nhân
+                "role": "Bệnh nhân", # Mặc định cho login Google là Bệnh nhân (NCKH)
                 "auth_type": "google"
             }
-            # Dọn dẹp trạng thái
+            # Dọn dẹp trạng thái và vào thẳng dashboard
             st.session_state.show_login_dialog = False
             if 'auth_initiated' in st.session_state:
                 del st.session_state['auth_initiated']
             
+            # Thông báo ngắn gọn và chuyển trang ngay lập tức
+            st.success(f"✅ Đã nhận diện Google ID: {user_detected.email}. Đang vào hệ thống...")
+            time.sleep(0.5)
             st.rerun() 
     except Exception as e:
-        # st.error(f"Lỗi nhận diện Google: {e}") # Debug nếu cần
+        # st.error(f"Lỗi nhận diện Google: {e}") 
         pass
 
 
@@ -5633,10 +5637,30 @@ def hien_thi_dang_nhap_dang_ky():
             # GIAO DIỆN CHÍNH (TABS)
             login_role = st.selectbox("🎭 Bạn truy cập với vai trò:", ["Bệnh nhân", "Bác sĩ / KTV PHCN", "Nghiên cứu viên", "Quản trị viên"], key="login_role_main")
             
-            tab_list = ["🔐 ĐĂNG NHẬP", "📋 ĐĂNG KÝ", "🚀 GOOGLE ID"]
+            tab_list = ["🚀 GOOGLE ID", "🔐 ĐĂNG NHẬP", "📋 ĐĂNG KÝ"]
             all_login_tabs = st.tabs(tab_list)
             t_map = {name: all_login_tabs[i] for i, name in enumerate(tab_list)}
             
+            if "🚀 GOOGLE ID" in t_map:
+                with t_map["🚀 GOOGLE ID"]:
+                    st.markdown(f"""
+                    <div style="text-align: center; padding: 20px 10px; background: {"rgba(0,198,255,0.05)" if is_light else "rgba(255,255,255,0.02)"}; border-radius: 15px; border: 1px dashed {"#0072ff" if is_light else "#00c6ff"}; margin: 15px 0;">
+                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="48" style="margin-bottom: 10px;">
+                        <h4 style="color: {"#0072ff" if is_light else "#ffd700"}; margin-bottom: 5px; font-family: 'Times New Roman', serif;">TRUY CẬP NHANH DÀNH CHO BỆNH NHÂN</h4>
+                        <p style="color: {sub_color}; font-size: 0.9rem; opacity: 0.8;">Sử dụng tài khoản Google để kích hoạt và vào hệ thống ngay lập tức.</p>
+                        <div style="background: {"#e3f2fd" if is_light else "rgba(0,198,255,0.1)"}; color: {"#0d47a1" if is_light else "#00c6ff"}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-size: 0.8rem; font-weight: bold; margin-top: 10px;">
+                            ✨ KHUYÊN DÙNG (CHẾ ĐỘ TỰ ĐỘNG)
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button("🌐 TIẾP TỤC VỚI GOOGLE (VÀO THẲNG DASHBOARD)", width="stretch", type="primary"):
+                        try:
+                            st.session_state.auth_initiated = True
+                            st.login("google")
+                        except Exception as e:
+                            st.error(f"⚠️ Lỗi kết nối Google: {e}. Vui lòng thử lại hoặc dùng Đăng nhập thủ công.")
+
             if "🔐 ĐĂNG NHẬP" in t_map:
                 with t_map["🔐 ĐĂNG NHẬP"]:
                     # CHẾ ĐỘ ĐỔI MẬT KHẨU TRONG LOGIN
@@ -5728,23 +5752,6 @@ def hien_thi_dang_nhap_dang_ky():
                                 }
                                 save_users(users)
                                 st.success("🎉 Đăng ký thành công! Bạn có thể đăng nhập ngay.")
-                                
-            if "🚀 GOOGLE ID" in t_map:
-                with t_map["🚀 GOOGLE ID"]:
-                    st.markdown("""
-                    <div style="text-align: center; padding: 10px;">
-                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" width="40" style="margin-bottom: 5px;">
-                        <h5 style="color: white;">Đăng nhập nhanh</h5>
-                        <p style="color: #888; font-size: 0.85rem;">Truy cập an toàn qua Google ID</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button("🌐 TIẾP TỤC ĐĂNG NHẬP VỚI GOOGLE", width="stretch", type="primary"):
-                        try:
-                            st.session_state.auth_initiated = True
-                            st.login("google")
-                        except Exception as e:
-                            st.error(f"⚠️ Lỗi Google: {e}")
 
 # ============================================
 # HÀM HIỂN TRỊ TAB QUẢN TRỊ VIÊN
