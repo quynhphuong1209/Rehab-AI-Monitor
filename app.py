@@ -672,32 +672,6 @@ st.markdown("""
     .stButton button p, .stDownloadButton button p {
         color: white !important;
     }
-
-    /* === ÉP MÀU CHỮ TRẮNG CHO CÁC KHỐI THÔNG TIN VÀ HƯỚNG DẪN === */
-    .info-box, .custom-card, .stExpander, [data-testid="stExpander"] {
-        color: white !important;
-    }
-    
-    [data-testid="stExpander"] {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 12px !important;
-        margin-bottom: 10px !important;
-    }
-    
-    [data-testid="stExpander"] summary {
-        color: white !important;
-        font-weight: bold !important;
-    }
-    
-    [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
-        background-color: transparent !important;
-    }
-
-    [data-testid="stExpander"] p, [data-testid="stExpander"] li, 
-    [data-testid="stExpander"] span, [data-testid="stExpander"] div {
-        color: white !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -6410,20 +6384,20 @@ def main():
                                                    key="bn_tab_bt")
                         bai_tap = BAI_TAP[ma_bai_tap]
                         
-                        # Ép màu nền tối cho thẻ thông tin để nổi bật chữ trắng trong mọi theme
-                        info_bg = "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
-                        info_border = "1px solid rgba(255, 255, 255, 0.1)"
-                        info_text = "#fff"
+                        is_light = st.session_state.theme == 'light'
+                        info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
+                        info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
+                        info_text = "#000" if is_light else "#fff"
                         
                         ex_col1, ex_col2 = st.columns([3, 2])
                         with ex_col1:
                             st.markdown(f"""
-                            <div class="info-box" style="background: {info_bg}; border: {info_border}; color: {info_text}; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-                                <h3 style="margin-top:0; color: #ffd700;">{bai_tap['icon']} {bai_tap['ten']}</h3>
-                                <p style="font-size: 1.05rem; line-height: 1.6;">{bai_tap['mo_ta']}</p>
-                                <div style="display: flex; gap: 20px; font-size: 1rem; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                                    <span style="color: #00c6ff;">⏱️ <b>Thời gian:</b> {bai_tap['thoi_gian']}s/lần</span>
-                                    <span style="color: #00c6ff;">🔄 <b>Số lần:</b> {bai_tap['lan']} lần/ngày</span>
+                            <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text}; padding: 15px; border-radius: 10px;">
+                                <h3 style="margin-top:0;">{bai_tap['icon']} {bai_tap['ten']}</h3>
+                                <p>{bai_tap['mo_ta']}</p>
+                                <div style="display: flex; gap: 20px; font-size: 0.9rem; opacity: 0.8;">
+                                    <span>⏱️ <b>Thời gian:</b> {bai_tap['thoi_gian']}s/lần</span>
+                                    <span>🔄 <b>Số lần:</b> {bai_tap['lan']} lần/ngày</span>
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
@@ -6434,11 +6408,10 @@ def main():
                                     st.markdown(f"- {loi_ich}")
                         
                         with ex_col2:
-                            # Ép màu nền xanh đậm cho card đối chiếu
-                            card_bg = "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+                            card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
                             st.markdown(f"""
-                            <div class="custom-card" style="background: {card_bg}; padding: 20px; border-radius: 15px; border: 1px solid {info_border}; box-shadow: 0 10px 30px rgba(0,0,0,0.3); color: white;">
-                                <h4 style="color: #ffd700; margin-top:0; font-size: 1.2rem;">🎯 ĐỐI CHIẾU VIDEO CHUẨN</h4>
+                            <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
+                                <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 ĐỐI CHIẾU VIDEO CHUẨN</h4>
                                 <p style="color:#00CED1; margin-bottom:8px; font-size:0.9rem;">⚡ Hệ thống tự động so sánh chuyển động của bạn với <b>Video chuẩn</b>.</p>
                                 <p style="color:#FF6B6B; margin-bottom:10px; font-size:0.9rem;">📊 Độ chính xác dựa trên sai số Euclidean và biên độ khớp.</p>
                                 <div style="font-size:0.85rem; border-top:1px solid {info_border}; padding-top:10px;">
