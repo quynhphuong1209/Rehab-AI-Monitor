@@ -6220,7 +6220,7 @@ def main():
     elif user_role == "Bệnh nhân":
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ", "⏰ LỊCH NHẮC NHỞ", "📖 HƯỚNG DẪN", "📄 THÔNG TIN NGHIÊN CỨU", "📚 ĐỀ TÀI NCKH", "👥 THÀNH VIÊN", "💬 PHẢN HỒI"]
     else: # Nghiên cứu viên
-        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "🔬 PHÂN TÍCH & VIDEO", "📚 THÔNG TIN TỔNG HỢP", "👥 ĐỀ TÀI & NHÂN SỰ", "💬 PHẢN HỒI"]
+        tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
         
     all_tabs = st.tabs(tab_titles)
     
@@ -6445,9 +6445,9 @@ def main():
                                     if user_role == "Nghiên cứu viên":
                                         c_nav1, c_nav2 = st.columns(2)
                                         with c_nav1:
-                                            if st.button("🔬 XEM PHÂN TÍCH & VIDEO", width="stretch", type="primary"):
-                                                st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & VIDEO...", icon="🔄")
-                                                chuyen_tab_bang_js("🔬 PHÂN TÍCH & VIDEO")
+                                            if st.button("🔬 XEM PHÂN TÍCH & TRÍCH XUẤT", width="stretch", type="primary"):
+                                                st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU...", icon="🔄")
+                                                chuyen_tab_bang_js("🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU")
                                         with c_nav2:
                                             if st.button("📤 GỬI KẾT QUẢ CHO BN", width="stretch", type="secondary"):
                                                 acc = round(metrics["ty_le_tong_the"], 1)
@@ -6660,8 +6660,8 @@ def main():
                                             if user_role == "Bác sĩ / KTV PHCN":
                                                 st.session_state.trigger_tab_switch = "📝 ĐÁNH GIÁ PHCN"
                                             else: # Nghiên cứu viên
-                                                st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & VIDEO...", icon="🔄")
-                                                st.session_state.trigger_tab_switch = "🔬 PHÂN TÍCH & VIDEO"
+                                                st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU...", icon="🔄")
+                                                st.session_state.trigger_tab_switch = "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"
                                             st.rerun()
                                         
                                         if st.button("🗑️ Xóa video này", key=f"del_video_{idx}", width="stretch"):
@@ -6836,8 +6836,8 @@ def main():
                 else:
                     st.warning("🕒 Nghiên cứu viên chưa thực hiện phân tích AI cho video này.")
 
-    if "🔬 PHÂN TÍCH & VIDEO" in tab_map:
-        with tab_map["🔬 PHÂN TÍCH & VIDEO"]:
+    if "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU" in tab_map:
+        with tab_map["🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"]:
             hien_thi_tab_phan_tich_va_video_ncv()
 
     if "📊 KẾT QUẢ" in tab_map:
@@ -6884,8 +6884,8 @@ def main():
         with tab_map["📚 THÔNG TIN TỔNG HỢP"]:
             hien_thi_tab_thong_tin_tong_hop()
         
-    if "👥 ĐỀ TÀI & NHÂN SỰ" in tab_map:
-        with tab_map["👥 ĐỀ TÀI & NHÂN SỰ"]:
+    if "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA" in tab_map:
+        with tab_map["👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA"]:
             hien_thi_tab_nckh_va_thanh_vien_ncv()
             
     if "📚 ĐỀ TÀI NCKH" in tab_map:
