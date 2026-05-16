@@ -6357,7 +6357,8 @@ def main():
                             st.video(bai_tap['video_guide'])
 
                 # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
-                st.markdown("---")
+                if user_role == "Bệnh nhân":
+                    st.markdown("---")
                 
                 # BIẾN KIỂM TRA ĐIỀU KIỆN HIỆN UPLOADER
                 show_uploader = not st.session_state.get('has_data')
@@ -6389,8 +6390,7 @@ def main():
                         )
                     else:
                         file_upload = None
-                        if user_role != "Quản trị viên":
-                            st.info("👋 Chào mừng Chuyên gia. Vui lòng chọn danh sách Video ở Tab **📊 PHÂN TÍCH** để bắt đầu đánh giá.")
+                        pass # Đã cắt bỏ lời chào chuyên gia thừa theo yêu cầu
                 else:
                     file_upload = None
             
