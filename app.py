@@ -1072,14 +1072,15 @@ if st.session_state.get('theme') == 'light':
             border: 1px solid #dee2e6 !important;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
         }
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; 
-            color: #000000 !important; 
-        }
+
         .metric-value { color: #0072ff !important; }
         .metric-label { color: #444444 !important; }
         
-        /* Ensure all text is dark */
-        .stMarkdown, p, span, label, h1, h2, h3, h4, li, div { color: #212529 !important; }
+        /* Ensure research badge stays white even in light mode */
+        .research-badge span { color: #ffffff !important; }
+        
+        /* Ensure all other text is dark */
+        .stMarkdown p, .stMarkdown span, p, span, label, h1, h2, h3, h4, li, div { color: #212529 !important; }
         
         .stTabs [data-baseweb="tab"] { 
             background-color: #f1f3f5 !important; 
@@ -3388,7 +3389,7 @@ st.markdown(f"""
         display: inline-block;
         margin-top: 0.5rem;
     }}
-    .research-badge span {{ color: white; font-size: 0.8rem; font-weight: bold; }}
+    .research-badge span {{ color: white !important; font-size: 0.8rem; font-weight: bold; }}
     
     /* INFO BOX */
     .info-box {{
