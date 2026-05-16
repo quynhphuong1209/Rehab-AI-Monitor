@@ -1770,37 +1770,69 @@ def hien_thi_tab_thong_tin_tong_hop_benh_nhan():
         hien_thi_tab_huong_dan(role="Bệnh nhân")
 
 def hien_thi_tab_lien_he():
-    """Tab Thông tin liên hệ khẩn cấp - Simplified HTML for better rendering"""
-    st.info("📞 **THÔNG TIN LIÊN HỆ KHẨN CẤP**")
+    """Giao diện liên hệ xịn xò (Premium Design)"""
     
-    # Sử dụng các khối markdown chuẩn kết hợp HTML đơn giản
-    st.markdown("### 👩‍🔬 Nghiên cứu viên chính")
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        st.write("**Họ tên:**")
-        st.write("**Địa chỉ:**")
-        st.write("**Email:**")
-        st.write("**SĐT:**")
-    with col2:
-        st.write("Đinh Lê Quỳnh Phương")
-        st.write("Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội")
-        st.write("2211090031@studenthuph.edu.vn")
-        st.write("0382665916")
+    # Header xịn
+    st.markdown("""
+        <div style="text-align: center; padding: 10px 20px 30px 20px; margin-bottom: 10px;">
+            <h1 style="color: #00c6ff; font-family: 'Times New Roman', serif; text-shadow: 2px 2px 10px rgba(0,198,255,0.3);">📞 THÔNG TIN LIÊN HỆ KHẨN CẤP</h1>
+            <p style="color: #aaa; font-style: italic; font-size: 1.1rem;">Hệ thống luôn sẵn sàng hỗ trợ bạn trong quá trình nghiên cứu và tập luyện.</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown("---")
-    
-    st.markdown("### ⚖️ Hội đồng đạo đức")
-    col3, col4 = st.columns([1, 3])
-    with col3:
-        st.write("**Tên:**")
-        st.write("**Địa chỉ:**")
-        st.write("**Email:**")
-        st.write("**SĐT:**")
-    with col4:
-        st.write("HĐĐĐ Trường ĐH Y tế Công cộng")
-        st.write("Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội")
-        st.write("irb@huph.edu.vn")
-        st.write("024 62663024")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 198, 255, 0.4); border-radius: 20px; padding: 30px; min-height: 480px; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.4); backdrop-filter: blur(10px);">
+            <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(0, 198, 255, 0.1); border-radius: 50%;"></div>
+            <h2 style="color: #00c6ff; margin-bottom: 30px; border-bottom: 3px solid #00c6ff; padding-bottom: 15px; display: flex; align-items: center;">
+                <span style="margin-right: 15px; font-size: 2rem;">👩‍🔬</span> Nghiên cứu viên chính
+            </h2>
+            <div style="margin-bottom: 20px;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Họ và tên</p>
+                <p style="font-size: 1.4rem; font-weight: bold; color: white; font-family: 'Times New Roman', serif;">Đinh Lê Quỳnh Phương</p>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Đơn vị công tác</p>
+                <p style="font-size: 1.1rem; color: #ccc;">Trường Đại học Y tế Công cộng - Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Email liên hệ</p>
+                <p style="font-size: 1.2rem;"><a href="mailto:2211090031@studenthuph.edu.vn" style="color: #00c6ff; text-decoration: none; border-bottom: 1px dashed #00c6ff;">2211090031@studenthuph.edu.vn</a></p>
+            </div>
+            <div style="margin-top: 30px; padding: 15px; background: rgba(0, 198, 255, 0.1); border-radius: 12px; border-left: 5px solid #00c6ff;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px;">Số điện thoại khẩn cấp</p>
+                <p style="font-size: 1.6rem; font-weight: bold; color: #00c6ff; margin: 0;">0382665916</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 215, 0, 0.4); border-radius: 20px; padding: 30px; min-height: 480px; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.4); backdrop-filter: blur(10px);">
+            <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255, 215, 0, 0.1); border-radius: 50%;"></div>
+            <h2 style="color: #ffd700; margin-bottom: 30px; border-bottom: 3px solid #ffd700; padding-bottom: 15px; display: flex; align-items: center;">
+                <span style="margin-right: 15px; font-size: 2rem;">⚖️</span> Hội đồng đạo đức
+            </h2>
+            <div style="margin-bottom: 20px;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Tên cơ quan</p>
+                <p style="font-size: 1.4rem; font-weight: bold; color: white; font-family: 'Times New Roman', serif;">HĐĐĐ Trường ĐH Y tế Công cộng</p>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Địa chỉ trụ sở</p>
+                <p style="font-size: 1.1rem; color: #ccc;">Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Email hỗ trợ</p>
+                <p style="font-size: 1.2rem;"><a href="mailto:irb@huph.edu.vn" style="color: #ffd700; text-decoration: none; border-bottom: 1px dashed #ffd700;">irb@huph.edu.vn</a></p>
+            </div>
+            <div style="margin-top: 30px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 12px; border-left: 5px solid #ffd700;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 5px;">Đường dây nóng</p>
+                <p style="font-size: 1.6rem; font-weight: bold; color: #ffd700; margin: 0;">024 62663024</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 def hien_thi_tab_danh_gia_va_nckh_bac_si():
     """Gộp tab Phiếu NCKH và Đánh giá PHCN cho Bác sĩ"""
