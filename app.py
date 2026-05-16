@@ -6318,8 +6318,8 @@ def main():
             if user_role == "Quản trị viên":
                 hien_thi_home_quan_tri_vien()
             else:
-                # Nếu là Bác sĩ, cho phép chọn bài tập ngay tại đây vì Sidebar đã dọn dẹp
-                if user_role == "Bác sĩ / KTV PHCN":
+                # Nếu là Bác sĩ hoặc NCV, hiển thị danh sách triệu chứng
+                if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
                     # --- DANH SÁCH TRIỆU CHỨNG BN (CHUYỂN TỪ SIDEBAR SANG ĐÂY) ---
                     st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN MỚI NHẤT")
                     symptoms_data = load_data(SYMPTOMS_FILE)
