@@ -6214,50 +6214,32 @@ def main():
                 """, unsafe_allow_html=True)
             
             else: # Vai trò Bệnh nhân
-                st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
-                ten_nguoi_dung = st.text_input("Họ và tên", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A")
-                ma_nguoi_dung = st.text_input("Mã số định danh", placeholder="VD: BN0001 / BS0001")
-                col1, col2 = st.columns(2)
-                with col1: tuoi = st.number_input("Tuổi", 0, 120, 22)
-                with col2: gioi_tinh = st.selectbox("Giới tính", ["", "Nam", "Nữ"])
+                # HƯỚNG DẪN SỬ DỤNG CÁC TAB (thay thế form cũ đã chuyển sang Tab 1)
+                full_name = st.session_state.user_info.get('full_name', 'Bệnh nhân')
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, rgba(0, 198, 255, 0.08) 0%, rgba(0, 114, 255, 0.08) 100%);
+                            padding: 14px; border-radius: 12px; border: 1px solid rgba(0, 198, 255, 0.2); margin-bottom: 15px;">
+                    <p style="margin:0; font-weight:bold; color:#00c6ff; font-size: 1rem;">🏥 Xin chào, {full_name}!</p>
+                    <p style="margin:4px 0 0; font-size:0.8rem; color:#888;">Bệnh nhân - Hệ thống PHCN AI</p>
+                </div>
+                """, unsafe_allow_html=True)
                 
-                st.markdown("---")
-                st.markdown("### 🩺 KHAI BÁO TRIỆU CHỨNG")
-                s_desc = st.text_area("Mô tả cảm giác đau:", 
-                                      placeholder="VD: Đau nhói ở khớp vai...",
-                                      height=100, key="s_sb_desc")
-                s_vas = st.select_slider("Mức độ đau (VAS):", 
-                                         options=list(range(11)), 
-                                         value=3, key="s_sb_vas")
-                
-                st.markdown("---")
-                st.markdown("### 🎯 CHỌN BÀI TẬP")
-                ma_bai_tap = st.selectbox("Bài tập", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
-                bai_tap = BAI_TAP[ma_bai_tap]
-                
-                st.markdown("### 📺 VIDEO HƯỚNG DẪN")
-                st.video(bai_tap["youtube"])
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("📤 GỬI THÔNG TIN CHO BÁC SĨ - KTV VÀ NCV", width="stretch", type="primary"):
-                    if ten_nguoi_dung and ma_nguoi_dung and gioi_tinh != "" and s_desc and ma_bai_tap:
-                        s_data = load_data(SYMPTOMS_FILE)
-                        s_data.append({
-                            "username": st.session_state.user_info['username'],
-                            "full_name": ten_nguoi_dung,
-                            "patient_id": ma_nguoi_dung,
-                            "age": tuoi,
-                            "gender": gioi_tinh,
-                            "exercise": BAI_TAP[ma_bai_tap]['ten'],
-                            "symptoms": s_desc,
-                            "vas": s_vas,
-                            "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
-                        })
-                        save_data(SYMPTOMS_FILE, s_data)
-                        st.success("✅ Đã gửi thông tin đầy đủ cho BÁC SĨ - KTV và NCV thành công!")
-                        st.balloons()
-                    else:
-                        st.warning("⚠️ Vui lòng điền đầy đủ các thông tin: Họ tên, Mã định danh, Giới tính, Bài tập và Mô tả triệu chứng.")
+                st.markdown("### 📚 HƯỚNG DẪN SỬ DỤNG")
+                st.markdown("""
+                <div style="font-size: 0.88rem; line-height: 1.7;">
+                <p>👉 Hệ thống hỗ trợ bạn qua các Tab sau:</p>
+                <p>🏠 <b>TRANG CHỦ</b><br>
+                <span style="color:#aaa; font-size:0.8rem;">Khai báo thông tin, triệu chứng, chọn bài tập và tải video tập luyện lên cho Bác sĩ.</span></p>
+                <p>📊 <b>KẾT QUẢ ĐÁNH GIÁ</b><br>
+                <span style="color:#aaa; font-size:0.8rem;">Xem nhận xét của Bác sĩ/KTV và kết quả phân tích AI về chuyển động của bạn.</span></p>
+                <p>⏰ <b>LỊCH NHẮC NHỞ</b><br>
+                <span style="color:#aaa; font-size:0.8rem;">Xem lịch tái khám và các nhắc nhở tập luyện hàng ngày.</span></p>
+                <p>📚 <b>THÔNG TIN</b><br>
+                <span style="color:#aaa; font-size:0.8rem;">Tìm hiểu về bài tập phục hồi chức năng vai và các kiến thức y tế hữu ích.</span></p>
+                <p>📞 <b>LIÊN HỆ</b><br>
+                <span style="color:#aaa; font-size:0.8rem;">Thông tin liên hệ với Bác sĩ/KTV khi cần hỗ trợ khẩn cấp.</span></p>
+                </div>
+                """, unsafe_allow_html=True)
 
         
         st.markdown("---")
