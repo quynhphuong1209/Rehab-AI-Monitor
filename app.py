@@ -6334,10 +6334,10 @@ def main():
                 # HIỂN THỊ THÔNG TIN BÀI TẬP (CHỈ HIỆN CHO BN - BS/NCV ĐÃ BIẾT NÊN CẮT BỎ ĐỂ TRÁNH RỐI)
                 if user_role == "Bệnh nhân":
                     # --- KHAI BÁO THÔNG TIN NGƯỚI DÙNG + TRIỆU CHỨNG + CHỌN BÀI TẬP ---
-                    st.markdown("## 📝 THÔNG TIN KHÁM & TẬP LUYLN")
+                    st.markdown("## 📝 THÔNG TIN KHÁM & TẬP LUYỆN")
                     
                     with st.container(border=True):
-                        st.markdown("### 📋 THÔNG TIN NGƯỚI DÙNG")
+                        st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
                         bn_col1, bn_col2 = st.columns(2)
                         with bn_col1:
                             ten_nguoi_dung = st.text_input("Họ và tên (*)", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A", key="bn_tab_ten")
