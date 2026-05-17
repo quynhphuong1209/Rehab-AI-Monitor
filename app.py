@@ -256,6 +256,26 @@ def load_users():
             "full_name": "Doctor 1",
             "role": "Bác sĩ / KTV PHCN"
         },
+        "doctor2": {
+            "password": hash_password("bs123@"),
+            "full_name": "Doctor 2",
+            "role": "Bác sĩ / KTV PHCN"
+        },
+        "doctor3": {
+            "password": hash_password("bs123@"),
+            "full_name": "Doctor 3",
+            "role": "Bác sĩ / KTV PHCN"
+        },
+        "doctor4": {
+            "password": hash_password("bs123@"),
+            "full_name": "Doctor 4",
+            "role": "Bác sĩ / KTV PHCN"
+        },
+        "doctor5": {
+            "password": hash_password("bs123@"),
+            "full_name": "Doctor 5",
+            "role": "Bác sĩ / KTV PHCN"
+        },
         "Kim Mạnh Hưng": {"password": hash_password("ncv123@"), "full_name": "Kim Mạnh Hưng", "role": "Nghiên cứu viên", "email": "2211090016@studenthuph.edu.vn", "mssv": "2211090016"},
         "Nguyễn Hải An": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Hải An", "role": "Nghiên cứu viên", "email": "2211090001@studenthuph.edu.vn", "mssv": "2211090001"},
         "Nguyễn Thị Thanh Nga": {"password": hash_password("ncv123@"), "full_name": "Nguyễn Thị Thanh Nga", "role": "Nghiên cứu viên", "email": "2211090027@studenthuph.edu.vn", "mssv": "2211090027"},
