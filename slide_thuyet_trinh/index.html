@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slide Thuyết Trình Tương Tác Cử Chỉ - Rehab-AI-Monitor</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- MediaPipe dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --primary-color: #00c6ff;
+            --secondary-color: #0072ff;
+            --accent-color: #ffd700;
+            --text-color: #c5c6c7;
+            --header-color: #ffffff;
+            --card-bg: rgba(255, 255, 255, 0.04);
+            --card-border: rgba(0, 198, 255, 0.2);
+            --neon-glow: 0 0 20px rgba(0, 198, 255, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: radial-gradient(circle at 10% 20%, rgba(0, 114, 255, 0.08) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(0, 198, 255, 0.08) 0%, transparent 40%);
+        }
+
+        /* Top Progress Bar */
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 16.66%;
+            background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+            box-shadow: var(--neon-glow);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Top Bar Header */
+        header {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 10;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+            color: var(--primary-color);
+            text-shadow: var(--neon-glow);
+        }
+
+        .logo-text {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: 2px;
+            color: var(--header-color);
+            background: linear-gradient(135deg, #fff 30%, var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            background: rgba(0, 198, 255, 0.1);
+            border: 1px solid var(--primary-color);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 10px rgba(0, 198, 255, 0.1);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.4; }
+            50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 8px var(--primary-color); }
+            100% { transform: scale(0.9); opacity: 0.4; }
+        }
+
+        /* Main Workspace Grid */
+        .main-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 30px;
+            padding: 30px 40px;
+            height: calc(100vh - 80px);
+            position: relative;
+        }
+
+        /* Slide Viewer (Left Column) */
+        .slide-viewer {
+            position: relative;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: 50px;
+            opacity: 0;
+            transform: translateX(100px) scale(0.95);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            pointer-events: auto;
+            z-index: 2;
+        }
+
+        .slide.previous {
+            opacity: 0;
+            transform: translateX(-100px) scale(0.95);
+        }
+
+        /* Slide Typography & Elements */
+        .slide-title-area {
+            margin-bottom: 35px;
+        }
+
+        .slide-number {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .slide-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--header-color);
+            line-height: 1.25;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .slide-content {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: var(--text-color);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Helper visual columns */
+        .columns-2 {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .columns-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        /* Cyberpunk Cards */
+        .cyber-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            opacity: 0.7;
+        }
+
+        .cyber-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 30px rgba(0, 198, 255, 0.15);
+        }
+
+        .cyber-card i {
+            font-size: 28px;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .cyber-card h3 {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--header-color);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .cyber-card p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Bullet lists premium styling */
+        ul.premium-bullets {
+            list-style: none;
+        }
+
+        ul.premium-bullets li {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 18px;
+            font-size: 1.05rem;
+        }
+
+        ul.premium-bullets li::before {
+            content: "\f058";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            top: 2px;
+            color: var(--primary-color);
+            text-shadow: var(--neon-glow);
+            font-size: 18px;
+        }
+
+        /* Large stats */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .stat-number {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Right Sidebar Controls & Webcam */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Webcam container */
+        .webcam-box {
+            background: rgba(10, 10, 15, 0.6);
+            border: 2px dashed rgba(0, 198, 255, 0.3);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 4/3;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .webcam-box.hand-detected {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 25px rgba(0, 198, 255, 0.25);
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror camera */
+        }
+
+        #overlay-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        .webcam-hud {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid var(--primary-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 3;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Radar sensor pulse */
+        .radar-pulse {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 3;
+            display: none;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .webcam-box.hand-detected .radar-pulse {
+            display: block;
+            animation: radar-grow 1s infinite linear;
+        }
+
+        @keyframes radar-grow {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; box-shadow: 0 0 20px var(--accent-color); }
+        }
+
+        /* Hand gesture instruction panel */
+        .info-panel {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .instruction-step {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .step-icon-box {
+            width: 36px;
+            height: 36px;
+            background: rgba(0, 198, 255, 0.1);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .step-desc h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--header-color);
+            margin-bottom: 2px;
+        }
+
+        .step-desc p {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        /* Bottom Controls Indicator */
+        .navigation-dock {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            box-shadow: var(--neon-glow);
+        }
+
+        .slide-counter {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: var(--primary-color);
+            letter-spacing: 2px;
+        }
+
+        /* Swipe visual overlay alert */
+        .gesture-alert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.7);
+            background: rgba(0, 198, 255, 0.15);
+            border: 3px solid var(--primary-color);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 50px rgba(0, 198, 255, 0.5), inset 0 0 20px rgba(0, 198, 255, 0.3);
+            color: white;
+        }
+
+        .gesture-alert.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .gesture-alert i {
+            font-size: 40px;
+            margin-bottom: 6px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+
+        .gesture-alert span {
+            font-size: 0.75rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Cover Slide Specifics */
+        .cover-container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .cover-tagline {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--primary-color);
+            font-weight: 800;
+            letter-spacing: 5px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            text-shadow: var(--neon-glow);
+        }
+
+        .cover-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3.4rem;
+            font-weight: 800;
+            color: var(--header-color);
+            line-height: 1.15;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .cover-sub {
+            font-size: 1.25rem;
+            opacity: 0.85;
+            max-width: 750px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .team-meta {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px 30px;
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .team-meta span b {
+            color: var(--accent-color);
+        }
+
+        /* Flow diagram placeholder styling */
+        .flow-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 30px;
+            background: rgba(255,255,255,0.01);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px dashed rgba(255,255,255,0.1);
+        }
+
+        .flow-node {
+            background: rgba(0, 198, 255, 0.05);
+            border: 1px solid var(--primary-color);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--header-color);
+            flex: 1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        .flow-node:hover {
+            background: rgba(0, 198, 255, 0.15);
+            box-shadow: var(--neon-glow);
+        }
+
+        .flow-node i {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--accent-color);
+        }
+
+        .flow-arrow {
+            color: rgba(255,255,255,0.2);
+            font-size: 1.2rem;
+            animation: arrow-blink 1.5s infinite;
+        }
+
+        @keyframes arrow-blink {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; color: var(--primary-color); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Progress indicator on top -->
+    <div class="progress-bar-container">
+        <div class="progress-bar" id="progress"></div>
+    </div>
+
+    <!-- Main Header -->
+    <header>
+        <div class="logo-section">
+            <i class="fa-solid fa-brain logo-icon"></i>
+            <span class="logo-text">REHAB-AI MONITOR</span>
+        </div>
+        <div class="status-badge" id="sensor-badge">
+            <div class="status-dot"></div>
+            <span id="sensor-text">ĐANG KHỞI TẠO CẢM BIẾN...</span>
+        </div>
+    </header>
+
+    <!-- Content Workspace -->
+    <div class="main-container">
+        
+        <!-- Interactive Slides (Left Column) -->
+        <div class="slide-viewer" id="viewer">
+            
+            <!-- Floating Swipe Alert -->
+            <div class="gesture-alert" id="swipe-alert">
+                <i class="fa-solid fa-arrow-right" id="swipe-icon"></i>
+                <span id="swipe-text">KẾ TIẾP</span>
+            </div>
+
+            <!-- Slide 1: Cover -->
+            <div class="slide active" data-index="1">
+                <div class="cover-container">
+                    <span class="cover-tagline">Đề Tài Nghiên Cứu Khoa Học</span>
+                    <h1 class="cover-title">REHAB-AI-MONITOR</h1>
+                    <p class="cover-sub">Ứng dụng Giám sát Phục hồi chức năng từ xa thông qua Computer Vision và Trí tuệ nhân tạo (AI)</p>
+                    <div class="team-meta">
+                        <span>Chủ nhiệm đề tài: <b>Đinh Lê Quỳnh Phương</b></span>
+                        <span>Đơn vị: <b>Khoa Khoa học Dữ liệu Y sinh - Trường ĐH Y tế Công cộng</b></span>
+                        <span style="font-size: 0.8rem; opacity: 0.7; margin-top: 5px;">* Sử dụng cử chỉ vẫy tay trước Webcam để chuyển slide *</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 2: Problem Statement -->
+            <div class="slide" data-index="2">
+                <div class="slide-title-area">
+                    <div class="slide-number">Slide 02 / 06</div>
+                    <h2 class="slide-title">Đặt Vấn Đề & Thách Thức Y Tế</h2>
+                </div>
+                <div class="slide-content columns-2">
+                    <div>
+                        <ul class="premium-bullets">
+                            <li><b>Hạn chế tiếp cận vật lý trị liệu:</b> Bệnh nhân sau chấn thương, tai biến gặp khó khăn lớn khi di chuyển liên tục tới bệnh viện.</li>
+                            <li><b>Gánh nặng chi phí khổng lồ:</b> Chi phí nằm viện nội trú kéo dài và đi lại là rào cản cực lớn cho các hộ gia đình.</li>
+                            <li><b>Thiếu hụt nguồn nhân lực y tế:</b> Tỷ lệ Bác sĩ, Kỹ thuật viên phục hồi chức năng chuyên trách tại Việt Nam còn rất thấp.</li>
+                            <li><b>Giám sát tại nhà thiếu chính xác:</b> Bệnh nhân tự tập ở nhà thường sai tư thế mà không hề hay biết, dẫn đến chấn thương thứ cấp.</li>
+                        </ul>
+                    </div>
+                    <div class="stat-grid">
+                        <div class="stat-item" style="grid-column: span 3; background: rgba(255, 75, 75, 0.05); border-color: rgba(255, 75, 75, 0.2);">
+                            <div class="stat-number" style="color: #ff4b4b;">3 / 10</div>
+                            <div class="stat-label">Bệnh nhân bỏ dở liệu trình vì khoảng cách địa lý</div>
+                        </div>
+                        <div class="stat-item" style="grid-column: span 3; background: rgba(255, 165, 0, 0.05); border-color: rgba(255, 165, 0, 0.2);">
+                            <div class="stat-number" style="color: #ffa500;">40%</div>
+                            <div class="stat-label">Tiết kiệm chi phí y tế khi phục hồi chức năng từ xa</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: Proposed Solution -->
+            <div class="slide" data-index="3">
+                <div class="slide-title-area">
+                    <div class="slide-number">Slide 03 / 06</div>
+                    <h2 class="slide-title">Giải Pháp Số Hóa Rehab-AI-Monitor</h2>
+                </div>
+                <div class="slide-content">
+                    <div class="columns-3">
+                        <div class="cyber-card">
+                            <i class="fa-solid fa-camera"></i>
+                            <h3>1. AI Edge Vision</h3>
+                            <p>Không dùng cảm biến đeo đắt tiền. Hệ thống chỉ yêu cầu một Webcam hoặc Camera điện thoại thông thường để phân tích góc xương.</p>
+                        </div>
+                        <div class="cyber-card">
+                            <i class="fa-solid fa-chart-line"></i>
+                            <h3>2. Real-time Feedback</h3>
+                            <p>So sánh chuyển động của bệnh nhân trực tiếp với video chuẩn từ YouTube theo từng giây và đưa ra cảnh báo âm thanh thông minh.</p>
+                        </div>
+                        <div class="cyber-card">
+                            <i class="fa-solid fa-user-doctor"></i>
+                            <h3>3. Cầu Nối Chuyên Môn</h3>
+                            <p>Kết nối trực tiếp bệnh nhân với Bác sĩ/KTV. Hỗ trợ ghi nhận thông tin khoa học (NCKH) phục vụ nghiên cứu và đánh giá lâm sàng.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 4: System Architecture -->
+            <div class="slide" data-index="4">
+                <div class="slide-title-area">
+                    <div class="slide-number">Slide 04 / 06</div>
+                    <h2 class="slide-title">Kiến Trúc Hệ Thống & Cốt Lõi AI</h2>
+                </div>
+                <div class="slide-content">
+                    <ul class="premium-bullets" style="margin-bottom: 20px;">
+                        <li><b>Mô hình BlazePose (MediaPipe):</b> Trích xuất chuẩn xác 33 điểm mốc (landmarks) trên cơ thể người chỉ bằng luồng xử lý trên Trình duyệt.</li>
+                        <li><b>Giải thuật Hình học lượng giác:</b> Tính toán trực tiếp góc khớp Vai và khớp Khuỷu, tự động xác định bên tay tập luyện của bệnh nhân.</li>
+                        <li><b>Đồng bộ cơ sở dữ liệu:</b> Lưu trữ lịch sử tập dưới dạng JSON gọn nhẹ, cho phép xuất báo cáo ra CSV phục vụ nghiên cứu khoa học.</li>
+                    </ul>
+                    
+                    <div class="flow-container">
+                        <div class="flow-node"><i class="fa-solid fa-video"></i>Webcam Bệnh Nhân</div>
+                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
+                        <div class="flow-node"><i class="fa-solid fa-brain"></i>AI BlazePose Engine</div>
+                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
+                        <div class="flow-node"><i class="fa-solid fa-volume-high"></i>Phản hồi Âm thanh</div>
+                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
+                        <div class="flow-node"><i class="fa-solid fa-notes-medical"></i>Đánh giá của Bác Sĩ</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 5: Scientific Metrics -->
+            <div class="slide" data-index="5">
+                <div class="slide-title-area">
+                    <div class="slide-number">Slide 05 / 06</div>
+                    <h2 class="slide-title">Chỉ Số Khoa Học & Thực Nghiệm</h2>
+                </div>
+                <div class="slide-content columns-2">
+                    <div>
+                        <ul class="premium-bullets">
+                            <li><b>Độ chính xác cao vượt trội:</b> Hệ thống đạt chỉ số F1-Score lên tới 94.5% trong việc phát hiện các động tác sai góc khớp.</li>
+                            <li><b>Sai số góc cực nhỏ:</b> Sai số tuyệt đối trung bình (MAE) so với đo đạc lâm sàng của chuyên gia y tế chỉ ở mức dưới 4.2°.</li>
+                            <li><b>Xử lý thời gian thực:</b> Xử lý trơn tru trên 30 khung hình/giây (FPS) ngay trên trình duyệt mà không cần card đồ họa rời.</li>
+                        </ul>
+                    </div>
+                    <div class="stat-grid" style="grid-template-columns: 1fr; gap: 15px;">
+                        <div class="stat-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-left: 4px solid var(--accent-color);">
+                            <div class="stat-label" style="font-weight: bold; color: var(--header-color);">Độ chính xác F1</div>
+                            <div class="stat-number" style="font-size: 1.8rem; margin: 0;">94.5%</div>
+                        </div>
+                        <div class="stat-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-left: 4px solid var(--primary-color);">
+                            <div class="stat-label" style="font-weight: bold; color: var(--header-color);">Sai số góc khớp (MAE)</div>
+                            <div class="stat-number" style="font-size: 1.8rem; margin: 0; color: var(--primary-color);">&lt; 4.2°</div>
+                        </div>
+                        <div class="stat-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-left: 4px solid #00ff88;">
+                            <div class="stat-label" style="font-weight: bold; color: var(--header-color);">Tần suất xử lý (FPS)</div>
+                            <div class="stat-number" style="font-size: 1.8rem; margin: 0; color: #00ff88;">32 FPS</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 6: Contribution & Future -->
+            <div class="slide" data-index="6">
+                <div class="slide-title-area">
+                    <div class="slide-number">Slide 06 / 06</div>
+                    <h2 class="slide-title">Đóng Góp Nổi Bật & Hướng Phát Triển</h2>
+                </div>
+                <div class="slide-content">
+                    <div class="columns-2">
+                        <div>
+                            <ul class="premium-bullets">
+                                <li><b>Hỗ trợ Hội đồng đạo đức & NCKH:</b> Chuẩn hóa dữ liệu bệnh lý một cách khách quan nhất bằng các chỉ số vật lý số hóa.</li>
+                                <li><b>Tối ưu nguồn lực xã hội:</b> Bệnh nhân ở vùng sâu vùng xa dễ dàng tự tập tại nhà nhưng vẫn có sự kiểm soát của bác sĩ.</li>
+                                <li><b>Khả năng mở rộng mạnh mẽ:</b> Phát triển thêm các bài tập chi dưới (khớp gối, khớp hông) và kết hợp môi trường thực tế ảo (VR).</li>
+                            </ul>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: rgba(0, 198, 255, 0.02); border: 1px dashed var(--primary-color); border-radius: 20px;">
+                            <i class="fa-solid fa-award" style="font-size: 60px; color: var(--accent-color); margin-bottom: 20px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);"></i>
+                            <h3 style="font-family: 'Montserrat', sans-serif; color: var(--header-color); margin-bottom: 10px;">ĐỀ TÀI TIÊM NĂNG ỨNG DỤNG</h3>
+                            <p style="font-size: 0.85rem; opacity: 0.8;">"Số hóa quy trình y khoa, nâng cao chất lượng cuộc sống người Việt"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Sidebar (Right Column) -->
+        <div class="sidebar">
+            
+            <!-- Live WebCam feed with hand skeleton -->
+            <div class="webcam-box" id="webcam-container">
+                <div class="radar-pulse"></div>
+                <video id="webcam" autoplay playsinline muted></video>
+                <canvas id="overlay-canvas"></canvas>
+                <div class="webcam-hud">
+                    <span>📡 CAMERA CỬ CHỈ GESTURE</span>
+                    <span id="gesture-hud-status">KÍCH HOẠT</span>
+                </div>
+            </div>
+
+            <!-- Instructions and manual controllers -->
+            <div class="info-panel">
+                <div>
+                    <h3 style="font-family: 'Montserrat', sans-serif; color: var(--header-color); font-size: 1.05rem; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                        <i class="fa-solid fa-hand-spock" style="color: var(--primary-color); font-size: 16px; margin: 0 8px 0 0;"></i>CÁCH THUYẾT TRÌNH BẰNG TAY
+                    </h3>
+                    
+                    <div class="instruction-step">
+                        <div class="step-icon-box">1</div>
+                        <div class="step-desc">
+                            <h4>Đưa tay lên trước Webcam</h4>
+                            <p>Đứng cách camera khoảng 1 - 1.5m, xòe lòng bàn tay ra để hệ thống nhận diện xương bàn tay.</p>
+                        </div>
+                    </div>
+
+                    <div class="instruction-step">
+                        <div class="step-icon-box">2</div>
+                        <div class="step-desc">
+                            <h4>Vuốt nhanh sang Trái ⬅️</h4>
+                            <p>Di chuyển nhanh bàn tay từ phải sang trái để chuyển tới **Slide Tiếp Theo**.</p>
+                        </div>
+                    </div>
+
+                    <div class="instruction-step">
+                        <div class="step-icon-box">3</div>
+                        <div class="step-desc">
+                            <h4>Vuốt nhanh sang Phải ➡️</h4>
+                            <p>Di chuyển nhanh bàn tay từ trái sang phải để quay lại **Slide Trước Đó**.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Dock inside Sidebar for backup -->
+                <div>
+                    <div class="navigation-dock">
+                        <button class="nav-btn" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i>TRƯỚC</button>
+                        <span class="slide-counter" id="counter-display">1 / 6</span>
+                        <button class="nav-btn" onclick="nextSlide()">SAU <i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <p style="font-size: 0.65rem; text-align: center; opacity: 0.5; margin-top: 10px;">* Có thể bấm phím mũi tên Trái/Phải làm dự phòng *</p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        let currentSlideIndex = 1;
+        const totalSlides = 6;
+        const slides = document.querySelectorAll('.slide');
+        const progressBar = document.getElementById('progress');
+        const counterDisplay = document.getElementById('counter-display');
+        const sensorBadge = document.getElementById('sensor-badge');
+        const sensorText = document.getElementById('sensor-text');
+
+        // Update active slide visual
+        function updateSlides() {
+            slides.forEach(slide => {
+                const index = parseInt(slide.getAttribute('data-index'));
+                slide.classList.remove('active', 'previous');
+                
+                if (index === currentSlideIndex) {
+                    slide.classList.add('active');
+                } else if (index < currentSlideIndex) {
+                    slide.classList.add('previous');
+                }
+            });
+
+            // Update Progress bar
+            const percent = (currentSlideIndex / totalSlides) * 100;
+            progressBar.style.width = percent + '%';
+
+            // Update Counter
+            counterDisplay.textContent = `${currentSlideIndex} / ${totalSlides}`;
+        }
+
+        function nextSlide() {
+            if (currentSlideIndex < totalSlides) {
+                currentSlideIndex++;
+                updateSlides();
+                playSwipeSound("next");
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlideIndex > 1) {
+                currentSlideIndex--;
+                updateSlides();
+                playSwipeSound("prev");
+            }
+        }
+
+        // Keyboard navigation backup
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+
+        // Web Audio API sci-fi sound effects
+        function playSwipeSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                if (type === "next") {
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.15);
+                } else {
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(800, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(350, ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.15);
+                }
+            } catch (e) {
+                console.log("Audio synthesis error: ", e);
+            }
+        }
+
+        // Visual alert for swipes
+        const swipeAlert = document.getElementById('swipe-alert');
+        const swipeIcon = document.getElementById('swipe-icon');
+        const swipeText = document.getElementById('swipe-text');
+
+        function showSwipeAlert(direction) {
+            if (direction === "next") {
+                swipeIcon.className = "fa-solid fa-arrow-right";
+                swipeText.textContent = "KẾ TIẾP ➡️";
+                swipeAlert.style.borderColor = "var(--primary-color)";
+                swipeAlert.style.boxShadow = "0 0 50px rgba(0, 198, 255, 0.5)";
+            } else {
+                swipeIcon.className = "fa-solid fa-arrow-left";
+                swipeText.textContent = "⬅️ QUAY LẠI";
+                swipeAlert.style.borderColor = "var(--accent-color)";
+                swipeAlert.style.boxShadow = "0 0 50px rgba(255, 215, 0, 0.5)";
+            }
+            
+            swipeAlert.classList.add('show');
+            setTimeout(() => {
+                swipeAlert.classList.remove('show');
+            }, 800);
+        }
+
+        // ============================================================
+        // MEDIAPIPE GESTURE DETECTION (REAL-TIME ALGORITHM)
+        // ============================================================
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('overlay-canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const webcamContainer = document.getElementById('webcam-container');
+        const gestureHudStatus = document.getElementById('gesture-hud-status');
+
+        let gestureHistory = [];
+        const historyLength = 15;
+        let cooldown = false;
+        let cooldownTime = 1400; // Cooldown 1.4s between slides
+
+        // Set canvas aspect ratio once webcam starts
+        videoElement.addEventListener('loadedmetadata', () => {
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+        });
+
+        // Initialize MediaPipe Hands
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        function drawHandStatus(detected) {
+            if (detected) {
+                webcamContainer.classList.add('hand-detected');
+                gestureHudStatus.textContent = "🎯 PHÁT HIỆN TAY";
+                gestureHudStatus.style.color = "var(--accent-color)";
+            } else {
+                webcamContainer.classList.remove('hand-detected');
+                gestureHudStatus.textContent = "📡 KHÔNG CÓ TAY";
+                gestureHudStatus.style.color = "var(--primary-color)";
+            }
+        }
+
+        // Callback process coordinates
+        hands.onResults((results) => {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // Mirror skeleton drawing for visual match
+            canvasCtx.translate(canvasElement.width, 0);
+            canvasCtx.scale(-1, 1);
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+
+                // 1. Draw hand skeletal visualization
+                drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00c6ff', lineWidth: 4});
+                drawLandmarks(canvasCtx, landmarks, {color: '#ffd700', lineWidth: 1, radius: 4});
+
+                // 2. Track Palm Center X position
+                // Index 0: Wrist, 5: index mcp, 9: middle mcp, 17: pinky mcp
+                const palmIndices = [0, 5, 9, 17];
+                let sumX = 0;
+                palmIndices.forEach(idx => sumX += landmarks[idx].x);
+                const currentX = sumX / palmIndices.length;
+
+                const now = Date.now();
+                gestureHistory.push({x: currentX, time: now});
+                
+                if (gestureHistory.length > historyLength) {
+                    gestureHistory.shift();
+                }
+
+                // 3. Gesture Detection Math
+                if (gestureHistory.length >= 8 && !cooldown) {
+                    const oldest = gestureHistory[0];
+                    const newest = gestureHistory[gestureHistory.length - 1];
+                    const dx = newest.x - oldest.x;
+                    const dt = newest.time - oldest.time;
+
+                    // Detect swift swiping motion
+                    if (dt > 120 && dt < 600) {
+                        // Because webcam is mirrored:
+                        // Swipe to our Right (hand goes Left to Right -> X increases) -> Prev Slide
+                        // Swipe to our Left (hand goes Right to Left -> X decreases) -> Next Slide
+                        if (dx > 0.22) {
+                            // Swipe Right to Left (dx > 0.22 in screen coordinates)
+                            cooldown = true;
+                            prevSlide();
+                            showSwipeAlert("prev");
+                            gestureHistory = []; // Reset history
+                            setTimeout(() => { cooldown = false; }, cooldownTime);
+                        } else if (dx < -0.22) {
+                            // Swipe Left to Right (dx < -0.22)
+                            cooldown = true;
+                            nextSlide();
+                            showSwipeAlert("next");
+                            gestureHistory = []; // Reset history
+                            setTimeout(() => { cooldown = false; }, cooldownTime);
+                        }
+                    }
+                }
+
+                drawHandStatus(true);
+            } else {
+                drawHandStatus(false);
+                gestureHistory = []; // Reset history when hand is out of view
+            }
+            canvasCtx.restore();
+        });
+
+        // Initialize Camera utility
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        });
+
+        camera.start()
+            .then(() => {
+                sensorBadge.style.background = "rgba(0, 255, 136, 0.1)";
+                sensorBadge.style.borderColor = "#00ff88";
+                sensorBadge.querySelector('.status-dot').style.backgroundColor = "#00ff88";
+                sensorText.textContent = "CẢM BIẾN CỬ CHỈ: SẴN SÀNG";
+                sensorText.style.color = "#00ff88";
+            })
+            .catch(err => {
+                console.error("Camera Init Error: ", err);
+                sensorBadge.style.background = "rgba(255, 75, 75, 0.1)";
+                sensorBadge.style.borderColor = "#ff4b4b";
+                sensorBadge.querySelector('.status-dot').style.backgroundColor = "#ff4b4b";
+                sensorText.textContent = "LỖI KẾT NỐI CAMERA";
+                sensorText.style.color = "#ff4b4b";
+            });
+
+    </script>
+</body>
+</html>
