@@ -6271,10 +6271,11 @@ def main():
                 evals_db = load_data(EVALUATIONS_FILE)
                 current_doctor = st.session_state.user_info.get('username')
                 
-                # Đếm số video chưa có đánh giá của bác sĩ
+                # Đếm số video chưa có đánh giá từ bất kỳ bác sĩ nào
                 pending_eval = 0
                 for v in v_list:
-                    has_eval = any(e.get('doctor_username') == current_doctor and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') for e in evals_db)
+                    # Bất kỳ bác sĩ nào đánh giá rồi thì không còn ở trạng thái "Chờ đánh giá" nữa
+                    has_eval = any(e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise') for e in evals_db)
                     if not has_eval:
                         pending_eval += 1
 
