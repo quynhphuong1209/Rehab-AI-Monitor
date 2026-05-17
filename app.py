@@ -5079,11 +5079,12 @@ def hien_thi_tab_phieu_nckh():
             ])
             department = st.radio("Khoa điều trị:", ["Khoa PHCN – Y học cổ truyền (1)", "Khác (99)"], horizontal=True)
             treatment_type = st.radio("Hình thức điều trị:", ["Nội trú (1)", "Ngoại trú (2)"], horizontal=True)
+            st.markdown("[🔍 Tra cứu danh mục mã ICD-10 (Bộ Y tế)](https://icd.kcb.vn/icd-10/icd10)")
             diagnosis = st.radio("Chẩn đoán:", [
-                "Viêm quanh khớp vai thể giả liệt (1)", 
-                "Viêm quanh khớp vai thể đông cứng (2)", 
-                "Viêm quanh khớp vai thể đơn thuần (3)", 
-                "Viêm quanh khớp cấp (4)"
+                "Viêm quanh khớp vai thể giả liệt (ICD-10: M75.1)", 
+                "Viêm quanh khớp vai thể đông cứng (ICD-10: M75.0)", 
+                "Viêm quanh khớp vai thể đơn thuần (ICD-10: M75.8)", 
+                "Viêm quanh khớp cấp (ICD-10: M75.3 / M75.5)"
             ])
             lesion_side = st.radio("Vị trí vai tổn thương:", ["Vai trái (1)", "Vai phải (2)"], horizontal=True)
             duration = st.radio("Thời gian mắc bệnh:", ["< 1 tháng (1)", "1 – 3 tháng (2)", ">= 3 tháng (3)"], horizontal=True)
