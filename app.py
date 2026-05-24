@@ -6765,43 +6765,46 @@ def main():
 
                 if user_role == "Bệnh nhân":
                     if st.button("📤 GỬI VIDEO CHO BÁC SĨ - KTV VÀ NCV", width="stretch", type="primary"):
-                        # Tạo thư mục lưu trữ nếu chưa có
-                        save_dir = "patient_uploads"
-                        if not os.path.exists(save_dir):
-                            os.makedirs(save_dir)
-                        
-                        # Tạo tên file duy nhất
-                        timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
-                        filename = f"{st.session_state.user_info['username']}_{timestamp}_{file_upload.name}"
-                        file_path = os.path.join(save_dir, filename)
-                        
-                        # Lưu file video
-                        with open(file_path, "wb") as f:
-                            f.write(file_upload.getbuffer())
-                        
-                        # Lưu thông tin vào database
-                        video_list = load_data(VIDEOS_FILE)
-                        video_list.append({
-                            "username": st.session_state.user_info['username'],
-                            "full_name": ten_nguoi_dung,
-                            "video_name": file_upload.name,
-                            "exercise": bai_tap['ten'],
-                            "accuracy": 0,
-                            "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
-                            "video_path": file_path,        # Video gốc
-                            "processed_path": None,        # Video có khung xương (sau khi NCV gửi)
-                            "status": "Chờ NCV phân tích"
-                        })
-                        save_data(VIDEOS_FILE, video_list)
-                        st.success("✅ Đã gửi video cho BÁC SĨ - KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
-                        st.balloons()
-                        
-                        # RESET VỀ CHẾ ĐỘ TỰ ĐỘNG (khi NCV gửi kết quả sẽ hiện ngay)
-                        st.session_state.active_video_name = file_upload.name
-                        st.session_state.fresh_session = True  # <-- QUAN TRỌNG: Phải = True để hiện màn hình "Đang chờ NCV..."
-                        st.session_state.has_data = False
-                        time.sleep(2)
-                        st.rerun()
+                        if file_upload is None:
+                            st.error("🚨 Bạn chưa chọn video hoặc file video không hợp lệ. Vui lòng tải lên video trước khi gửi!")
+                        else:
+                            # Tạo thư mục lưu trữ nếu chưa có
+                            save_dir = "patient_uploads"
+                            if not os.path.exists(save_dir):
+                                os.makedirs(save_dir)
+                            
+                            # Tạo tên file duy nhất
+                            timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
+                            filename = f"{st.session_state.user_info['username']}_{timestamp}_{file_upload.name}"
+                            file_path = os.path.join(save_dir, filename)
+                            
+                            # Lưu file video
+                            with open(file_path, "wb") as f:
+                                f.write(file_upload.getbuffer())
+                            
+                            # Lưu thông tin vào database
+                            video_list = load_data(VIDEOS_FILE)
+                            video_list.append({
+                                "username": st.session_state.user_info['username'],
+                                "full_name": ten_nguoi_dung,
+                                "video_name": file_upload.name,
+                                "exercise": bai_tap['ten'],
+                                "accuracy": 0,
+                                "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
+                                "video_path": file_path,        # Video gốc
+                                "processed_path": None,        # Video có khung xương (sau khi NCV gửi)
+                                "status": "Chờ NCV phân tích"
+                            })
+                            save_data(VIDEOS_FILE, video_list)
+                            st.success("✅ Đã gửi video cho BÁC SĨ - KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
+                            st.balloons()
+                            
+                            # RESET VỀ CHẾ ĐỘ TỰ ĐỘNG (khi NCV gửi kết quả sẽ hiện ngay)
+                            st.session_state.active_video_name = file_upload.name
+                            st.session_state.fresh_session = True  # <-- QUAN TRỌNG: Phải = True để hiện màn hình "Đang chờ NCV..."
+                            st.session_state.has_data = False
+                            time.sleep(2)
+                            st.rerun()
 
                 # === HIỆN TRẠNG THÁI ĐANG XỬ LÝ HOẶC ĐÃ CÓ KẾT QUẢ ===
                 if st.session_state.processing:
