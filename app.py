@@ -1258,7 +1258,7 @@ if st.session_state.get('theme') == 'light':
     </style>
     """, unsafe_allow_html=True)
 
-MAX_FILE_SIZE_MB = 500
+MAX_FILE_SIZE_MB = 10000
 
 # ============================================
 # CẤU HÌNH XỬ LÝ - TỐI ƯU ĐỘ CHÍNH XÁC CAO

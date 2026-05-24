@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Slide Thuyết Trình Tương Tác Cử Chỉ - Rehab-AI-Monitor</title>
-    
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Inter:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
     <!-- FontAwesome for Premium Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
+
     <!-- MediaPipe dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
 
     <style>
         :root {
@@ -43,7 +47,7 @@
             display: flex;
             flex-direction: column;
             background-image: radial-gradient(circle at 10% 20%, rgba(0, 114, 255, 0.08) 0%, transparent 40%),
-                              radial-gradient(circle at 90% 80%, rgba(0, 198, 255, 0.08) 0%, transparent 40%);
+                radial-gradient(circle at 90% 80%, rgba(0, 198, 255, 0.08) 0%, transparent 40%);
         }
 
         /* Top Progress Bar */
@@ -121,9 +125,21 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.9); opacity: 0.4; }
-            50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 8px var(--primary-color); }
-            100% { transform: scale(0.9); opacity: 0.4; }
+            0% {
+                transform: scale(0.9);
+                opacity: 0.4;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+                box-shadow: 0 0 8px var(--primary-color);
+            }
+
+            100% {
+                transform: scale(0.9);
+                opacity: 0.4;
+            }
         }
 
         /* Main Workspace Grid */
@@ -147,7 +163,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(8px);
         }
 
@@ -198,7 +214,7 @@
             font-weight: 800;
             color: var(--header-color);
             line-height: 1.25;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
 
         .slide-content {
@@ -234,7 +250,7 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
 
         .cyber-card::before {
@@ -345,7 +361,7 @@
             overflow: hidden;
             position: relative;
             aspect-ratio: 4/3;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -360,7 +376,8 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1); /* Mirror camera */
+            transform: scaleX(-1);
+            /* Mirror camera */
         }
 
         #overlay-canvas {
@@ -377,7 +394,7 @@
             bottom: 12px;
             left: 12px;
             right: 12px;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             border: 1px solid var(--primary-color);
             padding: 8px 12px;
             border-radius: 8px;
@@ -388,7 +405,7 @@
             justify-content: space-between;
             align-items: center;
             z-index: 3;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
 
         /* Radar sensor pulse */
@@ -411,8 +428,16 @@
         }
 
         @keyframes radar-grow {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(3); opacity: 0; box-shadow: 0 0 20px var(--accent-color); }
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(3);
+                opacity: 0;
+                box-shadow: 0 0 20px var(--accent-color);
+            }
         }
 
         /* Hand gesture instruction panel */
@@ -475,7 +500,7 @@
 
         .nav-btn {
             background: transparent;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-color);
             padding: 8px 16px;
             border-radius: 8px;
@@ -535,7 +560,7 @@
         .gesture-alert i {
             font-size: 40px;
             margin-bottom: 6px;
-            text-shadow: 0 0 10px rgba(255,255,255,0.8);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
         }
 
         .gesture-alert span {
@@ -606,10 +631,10 @@
             justify-content: space-between;
             gap: 10px;
             margin-top: 30px;
-            background: rgba(255,255,255,0.01);
+            background: rgba(255, 255, 255, 0.01);
             padding: 20px;
             border-radius: 16px;
-            border: 1px dashed rgba(255,255,255,0.1);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
         }
 
         .flow-node {
@@ -622,7 +647,7 @@
             font-weight: 600;
             color: var(--header-color);
             flex: 1;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             transition: all 0.2s;
         }
 
@@ -639,18 +664,26 @@
         }
 
         .flow-arrow {
-            color: rgba(255,255,255,0.2);
+            color: rgba(255, 255, 255, 0.2);
             font-size: 1.2rem;
             animation: arrow-blink 1.5s infinite;
         }
 
         @keyframes arrow-blink {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; color: var(--primary-color); }
-        }
 
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+                color: var(--primary-color);
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <!-- Progress indicator on top -->
@@ -672,10 +705,10 @@
 
     <!-- Content Workspace -->
     <div class="main-container">
-        
+
         <!-- Interactive Slides (Left Column) -->
         <div class="slide-viewer" id="viewer">
-            
+
             <!-- Floating Swipe Alert -->
             <div class="gesture-alert" id="swipe-alert">
                 <i class="fa-solid fa-arrow-right" id="swipe-icon"></i>
@@ -685,13 +718,15 @@
             <!-- Slide 1: Cover -->
             <div class="slide active" data-index="1">
                 <div class="cover-container">
-                    <span class="cover-tagline">Đề Tài Nghiên Cứu Khoa Học</span>
-                    <h1 class="cover-title">REHAB-AI-MONITOR</h1>
-                    <p class="cover-sub">Ứng dụng Giám sát Phục hồi chức năng từ xa thông qua Computer Vision và Trí tuệ nhân tạo (AI)</p>
-                    <div class="team-meta">
-                        <span>Chủ nhiệm đề tài: <b>Đinh Lê Quỳnh Phương</b></span>
-                        <span>Đơn vị: <b>Khoa Khoa học Dữ liệu Y sinh - Trường ĐH Y tế Công cộng</b></span>
-                        <span style="font-size: 0.8rem; opacity: 0.7; margin-top: 5px;">* Sử dụng cử chỉ vẫy tay trước Webcam để chuyển slide *</span>
+                    <span class="cover-tagline">Đề Tài Nghiên Cứu Khoa Học Cấp Trường</span>
+                    <h1 class="cover-title" style="font-size: 3rem; margin-bottom: 15px;">REHAB-AI-MONITOR</h1>
+                    <p class="cover-sub" style="font-size: 1.2rem; max-width: 800px; margin-bottom: 25px;">Hệ thống Giám sát & Đánh giá Phục hồi chức năng từ xa tích hợp Trí tuệ nhân tạo (AI) và Phân tích thị giác máy tính (Computer Vision)</p>
+                    <div class="team-meta" style="padding: 20px 40px;">
+                        <span>Chủ nhiệm đề tài: <b>Đinh Lê Quỳnh Phương</b> (MSSV: 2211090031)</span>
+                        <span>Đơn vị: <b>Khoa Khoa học Dữ liệu Y sinh - Trường Đại học Y tế Công cộng</b></span>
+                        <span style="font-size: 0.85rem; color: var(--primary-color); margin-top: 8px; font-weight: bold;">
+                            <i class="fa-solid fa-hands" style="margin-right: 5px;"></i> * Điều khiển slide rảnh tay bằng cử chỉ vẫy trước Webcam *
+                        </span>
                     </div>
                 </div>
             </div>
@@ -699,26 +734,26 @@
             <!-- Slide 2: Problem Statement -->
             <div class="slide" data-index="2">
                 <div class="slide-title-area">
-                    <div class="slide-number">Slide 02 / 07</div>
-                    <h2 class="slide-title">Đặt Vấn Đề & Thách Thức Y Tế</h2>
+                    <div class="slide-number">Slide 02 / 08</div>
+                    <h2 class="slide-title">Đặt Vấn Đề & Thách Thức Vật Lý Trị Liệu Tại Nhà</h2>
                 </div>
                 <div class="slide-content columns-2">
                     <div>
                         <ul class="premium-bullets">
-                            <li><b>Hạn chế tiếp cận vật lý trị liệu:</b> Bệnh nhân sau chấn thương, tai biến gặp khó khăn lớn khi di chuyển liên tục tới bệnh viện.</li>
-                            <li><b>Gánh nặng chi phí khổng lồ:</b> Chi phí nằm viện nội trú kéo dài và đi lại là rào cản cực lớn cho các hộ gia đình.</li>
-                            <li><b>Thiếu hụt nguồn nhân lực y tế:</b> Tỷ lệ Bác sĩ, Kỹ thuật viên phục hồi chức năng chuyên trách tại Việt Nam còn rất thấp.</li>
-                            <li><b>Giám sát tại nhà thiếu chính xác:</b> Bệnh nhân tự tập ở nhà thường sai tư thế mà không hề hay biết, dẫn đến chấn thương thứ cấp.</li>
+                            <li><b>Hạn chế vật lý & tiếp cận y tế:</b> Bệnh nhân sau chấn thương hoặc tai biến mạch máu não gặp khó khăn cực lớn trong việc di chuyển liên tục đến các trung tâm phục hồi.</li>
+                            <li><b>Gánh nặng kinh tế & xã hội:</b> Chi phí nằm viện điều trị dài ngày kết hợp phí đi lại tạo áp lực tài chính nghiêm trọng cho bệnh nhân và gia đình.</li>
+                            <li><b>Thiếu hụt trầm trọng nhân lực y tế:</b> Tỷ lệ Bác sĩ và Kỹ thuật viên phục hồi chức năng (PHCN) tại Việt Nam chưa đáp ứng đủ nhu cầu tăng nhanh của dân số.</li>
+                            <li><b>Thiếu giám sát chuyên môn chính xác:</b> <b>80%</b> bệnh nhân tự tập tại nhà thực hiện sai tư thế mà không biết, dễ gây chấn thương thứ cấp nguy hiểm.</li>
                         </ul>
                     </div>
-                    <div class="stat-grid">
-                        <div class="stat-item" style="grid-column: span 3; background: rgba(255, 75, 75, 0.05); border-color: rgba(255, 75, 75, 0.2);">
-                            <div class="stat-number" style="color: #ff4b4b;">3 / 10</div>
-                            <div class="stat-label">Bệnh nhân bỏ dở liệu trình vì khoảng cách địa lý</div>
+                    <div class="stat-grid" style="gap: 15px;">
+                        <div class="stat-item" style="grid-column: span 3; background: rgba(255, 75, 75, 0.05); border-color: rgba(255, 75, 75, 0.2); padding: 12px;">
+                            <div class="stat-number" style="color: #ff4b4b; font-size: 2rem;">75%</div>
+                            <div class="stat-label" style="font-size: 0.75rem;">Bệnh nhân giảm hiệu quả phục hồi do bỏ dở hoặc tập sai phác đồ</div>
                         </div>
-                        <div class="stat-item" style="grid-column: span 3; background: rgba(255, 165, 0, 0.05); border-color: rgba(255, 165, 0, 0.2);">
-                            <div class="stat-number" style="color: #ffa500;">40%</div>
-                            <div class="stat-label">Tiết kiệm chi phí y tế khi phục hồi chức năng từ xa</div>
+                        <div class="stat-item" style="grid-column: span 3; background: rgba(0, 198, 255, 0.05); border-color: rgba(0, 198, 255, 0.2); padding: 12px;">
+                            <div class="stat-number" style="color: var(--primary-color); font-size: 2rem;">50% - 60%</div>
+                            <div class="stat-label" style="font-size: 0.75rem;">Tiết kiệm chi phí y tế trực tiếp và gián tiếp khi ứng dụng PHCN từ xa</div>
                         </div>
                     </div>
                 </div>
@@ -727,140 +762,191 @@
             <!-- Slide 3: Proposed Solution -->
             <div class="slide" data-index="3">
                 <div class="slide-title-area">
-                    <div class="slide-number">Slide 03 / 07</div>
-                    <h2 class="slide-title">Giải Pháp Số Hóa Rehab-AI-Monitor</h2>
+                    <div class="slide-number">Slide 03 / 08</div>
+                    <h2 class="slide-title">Mô Hình Giải Pháo Số Hóa Rehab-AI-Monitor</h2>
                 </div>
                 <div class="slide-content">
-                    <div class="columns-3">
-                        <div class="cyber-card">
-                            <i class="fa-solid fa-camera"></i>
-                            <h3>1. AI Edge Vision</h3>
-                            <p>Không dùng cảm biến đeo đắt tiền. Hệ thống chỉ yêu cầu một Webcam hoặc Camera điện thoại thông thường để phân tích góc xương.</p>
+                    <div class="columns-3" style="gap: 15px;">
+                        <div class="cyber-card" style="padding: 20px;">
+                            <i class="fa-solid fa-video"></i>
+                            <h3 style="font-size: 1.1rem; margin-bottom: 8px;">1. AI Edge Computer Vision</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.5;">Loại bỏ hoàn toàn cảm biến đeo đắt tiền. Hệ thống chỉ cần một Webcam thông thường trên Laptop hoặc Điện thoại để trích xuất 3D bộ khung xương động học.</p>
                         </div>
-                        <div class="cyber-card">
-                            <i class="fa-solid fa-chart-line"></i>
-                            <h3>2. Real-time Feedback</h3>
-                            <p>So sánh chuyển động của bệnh nhân trực tiếp với video chuẩn từ YouTube theo từng giây và đưa ra cảnh báo âm thanh thông minh.</p>
+                        <div class="cyber-card" style="padding: 20px;">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <h3 style="font-size: 1.1rem; margin-bottom: 8px;">2. Phản Hồi Sinh Học Tức Thời</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.5;">So sánh thời gian thực (Real-time) góc khớp bệnh nhân với video chuẩn y khoa từ bác sĩ, tự động phát âm thanh cảnh báo sai sót từng giây.</p>
                         </div>
-                        <div class="cyber-card">
-                            <i class="fa-solid fa-user-doctor"></i>
-                            <h3>3. Cầu Nối Chuyên Môn</h3>
-                            <p>Kết nối trực tiếp bệnh nhân với Bác sĩ/KTV. Hỗ trợ ghi nhận thông tin khoa học (NCKH) phục vụ nghiên cứu và đánh giá lâm sàng.</p>
+                        <div class="cyber-card" style="padding: 20px;">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <h3 style="font-size: 1.1rem; margin-bottom: 8px;">3. Cầu Nối Số & Chuẩn NCKH</h3>
+                            <p style="font-size: 0.85rem; line-height: 1.5;">Kết nối liền mạch Bệnh nhân - Bác sĩ - Nghiên cứu viên. Dữ liệu tập được số hóa khách quan, sẵn sàng cho công tác thẩm định lâm sàng.</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Slide 4: System Architecture -->
+            <!-- Slide 4: Web App Features -->
             <div class="slide" data-index="4">
                 <div class="slide-title-area">
-                    <div class="slide-number">Slide 04 / 07</div>
-                    <h2 class="slide-title">Kiến Trúc Hệ Thống & Cốt Lõi AI</h2>
+                    <div class="slide-number">Slide 04 / 08</div>
+                    <h2 class="slide-title">Hệ Thống Phân Hệ & Tính Năng Chi Tiết Trên Web App</h2>
                 </div>
                 <div class="slide-content">
-                    <ul class="premium-bullets" style="margin-bottom: 20px;">
-                        <li><b>Mô hình BlazePose (MediaPipe):</b> Trích xuất chuẩn xác 33 điểm mốc (landmarks) trên cơ thể người chỉ bằng luồng xử lý trên Trình duyệt.</li>
-                        <li><b>Giải thuật Hình học lượng giác:</b> Tính toán trực tiếp góc khớp Vai và khớp Khuỷu, tự động xác định bên tay tập luyện của bệnh nhân.</li>
-                        <li><b>Đồng bộ cơ sở dữ liệu:</b> Lưu trữ lịch sử tập dưới dạng JSON gọn nhẹ, cho phép xuất báo cáo ra CSV phục vụ nghiên cứu khoa học.</li>
-                    </ul>
-                    
-                    <div class="flow-container">
-                        <div class="flow-node"><i class="fa-solid fa-video"></i>Webcam Bệnh Nhân</div>
-                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
-                        <div class="flow-node"><i class="fa-solid fa-brain"></i>AI BlazePose Engine</div>
-                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
-                        <div class="flow-node"><i class="fa-solid fa-volume-high"></i>Phản hồi Âm thanh</div>
-                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
-                        <div class="flow-node"><i class="fa-solid fa-notes-medical"></i>Đánh giá của Bác Sĩ</div>
+                    <div class="columns-2" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="cyber-card" style="padding: 15px;">
+                            <i class="fa-solid fa-user-injured" style="font-size: 20px; color: var(--primary-color); margin-bottom: 8px;"></i>
+                            <h3 style="font-size: 1rem; margin-bottom: 5px;">1. Phân Hệ Bệnh Nhân (Patient View)</h3>
+                            <ul class="premium-bullets" style="font-size: 0.8rem;">
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Tập Offline:</b> Upload video tập (MP4/MOV) để AI phân tích góc và F1.</li>
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Tập Online (WebRTC):</b> Camera trực tiếp, cảnh báo tư thế tức thì bằng âm thanh.</li>
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Nhật ký số:</b> Lịch nhắc tập, nhắc uống thuốc và theo dõi tiến triển 📈.</li>
+                            </ul>
+                        </div>
+                        <div class="cyber-card" style="padding: 15px;">
+                            <i class="fa-solid fa-user-doctor" style="font-size: 20px; color: var(--accent-color); margin-bottom: 8px;"></i>
+                            <h3 style="font-size: 1rem; margin-bottom: 5px;">2. Phân Hệ Bác Sĩ & KTV (Clinical View)</h3>
+                            <ul class="premium-bullets" style="font-size: 0.8rem;">
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Bệnh án điện tử:</b> Chuẩn hóa chẩn đoán theo mã <b>ICD-10</b> (M75.0, M75.1...).</li>
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Đánh giá lâm sàng:</b> Đo VAS (chỉ số đau), thiết lập lộ trình khớp mục tiêu.</li>
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Cá nhân hóa:</b> Kế hoạch bài tập tùy chỉnh chuyển thẳng đến app bệnh nhân.</li>
+                            </ul>
+                        </div>
+                        <div class="cyber-card" style="padding: 15px;">
+                            <i class="fa-solid fa-chart-line" style="font-size: 20px; color: #00ff88; margin-bottom: 8px;"></i>
+                            <h3 style="font-size: 1rem; margin-bottom: 5px;">3. Phân Hệ Nghiên Cứu Viên (Researcher View)</h3>
+                            <ul class="premium-bullets" style="font-size: 0.8rem;">
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Trích xuất nâng cao:</b> Trực quan hóa góc khớp Vai/Khuỷu theo chuỗi thời gian.</li>
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Kiểm định mô hình:</b> Thống kê sai số góc khớp (MAE, ICC) so với chuyên gia.</li>
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Xuất bản khoa học:</b> Tải báo cáo CSV chuẩn cấu trúc phục vụ Hội đồng Đạo đức.</li>
+                            </ul>
+                        </div>
+                        <div class="cyber-card" style="padding: 15px;">
+                            <i class="fa-solid fa-comments" style="font-size: 20px; color: #ffd700; margin-bottom: 8px;"></i>
+                            <h3 style="font-size: 1rem; margin-bottom: 5px;">4. Diễn Đàn Thảo Luận & Admin (Platform Care)</h3>
+                            <ul class="premium-bullets" style="font-size: 0.8rem;">
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Diễn đàn cộng đồng:</b> Kết nối bệnh nhân và y bác sĩ thảo luận trực tuyến.</li>
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Quản lý hệ thống:</b> Cấu hình tài khoản y tế, phân quyền bảo mật chặt chẽ.</li>
+                                <li style="margin-bottom: 6px; padding-left: 20px; font-size: 0.8rem;"><b>Google Identity:</b> Đăng nhập 1-click an toàn, đồng bộ hồ sơ tức thời.</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Slide 5: Clinical Diagnosis & ICD-10 -->
+            <!-- Slide 5: System Architecture -->
             <div class="slide" data-index="5">
                 <div class="slide-title-area">
-                    <div class="slide-number">Slide 05 / 07</div>
-                    <h2 class="slide-title">Phân Hệ Lâm Sàng & Chuẩn Hóa ICD-10</h2>
+                    <div class="slide-number">Slide 05 / 08</div>
+                    <h2 class="slide-title">Kiến Trúc Kỹ Thuật & Luồng Xử Lý AI Core</h2>
                 </div>
-                <div class="slide-content columns-2">
-                    <div>
-                        <ul class="premium-bullets">
-                            <li><b>Tích hợp phân loại ICD-10:</b> Tự động hóa kết hợp danh mục chẩn đoán của Cục Quản lý Khám chữa bệnh Bộ Y tế nhằm chuẩn hóa hồ sơ bệnh lý.</li>
-                            <li><b>Cá nhân hóa theo mã bệnh:</b> Thiết lập lộ trình tập luyện và ngưỡng cảnh báo góc khớp chuyên sâu cho từng mã ICD-10 cụ thể.</li>
-                            <li><b>Phiếu NCKH số hóa cấu trúc:</b> Rút gọn quy trình đánh giá của Bác sĩ / KTV, lưu trữ dữ liệu đồng bộ để xuất file CSV phục vụ đề tài nghiên cứu.</li>
-                        </ul>
-                    </div>
-                    <div class="stat-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;">
-                        <div class="stat-item" style="padding: 12px; border-left: 4px solid #00c6ff; text-align: left; background: rgba(0, 198, 255, 0.03);">
-                            <div class="stat-number" style="font-size: 1.15rem; color: #00c6ff; margin: 0; font-weight: 700;">M75.0 (Đông cứng)</div>
-                            <div class="stat-label" style="font-size: 0.65rem; margin-top: 5px;">Codman & Gậy phục hồi tầm vận động</div>
-                        </div>
-                        <div class="stat-item" style="padding: 12px; border-left: 4px solid #ff4b4b; text-align: left; background: rgba(255, 75, 75, 0.03);">
-                            <div class="stat-number" style="font-size: 1.15rem; color: #ff4b4b; margin: 0; font-weight: 700;">M75.1 (Giả liệt)</div>
-                            <div class="stat-label" style="font-size: 0.65rem; margin-top: 5px;">Rách chóp xoay, giới hạn góc nâng tối đa</div>
-                        </div>
-                        <div class="stat-item" style="padding: 12px; border-left: 4px solid #ffd700; text-align: left; background: rgba(255, 215, 0, 0.03);">
-                            <div class="stat-number" style="font-size: 1.15rem; color: #ffd700; margin: 0; font-weight: 700;">M75.8 (Đơn thuần)</div>
-                            <div class="stat-label" style="font-size: 0.65rem; margin-top: 5px;">Theo dõi viêm gân mạn, duy trì tầm vận động</div>
-                        </div>
-                        <div class="stat-item" style="padding: 12px; border-left: 4px solid #00ff88; text-align: left; background: rgba(0, 255, 136, 0.03);">
-                            <div class="stat-number" style="font-size: 1.15rem; color: #00ff88; margin: 0; font-weight: 700;">M75.3 / M75.5 (Cấp)</div>
-                            <div class="stat-label" style="font-size: 0.65rem; margin-top: 5px;">Theo dõi chỉ số đau VAS, điều chỉnh cường độ</div>
-                        </div>
+                <div class="slide-content">
+                    <ul class="premium-bullets" style="margin-bottom: 15px; font-size: 0.95rem;">
+                        <li style="margin-bottom: 10px;"><b>Mô hình BlazePose (MediaPipe):</b> Định vị chính xác tọa độ không gian 3 chiều của 33 điểm mốc sinh học (skeletal landmarks) với tần suất xử lý tối ưu.</li>
+                        <li style="margin-bottom: 10px;"><b>Công thức Động học lượng giác:</b> Tính toán trực tiếp góc khớp Vai và khớp Khuỷu dựa trên vector 3D từ các khớp liên quan, loại bỏ nhiễu rung sai.</li>
+                        <li style="margin-bottom: 10px;"><b>Đồng bộ hóa Real-time & Offline:</b> Hỗ trợ luồng camera WebRTC độ trễ thấp và bộ xử lý video upload ngoại tuyến bằng FFmpeg, ghi nhận lịch sử tập qua cơ sở dữ liệu JSON tinh gọn.</li>
+                    </ul>
+
+                    <div class="flow-container" style="padding: 12px; margin-top: 15px;">
+                        <div class="flow-node" style="padding: 10px; font-size: 0.75rem;"><i class="fa-solid fa-video" style="font-size: 16px; margin-bottom: 4px;"></i>Webcam / Video</div>
+                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
+                        <div class="flow-node" style="padding: 10px; font-size: 0.75rem;"><i class="fa-solid fa-brain" style="font-size: 16px; margin-bottom: 4px;"></i>MediaPipe Pose AI</div>
+                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
+                        <div class="flow-node" style="padding: 10px; font-size: 0.75rem;"><i class="fa-solid fa-calculator" style="font-size: 16px; margin-bottom: 4px;"></i>Joint Angles Math</div>
+                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
+                        <div class="flow-node" style="padding: 10px; font-size: 0.75rem;"><i class="fa-solid fa-bell" style="font-size: 16px; margin-bottom: 4px;"></i>Biofeedback & Sound</div>
+                        <div class="flow-arrow"><i class="fa-solid fa-caret-right"></i></div>
+                        <div class="flow-node" style="padding: 10px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open" style="font-size: 16px; margin-bottom: 4px;"></i>ICD-10 Clinical Report</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Slide 6: Scientific Metrics -->
+            <!-- Slide 6: Clinical Diagnosis & ICD-10 -->
             <div class="slide" data-index="6">
                 <div class="slide-title-area">
-                    <div class="slide-number">Slide 06 / 07</div>
-                    <h2 class="slide-title">Chỉ Số Khoa Học & Thực Nghiệm</h2>
+                    <div class="slide-number">Slide 06 / 08</div>
+                    <h2 class="slide-title">Tích Hợp Lâm Sàng & Phân Loại Bệnh Học ICD-10</h2>
                 </div>
                 <div class="slide-content columns-2">
                     <div>
                         <ul class="premium-bullets">
-                            <li><b>Độ chính xác cao vượt trội:</b> Hệ thống đạt chỉ số F1-Score lên tới 94.5% trong việc phát hiện các động tác sai góc khớp.</li>
-                            <li><b>Sai số góc cực nhỏ:</b> Sai số tuyệt đối trung bình (MAE) so với đo đạc lâm sàng của chuyên gia y tế chỉ ở mức dưới 4.2°.</li>
-                            <li><b>Xử lý thời gian thực:</b> Xử lý trơn tru trên 30 khung hình/giây (FPS) ngay trên trình duyệt mà không cần card đồ họa rời.</li>
+                            <li><b>Chuẩn hóa dữ liệu y khoa Bộ Y tế:</b> Đồng bộ danh mục bệnh lý khớp vai theo chuẩn phân loại quốc tế ICD-10 phục vụ lưu trữ hồ sơ nghiên cứu.</li>
+                            <li><b>Cá nhân hóa phác đồ điều trị:</b> Tự động thiết lập ngưỡng góc tập khớp vai/khuỷu an toàn và mục tiêu vận động dựa trên từng mã chẩn đoán ICD-10 riêng biệt.</li>
+                            <li><b>Số hóa Phiếu NCKH cấu trúc:</b> Hỗ trợ Bác sĩ/KTV đánh giá nhanh chỉ số đau VAS, ghi nhận nhận xét lâm sàng và xuất dữ liệu nghiên cứu đồng bộ.</li>
                         </ul>
                     </div>
-                    <div class="stat-grid" style="grid-template-columns: 1fr; gap: 15px;">
-                        <div class="stat-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-left: 4px solid var(--accent-color);">
-                            <div class="stat-label" style="font-weight: bold; color: var(--header-color);">Độ chính xác F1</div>
-                            <div class="stat-number" style="font-size: 1.8rem; margin: 0;">94.5%</div>
+                    <div class="stat-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
+                        <div class="stat-item" style="padding: 10px; border-left: 4px solid #00c6ff; text-align: left; background: rgba(0, 198, 255, 0.03);">
+                            <div class="stat-number" style="font-size: 1.1rem; color: #00c6ff; margin: 0; font-weight: 700;">M75.0 (Đông Cứng)</div>
+                            <div class="stat-label" style="font-size: 0.65rem; margin-top: 3px;">Phục hồi tầm vận động động tác Codman và bài tập gậy chuyên sâu</div>
                         </div>
-                        <div class="stat-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-left: 4px solid var(--primary-color);">
-                            <div class="stat-label" style="font-weight: bold; color: var(--header-color);">Sai số góc khớp (MAE)</div>
-                            <div class="stat-number" style="font-size: 1.8rem; margin: 0; color: var(--primary-color);">&lt; 4.2°</div>
+                        <div class="stat-item" style="padding: 10px; border-left: 4px solid #ff4b4b; text-align: left; background: rgba(255, 75, 75, 0.03);">
+                            <div class="stat-number" style="font-size: 1.1rem; color: #ff4b4b; margin: 0; font-weight: 700;">M75.1 (Giả Liệt)</div>
+                            <div class="stat-label" style="font-size: 0.65rem; margin-top: 3px;">Tổn thương chóp xoay vai, theo dõi nghiêm ngặt giới hạn góc nâng</div>
                         </div>
-                        <div class="stat-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-left: 4px solid #00ff88;">
-                            <div class="stat-label" style="font-weight: bold; color: var(--header-color);">Tần suất xử lý (FPS)</div>
-                            <div class="stat-number" style="font-size: 1.8rem; margin: 0; color: #00ff88;">32 FPS</div>
+                        <div class="stat-item" style="padding: 10px; border-left: 4px solid #ffd700; text-align: left; background: rgba(255, 215, 0, 0.03);">
+                            <div class="stat-number" style="font-size: 1.1rem; color: #ffd700; margin: 0; font-weight: 700;">M75.8 (Đơn Thuần)</div>
+                            <div class="stat-label" style="font-size: 0.65rem; margin-top: 3px;">Viêm gân mạn tính khớp vai, tập luyện duy trì độ linh hoạt hàng ngày</div>
+                        </div>
+                        <div class="stat-item" style="padding: 10px; border-left: 4px solid #00ff88; text-align: left; background: rgba(0, 255, 136, 0.03);">
+                            <div class="stat-number" style="font-size: 1.1rem; color: #00ff88; margin: 0; font-weight: 700;">M75.3 / M75.5 (Cấp)</div>
+                            <div class="stat-label" style="font-size: 0.65rem; margin-top: 3px;">Đợt cấp viêm túi hoạt dịch, giám sát chỉ số VAS để giảm tải lực tập</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Slide 7: Contribution & Future -->
+            <!-- Slide 7: Scientific Metrics -->
             <div class="slide" data-index="7">
                 <div class="slide-title-area">
-                    <div class="slide-number">Slide 07 / 07</div>
-                    <h2 class="slide-title">Đóng Góp Nổi Bật & Hướng Phát Triển</h2>
+                    <div class="slide-number">Slide 07 / 08</div>
+                    <h2 class="slide-title">Đánh Giá Khoa Học & Chỉ Số Thực Nghiệm AI</h2>
+                </div>
+                <div class="slide-content columns-2">
+                    <div>
+                        <ul class="premium-bullets">
+                            <li><b>Độ tin cậy chuẩn xác lâm sàng:</b> Thuật toán AI đạt chỉ số tương quan F1-Score lên tới <b>94.5%</b> trong nhận dạng động tác đúng/sai tư thế khớp vai.</li>
+                            <li><b>Sai số hình học tối thiểu:</b> Sai số tuyệt đối trung bình (MAE) của góc khớp đo được bằng AI so với thước đo goniometer lâm sàng đạt <b>&lt; 4.2°</b>.</li>
+                            <li><b>Tần suất xử lý siêu mượt:</b> Xử lý đồ họa trực tiếp trên trình duyệt đạt tốc độ trung bình <b>32 FPS</b> mà không cần nâng cấp GPU rời.</li>
+                        </ul>
+                    </div>
+                    <div class="stat-grid" style="grid-template-columns: 1fr; gap: 10px;">
+                        <div class="stat-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-left: 4px solid var(--accent-color);">
+                            <div class="stat-label" style="font-weight: bold; color: var(--header-color); font-size: 0.85rem;">Độ chính xác mô hình (F1-Score)</div>
+                            <div class="stat-number" style="font-size: 1.6rem; margin: 0;">94.5%</div>
+                        </div>
+                        <div class="stat-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-left: 4px solid var(--primary-color);">
+                            <div class="stat-label" style="font-weight: bold; color: var(--header-color); font-size: 0.85rem;">Sai số đo góc tuyệt đối (MAE)</div>
+                            <div class="stat-number" style="font-size: 1.6rem; margin: 0; color: var(--primary-color);">&lt; 4.2°</div>
+                        </div>
+                        <div class="stat-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-left: 4px solid #00ff88;">
+                            <div class="stat-label" style="font-weight: bold; color: var(--header-color); font-size: 0.85rem;">Tần suất phản hồi sinh học (FPS)</div>
+                            <div class="stat-number" style="font-size: 1.6rem; margin: 0; color: #00ff88;">32 FPS</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 8: Contribution & Future -->
+            <div class="slide" data-index="8">
+                <div class="slide-title-area">
+                    <div class="slide-number">Slide 08 / 08</div>
+                    <h2 class="slide-title">Đóng Góp Khoa Học & Tầm Nhìn Phát Triển</h2>
                 </div>
                 <div class="slide-content">
                     <div class="columns-2">
                         <div>
                             <ul class="premium-bullets">
-                                <li><b>Hỗ trợ Hội đồng đạo đức & NCKH:</b> Chuẩn hóa dữ liệu bệnh lý một cách khách quan nhất bằng các chỉ số vật lý số hóa.</li>
-                                <li><b>Tối ưu nguồn lực xã hội:</b> Bệnh nhân ở vùng sâu vùng xa dễ dàng tự tập tại nhà nhưng vẫn có sự kiểm soát của bác sĩ.</li>
-                                <li><b>Khả năng mở rộng mạnh mẽ:</b> Phát triển thêm các bài tập chi dưới (khớp gối, khớp hông) và kết hợp môi trường thực tế ảo (VR).</li>
+                                <li><b>Hỗ trợ NCKH & Hội đồng Đạo đức:</b> Cung cấp nền tảng thu thập và số hóa dữ liệu chuyển động khách quan, trung thực chuẩn mực nghiên cứu.</li>
+                                <li><b>Thúc đẩy công bằng trong tiếp cận y tế:</b> Giúp đỡ bệnh nhân có hoàn cảnh khó khăn ở vùng nông thôn dễ dàng luyện tập chuẩn phác đồ của bác sĩ tuyến Trung ương.</li>
+                                <li><b>Khả năng mở rộng không giới hạn:</b> Thiết lập thư viện bài tập phục hồi chi dưới (khớp Hông, khớp Gối) và ứng dụng không gian ảo tăng cường (AR/VR).</li>
                             </ul>
                         </div>
-                        <div style="text-align: center; padding: 20px; background: rgba(0, 198, 255, 0.02); border: 1px dashed var(--primary-color); border-radius: 20px;">
-                            <i class="fa-solid fa-award" style="font-size: 60px; color: var(--accent-color); margin-bottom: 20px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);"></i>
-                            <h3 style="font-family: 'Montserrat', sans-serif; color: var(--header-color); margin-bottom: 10px;">ĐỀ TÀI TIỀM NĂNG ỨNG DỤNG</h3>
-                            <p style="font-size: 0.85rem; opacity: 0.8;">"Số hóa quy trình y khoa, nâng cao chất lượng cuộc sống người Việt"</p>
+                        <div style="text-align: center; padding: 15px; background: rgba(0, 198, 255, 0.02); border: 1px dashed var(--primary-color); border-radius: 20px;">
+                            <i class="fa-solid fa-award" style="font-size: 45px; color: var(--accent-color); margin-bottom: 12px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);"></i>
+                            <h3 style="font-family: 'Montserrat', sans-serif; color: var(--header-color); margin-bottom: 8px; font-size: 1.05rem;">
+                                GIẢI PHÁP TIÊN PHONG SỐ HÓA Y TẾ</h3>
+                            <p style="font-size: 0.8rem; opacity: 0.95; line-height: 1.5;">"Số hóa chuyển động y sinh, mang dịch vụ vật lý trị liệu chất lượng cao đến mọi ngôi nhà Việt"</p>
                         </div>
                     </div>
                 </div>
@@ -870,7 +956,7 @@
 
         <!-- Sidebar (Right Column) -->
         <div class="sidebar">
-            
+
             <!-- Live WebCam feed with hand skeleton -->
             <div class="webcam-box" id="webcam-container">
                 <div class="radar-pulse"></div>
@@ -885,15 +971,19 @@
             <!-- Instructions and manual controllers -->
             <div class="info-panel">
                 <div>
-                    <h3 style="font-family: 'Montserrat', sans-serif; color: var(--header-color); font-size: 1.05rem; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
-                        <i class="fa-solid fa-hand-spock" style="color: var(--primary-color); font-size: 16px; margin: 0 8px 0 0;"></i>CÁCH THUYẾT TRÌNH BẰNG TAY
+                    <h3
+                        style="font-family: 'Montserrat', sans-serif; color: var(--header-color); font-size: 1.05rem; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                        <i class="fa-solid fa-hand-spock"
+                            style="color: var(--primary-color); font-size: 16px; margin: 0 8px 0 0;"></i>CÁCH THUYẾT
+                        TRÌNH BẰNG TAY
                     </h3>
-                    
+
                     <div class="instruction-step">
                         <div class="step-icon-box">1</div>
                         <div class="step-desc">
                             <h4>Đưa tay lên trước Webcam</h4>
-                            <p>Đứng cách camera khoảng 1 - 1.5m, xòe lòng bàn tay ra để hệ thống nhận diện xương bàn tay.</p>
+                            <p>Đứng cách camera khoảng 1 - 1.5m, xòe lòng bàn tay ra để hệ thống nhận diện xương bàn
+                                tay.</p>
                         </div>
                     </div>
 
@@ -917,11 +1007,14 @@
                 <!-- Navigation Dock inside Sidebar for backup -->
                 <div>
                     <div class="navigation-dock">
-                        <button class="nav-btn" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i>TRƯỚC</button>
-                        <span class="slide-counter" id="counter-display">1 / 7</span>
-                        <button class="nav-btn" onclick="nextSlide()">SAU <i class="fa-solid fa-chevron-right"></i></button>
+                        <button class="nav-btn" onclick="prevSlide()"><i
+                                class="fa-solid fa-chevron-left"></i>TRƯỚC</button>
+                        <span class="slide-counter" id="counter-display">1 / 8</span>
+                        <button class="nav-btn" onclick="nextSlide()">SAU <i
+                                class="fa-solid fa-chevron-right"></i></button>
                     </div>
-                    <p style="font-size: 0.65rem; text-align: center; opacity: 0.5; margin-top: 10px;">* Có thể bấm phím mũi tên Trái/Phải làm dự phòng *</p>
+                    <p style="font-size: 0.65rem; text-align: center; opacity: 0.5; margin-top: 10px;">* Có thể bấm phím
+                        mũi tên Trái/Phải làm dự phòng *</p>
                 </div>
             </div>
 
@@ -932,7 +1025,7 @@
     <!-- Script Section -->
     <script>
         let currentSlideIndex = 1;
-        const totalSlides = 7;
+        const totalSlides = 8;
         const slides = document.querySelectorAll('.slide');
         const progressBar = document.getElementById('progress');
         const counterDisplay = document.getElementById('counter-display');
@@ -944,7 +1037,7 @@
             slides.forEach(slide => {
                 const index = parseInt(slide.getAttribute('data-index'));
                 slide.classList.remove('active', 'previous');
-                
+
                 if (index === currentSlideIndex) {
                     slide.classList.add('active');
                 } else if (index < currentSlideIndex) {
@@ -991,10 +1084,10 @@
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
+
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-                
+
                 if (type === "next") {
                     osc.type = "sine";
                     osc.frequency.setValueAtTime(400, ctx.currentTime);
@@ -1034,7 +1127,7 @@
                 swipeAlert.style.borderColor = "var(--accent-color)";
                 swipeAlert.style.boxShadow = "0 0 50px rgba(255, 215, 0, 0.5)";
             }
-            
+
             swipeAlert.classList.add('show');
             setTimeout(() => {
                 swipeAlert.classList.remove('show');
@@ -1051,9 +1144,9 @@
         const gestureHudStatus = document.getElementById('gesture-hud-status');
 
         let gestureHistory = [];
-        const historyLength = 15;
+        const historyLength = 15; // Increased history length (approx 500ms) to capture both relaxed and swift waves
         let cooldown = false;
-        let cooldownTime = 1400; // Cooldown 1.4s between slides
+        let cooldownTime = 700; // Reduced cooldown to 700ms for highly responsive subsequent transitions
 
         // Set canvas aspect ratio once webcam starts
         videoElement.addEventListener('loadedmetadata', () => {
@@ -1098,8 +1191,8 @@
                 const landmarks = results.multiHandLandmarks[0];
 
                 // 1. Draw hand skeletal visualization
-                drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00c6ff', lineWidth: 4});
-                drawLandmarks(canvasCtx, landmarks, {color: '#ffd700', lineWidth: 1, radius: 4});
+                drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00c6ff', lineWidth: 4 });
+                drawLandmarks(canvasCtx, landmarks, { color: '#ffd700', lineWidth: 1, radius: 4 });
 
                 // 2. Track Palm Center X position
                 // Index 0: Wrist, 5: index mcp, 9: middle mcp, 17: pinky mcp
@@ -1109,36 +1202,37 @@
                 const currentX = sumX / palmIndices.length;
 
                 const now = Date.now();
-                gestureHistory.push({x: currentX, time: now});
-                
+                gestureHistory.push({ x: currentX, time: now });
+
                 if (gestureHistory.length > historyLength) {
                     gestureHistory.shift();
                 }
 
-                // 3. Gesture Detection Math
-                if (gestureHistory.length >= 8 && !cooldown) {
+                // 3. Gesture Detection Math (Ultra Sensitive & Instant Response)
+                if (gestureHistory.length >= 4 && !cooldown) {
                     const oldest = gestureHistory[0];
                     const newest = gestureHistory[gestureHistory.length - 1];
                     const dx = newest.x - oldest.x;
                     const dt = newest.time - oldest.time;
 
-                    // Detect swift swiping motion
-                    if (dt > 120 && dt < 600) {
-                        // Because webcam is mirrored:
-                        // Swipe to our Right (hand goes Left to Right -> X increases) -> Prev Slide
-                        // Swipe to our Left (hand goes Right to Left -> X decreases) -> Next Slide
-                        if (dx > 0.22) {
-                            // Swipe Right to Left (dx > 0.22 in screen coordinates)
-                            cooldown = true;
-                            prevSlide();
-                            showSwipeAlert("prev");
-                            gestureHistory = []; // Reset history
-                            setTimeout(() => { cooldown = false; }, cooldownTime);
-                        } else if (dx < -0.22) {
-                            // Swipe Left to Right (dx < -0.22)
+                    // Lowered threshold to 0.035 (3.5% screen width) so even a slight hand movement triggers it immediately
+                    const sensitivityThreshold = 0.035;
+
+                    // Detect swiping motion (80ms - 800ms)
+                    if (dt > 80 && dt < 800) {
+                        // Hand moves from Right to Left (our perspective -> raw X increases, dx > 0) -> Next Slide (2 -> 3)
+                        if (dx > sensitivityThreshold) {
                             cooldown = true;
                             nextSlide();
                             showSwipeAlert("next");
+                            gestureHistory = []; // Reset history
+                            setTimeout(() => { cooldown = false; }, cooldownTime);
+                        }
+                        // Hand moves from Left to Right (our perspective -> raw X decreases, dx < 0) -> Prev Slide (2 -> 1)
+                        else if (dx < -sensitivityThreshold) {
+                            cooldown = true;
+                            prevSlide();
+                            showSwipeAlert("prev");
                             gestureHistory = []; // Reset history
                             setTimeout(() => { cooldown = false; }, cooldownTime);
                         }
@@ -1156,7 +1250,7 @@
         // Initialize Camera utility
         const camera = new Camera(videoElement, {
             onFrame: async () => {
-                await hands.send({image: videoElement});
+                await hands.send({ image: videoElement });
             },
             width: 640,
             height: 480
@@ -1181,4 +1275,5 @@
 
     </script>
 </body>
+
 </html>
