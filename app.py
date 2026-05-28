@@ -51,6 +51,30 @@ def get_thumbnail(path, width=320):
     except:
         return None
 
+@st.cache_data(max_entries=2000, show_spinner=False)
+def get_cached_frame_b64(path, width, jpeg_quality):
+    """Đọc ảnh, resize, và mã hóa base64 có cache để tăng tốc tải trang cực kỳ nhanh"""
+    if not os.path.exists(path):
+        return ""
+    try:
+        img = cv2.imread(path)
+        if img is None:
+            return ""
+        h, w = img.shape[:2]
+        aspect = h / w
+        new_h = int(width * aspect)
+        img_res = cv2.resize(img, (width, new_h))
+        # Encode trực tiếp từ BGR sang JPEG, không cần convert RGB để tối ưu CPU
+        _, buffer = cv2.imencode('.jpg', img_res, [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality])
+        return base64.b64encode(buffer).decode()
+    except:
+        # Fallback đọc base64 trực tiếp
+        try:
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
+        except:
+            return ""
+
 def get_base64_image(path):
     """Fallback: Chuyển ảnh sang base64 nếu load trực tiếp lỗi"""
     try:
@@ -6508,8 +6532,20 @@ def hien_thi_frames_day_du(key_suffix=""):
             st.info("ℹ️ Không có frame nào trong bộ lọc này.")
             return
 
-        # Grid render
-        target_w = 600 if qlabel == "Tốc độ" else (1200 if qlabel == "Cân bằng" else 1800)
+        # Tối ưu hóa kích thước ảnh động theo số cột và chất lượng lựa chọn để giảm tải mạng
+        col_factor = 1.0 / grid_cols
+        if qlabel == "Tốc độ":
+            target_w = int(720 * col_factor)
+            jpeg_quality = 30
+        elif qlabel == "Cân bằng":
+            target_w = int(1440 * col_factor)
+            jpeg_quality = 50
+        else: # Sắc nét
+            target_w = int(2160 * col_factor)
+            jpeg_quality = 70
+            
+        target_w = max(160, min(target_w, 1080)) # Ngưỡng an toàn tối ưu cho web
+
         s_idx = (st.session_state[page_key] - 1) * fpp
         e_idx = min(s_idx + fpp, total_f)
         page_inds = indices_list[s_idx:e_idx]
@@ -6527,16 +6563,8 @@ def hien_thi_frames_day_du(key_suffix=""):
                 color = "#22c55e" if phase_st == "PASS" else ("#f59e0b" if phase_st == "NEAR" else "#ef4444")
                 bg_alpha = "rgba(34,197,94,0.12)" if phase_st == "PASS" else ("rgba(245,158,11,0.12)" if phase_st == "NEAR" else "rgba(239,68,68,0.12)")
 
-                try:
-                    img = get_thumbnail(f_path, width=target_w)
-                    if img is not None:
-                        img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                        _, buffer = cv2.imencode('.jpg', img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                        b64_str = base64.b64encode(buffer).decode()
-                    else:
-                        b64_str = get_base64_image(f_path) or ""
-                except:
-                    b64_str = ""
+                # Dùng phiên bản cached base64 để tải tức thời (mất < 1ms từ lần thứ 2)
+                b64_str = get_cached_frame_b64(f_path, target_w, jpeg_quality)
 
                 gv = f_data.get('goc_vai', 0) or 0
                 gk = f_data.get('goc_khuyu', 0) or 0
