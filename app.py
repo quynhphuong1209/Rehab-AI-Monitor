@@ -72,11 +72,96 @@ mp_pose = None
 mp_drawing = None
 mp_drawing_styles = None
 
+def setup_mediapipe_resources():
+    """Thiết lập thư mục tài nguyên ảo để ghi đè mô hình của MediaPipe trên server cloud (read-only)"""
+    import os
+    import sys
+    import shutil
+    import tempfile
+    import urllib.request
+    
+    # Chỉ chạy trên Linux (môi trường Streamlit Cloud) nơi venv bị read-only
+    if sys.platform == "win32":
+        return True
+        
+    try:
+        import mediapipe as mp
+        import mediapipe.python.solutions.download_utils as download_utils
+        mp_package_dir = os.path.dirname(mp.__file__)
+        
+        # Thư mục chứa tài nguyên ảo
+        tmp_root = os.path.join(tempfile.gettempdir(), "mediapipe_virtual_resources")
+        tmp_mp_dir = os.path.join(tmp_root, "mediapipe")
+        
+        # Nếu đã thiết lập rồi thì bỏ qua
+        heavy_model_path = os.path.join(tmp_root, "mediapipe", "modules", "pose_landmark", "pose_landmark_heavy.tflite")
+        if os.path.exists(heavy_model_path) and os.path.exists(os.path.join(tmp_mp_dir, "graphs")):
+            mp.resource_util.set_resource_dir(tmp_root)
+            # Áp dụng monkey-patch download_oss_model để tránh download thừa
+            def custom_download_oss_model(model_path: str):
+                return
+            download_utils.download_oss_model = custom_download_oss_model
+            return True
+            
+        os.makedirs(tmp_mp_dir, exist_ok=True)
+        
+        # Link toàn bộ cấu trúc thư mục từ site-packages sang tmp_mp_dir
+        for item in os.listdir(mp_package_dir):
+            if item == "__pycache__":
+                continue
+            src_path = os.path.join(mp_package_dir, item)
+            dst_path = os.path.join(tmp_mp_dir, item)
+            
+            if item == "modules":
+                os.makedirs(dst_path, exist_ok=True)
+                src_modules_dir = os.path.join(mp_package_dir, "modules")
+                for sub_item in os.listdir(src_modules_dir):
+                    src_sub = os.path.join(src_modules_dir, sub_item)
+                    dst_sub = os.path.join(dst_path, sub_item)
+                    if sub_item == "pose_landmark":
+                        os.makedirs(dst_sub, exist_ok=True)
+                        src_pose_dir = os.path.join(src_modules_dir, "pose_landmark")
+                        for file_item in os.listdir(src_pose_dir):
+                            if file_item == "__pycache__":
+                                continue
+                            src_file = os.path.join(src_pose_dir, file_item)
+                            dst_file = os.path.join(dst_sub, file_item)
+                            if os.path.isdir(src_file):
+                                continue
+                            os.symlink(src_file, dst_file)
+                    else:
+                        os.symlink(src_sub, dst_sub)
+            else:
+                os.symlink(src_path, dst_path)
+                        
+        # Đặt resource dir của MediaPipe
+        mp.resource_util.set_resource_dir(tmp_root)
+        
+        # Monkey-patch download_oss_model để chuyển hướng tải mô hình sang thư mục ảo
+        def custom_download_oss_model(model_path: str):
+            virtual_file_path = os.path.join(tmp_root, model_path)
+            if os.path.exists(virtual_file_path):
+                return
+                
+            gcs_url = "https://storage.googleapis.com/mediapipe-assets/" + model_path.split('/')[-1]
+            os.makedirs(os.path.dirname(virtual_file_path), exist_ok=True)
+            with urllib.request.urlopen(gcs_url) as response, open(virtual_file_path, 'wb') as out_file:
+                shutil.copyfileobj(response, out_file)
+
+        download_utils.download_oss_model = custom_download_oss_model
+        return True
+    except Exception as e:
+        st.warning(f"⚠️ Không thể thiết lập thư mục tài nguyên ảo cho MediaPipe: {e}")
+        return False
+
 def init_mediapipe():
     """Load MediaPipe chỉ khi cần thiết (lazy import)"""
     global mp_pose, mp_drawing, mp_drawing_styles
     if mp_pose is None:
         try:
+            # Thiết lập tài nguyên ảo trước khi import solutions
+            setup_mediapipe_resources()
+            
             import mediapipe as mp
             mp_pose = mp.solutions.pose
             mp_drawing = mp.solutions.drawing_utils
