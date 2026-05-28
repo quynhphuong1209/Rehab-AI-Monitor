@@ -6122,7 +6122,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         e_idx = min(s_idx + fpp, total_f)
         page_inds = indices_list[s_idx:e_idx]
 
-        grid_html = f"<div style='display: grid; grid-template-columns: repeat({grid_cols}, 1fr); gap: 15px;'>"
+        grid_html = ""
         with st.spinner("🚀 Đang tải ảnh..."):
             for orig_idx in page_inds:
                 f_data = frame_data_list[orig_idx]
@@ -6170,7 +6170,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                     </div>
                 </div>
                 """
-            grid_html += "</div>"
+            # End of grid layout loop
 
         num_rows = math.ceil(len(page_inds) / grid_cols)
         card_height = int(720 * (4 / grid_cols))
