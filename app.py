@@ -4396,9 +4396,9 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             st.markdown("### 📦 PHÂN TÍCH BIÊN ĐỘ VẬN ĐỘNG (ROM)")
             col_rom1, col_rom2 = st.columns(2)
             with col_rom1:
-                st.plotly_chart(fig_box_vai, use_container_width=True, key=f"box_vai_ncv_{key_suffix}")
+                st.plotly_chart(fig_box_vai, width="stretch", key=f"box_vai_ncv_{key_suffix}")
             with col_rom2:
-                st.plotly_chart(fig_box_khuyu, use_container_width=True, key=f"box_khu_ncv_{key_suffix}")
+                st.plotly_chart(fig_box_khuyu, width="stretch", key=f"box_khu_ncv_{key_suffix}")
             st.info("💡 Biểu đồ Boxplot so sánh sự biến thiên và ổn định của góc khớp.")
 
     # === TAB 4: NHẬN ĐỊNH LÂM SÀNG ===
@@ -6175,7 +6175,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         num_rows = math.ceil(len(page_inds) / grid_cols)
         card_height = int(720 * (4 / grid_cols))
         calculated_height = num_rows * card_height + 80
-        components.html(f"""
+        st.iframe(f"""
             <style>
                 body {{ background: transparent; color: white; font-family: 'Times New Roman', serif; margin:0; padding:10px; }}
                 img {{ width: 100%; height: auto; max-height: 1500px; object-fit: contain; background:#000; display:block; }}
@@ -6184,7 +6184,7 @@ def hien_thi_frames_day_du(key_suffix=""):
             <div style='display:grid; grid-template-columns:repeat({grid_cols},1fr); gap:15px;'>
                 {grid_html}
             </div>
-        """, height=min(calculated_height, 25000), scrolling=True)
+        """, height=min(calculated_height, 25000))
 
     # Lấy ranh giới phân đoạn đã tính toán ở trên
     if 'segment_bounds' not in st.session_state or st.session_state.get('last_processed_video_for_bounds') != processed_video_path:
@@ -6718,7 +6718,7 @@ def hien_thi_home_quan_tri_vien():
                                color_discrete_sequence=px.colors.qualitative.Pastel,
                                template="plotly_dark" if not is_light else "plotly_white")
                 fig_ex.update_layout(margin=dict(l=0, r=0, t=20, b=0), height=350, showlegend=False)
-                st.plotly_chart(fig_ex, use_container_width=True)
+                st.plotly_chart(fig_ex, width="stretch")
             else:
                 st.info("Chưa có dữ liệu bài tập.")
         else:
@@ -6733,7 +6733,7 @@ def hien_thi_home_quan_tri_vien():
                          color_discrete_sequence=px.colors.qualitative.Bold,
                          template="plotly_dark" if not is_light else "plotly_white")
         fig_role.update_layout(margin=dict(l=0, r=0, t=20, b=0), height=350)
-        st.plotly_chart(fig_role, use_container_width=True)
+        st.plotly_chart(fig_role, width="stretch")
 
     # Thống kê hoạt động theo thời gian (giả lập hoặc từ logs)
     st.markdown("### 🕒 Lưu lượng hoạt động gần đây")
@@ -7188,7 +7188,7 @@ def main():
                                 st.video(bai_tap['youtube'])
                     
                     st.markdown("---")
-                    if st.button("📤 GỬi THÔNG TIN CHO BÁC SĨ/KTV VÀ NCV", type="primary", use_container_width=True):
+                    if st.button("📤 GỬi THÔNG TIN CHO BÁC SĨ/KTV VÀ NCV", type="primary", width="stretch"):
                         if ten_nguoi_dung and ma_nguoi_dung and gioi_tinh != "" and s_desc and ma_bai_tap:
                             s_data = load_data(SYMPTOMS_FILE)
                             s_data.append({
