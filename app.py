@@ -1374,7 +1374,7 @@ THUMBNAIL_WIDTH = 320
 def convert_mov_to_mp4(input_path):
     output_path = input_path.replace('.mov', '.mp4').replace('.MOV', '.mp4')
     try:
-        result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
+        result = subprocess.run(['ffmpeg', '-version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if result.returncode != 0:
             return input_path
         
@@ -1386,7 +1386,7 @@ def convert_mov_to_mp4(input_path):
             '-crf', '23',
             '-y',
             output_path
-        ], check=True, capture_output=True, text=True, timeout=300)
+        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=300)
         
         if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
             return output_path
@@ -2326,6 +2326,23 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
     tong_the = vai_dung and khuyu_dung
     gan_dung_tong_the = (vai_gan_dung and khuyu_gan_dung) and not tong_the
     
+    # TÍNH TOÁN 3 GIAI ĐOẠN (G1=45°, G2=30°, G3=15°) CHO HIỂN THỊ TRÊN FRAME
+    def _phase_status(v_diff, k_diff, threshold):
+        v_ok = v_diff <= threshold
+        k_ok = k_diff <= threshold
+        v_near = v_diff <= (threshold * 1.5)
+        k_near = k_diff <= (threshold * 1.5)
+        if v_ok and k_ok:
+            return "PASS", (0, 200, 80)
+        elif v_near and k_near:
+            return "NEAR", (0, 165, 255)
+        else:
+            return "FAIL", (0, 0, 220)
+    
+    g1_text, g1_color = _phase_status(vai_diff, khuyu_diff, 45)
+    g2_text, g2_color = _phase_status(vai_diff, khuyu_diff, 30)
+    g3_text, g3_color = _phase_status(vai_diff, khuyu_diff, 15)
+    
     # MÀU SẮC: Xanh (Đúng), Cam (Gần đúng), Đỏ (Sai)
     ORANGE_BGR = (0, 165, 255)
     mau_vai = (0, 255, 0) if vai_dung else (ORANGE_BGR if vai_gan_dung else (0, 0, 255))
@@ -2349,16 +2366,19 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
     cv2.putText(frame_output, f"{int(goc_khuyu)}", (pts_khuyu[1][0] + 15, pts_khuyu[1][1] - 15), 
                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, mau_khuyu, 2)
     
-    # === 3. VẼ BOX THÔNG TIN CHI TIẾT (TOP-LEFT BOX) ===
+    # === 3. VẼ BOX THÔNG TIN CHI TIẾT (TOP-LEFT BOX) — MỞ RỘNG 3 GIAI ĐOẠN ===
     box_x, box_y = 15, 50
-    box_w, box_h = 330, 160
+    box_w, box_h = 345, 235   # Tăng chiều cao để chứa thêm 3 giai đoạn
     
     # TỐI ƯU: Chỉ tạo overlay cho vùng Box thay vì toàn bộ frame
-    box_roi = frame_output[box_y:box_y+box_h, box_x:box_x+box_w]
+    # Đảm bảo box không vượt quá biên frame
+    safe_box_y2 = min(box_y + box_h, h)
+    safe_box_x2 = min(box_x + box_w, w)
+    box_roi = frame_output[box_y:safe_box_y2, box_x:safe_box_x2]
     overlay = box_roi.copy()
-    cv2.rectangle(overlay, (0, 0), (box_w, box_h), (40, 40, 40), -1)
-    cv2.addWeighted(overlay, 0.6, box_roi, 0.4, 0, box_roi)
-    frame_output[box_y:box_y+box_h, box_x:box_x+box_w] = box_roi
+    cv2.rectangle(overlay, (0, 0), (safe_box_x2 - box_x, safe_box_y2 - box_y), (20, 20, 35), -1)
+    cv2.addWeighted(overlay, 0.72, box_roi, 0.28, 0, box_roi)
+    frame_output[box_y:safe_box_y2, box_x:safe_box_x2] = box_roi
     cv2.rectangle(frame_output, (box_x, box_y), (box_x + box_w, box_y + box_h), (255, 255, 255), 2)
     
     # Text thông tin trong Box
@@ -2367,28 +2387,42 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
     font = cv2.FONT_HERSHEY_SIMPLEX
     
     # Dòng 1: FRAME & STATUS
-    cv2.putText(frame_output, f"FRAME #{frame_idx}", (box_x + 15, box_y + 30), font, 0.75, CYAN, 2)
-    cv2.putText(frame_output, status_text, (box_x + 215, box_y + 30), font, 0.85, mau_tong, 3)
+    cv2.putText(frame_output, f"FRAME #{frame_idx}", (box_x + 15, box_y + 28), font, 0.72, CYAN, 2)
+    cv2.putText(frame_output, status_text, (box_x + 220, box_y + 28), font, 0.82, mau_tong, 3)
     
     # Dòng 2: TIME
     time_sec = frame_idx / fps
     time_str = f"{int(time_sec // 60):02d}:{int(time_sec % 60):02d}"
-    cv2.putText(frame_output, f"TIME: {time_str}", (box_x + 15, box_y + 60), font, 0.6, (180, 180, 180), 1)
+    cv2.putText(frame_output, f"TIME: {time_str}", (box_x + 15, box_y + 52), font, 0.55, (180, 180, 180), 1)
     
-    # Dòng 3: SHOULDER
-    cv2.putText(frame_output, "SHOULDER", (box_x + 15, box_y + 100), font, 0.5, (220, 220, 220), 1)
-    cv2.putText(frame_output, f"{int(goc_vai)}", (box_x + 15, box_y + 130), font, 0.8, mau_vai, 2)
-    cv2.putText(frame_output, f"/ {chuan_vai}", (box_x + 85, box_y + 130), font, 0.6, (150, 150, 150), 1)
+    # Dòng 3: SHOULDER & ELBOW
+    cv2.putText(frame_output, "SHOULDER", (box_x + 15, box_y + 82), font, 0.48, (200, 200, 200), 1)
+    cv2.putText(frame_output, f"{int(goc_vai)}", (box_x + 15, box_y + 108), font, 0.78, mau_vai, 2)
+    cv2.putText(frame_output, f"/{int(chuan_vai)}", (box_x + 70, box_y + 108), font, 0.55, (140, 140, 140), 1)
+    cv2.putText(frame_output, "ELBOW", (box_x + 180, box_y + 82), font, 0.48, (200, 200, 200), 1)
+    cv2.putText(frame_output, f"{int(goc_khuyu)}", (box_x + 180, box_y + 108), font, 0.78, mau_khuyu, 2)
+    cv2.putText(frame_output, f"/{int(chuan_khuyu)}", (box_x + 240, box_y + 108), font, 0.55, (140, 140, 140), 1)
     
-    # Dòng 4: ELBOW
-    cv2.putText(frame_output, "ELBOW", (box_x + 180, box_y + 100), font, 0.5, (220, 220, 220), 1)
-    cv2.putText(frame_output, f"{int(goc_khuyu)}", (box_x + 180, box_y + 130), font, 0.8, mau_khuyu, 2)
-    cv2.putText(frame_output, f"/ {chuan_khuyu}", (box_x + 250, box_y + 130), font, 0.6, (150, 150, 150), 1)
+    # === ĐƯỜNG PHÂN CÁCH ===
+    cv2.line(frame_output, (box_x + 8, box_y + 120), (box_x + box_w - 8, box_y + 120), (80, 80, 100), 1)
+    cv2.putText(frame_output, "3 GIAI DOAN (45/30/15):", (box_x + 15, box_y + 137), font, 0.42, (150, 200, 255), 1)
+    
+    # === G1 (45°) ===
+    g1_label = f"G1(45): {g1_text}"
+    cv2.putText(frame_output, g1_label, (box_x + 15, box_y + 160), font, 0.52, g1_color, 2)
+    
+    # === G2 (30°) ===
+    g2_label = f"G2(30): {g2_text}"
+    cv2.putText(frame_output, g2_label, (box_x + 15, box_y + 183), font, 0.52, g2_color, 2)
+    
+    # === G3 (15°) ===
+    g3_label = f"G3(15): {g3_text}"
+    cv2.putText(frame_output, g3_label, (box_x + 15, box_y + 206), font, 0.52, g3_color, 2)
     
     warnings_list = get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, ss)
     if warnings_list:
-        w_text = warnings_list[0][:40] + "..." if len(warnings_list[0]) > 40 else warnings_list[0]
-        cv2.putText(frame_output, f"! {w_text}", (box_x + 15, box_y + 152), font, 0.4, (0, 255, 255), 1)
+        w_text = warnings_list[0][:38] + ".." if len(warnings_list[0]) > 38 else warnings_list[0]
+        cv2.putText(frame_output, f"! {w_text}", (box_x + 15, box_y + 228), font, 0.38, (0, 255, 255), 1)
 
     # Đảm bảo trả về kiểu dữ liệu Python chuẩn
     goc_vai = float(goc_vai)
@@ -2427,6 +2461,33 @@ def ensure_voice_files():
                 pass
     return sounds_dir
 
+
+# ============================================
+# HÀM TẠO ZIP THEO YÊU CẦU (LAZY ZIP - TRÁNH OOM)
+# ============================================
+def create_zip_of_frames(frame_paths):
+    """Nén danh sách ảnh frame thành file ZIP khi người dùng yêu cầu.
+    Không tự động chạy sau xử lý video để tránh tràn RAM (OOM) trên Cloud.
+    """
+    import zipfile
+    import tempfile
+    import time
+    import os
+    
+    if not frame_paths:
+        return None
+        
+    timestamp = int(time.time())
+    zip_path = os.path.join(tempfile.gettempdir(), f"frames_{timestamp}.zip")
+    try:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=1) as z:
+            for p in frame_paths:
+                if os.path.exists(p):
+                    z.write(p, os.path.basename(p))
+        return zip_path
+    except Exception as e:
+        print(f"Lỗi tạo zip: {e}")
+        return None
 
 # ============================================
 # XỬ LÝ VIDEO
@@ -2624,8 +2685,11 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         sounds_dir = ensure_voice_files()
         if sounds_dir and audio_events:
             total_duration_ms = int((tong_frame / fps_export) * 1000) + 1000
-            # GIẢI PHÁP CHỐNG SẬP WEB (OOM ERROR): Ghép âm thanh nối tiếp thay vì đè lên toàn bộ track
+            # GIẢI PHÁP CHỐNG SẬP WEB (OOM ERROR): Giới hạn 40 sự kiện âm thanh để tránh tràn RAM
             from pydub import AudioSegment
+            if len(audio_events) > 40:
+                step = len(audio_events) // 40
+                audio_events = audio_events[::step][:40]
             
             sounds = {}
             for s in ["dung", "gan_dung", "sai"]:
@@ -2651,7 +2715,6 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                     final_audio += snd
                     last_ms = time_ms + len(snd)
                     
-                    import gc
                     gc.collect() # Dọn rác bộ nhớ ngay lập tức để không bị sập RAM
             
             # Thêm khoảng lặng cuối video nếu cần
@@ -2661,18 +2724,16 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 final_audio = final_audio[:total_duration_ms]
             
             final_audio.export(mixed_audio_path, format="wav")
+            del final_audio
             audio_mixed = True
+            gc.collect()
     except Exception as e:
         print("Lỗi trộn âm thanh:", e)
-        
-    # TIẾN HÀNH ZIP VÀ LƯU JSON
-    zip_path = os.path.join(tempfile.gettempdir(), f"f_{timestamp}.zip")
-    try:
-        import zipfile
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as z:
-            for p in danh_sach_frame_paths:
-                if os.path.exists(p): z.write(p, os.path.basename(p))
-    except: zip_path = None
+    
+    gc.collect()
+    
+    # LAZY ZIP: Không tự động tạo ZIP ngốn RAM — sẽ tạo khi người dùng yêu cầu
+    zip_path = None
 
     json_path = os.path.join(tempfile.gettempdir(), f'f_{timestamp}.json')
     with open(json_path, 'w', encoding='utf-8') as f:
@@ -2699,7 +2760,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             final_h264
         ])
         
-        subprocess.run(cmd, capture_output=True)
+        # TỐI ƯU RAM: Xả log ffmpeg ra DEVNULL thay vì buffer vào RAM Python
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if os.path.exists(final_h264): final_video_path = final_h264
     except: pass
     
@@ -4513,10 +4575,21 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         csv_data = df.to_csv(index=False).encode('utf-8')
                         st.download_button("📄 Tọa độ góc khớp (CSV)", csv_data, "angle_data.csv", "text/csv", width="stretch", key=f"dl_f6_{key_suffix}")
                 with data_col2:
-                    # Nút tải Zip Frames nếu có
-                    if st.session_state.get('frames_zip'):
-                        with open(st.session_state.frames_zip, "rb") as f:
-                            st.download_button("📦 Toàn bộ khung hình (ZIP)", f, "all_frames.zip", "application/zip", width="stretch", key=f"dl_f7_{key_suffix}")
+                    # LAZY ZIP: Chỉ tạo ZIP khi người dùng yêu cầu để tránh OOM
+                    frames_zip_path = st.session_state.get('frames_zip')
+                    frame_paths_list = st.session_state.get('all_frames_paths', [])
+                    if frames_zip_path and os.path.exists(frames_zip_path):
+                        with open(frames_zip_path, "rb") as fz:
+                            st.download_button("📦 Toàn bộ khung hình (ZIP)", fz, "all_frames.zip", "application/zip", width="stretch", key=f"dl_f7_{key_suffix}")
+                    elif frame_paths_list:
+                        if st.button("📦 Chuẩn bị file ZIP tải ảnh", width="stretch", key=f"btn_prep_zip_{key_suffix}"):
+                            with st.spinner("🔄 Đang nén khung hình..."):
+                                new_zip = create_zip_of_frames(frame_paths_list)
+                                if new_zip:
+                                    st.session_state.frames_zip = new_zip
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
 
 def hien_thi_tab_nckh():
     is_light = st.session_state.theme == 'light'
@@ -5711,9 +5784,20 @@ def hien_thi_frames_day_du(key_suffix=""):
                 with open(processed_video_path, "rb") as f:
                     st.download_button("📥 Tải video xuống", f, "processed_video.mp4", "video/mp4", width="stretch", key=f"dl_video_main_{key_suffix}")
             with d_col2:
+                # LAZY ZIP: Tạo ZIP theo yêu cầu để tránh crash OOM
+                frame_paths_main = st.session_state.get('all_frames_paths', [])
                 if frames_zip and os.path.exists(frames_zip):
-                    with open(frames_zip, "rb") as f:
-                        st.download_button("📦 Tải tất cả frames (ZIP)", f, "all_frames.zip", "application/zip", width="stretch", key=f"dl_zip_main_{key_suffix}")
+                    with open(frames_zip, "rb") as fzip:
+                        st.download_button("📦 Tải tất cả frames (ZIP)", fzip, "all_frames.zip", "application/zip", width="stretch", key=f"dl_zip_main_{key_suffix}")
+                elif frame_paths_main:
+                    if st.button("📦 Chuẩn bị file ZIP tải ảnh", width="stretch", key=f"btn_prep_zip_main_{key_suffix}"):
+                        with st.spinner("🔄 Đang nén khung hình..."):
+                            new_zip_main = create_zip_of_frames(frame_paths_main)
+                            if new_zip_main:
+                                st.session_state.frames_zip = new_zip_main
+                                st.rerun()
+                            else:
+                                st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
         else:
             st.info("ℹ️ Đang tải hoặc không tìm thấy video trích xuất khung xương.")
             
