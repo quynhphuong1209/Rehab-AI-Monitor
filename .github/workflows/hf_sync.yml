@@ -12,10 +12,24 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push --force https://quynhphuong1209:$HF_TOKEN@huggingface.co/spaces/quynhphuong1209/Rehab-AI-Monitor-2026 main
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          
+          # Tạo một nhánh độc lập không có lịch sử cũ để loại bỏ file whl lớn khỏi lịch sử git
+          git checkout --orphan temp-hf-branch
+          
+          # Xóa file whl nếu nó còn xuất hiện trong git index
+          git rm --cached mediapipe-0.10.14-cp310-cp310-win_amd64.whl || true
+          
+          # Add toàn bộ code sạch (tự động bỏ qua các file trong .gitignore)
+          git add -A
+          git commit -m "deploy clean version to huggingface spaces"
+          
+          # Đẩy đè lên nhánh main của Hugging Face
+          git push --force https://quynhphuong1209:$HF_TOKEN@huggingface.co/spaces/quynhphuong1209/Rehab-AI-Monitor-2026 temp-hf-branch:main
