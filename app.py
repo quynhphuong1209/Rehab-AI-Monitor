@@ -2797,7 +2797,7 @@ def recalc_metrics(df, ss):
         "f1_score": f1_score,
         "icc": icc,
         "tb_vai_chuan": chuan_vai.mean(),
-        "tb_khuyu_chuan": khuyu_chuan.mean(),
+        "tb_khuyu_chuan": chuan_khuyu.mean(),
         "tong_frame_hop_le": total,
         "do_chinh_xac": ty_le_tong_the,
         "tong_frame": total
