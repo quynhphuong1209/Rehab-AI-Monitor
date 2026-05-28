@@ -409,6 +409,43 @@ def hash_password(password):
 def verify_password(password, hashed):
     return hash_password(password) == hashed
 
+def don_dep_file_tam():
+    """Dọn dẹp file tạm cũ trong /tmp để ngăn OOM khi chạy nhiều phân tích liên tiếp"""
+    try:
+        import glob
+        import time as _time
+        tmp_dir = tempfile.gettempdir()
+        current_time = _time.time()
+        max_age = 1800  # Xóa file cũ hơn 30 phút
+        
+        # Các pattern file tạm của hệ thống
+        patterns = [
+            os.path.join(tmp_dir, 'processed_*.mp4'),
+            os.path.join(tmp_dir, 'f_*.json'),
+            os.path.join(tmp_dir, '*_data.csv'),
+            os.path.join(tmp_dir, '*_audio.wav'),
+        ]
+        
+        deleted_count = 0
+        for pattern in patterns:
+            for fpath in glob.glob(pattern):
+                try:
+                    if current_time - os.path.getmtime(fpath) > max_age:
+                        os.unlink(fpath)
+                        deleted_count += 1
+                except:
+                    pass
+        
+        if deleted_count > 0:
+            print(f"[Cleanup] Đã xóa {deleted_count} file tạm cũ khỏi {tmp_dir}")
+    except Exception as e:
+        print(f"[Cleanup] Lỗi dọn file tạm: {e}")
+
+# Dọn dẹp file tạm khi app khởi động (chạy 1 lần mỗi session mới)
+if 'cleanup_done' not in st.session_state:
+    don_dep_file_tam()
+    st.session_state.cleanup_done = True
+
 # Khởi tạo trạng thái đăng nhập
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -2120,9 +2157,9 @@ def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
     
     try:
         return mp_pose.Pose(
-            static_image_mode=True,
+            static_image_mode=False,
             model_complexity=complexity,
-            smooth_landmarks=False,
+            smooth_landmarks=True,
             min_detection_confidence=min_confidence,
             min_tracking_confidence=min_confidence
         )
@@ -2131,27 +2168,27 @@ def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
             st.warning(f"⚠️ Lỗi khởi tạo MediaPipe Heavy ({e}). Tự động chuyển sang mô hình MediaPipe Full.")
             try:
                 return mp_pose.Pose(
-                    static_image_mode=True,
+                    static_image_mode=False,
                     model_complexity=1,
-                    smooth_landmarks=False,
+                    smooth_landmarks=True,
                     min_detection_confidence=min_confidence,
                     min_tracking_confidence=min_confidence
                 )
             except Exception as e2:
                 st.warning("⚠️ Không thể tải mô hình MediaPipe Full. Đang chuyển sang mô hình MediaPipe Lite.")
                 return mp_pose.Pose(
-                    static_image_mode=True,
+                    static_image_mode=False,
                     model_complexity=0,
-                    smooth_landmarks=False,
+                    smooth_landmarks=True,
                     min_detection_confidence=min_confidence,
                     min_tracking_confidence=min_confidence
                 )
         elif complexity == 1:
             st.warning("⚠️ Không thể tải mô hình MediaPipe Full. Đang chuyển sang mô hình MediaPipe Lite.")
             return mp_pose.Pose(
-                static_image_mode=True,
+                static_image_mode=False,
                 model_complexity=0,
-                smooth_landmarks=False,
+                smooth_landmarks=True,
                 min_detection_confidence=min_confidence,
                 min_tracking_confidence=min_confidence
             )
@@ -2183,12 +2220,12 @@ def get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, sai_so):
 # ============================================
 # XỬ LÝ FRAME - CẢI THIỆN BOX THÔNG TIN
 # ============================================
-def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
+def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, active_side=None):
     # 1. LẤY KÍCH THƯỚC VÀ CHUYỂN ĐỔI MÀU (Không dùng padding gây lệch)
     h, w = frame.shape[:2]
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
-    # 2. AI XỬ LÝ TRỰC TIẾP TRÊN FRAME GỐC VỚI CHẾ ĐỘ STATIC
+    # 2. AI XỬ LÝ TRỰC TIẾP TRÊN FRAME GỐC
     ket_qua = model.process(rgb)
     
     frame_output = frame.copy()
@@ -2218,24 +2255,10 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
         return frame_output, None, None, None, None, []
     
     # Import cục bộ để tránh phụ thuộc vào biến global
-    # pyrefly: ignore [missing-import]
     import mediapipe as _mp
     _mp_drawing = _mp.solutions.drawing_utils
     _mp_drawing_styles = _mp.solutions.drawing_styles
     _mp_pose = _mp.solutions.pose
-    
-    # CHỌN MÀU DỰA TRÊN KẾT QUẢ TỔNG THỂ CỦA FRAME
-    # (Tạm thời tính nhanh để lấy màu vẽ skeleton)
-    skeleton_color = GREEN
-    
-    # 3. VẼ KHUNG XƯƠNG (Sử dụng spec đơn giản để tránh lỗi vẽ hai đường)
-    _mp_drawing.draw_landmarks(
-        frame_output,
-        ket_qua.pose_landmarks,
-        _mp_pose.POSE_CONNECTIONS,
-        landmark_drawing_spec=_mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=1, circle_radius=2),
-        connection_drawing_spec=_mp_drawing.DrawingSpec(color=skeleton_color, thickness=2)
-    )
     
     # LẤY TỌA ĐỘ CÁC KHỚP QUAN TRỌNG (ĐẢM BẢO KHỚP 100% VỚI FRAME)
     lm = ket_qua.pose_landmarks.landmark
@@ -2270,24 +2293,33 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
     goc_vai_p = tinh_goc(hong_p, vai_p, khuyu_p)
     goc_khuyu_p = tinh_goc(vai_p, khuyu_p, co_tay_p)
     
-    # Tự động chọn bên đang tập (bên có góc vai lớn hơn hoặc đang vận động)
-    # Với Codman, tay tập thường đưa ra xa thân mình hơn tay vịn
-    nhip_t = abs(goc_vai_t - 45) # Giả định chuẩn Codman là 45
-    nhip_p = abs(goc_vai_p - 45)
-    
-    # Chọn bên có góc gần với mục tiêu tập luyện hơn hoặc có sự thay đổi
-    if abs(goc_vai_t - 10) > abs(goc_vai_p - 10): # So sánh với tư thế đứng thẳng (10 độ)
+    # Chọn bên tay tập chủ đạo (ưu tiên khóa tay tập nếu có active_side)
+    if active_side == "LEFT":
         goc_vai, goc_khuyu = goc_vai_t, goc_khuyu_t
         khop_chinh = vai_t
         khop_phu = khuyu_t
         pts_vai = (hong_t, vai_t, khuyu_t)
         pts_khuyu = (vai_t, khuyu_t, co_tay_t)
-    else:
+    elif active_side == "RIGHT":
         goc_vai, goc_khuyu = goc_vai_p, goc_khuyu_p
         khop_chinh = vai_p
         khop_phu = khuyu_p
         pts_vai = (hong_p, vai_p, khuyu_p)
         pts_khuyu = (vai_p, khuyu_p, co_tay_p)
+    else:
+        # Tự động chọn bên đang tập động (nếu không khóa cứng)
+        if abs(goc_vai_t - 10) > abs(goc_vai_p - 10):
+            goc_vai, goc_khuyu = goc_vai_t, goc_khuyu_t
+            khop_chinh = vai_t
+            khop_phu = khuyu_t
+            pts_vai = (hong_t, vai_t, khuyu_t)
+            pts_khuyu = (vai_t, khuyu_t, co_tay_t)
+        else:
+            goc_vai, goc_khuyu = goc_vai_p, goc_khuyu_p
+            khop_chinh = vai_p
+            khop_phu = khuyu_p
+            pts_vai = (hong_p, vai_p, khuyu_p)
+            pts_khuyu = (vai_p, khuyu_p, co_tay_p)
 
     # MẶC ĐỊNH (Nếu không có dynamic, hệ thống sẽ dùng số an toàn nhưng ưu tiên tuyệt đối dynamic)
     thoi_gian_giay = frame_idx / fps
@@ -2347,6 +2379,15 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None):
     mau_vai = (0, 255, 0) if vai_dung else (ORANGE_BGR if vai_gan_dung else (0, 0, 255))
     mau_khuyu = (0, 255, 0) if khuyu_dung else (ORANGE_BGR if khuyu_gan_dung else (0, 0, 255))
     mau_tong = (0, 255, 0) if tong_the else (ORANGE_BGR if gan_dung_tong_the else (0, 0, 255))
+    
+    # === 0. VẼ KHUNG XƯƠNG ĐỘNG (XANH/CAM/ĐỎ THEO ĐÁNH GIÁ CHUNG CỦA FRAME) ===
+    _mp_drawing.draw_landmarks(
+        frame_output,
+        ket_qua.pose_landmarks,
+        _mp_pose.POSE_CONNECTIONS,
+        landmark_drawing_spec=_mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=1, circle_radius=2),
+        connection_drawing_spec=_mp_drawing.DrawingSpec(color=mau_tong, thickness=2)
+    )
     
     # === 1. VẼ HEADER TRÊN CÙNG (TOP BAR) ===
     header_h = 35
@@ -2573,6 +2614,70 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     # Lấy giá trị skip từ session_state nếu có (NCV chỉnh), nếu không dùng mặc định
     skip_step = st.session_state.get('ncv_skip_frames', SKIP_FRAMES)
 
+    # Tự động phát hiện bên tay tập chủ đạo (LEFT hoặc RIGHT) để tránh nhảy bên gây lỗi trích xuất
+    active_side = "RIGHT"
+    try:
+        cap_detect = cv2.VideoCapture(duong_dan_video)
+        detect_count = 0
+        left_deviations = []
+        right_deviations = []
+        
+        while cap_detect.isOpened() and detect_count < 60:
+            ret_det, frame_det = cap_detect.read()
+            if not ret_det: break
+            detect_count += 1
+            
+            # Xoay và resize tương tự để khớp tọa độ
+            h_det, w_det = frame_det.shape[:2]
+            if w_det > h_det:
+                frame_det = cv2.rotate(frame_det, cv2.ROTATE_90_CLOCKWISE)
+                h_det, w_det = frame_det.shape[:2]
+                
+            if w_det != RESIZE_WIDTH:
+                scale_det = RESIZE_WIDTH / w_det
+                new_h_det = int(h_det * scale_det)
+                if new_h_det % 2 != 0: new_h_det -= 1
+                frame_det = cv2.resize(frame_det, (RESIZE_WIDTH, new_h_det), interpolation=cv2.INTER_LINEAR)
+                h_det, w_det = frame_det.shape[:2]
+                
+            rgb_det = cv2.cvtColor(frame_det, cv2.COLOR_BGR2RGB)
+            res_det = model.process(rgb_det)
+            if res_det.pose_landmarks:
+                lm_det = res_det.pose_landmarks.landmark
+                
+                # Trái
+                vai_t = (int(lm_det[11].x * w_det), int(lm_det[11].y * h_det))
+                khuyu_t = (int(lm_det[13].x * w_det), int(lm_det[13].y * h_det))
+                hong_t = (int(lm_det[23].x * w_det), int(lm_det[23].y * h_det))
+                g_vai_t = tinh_goc(hong_t, vai_t, khuyu_t)
+                
+                # Phải
+                vai_p = (int(lm_det[12].x * w_det), int(lm_det[12].y * h_det))
+                khuyu_p = (int(lm_det[14].x * w_det), int(lm_det[14].y * h_det))
+                hong_p = (int(lm_det[24].x * w_det), int(lm_det[24].y * h_det))
+                g_vai_p = tinh_goc(hong_p, vai_p, khuyu_p)
+                
+                left_deviations.append(abs(g_vai_t - 10))
+                right_deviations.append(abs(g_vai_p - 10))
+        cap_detect.release()
+        
+        if left_deviations and right_deviations:
+            mean_left = float(np.mean(left_deviations))
+            mean_right = float(np.mean(right_deviations))
+            std_left = float(np.std(left_deviations))
+            std_right = float(np.std(right_deviations))
+            
+            score_left = mean_left + std_left * 2
+            score_right = mean_right + std_right * 2
+            
+            if score_left > score_right:
+                active_side = "LEFT"
+            else:
+                active_side = "RIGHT"
+            st.toast(f"🤖 AI phát hiện bên tập chủ đạo: {'TAY TRÁI (LEFT)' if active_side == 'LEFT' else 'TAY PHẢI (RIGHT)'}", icon="🦾")
+    except Exception as e:
+        print("Lỗi tự động phát hiện bên tập:", e)
+
     try:
         while cap.isOpened():
             ret, frame = cap.read()
@@ -2599,8 +2704,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 frame = cv2.resize(frame, (RESIZE_WIDTH, new_h), interpolation=cv2.INTER_LINEAR)
                 
             try:
-                # Xử lý AI
-                xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(frame, model, chuan, frame_count, fps, dynamic_chuan=dynamic_chuan)
+                # Xử lý AI với active_side được phát hiện khóa cứng
+                xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(frame, model, chuan, frame_count, fps, dynamic_chuan=dynamic_chuan, active_side=active_side)
                 
                 # Xác định trạng thái âm thanh
                 current_state = "sai"
@@ -2863,6 +2968,114 @@ def recalc_metrics(df, ss):
         "do_chinh_xac": ty_le_tong_the,
         "tong_frame": total
     }
+
+def gui_bao_cao_tong_hop_3_giai_doan():
+    """Gửi báo cáo tổng hợp 3 giai đoạn cho cả Bác sĩ & Bệnh nhân"""
+    v_meta = st.session_state.get('current_eval_video')
+    if not v_meta:
+        # Fallback cho trường hợp vừa mới phân tích video xong và chưa có current_eval_video trong session_state
+        target_u = st.session_state.get('last_uploaded_patient_username', 'unknown')
+        users_db = load_users()
+        target_fn = users_db.get(target_u, {}).get('full_name', target_u)
+        v_meta = {
+            "username": target_u,
+            "full_name": target_fn,
+            "video_name": st.session_state.get('uploaded_file_name', 'N/A'),
+            "exercise": st.session_state.get('exercise', {}).get('ten', 'codman'),
+            "video_path": st.session_state.get('processed_video_path', '')
+        }
+        
+    df = st.session_state.get('angle_df')
+    # Nếu không có df trong session state, thử đọc từ file csv của video
+    if df is None and v_meta.get('df_path') and os.path.exists(v_meta.get('df_path')):
+        try:
+            df = pd.read_csv(v_meta['df_path'])
+        except:
+            pass
+    elif df is None and st.session_state.get('current_df_csv_path') and os.path.exists(st.session_state.get('current_df_csv_path')):
+        try:
+            df = pd.read_csv(st.session_state.get('current_df_csv_path'))
+        except:
+            pass
+
+    if df is None or len(df) == 0:
+        st.error("❌ Không thể nạp dữ liệu tọa độ chi tiết của video để phân tích 3 giai đoạn.")
+        return False
+
+    # Tính toán chỉ số cho cả 3 giai đoạn
+    metrics_g1 = recalc_metrics(df, 45)
+    metrics_g2 = recalc_metrics(df, 30)
+    metrics_g3 = recalc_metrics(df, 15)
+
+    acc_g1 = metrics_g1['do_chinh_xac']
+    acc_g2 = metrics_g2['do_chinh_xac']
+    acc_g3 = metrics_g3['do_chinh_xac']
+
+    # Lấy G2 làm mốc chính để đánh giá lâm sàng chung
+    clinical_res = "Đúng" if acc_g2 >= 85 else ("Gần đúng" if acc_g2 >= 60 else "Sai")
+
+    # Lưu đánh giá vào doctor_evaluations.json
+    evals = load_data(EVALUATIONS_FILE)
+    
+    # Tạo bản ghi đánh giá chi tiết
+    evals.append({
+        "patient_username": v_meta['username'],
+        "doctor_username": "AI_Researcher",
+        "video_name": v_meta.get('video_name', 'N/A'),
+        "exercise": v_meta['exercise'],
+        "ai_accuracy": round(float(acc_g2), 1),
+        "ai_accuracy_g1": round(float(acc_g1), 1),
+        "ai_accuracy_g2": round(float(acc_g2), 1),
+        "ai_accuracy_g3": round(float(acc_g3), 1),
+        "doctor_result": clinical_res,
+        "errors": metrics_g2.get('warnings', []),
+        "comments": (
+            f"BÁO CÁO TỔNG HỢP NCV - ĐẦY ĐỦ 3 GIAI ĐOẠN:\n"
+            f"🌱 GĐ 1 (Khởi đầu - Sai số 45°): {acc_g1:.1f}% | Đúng: {metrics_g1['frame_dung']}/{metrics_g1['tong_frame_hop_le']} frames\n"
+            f"📈 GĐ 2 (Hồi phục - Sai số 30°): {acc_g2:.1f}% | Đúng: {metrics_g2['frame_dung']}/{metrics_g2['tong_frame_hop_le']} frames\n"
+            f"🎯 GĐ 3 (Chuẩn xác - Sai số 15°): {acc_g3:.1f}% | Đúng: {metrics_g3['frame_dung']}/{metrics_g3['tong_frame_hop_le']} frames\n"
+            f"🤖 AI đề xuất: Phù hợp tập luyện ở giai đoạn " + 
+            ("3" if acc_g3 >= 80 or acc_g2 >= 75 else ("2" if acc_g2 >= 50 else "1"))
+        ),
+        "plan": (
+            f"Kế hoạch luyện tập đề xuất:\n"
+            f"- GĐ1 (Sai số 45°): Đạt {acc_g1:.1f}% - " + ("Đạt yêu cầu chuyển giai đoạn." if acc_g1 >= 75 else "Cần rèn luyện thêm.") + "\n"
+            f"- GĐ2 (Sai số 30°): Đạt {acc_g2:.1f}% - " + ("Đạt yêu cầu chuyển giai đoạn." if acc_g2 >= 70 else "Cần rèn luyện thêm.") + "\n"
+            f"- GĐ3 (Sai số 15°): Đạt {acc_g3:.1f}% - " + ("Ổn định khớp hoàn toàn." if acc_g3 >= 80 else "Khớp còn cứng hoặc lệch biên độ.")
+        ),
+        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
+        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
+        "giai_doan": "Phân tích 3 Giai đoạn",
+        "sai_so": {
+            "giai_doan_1": 45,
+            "giai_doan_2": 30,
+            "giai_doan_3": 15
+        }
+    })
+    save_data(EVALUATIONS_FILE, evals)
+
+    # Cập nhật thông tin trong danh sách video (VIDEOS_FILE) để Bác sĩ có thể thấy
+    video_list = load_data(VIDEOS_FILE)
+    for v in video_list:
+        if v.get('video_path') == v_meta.get('video_path') or (v.get('video_name') == v_meta.get('video_name') and v.get('username') == v_meta.get('username')):
+            v['accuracy'] = round(float(acc_g2), 1)
+            v['status'] = "Đã phân tích"
+            # Lưu stats và các giai đoạn vào metadata video
+            v['metrics'] = {
+                "do_chinh_xac": acc_g2,
+                "ty_le_gan_dung": metrics_g2['ty_le_gan_dung'],
+                "frame_dung": metrics_g2['frame_dung'],
+                "frame_gan_dung": metrics_g2['frame_gan_dung'],
+                "tong_frame_hop_le": metrics_g2['tong_frame_hop_le'],
+                "tb_goc_vai": metrics_g2['tb_goc_vai'],
+                "tb_goc_khuyu": metrics_g2['tb_goc_khuyu'],
+                "warnings": metrics_g2.get('warnings', []),
+                "metrics_g1": metrics_g1,
+                "metrics_g2": metrics_g2,
+                "metrics_g3": metrics_g3
+            }
+    save_data(VIDEOS_FILE, video_list)
+    return True
 
 def tinh_metrics_chi_tiet(df, bt):
     if len(df) == 0:
@@ -4037,6 +4250,15 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
     tk = stats_ext if stats_ext is not None else st.session_state.get('stats')
     df = df_ext if df_ext is not None else st.session_state.get('angle_df')
     
+    # FALLBACK: Nếu angle_df đã được giải phóng khỏi RAM -> Đọc lại từ CSV để tiết kiệm bộ nhớ
+    if df is None and df_ext is None:
+        csv_path = st.session_state.get('current_df_csv_path')
+        if csv_path and os.path.exists(csv_path):
+            try:
+                df = pd.read_csv(csv_path)
+            except:
+                pass
+    
     if tk is None or df is None:
         st.warning("⚠️ Dữ liệu phân tích chi tiết không khả dụng hoặc chưa được tải.")
         st.info("💡 Vui lòng đảm bảo Nghiên cứu viên đã hoàn tất việc trích xuất khung xương cho video này.")
@@ -4131,6 +4353,29 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
         </p>
     </div>
     """, unsafe_allow_html=True)
+
+    if user_role == "Nghiên cứu viên":
+        st.markdown("<br>", unsafe_allow_html=True)
+        is_light = st.session_state.get('theme', 'dark') == 'light'
+        cta_bg = "linear-gradient(135deg, rgba(0, 114, 255, 0.1) 0%, rgba(0, 198, 255, 0.1) 100%)" if not is_light else "linear-gradient(135deg, rgba(0, 114, 255, 0.05) 0%, rgba(0, 198, 255, 0.05) 100%)"
+        cta_border = "rgba(0, 198, 255, 0.4)"
+        
+        st.markdown(f"""
+        <div style="background: {cta_bg}; border: 1px solid {cta_border}; padding: 18px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0, 114, 255, 0.15); margin-bottom: 10px;">
+            <h4 style="margin: 0 0 8px 0; color: #00c6ff; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                📤 GỬI KẾT QUẢ TỔNG HỢP CẢ 3 GIAI ĐOẠN CHO BS & BN
+            </h4>
+            <p style="margin: 0 0 12px 0; font-size: 0.9rem; color: #ccc;">
+                Bấm nút dưới đây để gửi báo cáo phân tích toàn diện <b>cả 3 giai đoạn</b> (ngưỡng 45°, 30°, 15°) cùng ý kiến gợi ý của AI cho cả <b>Bác sĩ điều trị</b> và <b>Bệnh nhân</b> xem.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("📤 GỬI BÁO CÁO TỔNG HỢP 3 GIAI ĐOẠN CHO BS & BN", key=f"btn_send_3_stages_main_{key_suffix}", type="primary", use_container_width=True):
+            if gui_bao_cao_tong_hop_3_giai_doan():
+                st.success("✅ Đã gửi báo cáo tổng hợp 3 giai đoạn thành công!")
+                st.balloons()
+                st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -4347,37 +4592,9 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             if user_role == "Nghiên cứu viên":
                 st.markdown("---")
                 if st.button("📤 XÁC NHẬN & GỬI BÁO CÁO TỔNG HỢP", key=f"btn_send_final_{key_suffix}", width="stretch", type="primary"):
-                    v_meta = st.session_state.get('current_eval_video')
-                    if v_meta:
-                        acc_g1 = metrics_g1['do_chinh_xac']
-                        acc_g2 = metrics_g2['do_chinh_xac']
-                        acc_g3 = metrics_g3['do_chinh_xac']
-                        
-                        evals = load_data(EVALUATIONS_FILE)
-                        evals.append({
-                            "patient_username": v_meta['username'],
-                            "doctor_username": "AI_Researcher",
-                            "video_name": v_meta.get('video_name', 'N/A'),
-                            "exercise": v_meta['exercise'],
-                            "ai_accuracy": acc_g2,
-                            "ai_accuracy_g1": acc_g1,
-                            "ai_accuracy_g2": acc_g2,
-                            "ai_accuracy_g3": acc_g3,
-                            "doctor_result": "Đúng" if acc_g2 >= 85 else ("Gần đúng" if acc_g2 >= 60 else "Sai"),
-                            "errors": tk_selected.get('warnings', []),
-                            "comments": f"Báo cáo tổng hợp từ NCV. Giai đoạn 1 (Sai số 45°): {acc_g1:.1f}%. Giai đoạn 2 (Sai số 30°): {acc_g2:.1f}%. Giai đoạn 3 (Sai số 15°): {acc_g3:.1f}%. Đối chiếu video YouTube mẫu từng giây.",
-                            "plan": f"Bác sĩ vui lòng xem chi tiết ROM và chỉ số của 3 giai đoạn tập trong tab kết quả.",
-                            "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                            "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
-                            "giai_doan": "Phân tích 3 Giai đoạn",
-                            "sai_so": {
-                                "giai_doan_1": 45,
-                                "giai_doan_2": 30,
-                                "giai_doan_3": 15
-                            }
-                        })
-                        save_data(EVALUATIONS_FILE, evals)
-                        st.success(f"✅ Đã gửi báo cáo tổng hợp 3 giai đoạn cho BN {v_meta['full_name']}!")
+                    if gui_bao_cao_tong_hop_3_giai_doan():
+                        v_meta = st.session_state.get('current_eval_video') or {}
+                        st.success(f"✅ Đã gửi báo cáo tổng hợp 3 giai đoạn cho BN {v_meta.get('full_name', 'Bệnh nhân')}!")
                         st.balloons()
 
     # === TAB 2: BIỂU ĐỒ KHỚP ===
@@ -5758,20 +5975,33 @@ def segment_frames(all_frames_data):
     window_size = min(15, max(3, total // 50))
     smoothed = np.convolve(angles, np.ones(window_size)/window_size, mode='same')
     
-    # Find valleys (các cực tiểu tương đối - nơi chuyển tiếp giữa các lần lặp lại)
-    valleys = []
+    # Tự động quyết định tìm Đỉnh (peaks) hay Đáy (valleys)
+    p10 = np.percentile(smoothed, 10)
+    p90 = np.percentile(smoothed, 90)
+    mid = (p10 + p90) / 2
+    mean_val = np.mean(smoothed)
+    find_peaks = mean_val > mid
+    
+    # Find extremes (các cực trị tương đối - nơi chuyển tiếp giữa các lần lặp lại)
+    extremes = []
     for i in range(window_size, len(smoothed) - window_size):
-        is_valley = True
-        for j in range(i - window_size, i + window_size + 1):
-            if smoothed[j] < smoothed[i]:
-                is_valley = False
-                break
-        if is_valley:
-            valleys.append(i)
+        is_extreme = True
+        if find_peaks:
+            for j in range(i - window_size, i + window_size + 1):
+                if smoothed[j] > smoothed[i]:
+                    is_extreme = False
+                    break
+        else:
+            for j in range(i - window_size, i + window_size + 1):
+                if smoothed[j] < smoothed[i]:
+                    is_extreme = False
+                    break
+        if is_extreme:
+            extremes.append(i)
             
     min_dist = total // 10
     filtered_valleys = []
-    for v in valleys:
+    for v in extremes:
         if not filtered_valleys or (v - filtered_valleys[-1] >= min_dist):
             if v > min_dist and v < total - min_dist:
                 filtered_valleys.append(v)
@@ -5992,36 +6222,12 @@ def hien_thi_frames_day_du(key_suffix=""):
         
         if user_role == "Nghiên cứu viên":
             st.write("")
-            if st.button("📤 GỬI VIDEO CHO BN & BÁC SĨ", key=f"btn_send_ncv_{key_suffix}", width="stretch", type="primary"):
-                v_meta = st.session_state.get('current_eval_video')
-                if v_meta:
-                    evals = load_data(EVALUATIONS_FILE)
-                    evals.append({
-                        "patient_username": v_meta['username'],
-                        "doctor_username": "AI_Researcher",
-                        "video_name": v_meta.get('video_name', 'N/A'),
-                        "exercise": v_meta['exercise'],
-                        "ai_accuracy": round(float(ai_acc), 1),
-                        "doctor_result": "AI Video Sent",
-                        "errors": [],
-                        "comments": f"Báo cáo AI: Đúng {pass_count} frames, Gần đúng {nearly_count} frames, Sai {fail_count} frames.",
-                        "plan": "Vui lòng xem video trích xuất tại tab KẾT QUẢ.",
-                        "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
-                        "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
-                    })
-                    save_data(EVALUATIONS_FILE, evals)
-                    
-                    # CẬP NHẬT TRẠNG THÁI TRONG VIDEOS_FILE ĐỂ BÁC SĨ THẤY
-                    video_list = load_data(VIDEOS_FILE)
-                    for v in video_list:
-                        if v.get('video_path') == v_meta.get('video_path'):
-                            v['accuracy'] = round(float(ai_acc), 1)
-                            v['status'] = "Đã phân tích"
-                            v['metrics'] = st.session_state.get('stats') # Lưu luôn metrics để bsi xem
-                    save_data(VIDEOS_FILE, video_list)
-                    
-                    st.success(f"✅ Đã gửi cho {v_meta['full_name']}!")
+            if st.button("📤 GỬI BÁO CÁO TỔNG HỢP 3 GIAI ĐOẠN CHO BS & BN", key=f"btn_send_ncv_3_stages_{key_suffix}", use_container_width=True, type="primary"):
+                if gui_bao_cao_tong_hop_3_giai_doan():
+                    v_meta = st.session_state.get('current_eval_video') or {}
+                    st.success(f"✅ Đã gửi báo cáo tổng hợp 3 giai đoạn cho BN {v_meta.get('full_name', 'Bệnh nhân')}!")
                     st.balloons()
+                    st.rerun()
 
     st.markdown("---")
 
@@ -7264,10 +7470,61 @@ def main():
                 if file_upload is not None and not st.session_state.processing:
                     # NẾU FILE MỚI KHÁC FILE CŨ -> RESET DATA ĐỂ PHÂN TÍCH MỚI
                     if st.session_state.get('uploaded_file_name') != file_upload.name:
+                        # === GIẢI PHÓNG BỘ NHỚ TOÀN DIỆN TRƯỚC KHI PHÂN TÍCH MỚI (CHỐNG OOM) ===
+                        import gc
+
+                        # 1. Xóa file tạm cũ trên đĩa để giải phóng RAM của OS
+                        old_video_path = st.session_state.get('processed_video_path')
+                        if old_video_path and os.path.exists(old_video_path):
+                            try:
+                                os.unlink(old_video_path)
+                                # Xóa cả bản H264 nếu có
+                                old_h264 = old_video_path.replace('_f.mp4', '.mp4') if old_video_path.endswith('_f.mp4') else old_video_path.replace('.mp4', '_f.mp4')
+                                if os.path.exists(old_h264):
+                                    os.unlink(old_h264)
+                            except:
+                                pass
+
+                        old_csv_path = st.session_state.get('current_df_csv_path')
+                        if old_csv_path and os.path.exists(old_csv_path):
+                            try:
+                                os.unlink(old_csv_path)
+                            except:
+                                pass
+
+                        old_frames_dir = st.session_state.get('temp_frames_dir')
+                        if old_frames_dir and os.path.exists(old_frames_dir):
+                            try:
+                                import shutil
+                                shutil.rmtree(old_frames_dir, ignore_errors=True)
+                            except:
+                                pass
+
+                        # 2. Xóa toàn bộ dữ liệu lớn trong session_state
+                        keys_to_clear = [
+                            'has_data', 'stats', 'angle_df', 'processed_video_path',
+                            'all_frames_paths', 'all_frames_data', 'all_frames_data_path',
+                            'output_video_bytes', 'processed_video_bytes', 'frames_zip',
+                            'current_df_csv_path', 'temp_frames_dir', 'temp_video_file',
+                            'video_ready', 'frames_ready', 'frames_loaded',
+                            'current_page', 'processing_result', 'processing_progress',
+                            'processing_status', 'exercise'
+                        ]
+                        for k in keys_to_clear:
+                            if k in st.session_state:
+                                st.session_state[k] = None if k not in ('all_frames_paths', 'all_frames_data') else []
+
                         st.session_state.has_data = False
-                        st.session_state.stats = None
-                        st.session_state.angle_df = None
-                        st.session_state.processed_video_path = None
+                        st.session_state.video_ready = False
+                        st.session_state.frames_ready = False
+                        st.session_state.frames_loaded = False
+                        st.session_state.current_page = 1
+                        st.session_state.processing_progress = 0
+                        st.session_state.processing_status = ""
+
+                        # 3. Dọn rác Python ngay lập tức
+                        gc.collect()
+                        st.toast("🧹 Đã giải phóng bộ nhớ từ phân tích trước.", icon="💾")
                     
                     st.success(f"✅ Đã chọn file: {file_upload.name} ({file_upload.size / (1024*1024):.2f} MB)")
                     
@@ -7363,11 +7620,16 @@ def main():
                                     st.session_state.processed_video_path = output_path
                                     st.session_state.uploaded_file_name = file_upload.name
                                     st.session_state.all_frames_data_path = all_frames_data
+                                    st.session_state.temp_frames_dir = temp_folder  # Lưu để dọn lần sau
                                     
-                                    # Lưu DataFrame ra CSV để load lại sau
+                                    # Lưu DataFrame ra CSV và giải phóng RAM ngay lập tức
                                     df_csv_path = output_path.replace('.mp4', '_data.csv')
                                     df.to_csv(df_csv_path, index=False)
                                     st.session_state.current_df_csv_path = df_csv_path
+                                    # Giải phóng DataFrame lớn khỏi RAM, chỉ giữ đường dẫn CSV
+                                    del df
+                                    del angle_data
+                                    gc.collect()
                                     
                                     try:
                                         os.unlink(video_path)
@@ -7392,28 +7654,10 @@ def main():
                                                 st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU...", icon="🔄")
                                                 chuyen_tab_bang_js("🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU")
                                         with c_nav2:
-                                            if st.button("📤 GỬI KẾT QUẢ CHO BN", width="stretch", type="secondary"):
-                                                acc = round(metrics["ty_le_tong_the"], 1)
-                                                clinical_res = "Đúng" if acc >= 85 else ("Gần đúng" if acc >= 60 else "Sai")
-                                                
-                                                evals = load_data(EVALUATIONS_FILE)
-                                                evals.append({
-                                                    "patient_username": st.session_state.get('last_uploaded_patient_username', 'unknown'),
-                                                    "doctor_username": "AI_Researcher",
-                                                    "video_name": file_upload.name,
-                                                    "exercise": bai_tap['ten'],
-                                                    "ai_accuracy": round(float(acc), 1),
-                                                    "doctor_result": clinical_res,
-                                                    "errors": all_warnings,
-                                                    "comments": f"Báo cáo AI ({ncv_gd}): Đúng {st.session_state.stats.get('frame_dung', 0)} frames, Gần đúng {st.session_state.stats.get('frame_gan_dung', 0)} frames.",
-                                                    "plan": f"Bác sĩ vui lòng xem biểu đồ ROM để đánh giá độ ổn định. (Đánh giá ở {ncv_gd})",
-                                                    "doctor_name": f"NCV: {ten_nguoi_dung}",
-                                                    "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
-                                                    "giai_doan": ncv_gd,
-                                                    "sai_so": ss_override
-                                                })
-                                                save_data(EVALUATIONS_FILE, evals)
-                                                st.success("✅ Đã gửi kết quả cho Bệnh nhân!")
+                                            if st.button("📤 GỬI BÁO CÁO TỔNG HỢP 3 GIAI ĐOẠN CHO BS & BN", width="stretch", type="secondary"):
+                                                if gui_bao_cao_tong_hop_3_giai_doan():
+                                                    st.success("✅ Đã gửi báo cáo tổng hợp 3 giai đoạn thành công!")
+                                                    st.balloons()
                                     elif user_role == "Bệnh nhân":
                                         if st.button("📝 ĐÁNH GIÁ CHUYÊN MÔN PHCN", width="stretch", type="primary"):
                                             st.toast("🚀 Đang chuyển sang tab 📊 KẾT QUẢ ĐÁNH GIÁ...", icon="🔄")
