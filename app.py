@@ -2638,18 +2638,21 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             if not ret_det: break
             detect_count += 1
             
-            # Xoay và resize tương tự để khớp tọa độ
+            # Xoay và resize tương tự để khớp tọa độ (Tối ưu hóa RAM: Resize trước khi xoay)
             h_det, w_det = frame_det.shape[:2]
             if w_det > h_det:
+                scale_det = RESIZE_WIDTH / h_det
+                new_w_det = int(w_det * scale_det)
+                if new_w_det % 2 != 0: new_w_det -= 1
+                frame_det = cv2.resize(frame_det, (new_w_det, RESIZE_WIDTH), interpolation=cv2.INTER_LINEAR)
                 frame_det = cv2.rotate(frame_det, cv2.ROTATE_90_CLOCKWISE)
-                h_det, w_det = frame_det.shape[:2]
-                
-            if w_det != RESIZE_WIDTH:
-                scale_det = RESIZE_WIDTH / w_det
-                new_h_det = int(h_det * scale_det)
-                if new_h_det % 2 != 0: new_h_det -= 1
-                frame_det = cv2.resize(frame_det, (RESIZE_WIDTH, new_h_det), interpolation=cv2.INTER_LINEAR)
-                h_det, w_det = frame_det.shape[:2]
+            else:
+                if w_det != RESIZE_WIDTH:
+                    scale_det = RESIZE_WIDTH / w_det
+                    new_h_det = int(h_det * scale_det)
+                    if new_h_det % 2 != 0: new_h_det -= 1
+                    frame_det = cv2.resize(frame_det, (RESIZE_WIDTH, new_h_det), interpolation=cv2.INTER_LINEAR)
+            h_det, w_det = frame_det.shape[:2]
                 
             rgb_det = cv2.cvtColor(frame_det, cv2.COLOR_BGR2RGB)
             res_det = model.process(rgb_det)
@@ -2671,6 +2674,10 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 left_deviations.append(abs(g_vai_t - 10))
                 right_deviations.append(abs(g_vai_p - 10))
         cap_detect.release()
+        if 'frame_det' in locals(): del frame_det
+        if 'rgb_det' in locals(): del rgb_det
+        if 'res_det' in locals(): del res_det
+        gc.collect()
         
         if left_deviations and right_deviations:
             mean_left = float(np.mean(left_deviations))
@@ -2704,15 +2711,18 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             
             h_orig, w_orig = frame.shape[:2]
             if w_orig > h_orig:
+                # Tối ưu hóa RAM cực hạn: Resize trước khi xoay để tránh xoay mảng 4K/FullHD lớn
+                scale = RESIZE_WIDTH / h_orig
+                new_w = int(w_orig * scale)
+                if new_w % 2 != 0: new_w -= 1
+                frame = cv2.resize(frame, (new_w, RESIZE_WIDTH), interpolation=cv2.INTER_LINEAR)
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-                h_orig, w_orig = frame.shape[:2]
-            
-            # Cải tiến: Resize chỉ khi cần thiết và dùng phép nội suy nhanh hơn (INTER_NEAREST hoặc INTER_LINEAR)
-            if w_orig != RESIZE_WIDTH:
-                scale = RESIZE_WIDTH / w_orig
-                new_h = int(h_orig * scale)
-                if new_h % 2 != 0: new_h -= 1
-                frame = cv2.resize(frame, (RESIZE_WIDTH, new_h), interpolation=cv2.INTER_LINEAR)
+            else:
+                if w_orig != RESIZE_WIDTH:
+                    scale = RESIZE_WIDTH / w_orig
+                    new_h = int(h_orig * scale)
+                    if new_h % 2 != 0: new_h -= 1
+                    frame = cv2.resize(frame, (RESIZE_WIDTH, new_h), interpolation=cv2.INTER_LINEAR)
                 
             try:
                 # Xử lý AI với active_side được phát hiện khóa cứng và truyền last_pose_landmarks để khôi phục khi mất dấu
