@@ -2103,6 +2103,9 @@ def ve_cung_tron_goc(image, point1, center, point3, angle, color, radius=40):
 def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
     """Khởi tạo MediaPipe Pose với cấu hình linh hoạt"""
     # pyrefly: ignore [missing-import]
+    # Kích hoạt thiết lập tài nguyên ảo và monkey-patching
+    setup_mediapipe_resources()
+    
     import mediapipe as mp
     mp_pose = mp.solutions.pose
     
