@@ -2595,6 +2595,12 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 if prog - last_progress >= 0.02: # Cập nhật progress nhạy hơn (2% thay vì 5%)
                     callback(prog)
                     last_progress = prog
+                    
+            # Giải phóng RAM định kỳ tránh tràn bộ nhớ (OOM) trên Streamlit Cloud (Hạn mức 1GB RAM)
+            if 'frame' in locals(): del frame
+            if 'xu_ly' in locals(): del xu_ly
+            if processed_count % 50 == 0:
+                gc.collect()
     finally:
         if cap: cap.release()
         if writer: writer.release()
