@@ -2120,7 +2120,7 @@ def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
         )
     except Exception as e:
         if complexity == 2:
-            st.warning("⚠️ Không thể tải mô hình MediaPipe Heavy do giới hạn quyền truy cập trên server. Tự động chuyển sang mô hình MediaPipe Full.")
+            st.warning(f"⚠️ Lỗi khởi tạo MediaPipe Heavy ({e}). Tự động chuyển sang mô hình MediaPipe Full.")
             try:
                 return mp_pose.Pose(
                     static_image_mode=True,
