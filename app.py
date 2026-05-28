@@ -6059,14 +6059,16 @@ def hien_thi_frames_day_du(key_suffix=""):
         if page_key not in st.session_state:
             st.session_state[page_key] = 1
 
-        rc1, rc2, rc3, rc4 = st.columns([2, 2, 2, 1])
+        rc1, rc2, rc3, rc4, rc5 = st.columns([1.5, 1.5, 1.5, 1.5, 0.6])
         with rc1:
             qlabel = st.selectbox("✨ Chất lượng", ["Tốc độ", "Cân bằng", "Sắc nét"], index=1, key=f"fq_{tab_key}_{key_suffix_val}")
         with rc2:
             fpp = st.selectbox("📄 Số/Trang", [12, 24, 36, 48], index=1, key=f"fpp_{tab_key}_{key_suffix_val}")
         with rc3:
-            sub_filter = st.selectbox("🔍 Lọc thêm", ["Tất cả", "PASS", "NEAR", "FAIL"], key=f"fsub_{tab_key}_{key_suffix_val}")
+            grid_cols = st.selectbox("🗂️ Số cột", [1, 2, 3, 4], index=1, key=f"fcols_{tab_key}_{key_suffix_val}") # Mặc định 2 cột để dãn to đẹp mắt
         with rc4:
+            sub_filter = st.selectbox("🔍 Lọc thêm", ["Tất cả", "PASS", "NEAR", "FAIL"], key=f"fsub_{tab_key}_{key_suffix_val}")
+        with rc5:
             st.write("")
             st.write("")
             if st.button("🔄", width="stretch", key=f"fref_{tab_key}_{key_suffix_val}"):
@@ -6120,7 +6122,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         e_idx = min(s_idx + fpp, total_f)
         page_inds = indices_list[s_idx:e_idx]
 
-        grid_html = "<div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;'>"
+        grid_html = f"<div style='display: grid; grid-template-columns: repeat({grid_cols}, 1fr); gap: 15px;'>"
         with st.spinner("🚀 Đang tải ảnh..."):
             for orig_idx in page_inds:
                 f_data = frame_data_list[orig_idx]
@@ -6170,15 +6172,16 @@ def hien_thi_frames_day_du(key_suffix=""):
                 """
             grid_html += "</div>"
 
-        num_rows = math.ceil(len(page_inds) / 4)
-        calculated_height = num_rows * 720 + 80
+        num_rows = math.ceil(len(page_inds) / grid_cols)
+        card_height = int(720 * (4 / grid_cols))
+        calculated_height = num_rows * card_height + 80
         components.html(f"""
             <style>
                 body {{ background: transparent; color: white; font-family: 'Times New Roman', serif; margin:0; padding:10px; }}
-                img {{ width: 100%; height: auto; max-height: 1200px; object-fit: contain; background:#000; display:block; }}
+                img {{ width: 100%; height: auto; max-height: 1500px; object-fit: contain; background:#000; display:block; }}
                 .card {{ border-radius: 16px; overflow: hidden; background: #1a1a2e; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width:100%; }}
             </style>
-            <div style='display:grid; grid-template-columns:repeat(4,1fr); gap:15px;'>
+            <div style='display:grid; grid-template-columns:repeat({grid_cols},1fr); gap:15px;'>
                 {grid_html}
             </div>
         """, height=min(calculated_height, 25000), scrolling=True)
