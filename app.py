@@ -2893,7 +2893,10 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             '-vcodec', 'libx264', 
             '-pix_fmt', 'yuv420p', 
             '-preset', 'ultrafast',
-            '-crf', '32',
+            '-vf', 'scale=360:-2',  # Giảm chiều rộng xuống 360px để tải nhanh hơn
+            '-crf', '35',           # Tăng độ nén (CRF 35) để dung lượng giảm tối đa 5-8x
+            '-maxrate', '350k',     # Giới hạn bitrate 350kbps giúp xem trực tuyến mượt mà
+            '-bufsize', '700k',
             '-movflags', '+faststart',
             '-threads', '0',
             final_h264
