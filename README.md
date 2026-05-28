@@ -1,3 +1,15 @@
+---
+title: Rehab AI Monitor 2026
+emoji: 🏥
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: 1.57.0
+python_version: 3.10
+app_file: app.py
+pinned: false
+---
+
 # 🏥 Rehab AI Monitor (Clinical Ecosystem)
 
 **Hệ thống giám sát tập luyện Phục hồi chức năng từ xa dựa trên Trí tuệ nhân tạo (AI) và Thị giác máy tính - Giải pháp Clinical-Grade chuyên nghiệp.**
