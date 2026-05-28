@@ -363,6 +363,99 @@ a {{color:{title_color};text-decoration:none}}
 </div>"""
     st.markdown(footer_html, unsafe_allow_html=True)
 
+# --- TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU SANG HUGGING FACE DATASET (MIỄN PHÍ - BỀN VỮNG) ---
+import threading
+
+HF_TOKEN = os.environ.get("HF_TOKEN")
+HF_SPACE_ID = os.environ.get("HF_SPACE_ID")
+HF_DATASET_ID = f"{HF_SPACE_ID}-data" if HF_SPACE_ID else None
+
+def khoi_tao_dong_bo_hf():
+    """Tải tất cả dữ liệu từ Hugging Face Dataset về đĩa khi khởi động"""
+    if not HF_TOKEN or not HF_DATASET_ID:
+        return
+        
+    try:
+        from huggingface_hub import HfApi, hf_hub_download
+        api = HfApi(token=HF_TOKEN)
+        
+        # 1. Tạo repo dataset riêng tư nếu chưa tồn tại
+        api.create_repo(repo_id=HF_DATASET_ID, repo_type="dataset", private=True, exist_ok=True)
+        
+        # 2. Tải các file cấu hình về máy
+        files_to_download = [
+            "users.json",
+            "patient_symptoms.json",
+            "doctor_evaluations.json",
+            "schedules.json",
+            "video_list.json",
+            "research_data.json",
+            "lich_su_tap_luyen.json",
+            "phan_hoi.json"
+        ]
+        
+        for f_name in files_to_download:
+            local_path = os.path.join(DATA_DIR, f_name)
+            try:
+                hf_hub_download(
+                    repo_id=HF_DATASET_ID, 
+                    filename=f_name, 
+                    repo_type="dataset", 
+                    token=HF_TOKEN,
+                    local_dir=DATA_DIR
+                )
+                print(f"[HF Sync] Đã tải về: {f_name}")
+            except Exception as e:
+                pass
+                
+        # 3. Quét và tải toàn bộ thư mục patient_uploads từ dataset về máy
+        try:
+            from huggingface_hub import list_repo_files
+            files = list_repo_files(repo_id=HF_DATASET_ID, repo_type="dataset", token=HF_TOKEN)
+            for f in files:
+                if f.startswith("patient_uploads/"):
+                    try:
+                        hf_hub_download(
+                            repo_id=HF_DATASET_ID,
+                            filename=f,
+                            repo_type="dataset",
+                            token=HF_TOKEN,
+                            local_dir=DATA_DIR
+                        )
+                        print(f"[HF Sync] Đã đồng bộ video: {f}")
+                    except:
+                        pass
+        except:
+            pass
+    except Exception as e:
+        print(f"[HF Sync] Lỗi khởi động đồng bộ: {e}")
+
+def push_file_to_hf_async(local_path):
+    """Đồng bộ một file lên Hugging Face Dataset dưới dạng bất đồng bộ (không làm lag UI)"""
+    if not HF_TOKEN or not HF_DATASET_ID:
+        return
+        
+    def _run_upload():
+        try:
+            from huggingface_hub import HfApi
+            api = HfApi(token=HF_TOKEN)
+            rel_path = os.path.relpath(local_path, DATA_DIR)
+            rel_path = rel_path.replace("\\", "/") # Chuẩn hóa dạng Unix
+            
+            if os.path.exists(local_path):
+                api.upload_file(
+                    path_or_fileobj=local_path,
+                    path_in_repo=rel_path,
+                    repo_id=HF_DATASET_ID,
+                    repo_type="dataset",
+                    token=HF_TOKEN
+                )
+                print(f"[HF Sync] Đã đẩy lên Dataset: {rel_path}")
+        except Exception as e:
+            print(f"[HF Sync] Lỗi đẩy file {local_path}: {e}")
+
+    threading.Thread(target=_run_upload, daemon=True).start()
+
 def load_data(file_path):
     if os.path.exists(file_path):
         try:
@@ -375,6 +468,8 @@ def load_data(file_path):
 def save_data(file_path, data):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+    # Tự động đẩy file dữ liệu lên Hugging Face Dataset
+    push_file_to_hf_async(file_path)
 
 def load_users():
     users = load_data(USER_DATA_FILE)
@@ -481,8 +576,9 @@ def don_dep_file_tam():
     except Exception as e:
         print(f"[Cleanup] Lỗi dọn file tạm: {e}")
 
-# Dọn dẹp file tạm khi app khởi động (chạy 1 lần mỗi session mới)
+# Khởi động đồng bộ dữ liệu từ Hugging Face Dataset và dọn dẹp file tạm khi app khởi động
 if 'cleanup_done' not in st.session_state:
+    khoi_tao_dong_bo_hf()
     don_dep_file_tam()
     st.session_state.cleanup_done = True
 
@@ -7828,6 +7924,9 @@ def main():
                             # Lưu file video
                             with open(file_path, "wb") as f:
                                 f.write(file_upload.getbuffer())
+                            
+                            # Tự động đẩy file video lên Hugging Face Dataset dưới dạng nền
+                            push_file_to_hf_async(file_path)
                             
                             # Lưu thông tin vào database
                             video_list = load_data(VIDEOS_FILE)
