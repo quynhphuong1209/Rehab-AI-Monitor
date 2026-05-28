@@ -2220,7 +2220,7 @@ def get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, sai_so):
 # ============================================
 # XỬ LÝ FRAME - CẢI THIỆN BOX THÔNG TIN
 # ============================================
-def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, active_side=None):
+def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, active_side=None, last_pose_landmarks=None):
     # 1. LẤY KÍCH THƯỚC VÀ CHUYỂN ĐỔI MÀU (Không dùng padding gây lệch)
     h, w = frame.shape[:2]
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -2237,7 +2237,14 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     giay = int(thoi_gian_giay % 60)
     timestamp_str = f"{phut:02d}:{giay:02d}"
     
-    if not ket_qua.pose_landmarks:
+    # Sử dụng landmarks hiện tại hoặc khôi phục từ frame trước nếu mất dấu
+    current_landmarks = None
+    if ket_qua and ket_qua.pose_landmarks:
+        current_landmarks = ket_qua.pose_landmarks
+    elif last_pose_landmarks:
+        current_landmarks = last_pose_landmarks
+        
+    if not current_landmarks:
         # Box thông tin khi không có pose - CẢI THIỆN
         overlay = frame_output.copy()
         cv2.rectangle(overlay, (10, 10), (400, 130), (0, 0, 0), -1)
@@ -2252,7 +2259,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
         del rgb
         del ket_qua
         gc.collect()
-        return frame_output, None, None, None, None, []
+        return frame_output, None, None, None, None, [], None
     
     # Import cục bộ để tránh phụ thuộc vào biến global
     import mediapipe as _mp
@@ -2261,7 +2268,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     _mp_pose = _mp.solutions.pose
     
     # LẤY TỌA ĐỘ CÁC KHỚP QUAN TRỌNG (ĐẢM BẢO KHỚP 100% VỚI FRAME)
-    lm = ket_qua.pose_landmarks.landmark
+    lm = current_landmarks.landmark
     def get_coords(idx):
         return (int(lm[idx].x * w), int(lm[idx].y * h))
     
@@ -2383,7 +2390,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     # === 0. VẼ KHUNG XƯƠNG ĐỘNG (XANH/CAM/ĐỎ THEO ĐÁNH GIÁ CHUNG CỦA FRAME) ===
     _mp_drawing.draw_landmarks(
         frame_output,
-        ket_qua.pose_landmarks,
+        current_landmarks,
         _mp_pose.POSE_CONNECTIONS,
         landmark_drawing_spec=_mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=1, circle_radius=2),
         connection_drawing_spec=_mp_drawing.DrawingSpec(color=mau_tong, thickness=2)
@@ -2433,7 +2440,10 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     # Dòng 2: TIME
     time_sec = frame_idx / fps
     time_str = f"{int(time_sec // 60):02d}:{int(time_sec % 60):02d}"
-    cv2.putText(frame_output, f"TIME: {time_str}", (box_x + 15, box_y + 52), font, 0.55, (180, 180, 180), 1)
+    if not ket_qua.pose_landmarks and last_pose_landmarks:
+        cv2.putText(frame_output, f"TIME: {time_str} (EST)", (box_x + 15, box_y + 52), font, 0.55, (0, 165, 255), 1)
+    else:
+        cv2.putText(frame_output, f"TIME: {time_str}", (box_x + 15, box_y + 52), font, 0.55, (180, 180, 180), 1)
     
     # Dòng 3: SHOULDER & ELBOW
     cv2.putText(frame_output, "SHOULDER", (box_x + 15, box_y + 82), font, 0.48, (200, 200, 200), 1)
@@ -2472,7 +2482,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     khuyu_dung = bool(khuyu_dung)
     gan_dung_tong_the = bool(gan_dung_tong_the)
     
-    return frame_output, goc_vai, goc_khuyu, tong_the, {"nearly_correct": gan_dung_tong_the, "shoulder_correct": vai_dung, "elbow_correct": khuyu_dung, "shoulder_ref": float(chuan_vai), "elbow_ref": float(chuan_khuyu)}, warnings_list
+    return frame_output, goc_vai, goc_khuyu, tong_the, {"nearly_correct": gan_dung_tong_the, "shoulder_correct": vai_dung, "elbow_correct": khuyu_dung, "shoulder_ref": float(chuan_vai), "elbow_ref": float(chuan_khuyu)}, warnings_list, current_landmarks
     
 def ensure_voice_files():
     import os
@@ -2610,6 +2620,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     audio_events = []
     last_state = None
     last_audio_time = -10.0
+    last_pose_landmarks = None
     
     # Lấy giá trị skip từ session_state nếu có (NCV chỉnh), nếu không dùng mặc định
     skip_step = st.session_state.get('ncv_skip_frames', SKIP_FRAMES)
@@ -2704,15 +2715,28 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 frame = cv2.resize(frame, (RESIZE_WIDTH, new_h), interpolation=cv2.INTER_LINEAR)
                 
             try:
-                # Xử lý AI với active_side được phát hiện khóa cứng
-                xu_ly, goc_v, goc_k, dung, eval_info, warnings_list = xu_ly_frame(frame, model, chuan, frame_count, fps, dynamic_chuan=dynamic_chuan, active_side=active_side)
+                # Xử lý AI với active_side được phát hiện khóa cứng và truyền last_pose_landmarks để khôi phục khi mất dấu
+                xu_ly, goc_v, goc_k, dung, eval_info, warnings_list, current_landmarks = xu_ly_frame(
+                    frame, model, chuan, frame_count, fps, 
+                    dynamic_chuan=dynamic_chuan, active_side=active_side, 
+                    last_pose_landmarks=last_pose_landmarks
+                )
                 
-                # Xác định trạng thái âm thanh
-                current_state = "sai"
-                if dung:
-                    current_state = "dung"
-                elif eval_info and eval_info.get("nearly_correct"):
-                    current_state = "gan_dung"
+                # Cập nhật landmarks cuối cùng nhận dạng được
+                if current_landmarks is not None:
+                    last_pose_landmarks = current_landmarks
+                
+                # Xác định trạng thái âm thanh:
+                # Chỉ thay đổi trạng thái nếu nhận dạng được khớp ở frame này (hoặc khôi phục thành công từ frame trước)
+                if goc_v is not None:
+                    current_state = "sai"
+                    if dung:
+                        current_state = "dung"
+                    elif eval_info and eval_info.get("nearly_correct"):
+                        current_state = "gan_dung"
+                else:
+                    # Nếu hoàn toàn không nhận dạng được pose (cả hiện tại lẫn lịch sử), giữ nguyên trạng thái cũ
+                    current_state = last_state
                 
                 ts_frame_export = frame_count / fps_export # Thời gian chiếu chậm của video đầu ra
                 
@@ -7574,7 +7598,8 @@ def main():
 
                                 output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
                                     video_path, bt_chuan_ncv, update_progress,
-                                    model_type=model_type_ncv, min_confidence=conf_ncv
+                                    model_type=model_type_ncv, min_confidence=conf_ncv,
+                                    exercise_name=ma_bai_tap
                                 )
                                 
                                 progress_bar.progress(0.95)
