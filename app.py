@@ -6216,6 +6216,12 @@ def hien_thi_frames_day_du(key_suffix=""):
     g2_pass = _count_pass_segment(g2_indices, 30)
     g3_pass = _count_pass_segment(g3_indices, 15)
 
+    st.markdown("""
+    <div style='background: rgba(0, 198, 255, 0.05); padding: 12px; border-left: 4px solid #00c6ff; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.4; color: #ccc;'>
+        💡 <b>Giải thích nhãn trạng thái:</b> Chữ trạng thái vẽ trực tiếp trong hộp ảnh (ví dụ: <span style="color:#22c55e;font-weight:bold;">PASS</span> / <span style="color:#ef4444;font-weight:bold;">FAIL</span>) được cố định theo <b>Giai đoạn mặc định lúc phân tích video</b>. Nhãn viền ngoài của card và bộ lọc các tab bên dưới sẽ tự động thay đổi động theo tiêu chuẩn sai số riêng biệt của từng giai đoạn (đồng bộ với các dòng chi tiết <code>G1/G2/G3</code> ở dưới cùng của hộp thông tin trong ảnh).
+    </div>
+    """, unsafe_allow_html=True)
+
     tab_all, tab_g1, tab_g2, tab_g3 = st.tabs([
         f"📋 Tất cả ({total_frames})",
         f"🟢 G1 (Lượt 1: {len(g1_indices)} frames | {g1_pass} PASS)",
