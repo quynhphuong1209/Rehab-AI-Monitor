@@ -135,10 +135,16 @@ def setup_mediapipe_resources():
                             dst_file = os.path.join(dst_sub, file_item)
                             if os.path.isdir(src_file):
                                 continue
+                            if os.path.exists(dst_file) or os.path.islink(dst_file):
+                                continue
                             os.symlink(src_file, dst_file)
                     else:
+                        if os.path.exists(dst_sub) or os.path.islink(dst_sub):
+                            continue
                         os.symlink(src_sub, dst_sub)
             else:
+                if os.path.exists(dst_path) or os.path.islink(dst_path):
+                    continue
                 os.symlink(src_path, dst_path)
                         
         # Đặt resource dir của MediaPipe sang thư mục ảo
