@@ -2018,13 +2018,45 @@ def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
     if "Lite" in model_type: complexity = 0
     elif "Heavy" in model_type: complexity = 2
     
-    return mp_pose.Pose(
-        static_image_mode=True,
-        model_complexity=complexity,
-        smooth_landmarks=False,
-        min_detection_confidence=min_confidence,
-        min_tracking_confidence=min_confidence
-    )
+    try:
+        return mp_pose.Pose(
+            static_image_mode=True,
+            model_complexity=complexity,
+            smooth_landmarks=False,
+            min_detection_confidence=min_confidence,
+            min_tracking_confidence=min_confidence
+        )
+    except Exception as e:
+        if complexity == 2:
+            st.warning("⚠️ Không thể tải mô hình MediaPipe Heavy do giới hạn quyền truy cập trên server. Tự động chuyển sang mô hình MediaPipe Full.")
+            try:
+                return mp_pose.Pose(
+                    static_image_mode=True,
+                    model_complexity=1,
+                    smooth_landmarks=False,
+                    min_detection_confidence=min_confidence,
+                    min_tracking_confidence=min_confidence
+                )
+            except Exception as e2:
+                st.warning("⚠️ Không thể tải mô hình MediaPipe Full. Đang chuyển sang mô hình MediaPipe Lite.")
+                return mp_pose.Pose(
+                    static_image_mode=True,
+                    model_complexity=0,
+                    smooth_landmarks=False,
+                    min_detection_confidence=min_confidence,
+                    min_tracking_confidence=min_confidence
+                )
+        elif complexity == 1:
+            st.warning("⚠️ Không thể tải mô hình MediaPipe Full. Đang chuyển sang mô hình MediaPipe Lite.")
+            return mp_pose.Pose(
+                static_image_mode=True,
+                model_complexity=0,
+                smooth_landmarks=False,
+                min_detection_confidence=min_confidence,
+                min_tracking_confidence=min_confidence
+            )
+        else:
+            raise e
 
 # ============================================
 # THÔNG BÁO LỖI ĐỘNG TÁC
@@ -3888,6 +3920,49 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             <p style="margin: 0; font-size: 0.75rem; color: #bbb;">Đúng: <b>{metrics_g3['frame_dung']}</b> | Gần đúng: <b>{metrics_g3['frame_gan_dung']}</b> | Sai: <b>{metrics_g3['frame_sai']}</b></p>
         </div>
         """, unsafe_allow_html=True)
+
+    # 1.1. AI TỰ ĐỘNG GỢI Ý GIAI ĐOẠN LUYỆN TẬP PHÙ HỢP
+    acc_g1 = metrics_g1['do_chinh_xac']
+    acc_g2 = metrics_g2['do_chinh_xac']
+    acc_g3 = metrics_g3['do_chinh_xac']
+    
+    # Xác định giai đoạn gợi ý tự động dựa trên độ chính xác
+    if acc_g3 >= 80:
+        recommended_gd = "Giai đoạn 3 (Chuẩn xác)"
+        gd_color = "#F44336"
+        reason = f"Bệnh nhân đạt độ chính xác {acc_g3:.1f}% ở mức sai số nhỏ (15°). Đây là kết quả xuất sắc, khớp tập luyện rất tốt và bệnh nhân đã đạt mức hồi phục phục hồi tối đa!"
+    elif acc_g2 >= 75:
+        recommended_gd = "Giai đoạn 3 (Chuẩn xác) - Sắp hoàn thành"
+        gd_color = "#2196F3"
+        reason = f"Bệnh nhân đã tập tốt ở Giai đoạn 2 (độ chính xác {acc_g2:.1f}% với sai số 30°). Bệnh nhân có thể tự tin chuyển sang luyện tập ở Giai đoạn 3 (sai số khắt khe 15°)."
+    elif acc_g2 >= 50:
+        recommended_gd = "Giai đoạn 2 (Hồi phục)"
+        gd_color = "#2196F3"
+        reason = f"Bệnh nhân đạt độ chính xác {acc_g2:.1f}% ở mức sai số 30°. Khớp vai và khuỷu tay đã thích nghi khá tốt, cần tiếp tục tập luyện ở giai đoạn này."
+    elif acc_g1 >= 50:
+        recommended_gd = "Giai đoạn 1 (Khởi đầu)"
+        gd_color = "#4CAF50"
+        reason = f"Bệnh nhân mới tập đạt độ chính xác {acc_g1:.1f}% ở mức sai số lớn (45°). Khớp vai ban đầu còn cứng nên chấp nhận sai số lớn này, khuyên bệnh nhân kiên trì làm quen với khớp."
+    else:
+        recommended_gd = "Giai đoạn Học hỏi ban đầu (Dưới chuẩn GĐ1)"
+        gd_color = "#E65100"
+        reason = f"Độ chính xác ở Giai đoạn 1 chỉ đạt {acc_g1:.1f}%. Bệnh nhân đang thực hiện sai tư thế khớp hoặc khớp vai cực kỳ cứng. Cần hướng dẫn trực tiếp từ chuyên gia y tế."
+        
+    st.markdown(f"""
+    <div style="background: rgba(255, 255, 255, 0.03); padding: 18px; border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.15); margin-top: 15px; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <span style="font-size: 1.3rem;">🤖</span>
+            <h4 style="margin: 0; color: #00c6ff; font-size: 1.05rem; font-weight: bold;">HỆ THỐNG GỢI Ý GIAI ĐOẠN TẬP PHÙ HỢP (AI CLASSIFIER)</h4>
+        </div>
+        <p style="margin: 5px 0; font-size: 0.9rem;">
+            Dựa trên kết quả tập luyện thực tế đối chiếu từng giây với video mẫu YouTube, AI gợi ý mức tập phù hợp của bệnh nhân:
+            <b style="color: {gd_color}; font-size: 1rem;">{recommended_gd}</b>
+        </p>
+        <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #bbb; font-style: italic;">
+            <b>Lý do lâm sàng:</b> {reason}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -6453,7 +6528,11 @@ def main():
             """, unsafe_allow_html=True)
             
             st.markdown("### 🎯 CHỌN MÔ HÌNH")
-            st.selectbox("Mô hình Pose", ["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"], key="ncv_model_type")
+            st.selectbox("Mô hình Pose", 
+                         options=["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], 
+                         index=0, 
+                         key="ncv_model_type",
+                         help="Mô hình Full được khuyến nghị cho môi trường cloud/Streamlit. Mô hình Heavy yêu cầu tải file bổ sung và có thể bị lỗi phân quyền trên server.")
             
             # st.markdown("### 🎯 CHỌN BÀI TẬP") # Cắt bỏ chọn bài tập ở sidebar cho NCV
             # ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
