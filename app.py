@@ -29,7 +29,7 @@ from io import BytesIO
 import subprocess
 import hashlib
 import gc
-import streamlit.components.v1 as components
+
 
 # --- CACHED THUMBNAIL GENERATOR ---
 @st.cache_data(ttl=3600, show_spinner=False)
