@@ -31,8 +31,7 @@ import hashlib
 import gc
 
 
-# --- CACHED THUMBNAIL GENERATOR ---
-@st.cache_data(ttl=3600, show_spinner=False)
+# --- THUMBNAIL GENERATOR ---
 def get_thumbnail(path, width=320):
     """Tạo thumbnail nhẹ để load web nhanh"""
     if not os.path.exists(path): 
