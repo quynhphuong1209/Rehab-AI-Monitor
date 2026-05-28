@@ -6175,7 +6175,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         num_rows = math.ceil(len(page_inds) / grid_cols)
         card_height = int(720 * (4 / grid_cols))
         calculated_height = num_rows * card_height + 80
-        st.iframe(f"""
+        components.html(f"""
             <style>
                 body {{ background: transparent; color: white; font-family: 'Times New Roman', serif; margin:0; padding:10px; }}
                 img {{ width: 100%; height: auto; max-height: 1500px; object-fit: contain; background:#000; display:block; }}
@@ -6184,7 +6184,7 @@ def hien_thi_frames_day_du(key_suffix=""):
             <div style='display:grid; grid-template-columns:repeat({grid_cols},1fr); gap:15px;'>
                 {grid_html}
             </div>
-        """, height=min(calculated_height, 25000))
+        """, height=min(calculated_height, 25000), scrolling=True)
 
     # Lấy ranh giới phân đoạn đã tính toán ở trên
     if 'segment_bounds' not in st.session_state or st.session_state.get('last_processed_video_for_bounds') != processed_video_path:
