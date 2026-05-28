@@ -600,11 +600,15 @@ def don_dep_file_tam():
     except Exception as e:
         print(f"[Cleanup] Lỗi dọn file tạm: {e}")
 
-# Khởi động đồng bộ dữ liệu từ Hugging Face Dataset và dọn dẹp file tạm khi app khởi động
-if 'cleanup_done' not in st.session_state:
+# Khởi động đồng bộ dữ liệu từ Hugging Face Dataset và dọn dẹp file tạm duy nhất MỘT LẦN khi app khởi chạy toàn cục (chống ghi đè khi F5)
+@st.cache_resource(show_spinner=False)
+def thuc_hien_khoi_tao_he_thong_mot_lan():
+    """Chạy đồng bộ và dọn dẹp hệ thống duy nhất MỘT LẦN khi server khởi động toàn cục"""
     khoi_tao_dong_bo_hf()
     don_dep_file_tam()
-    st.session_state.cleanup_done = True
+    return True
+
+thuc_hien_khoi_tao_he_thong_mot_lan()
 
 # Khởi tạo trạng thái đăng nhập
 if 'logged_in' not in st.session_state:
