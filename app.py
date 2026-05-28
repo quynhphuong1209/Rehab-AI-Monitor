@@ -197,12 +197,51 @@ def get_vn_now():
 # ============================================
 # QUẢN LÝ NGƯỜI DÙNG & BẢO MẬT
 # ============================================
-USER_DATA_FILE = "users.json"
-SYMPTOMS_FILE = "patient_symptoms.json"
-EVALUATIONS_FILE = "doctor_evaluations.json"
-REMINDERS_FILE = "schedules.json"
-VIDEOS_FILE = "video_list.json"
-RESEARCH_DATA_FILE = "research_data.json"
+# --- HỖ TRỢ LƯU TRỮ BỀN VỮNG TRÊN HUGGING FACE SPACES (PERSISTENT STORAGE) ---
+import shutil
+
+DATA_DIR = "."
+if os.path.exists("/data") and os.access("/data", os.W_OK):
+    DATA_DIR = "/data"
+    
+    # Danh sách các file cần chuyển sang thư mục bền vững
+    files_to_persist = [
+        "users.json",
+        "patient_symptoms.json",
+        "doctor_evaluations.json",
+        "schedules.json",
+        "video_list.json",
+        "research_data.json",
+        "lich_su_tap_luyen.json",
+        "phan_hoi.json"
+    ]
+    
+    # Tự động sao chép file mặc định từ repo sang /data nếu chưa có
+    for f_name in files_to_persist:
+        target_path = os.path.join(DATA_DIR, f_name)
+        source_path = os.path.join(".", f_name)
+        if not os.path.exists(target_path) and os.path.exists(source_path):
+            try:
+                shutil.copy2(source_path, target_path)
+            except Exception as e:
+                pass
+
+USER_DATA_FILE = os.path.join(DATA_DIR, "users.json")
+SYMPTOMS_FILE = os.path.join(DATA_DIR, "patient_symptoms.json")
+EVALUATIONS_FILE = os.path.join(DATA_DIR, "doctor_evaluations.json")
+REMINDERS_FILE = os.path.join(DATA_DIR, "schedules.json")
+VIDEOS_FILE = os.path.join(DATA_DIR, "video_list.json")
+RESEARCH_DATA_FILE = os.path.join(DATA_DIR, "research_data.json")
+HISTORY_FILE = os.path.join(DATA_DIR, "lich_su_tap_luyen.json")
+FEEDBACK_FILE = os.path.join(DATA_DIR, "phan_hoi.json")
+UPLOAD_DIR = os.path.join(DATA_DIR, "patient_uploads")
+
+# Tự động tạo thư mục upload nếu chưa có
+if not os.path.exists(UPLOAD_DIR):
+    try:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+    except:
+        pass
 EXTRACTED_FRAMES_DIR = "extracted_frames"
 OUTPUT_VIDEOS_DIR = "output_videos"
 
@@ -1501,7 +1540,7 @@ def hien_thi_tab_tien_trien():
     """Thiết kế Tab Tiến triển sử dụng DỮ LIỆU THẬT từ lịch sử tập luyện"""
     st.markdown("### 📈 THEO DÕI TIẾN TRIỂN THỜI GIAN THỰC")
     
-    history_file = "lich_su_tap_luyen.json"
+    history_file = HISTORY_FILE
     history_data = []
     
     if os.path.exists(history_file):
@@ -1608,7 +1647,7 @@ def hien_thi_tab_phan_hoi():
     """Giao diện cộng đồng: Góp ý và hiển thị bình luận công khai"""
     st.markdown("### 💬 CỘNG ĐỒNG REHAB-AI: GÓP Ý & THẢO LUẬN")
     
-    feedback_file = "phan_hoi.json"
+    feedback_file = FEEDBACK_FILE
     
     # Tải danh sách phản hồi hiện có
     comments = []
@@ -6908,8 +6947,8 @@ def hien_thi_tab_quan_tri_vien():
                 save_data(SYMPTOMS_FILE, [])
                 save_data(REMINDERS_FILE, [])
                 save_data(VIDEOS_FILE, [])
-                if os.path.exists("lich_su_tap_luyen.json"):
-                    save_data("lich_su_tap_luyen.json", [])
+                if os.path.exists(HISTORY_FILE):
+                    save_data(HISTORY_FILE, [])
                 
                 # Xóa sạch session
                 for key in list(st.session_state.keys()):
@@ -7734,7 +7773,7 @@ def main():
                                     st.markdown("---")
                            
                                     # LƯU LỊCH SỬ TẬP LUYỆN VÀO FILE JSON
-                                    history_file = "lich_su_tap_luyen.json"
+                                    history_file = HISTORY_FILE
                                     new_entry = {
                                         "ngay": get_vn_now().strftime("%d/%m/%Y %H:%M"),
                                         "bai_tap": bai_tap['ten'],
@@ -7774,9 +7813,12 @@ def main():
                             st.error("🚨 Bạn chưa chọn video hoặc file video không hợp lệ. Vui lòng tải lên video trước khi gửi!")
                         else:
                             # Tạo thư mục lưu trữ nếu chưa có
-                            save_dir = "patient_uploads"
+                            save_dir = UPLOAD_DIR
                             if not os.path.exists(save_dir):
-                                os.makedirs(save_dir)
+                                try:
+                                    os.makedirs(save_dir, exist_ok=True)
+                                except:
+                                    pass
                             
                             # Tạo tên file duy nhất
                             timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
