@@ -5860,199 +5860,201 @@ def hien_thi_frames_day_du(key_suffix=""):
                     st.balloons()
 
     st.markdown("---")
-    
-    # === BỘ LỌC VÀ PHÂN TRANG ===
-    page_state_key = f"frame_page_{key_suffix}"
-    if page_state_key not in st.session_state:
-        st.session_state[page_state_key] = 1
 
-    # Lọc frames theo yêu cầu người dùng
-    f_col1, f_col2, f_col3, f_col4 = st.columns([2, 2, 2, 1])
-    with f_col1:
-        loc_frame = st.selectbox("🔍 Lọc theo kết quả", ["Tất cả", "PASS (Đúng)", "NEARLY (Gần đúng)", "FAIL (Sai)"], key=f"f_loc_{key_suffix}")
-    
-    filtered_indices = []
-    if loc_frame == "PASS (Đúng)":
-        filtered_indices = [i for i, f in enumerate(all_frames_data) if f.get('dung')]
-    elif loc_frame == "NEARLY (Gần đúng)":
-        filtered_indices = [i for i, f in enumerate(all_frames_data) if f.get('gan_dung') and not f.get('dung')]
-    elif loc_frame == "FAIL (Sai)":
-        filtered_indices = [i for i, f in enumerate(all_frames_data) if not f.get('dung') and not f.get('gan_dung')]
-    else: # Tất cả
-        filtered_indices = list(range(len(all_frames_data)))
-    
-    total_filtered = len(filtered_indices)
-    
-    with f_col2:
-        quality_mode = st.selectbox("✨ Chất lượng hiển thị", ["Tốc độ", "Cân bằng", "Sắc nét"], index=1, key=f"f_qual_{key_suffix}")
-    with f_col3:
-        frames_per_page = st.selectbox("📄 Số lượng/Trang", [12, 24, 36, 48, 60], index=1, key=f"f_per_{key_suffix}")
-    with f_col4:
-        st.write("")
-        st.write("")
-        if st.button("🔄 Làm mới", width='stretch', key=f"f_ref_{key_suffix}"):
-            st.rerun()
-            
-    st.info("💡 **Mẹo:** Chọn chất lượng **'Tốc độ'** để tải danh sách ảnh nhanh hơn gấp 5 lần (sử dụng Thumbnail tối ưu).")
+    # ================================================================
+    # PHẦN HIỂN THỊ KHUNG HÌNH THEO 3 GIAI ĐOẠN (NCV)
+    # ================================================================
+    st.markdown("### 📷 KHUNG HÌNH TRÍCH XUẤT — PHÂN LOẠI THEO 3 GIAI ĐOẠN")
 
-    total_pages = max(1, (total_filtered + frames_per_page - 1) // frames_per_page)
-    if st.session_state[page_state_key] > total_pages:
-        st.session_state[page_state_key] = total_pages
+    # Hàm helper tính G1/G2/G3 status cho một frame_data
+    def _frame_phase_status(f_data, threshold):
+        """Tính PASS/NEAR/FAIL cho frame theo ngưỡng sai số threshold"""
+        goc_v = f_data.get('goc_vai')
+        goc_k = f_data.get('goc_khuyu')
+        eval_info = f_data.get('eval_info', {})
+        if goc_v is None or goc_k is None:
+            return "FAIL"
+        # Lấy góc chuẩn từ eval_info nếu có (đã được lưu trong xu_ly_frame)
+        cv = eval_info.get('shoulder_ref', 90)
+        ck = eval_info.get('elbow_ref', 170)
+        vd = abs(goc_v - cv) <= threshold
+        kd = abs(goc_k - ck) <= threshold
+        vn = abs(goc_v - cv) <= threshold * 1.5
+        kn = abs(goc_k - ck) <= threshold * 1.5
+        if vd and kd:
+            return "PASS"
+        elif vn and kn:
+            return "NEAR"
+        return "FAIL"
 
-    st.markdown(f"### 📷 DANH SÁCH KHUNG HÌNH ({total_filtered}/{total_frames})")
-    
-    # Thanh điều hướng trang
-    def go_prev():
-        if st.session_state[page_state_key] > 1:
-            st.session_state[page_state_key] -= 1
-            
-    def go_next():
-        if st.session_state[page_state_key] < total_pages:
-            st.session_state[page_state_key] += 1
+    # Hàm helper render grid HTML frames
+    def _render_frame_grid(indices_list, frame_data_list, quality_mode_val, tab_threshold, tab_key, key_suffix_val):
+        import math
+        page_key = f"fp_{tab_key}_{key_suffix_val}"
+        if page_key not in st.session_state:
+            st.session_state[page_key] = 1
 
-    p_col1, p_col2, p_col3, p_col4 = st.columns([1, 2, 1, 2])
-    with p_col1:
-        st.button("◀ Trước", key=f"p_prev_{key_suffix}", width='stretch', on_click=go_prev)
-        
-    with p_col2:
-        # Sử dụng chính page_state_key cho key của number_input để đồng bộ 100%
-        st.number_input("Trang", min_value=1, max_value=total_pages, key=page_state_key, label_visibility="collapsed")
-            
-    with p_col3:
-        st.button("Sau ▶", key=f"p_next_{key_suffix}", width='stretch', on_click=go_next)
-        
-    with p_col4:
-        st.caption(f"Trang {st.session_state[page_state_key]}/{total_pages} (Tổng {total_filtered} frames)")
+        rc1, rc2, rc3, rc4 = st.columns([2, 2, 2, 1])
+        with rc1:
+            qlabel = st.selectbox("✨ Chất lượng", ["Tốc độ", "Cân bằng", "Sắc nét"], index=1, key=f"fq_{tab_key}_{key_suffix_val}")
+        with rc2:
+            fpp = st.selectbox("📄 Số/Trang", [12, 24, 36, 48], index=1, key=f"fpp_{tab_key}_{key_suffix_val}")
+        with rc3:
+            sub_filter = st.selectbox("🔍 Lọc thêm", ["Tất cả", "PASS", "NEAR", "FAIL"], key=f"fsub_{tab_key}_{key_suffix_val}")
+        with rc4:
+            st.write("")
+            st.write("")
+            if st.button("🔄", width="stretch", key=f"fref_{tab_key}_{key_suffix_val}"):
+                st.rerun()
 
-    # Grid Frames
-    start_idx = (st.session_state[page_state_key] - 1) * frames_per_page
-    end_idx = min(start_idx + frames_per_page, total_filtered)
-    page_indices = filtered_indices[start_idx:end_idx]
-    
-    # Unified Grid Rendering with Base64 for Instant Loading
-    grid_html = "<div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;'>"
-    
-    with st.spinner("🚀 Đang tối ưu hóa hiển thị..."):
-        for orig_idx in page_indices:
-            f_data = all_frames_data[orig_idx]
-            f_path = f_data.get('path')
-            
-            if not f_path or not os.path.exists(f_path):
-                continue
-                
-            is_p = f_data.get('dung', False)
-            is_n = f_data.get('gan_dung', False)
-            status = "PASS" if is_p else ("NEAR" if is_n else "FAIL")
-            color = "#22c55e" if is_p else ("#f59e0b" if is_n else "#ef4444")
-            bg_alpha = "rgba(34, 197, 94, 0.1)" if is_p else ("rgba(245, 158, 11, 0.1)" if is_n else "rgba(239, 68, 68, 0.1)")
-            
-            # Get ultra-large base64 thumbnail for 1-column grid
-            target_w = 600 if quality_mode == "Tốc độ" else (1200 if quality_mode == "Cân bằng" else 1800)
-            
-            # Use cached thumbnail to get b64
-            try:
-                img = get_thumbnail(f_path, width=target_w)
-                if img is not None:
-                    # Convert RGB to BGR for encoding (OpenCV expects BGR)
-                    img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                    _, buffer = cv2.imencode('.jpg', img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                    b64_str = base64.b64encode(buffer).decode()
-                else:
-                    b64_str = get_base64_image(f_path) or ""
-            except:
-                b64_str = ""
+        # Áp dụng sub_filter
+        if sub_filter == "PASS":
+            indices_list = [i for i in indices_list if _frame_phase_status(frame_data_list[i], tab_threshold) == "PASS"]
+        elif sub_filter == "NEAR":
+            indices_list = [i for i in indices_list if _frame_phase_status(frame_data_list[i], tab_threshold) == "NEAR"]
+        elif sub_filter == "FAIL":
+            indices_list = [i for i in indices_list if _frame_phase_status(frame_data_list[i], tab_threshold) == "FAIL"]
 
-            frame_card = f"""
-            <div class='card' style='border: 1px solid {color};'>
-                <div style='background: {bg_alpha}; padding: 6px 12px; display: flex; justify-content: space-between;'>
-                    <span style='color: white; font-size: 0.8rem; font-weight: bold;'>#{f_data.get('index')}</span>
-                    <span style='color: {color}; font-size: 0.8rem; font-weight: 800;'>{status}</span>
+        total_f = len(indices_list)
+        total_p = max(1, (total_f + fpp - 1) // fpp)
+        if st.session_state[page_key] > total_p:
+            st.session_state[page_key] = total_p
+
+        # Đếm PASS/NEAR/FAIL theo ngưỡng giai đoạn
+        cnt_pass = sum(1 for i in indices_list if _frame_phase_status(frame_data_list[i], tab_threshold) == "PASS")
+        cnt_near = sum(1 for i in indices_list if _frame_phase_status(frame_data_list[i], tab_threshold) == "NEAR")
+        cnt_fail = total_f - cnt_pass - cnt_near
+
+        # Thẻ thống kê
+        sc1, sc2, sc3, sc4 = st.columns(4)
+        sc1.metric("📊 Tổng frames", total_f)
+        sc2.metric("✅ PASS", cnt_pass, f"{cnt_pass/total_f*100:.0f}%" if total_f > 0 else "0%")
+        sc3.metric("⚠️ NEAR", cnt_near, f"{cnt_near/total_f*100:.0f}%" if total_f > 0 else "0%")
+        sc4.metric("❌ FAIL", cnt_fail, f"{cnt_fail/total_f*100:.0f}%" if total_f > 0 else "0%")
+
+        st.caption(f"Đang xem trang {st.session_state[page_key]}/{total_p} ({total_f} frames)")
+        nc1, nc2, nc3 = st.columns([1, 2, 1])
+        def _prev(pk=page_key):
+            if st.session_state[pk] > 1: st.session_state[pk] -= 1
+        def _next(pk=page_key, tp=total_p):
+            if st.session_state[pk] < tp: st.session_state[pk] += 1
+        with nc1:
+            st.button("◀ Trước", key=f"pp_{tab_key}_{key_suffix_val}", width='stretch', on_click=_prev)
+        with nc2:
+            st.number_input("Trang", min_value=1, max_value=total_p, key=page_key, label_visibility="collapsed")
+        with nc3:
+            st.button("Sau ▶", key=f"pn_{tab_key}_{key_suffix_val}", width='stretch', on_click=_next)
+
+        if total_f == 0:
+            st.info("ℹ️ Không có frame nào trong bộ lọc này.")
+            return
+
+        # Grid render
+        target_w = 600 if qlabel == "Tốc độ" else (1200 if qlabel == "Cân bằng" else 1800)
+        s_idx = (st.session_state[page_key] - 1) * fpp
+        e_idx = min(s_idx + fpp, total_f)
+        page_inds = indices_list[s_idx:e_idx]
+
+        grid_html = "<div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;'>"
+        with st.spinner("🚀 Đang tải ảnh..."):
+            for orig_idx in page_inds:
+                f_data = frame_data_list[orig_idx]
+                f_path = f_data.get('path')
+                if not f_path or not os.path.exists(f_path):
+                    continue
+
+                # Tính lại trạng thái theo ngưỡng giai đoạn tab này
+                phase_st = _frame_phase_status(f_data, tab_threshold)
+                color = "#22c55e" if phase_st == "PASS" else ("#f59e0b" if phase_st == "NEAR" else "#ef4444")
+                bg_alpha = "rgba(34,197,94,0.12)" if phase_st == "PASS" else ("rgba(245,158,11,0.12)" if phase_st == "NEAR" else "rgba(239,68,68,0.12)")
+
+                try:
+                    img = get_thumbnail(f_path, width=target_w)
+                    if img is not None:
+                        img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                        _, buffer = cv2.imencode('.jpg', img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                        b64_str = base64.b64encode(buffer).decode()
+                    else:
+                        b64_str = get_base64_image(f_path) or ""
+                except:
+                    b64_str = ""
+
+                gv = f_data.get('goc_vai', 0) or 0
+                gk = f_data.get('goc_khuyu', 0) or 0
+                eval_inf = f_data.get('eval_info', {})
+                cv_ref = eval_inf.get('shoulder_ref', 90)
+                ck_ref = eval_inf.get('elbow_ref', 170)
+                # Badge hiển thị sai lệch với chuẩn
+                diff_v = abs(gv - cv_ref)
+                diff_k = abs(gk - ck_ref)
+
+                grid_html += f"""
+                <div class='card' style='border: 2px solid {color};'>
+                    <div style='background: {bg_alpha}; padding: 6px 12px; display: flex; justify-content: space-between; align-items:center;'>
+                        <span style='color: #ddd; font-size: 0.75rem; font-weight: bold;'>#{f_data.get('index')}</span>
+                        <span style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing:1px;'>{phase_st}</span>
+                    </div>
+                    <img src='data:image/jpeg;base64,{b64_str}'>
+                    <div style='padding: 8px 12px; font-size: 0.72rem; color: #bbb; background: rgba(0,0,0,0.6); display:grid; grid-template-columns:1fr 1fr; gap:4px;'>
+                        <span>Vai: {gv:.0f}° / {cv_ref:.0f}°</span>
+                        <span>Khuỷu: {gk:.0f}° / {ck_ref:.0f}°</span>
+                        <span style='color:{color}'>Δ Vai: {diff_v:.1f}°</span>
+                        <span style='color:{color}'>Δ Khuỷu: {diff_k:.1f}°</span>
+                    </div>
                 </div>
-                <img src='data:image/jpeg;base64,{b64_str}'>
-                <div style='padding: 8px 12px; display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; background: rgba(0,0,0,0.5);'>
-                    <span>Vai: {f_data.get('goc_vai', 0):.0f}°</span>
-                    <span>Khuỷu: {f_data.get('goc_khuyu', 0):.0f}°</span>
-                </div>
+                """
+            grid_html += "</div>"
+
+        num_rows = math.ceil(len(page_inds) / 4)
+        calculated_height = num_rows * 720 + 80
+        components.html(f"""
+            <style>
+                body {{ background: transparent; color: white; font-family: 'Times New Roman', serif; margin:0; padding:10px; }}
+                img {{ width: 100%; height: auto; max-height: 1200px; object-fit: contain; background:#000; display:block; }}
+                .card {{ border-radius: 16px; overflow: hidden; background: #1a1a2e; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width:100%; }}
+            </style>
+            <div style='display:grid; grid-template-columns:repeat(4,1fr); gap:15px;'>
+                {grid_html}
             </div>
-            """
-            grid_html += frame_card
-            
-        # APPEND SUMMARY BAR TO GRID HTML
-        grid_html += f"""
-        </div> <!-- End of grid-container -->
-        <div style='margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 30px;'>
-            <div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px;'>
-                <div style='text-align: center; background: rgba(56,189,248,0.1); padding: 15px; border-radius: 15px; border: 1px solid #38bdf8;'>
-                    <div style='font-size: 0.8rem; color: #888;'>📊 TỔNG FRAME</div>
-                    <div style='font-size: 1.4rem; font-weight: bold; color: #38bdf8;'>{total_frames}</div>
-                </div>
-                <div style='text-align: center; background: rgba(34,197,94,0.1); padding: 15px; border-radius: 15px; border: 1px solid #22c55e;'>
-                    <div style='font-size: 0.8rem; color: #888;'>✅ PASS</div>
-                    <div style='font-size: 1.4rem; font-weight: bold; color: #22c55e;'>{pass_count}</div>
-                </div>
-                <div style='text-align: center; background: rgba(245,158,11,0.1); padding: 15px; border-radius: 15px; border: 1px solid #f59e0b;'>
-                    <div style='font-size: 0.8rem; color: #888;'>⚠️ NEARLY</div>
-                    <div style='font-size: 1.4rem; font-weight: bold; color: #f59e0b;'>{nearly_count}</div>
-                </div>
-                <div style='text-align: center; background: rgba(239,68,68,0.1); padding: 15px; border-radius: 15px; border: 1px solid #ef4444;'>
-                    <div style='font-size: 0.8rem; color: #888;'>❌ FAIL</div>
-                    <div style='font-size: 1.4rem; font-weight: bold; color: #ef4444;'>{fail_count}</div>
-                </div>
-                <div style='text-align: center; background: {"rgba(0,0,0,0.03)" if is_light else "rgba(255,255,255,0.05)"}; padding: 15px; border-radius: 15px; border: 1px solid {"#ddd" if is_light else "rgba(255,255,255,0.2)"};'>
-                    <div style='font-size: 0.8rem; color: #888;'>📄 TRANG</div>
-                    <div style='font-size: 1.4rem; font-weight: bold; color: {"#111" if is_light else "white"};'>{st.session_state[page_state_key]}/{total_pages}</div>
-                </div>
-            </div>
-        </div>
-        
-        """
-    
-    import math
-    num_rows = math.ceil(len(page_indices) / 4)
-    # Calculate total height (frames + summary bar)
-    calculated_height = num_rows * 650 + 150 # 650px per row + 150px for summary/spacing
-    
-    components.html(f"""
-        <style>
-            body {{ 
-                background-color: transparent; 
-                color: white; 
-                font-family: "Times New Roman", Times, serif; 
-                margin: 0; 
-                padding: 10px; 
-            }}
-            .grid-container {{
-                display: flex;
-                flex-direction: column;
-                gap: 30px;
-                width: 100%;
-            }}
-            img {{ 
-                width: 100%; 
-                height: auto; 
-                max-height: 1200px; 
-                object-fit: contain; 
-                background: #000;
-                display: block;
-            }}
-            .card {{
-                border-radius: 20px; 
-                overflow: hidden; 
-                background: #1a1a2e;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-                border: 2px solid #2a5298;
-                width: 100%;
-            }}
-        </style>
-        <div class='grid-container'>
-            {grid_html}
-        </div>
-    """, height=min(calculated_height, 25000), scrolling=True)
+        """, height=min(calculated_height, 25000), scrolling=True)
 
-    st.write("") # Final spacer
+    # Tất cả frame indices
+    all_indices = list(range(len(all_frames_data)))
 
+    # Tính trước số frame pass cho từng giai đoạn để hiển thị trên tiêu đề tab
+    def _count_pass(threshold):
+        return sum(1 for f in all_frames_data if _frame_phase_status(f, threshold) == "PASS")
+    g1_pass = _count_pass(45)
+    g2_pass = _count_pass(30)
+    g3_pass = _count_pass(15)
+
+    tab_all, tab_g1, tab_g2, tab_g3 = st.tabs([
+        f"📋 Tất cả ({total_frames})",
+        f"🟢 Giai đoạn 1 — Sai số 45° ({g1_pass} PASS)",
+        f"🟡 Giai đoạn 2 — Sai số 30° ({g2_pass} PASS)",
+        f"🔴 Giai đoạn 3 — Sai số 15° ({g3_pass} PASS)",
+    ])
+
+    with tab_all:
+        st.caption("Hiển thị tất cả khung hình. Badge màu theo **giai đoạn mặc định** bạn đã chọn trước khi phân tích.")
+        _render_frame_grid(all_indices, all_frames_data, None, 30, "all", key_suffix)
+
+    with tab_g1:
+        st.info("🟢 **Giai đoạn 1 — Khởi đầu (Sai số 45°):** Dành cho bệnh nhân mới bắt đầu, khớp chưa linh hoạt. Badge **PASS** = cả hai góc lệch chuẩn ≤ 45°.")
+        _render_frame_grid(all_indices, all_frames_data, None, 45, "g1", key_suffix)
+
+    with tab_g2:
+        st.info("🟡 **Giai đoạn 2 — Hồi phục (Sai số 30°):** Bệnh nhân đã thích nghi và quen chuyển động. Badge **PASS** = cả hai góc lệch chuẩn ≤ 30°.")
+        _render_frame_grid(all_indices, all_frames_data, None, 30, "g2", key_suffix)
+
+    with tab_g3:
+        st.info("🔴 **Giai đoạn 3 — Chuẩn xác (Sai số 15°):** Đòi hỏi sự chuẩn xác cao. Badge **PASS** = cả hai góc lệch chuẩn ≤ 15°.")
+        _render_frame_grid(all_indices, all_frames_data, None, 15, "g3", key_suffix)
+
+    st.write("")  # Final spacer
 
 # Callback xử lý đổi theme nhanh (Để ngoài hàm main để tránh lỗi WebSocket Cache)
+
 def update_theme_callback():
     if "theme_toggle_top" in st.session_state:
         st.session_state.theme = 'dark' if st.session_state.theme_toggle_top else 'light'
