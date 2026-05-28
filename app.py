@@ -1564,7 +1564,7 @@ MAX_FILE_SIZE_MB = 10000
 SKIP_FRAMES = 0    # Mặc định: Xử lý mọi khung hình
 RESIZE_WIDTH = 480 # Giảm nhẹ từ 640 xuống 480 để tăng tốc độ xử lý 1.5x
 OUTPUT_QUALITY = 50 
-MAX_FRAMES = 5000  # Nâng hạn mức lên 5000 frame (khoảng 3 phút ở 30fps)
+MAX_FRAMES = 20000  # Nâng hạn mức lên 20000 frame (khoảng 11 phút ở 30fps)
 THUMBNAIL_QUALITY = 80
 THUMBNAIL_WIDTH = 320
 
