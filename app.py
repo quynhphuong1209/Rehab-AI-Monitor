@@ -6065,7 +6065,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         with rc2:
             fpp = st.selectbox("📄 Số/Trang", [12, 24, 36, 48], index=1, key=f"fpp_{tab_key}_{key_suffix_val}")
         with rc3:
-            grid_cols = st.selectbox("🗂️ Số cột", [1, 2, 3, 4], index=1, key=f"fcols_{tab_key}_{key_suffix_val}") # Mặc định 2 cột để dãn to đẹp mắt
+            grid_cols = st.selectbox("🗂️ Số cột", [1, 2, 3, 4], index=3, key=f"fcols_{tab_key}_{key_suffix_val}") # Mặc định 4 cột theo yêu cầu của bạn
         with rc4:
             sub_filter = st.selectbox("🔍 Lọc thêm", ["Tất cả", "PASS", "NEAR", "FAIL"], key=f"fsub_{tab_key}_{key_suffix_val}")
         with rc5:
