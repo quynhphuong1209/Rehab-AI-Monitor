@@ -5739,6 +5739,123 @@ def hien_thi_tab_phieu_nckh():
                         st.rerun()
 
 
+def segment_frames(all_frames_data):
+    """
+    Phân đoạn danh sách frames thành 3 giai đoạn (lần lặp 1, 2, 3) 
+    dựa trên thuật toán phân tích chu kỳ góc của khớp vai/khuỷu.
+    """
+    total = len(all_frames_data)
+    if total < 30:
+        return [0, total // 3, (2 * total) // 3, total]
+        
+    goc_v = [f.get('goc_vai', 90) or 90 for f in all_frames_data]
+    goc_k = [f.get('goc_khuyu', 170) or 170 for f in all_frames_data]
+    
+    var_v = np.std(goc_v)
+    var_k = np.std(goc_k)
+    angles = goc_v if var_v > var_k else goc_k
+    
+    # Smooth signal
+    window_size = min(15, max(3, total // 50))
+    smoothed = np.convolve(angles, np.ones(window_size)/window_size, mode='same')
+    
+    # Find valleys (các cực tiểu tương đối - nơi chuyển tiếp giữa các lần lặp lại)
+    valleys = []
+    for i in range(window_size, len(smoothed) - window_size):
+        is_valley = True
+        for j in range(i - window_size, i + window_size + 1):
+            if smoothed[j] < smoothed[i]:
+                is_valley = False
+                break
+        if is_valley:
+            valleys.append(i)
+            
+    min_dist = total // 10
+    filtered_valleys = []
+    for v in valleys:
+        if not filtered_valleys or (v - filtered_valleys[-1] >= min_dist):
+            if v > min_dist and v < total - min_dist:
+                filtered_valleys.append(v)
+                
+    if len(filtered_valleys) >= 2:
+        if len(filtered_valleys) == 2:
+            n1, n2 = filtered_valleys[0], filtered_valleys[1]
+        else:
+            best_diff = float('inf')
+            n1, n2 = total // 3, (2 * total) // 3
+            for i in range(len(filtered_valleys)):
+                for j in range(i + 1, len(filtered_valleys)):
+                    p1 = filtered_valleys[i]
+                    p2 = filtered_valleys[j]
+                    sizes = [p1, p2 - p1, total - p2]
+                    diff = max(sizes) - min(sizes)
+                    if diff < best_diff:
+                        best_diff = diff
+                        n1, n2 = p1, p2
+    else:
+        n1 = total // 3
+        n2 = (2 * total) // 3
+        
+    return [0, n1, n2, total]
+
+def cut_video_segments(input_path, n1, n2, total_frames, fps_export=15):
+    """
+    Cắt video gốc thành 3 video tương ứng với 3 giai đoạn tập luyện
+    bằng ffmpeg siêu nhanh (sử dụng codec copy làm lựa chọn hàng đầu).
+    """
+    import subprocess
+    import os
+    
+    g1_path = input_path.replace('.mp4', '_g1.mp4')
+    g2_path = input_path.replace('.mp4', '_g2.mp4')
+    g3_path = input_path.replace('.mp4', '_g3.mp4')
+    
+    if (os.path.exists(g1_path) and os.path.getsize(g1_path) > 0 and
+        os.path.exists(g2_path) and os.path.getsize(g2_path) > 0 and
+        os.path.exists(g3_path) and os.path.getsize(g3_path) > 0):
+        return g1_path, g2_path, g3_path
+
+    t0 = 0.0
+    t1 = n1 / fps_export
+    t2 = n2 / fps_export
+    t3 = total_frames / fps_export
+    
+    def _run_cut(start, end, out_p):
+        dur = end - start
+        try:
+            # Ưu tiên codec copy cực nhanh
+            cmd = [
+                'ffmpeg', '-y',
+                '-ss', f"{start:.3f}",
+                '-t', f"{dur:.3f}",
+                '-i', input_path,
+                '-c', 'copy',
+                out_p
+            ]
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20)
+        except:
+            # Fallback sang transcode nếu codec copy không tương thích
+            try:
+                cmd = [
+                    'ffmpeg', '-y',
+                    '-ss', f"{start:.3f}",
+                    '-t', f"{dur:.3f}",
+                    '-i', input_path,
+                    '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
+                    '-c:a', 'aac',
+                    out_p
+                ]
+                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
+            except Exception as e:
+                print(f"Lỗi khi cắt phân đoạn {start} -> {end}: {e}")
+                
+    _run_cut(t0, t1, g1_path)
+    _run_cut(t1, t2, g2_path)
+    _run_cut(t2, t3, g3_path)
+    
+    return g1_path, g2_path, g3_path
+
+
 # ============================================
 # HÀM HIỂN THỊ LỊCH FRAMES ĐẦY ĐỦ
 # ============================================
@@ -5777,27 +5894,75 @@ def hien_thi_frames_day_du(key_suffix=""):
     v_col1, v_col2 = st.columns([2, 1], gap='large')
     with v_col1:
         if has_video:
-            st.video(processed_video_path)
-            # Nút tải dưới video
-            d_col1, d_col2 = st.columns(2)
-            with d_col1:
-                with open(processed_video_path, "rb") as f:
-                    st.download_button("📥 Tải video xuống", f, "processed_video.mp4", "video/mp4", width="stretch", key=f"dl_video_main_{key_suffix}")
-            with d_col2:
-                # LAZY ZIP: Tạo ZIP theo yêu cầu để tránh crash OOM
-                frame_paths_main = st.session_state.get('all_frames_paths', [])
-                if frames_zip and os.path.exists(frames_zip):
-                    with open(frames_zip, "rb") as fzip:
-                        st.download_button("📦 Tải tất cả frames (ZIP)", fzip, "all_frames.zip", "application/zip", width="stretch", key=f"dl_zip_main_{key_suffix}")
-                elif frame_paths_main:
-                    if st.button("📦 Chuẩn bị file ZIP tải ảnh", width="stretch", key=f"btn_prep_zip_main_{key_suffix}"):
-                        with st.spinner("🔄 Đang nén khung hình..."):
-                            new_zip_main = create_zip_of_frames(frame_paths_main)
-                            if new_zip_main:
-                                st.session_state.frames_zip = new_zip_main
-                                st.rerun()
-                            else:
-                                st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
+            # Tự động tính toán phân đoạn thông minh
+            if 'segment_bounds' not in st.session_state or st.session_state.get('last_processed_video_for_bounds') != processed_video_path:
+                st.session_state.segment_bounds = segment_frames(all_frames_data)
+                st.session_state.last_processed_video_for_bounds = processed_video_path
+                
+            n0, n1, n2, n3 = st.session_state.segment_bounds
+            
+            # Phát hiện fps_export thực tế từ video đầu ra
+            try:
+                cap_test = cv2.VideoCapture(processed_video_path)
+                fps_export = int(cap_test.get(cv2.CAP_PROP_FPS)) or 15
+                cap_test.release()
+            except:
+                fps_export = 15
+                
+            g1_v_path, g2_v_path, g3_v_path = cut_video_segments(processed_video_path, n1, n2, total_frames, fps_export)
+            
+            # Giao diện tabs video phân đoạn
+            v_tab_all, v_tab_g1, v_tab_g2, v_tab_g3 = st.tabs([
+                "📋 Video Tất cả",
+                f"🟢 Video G1 (Lượt 1: {n1 - n0} F)",
+                f"🟡 Video G2 (Lượt 2 lặp lại: {n2 - n1} F)",
+                f"🔴 Video G3 (Lượt 3 lặp lại: {n3 - n2} F)"
+            ])
+            
+            with v_tab_all:
+                st.video(processed_video_path)
+                d_col1, d_col2 = st.columns(2)
+                with d_col1:
+                    with open(processed_video_path, "rb") as f:
+                        st.download_button("📥 Tải video Tất cả", f, "processed_video_full.mp4", "video/mp4", width="stretch", key=f"dl_v_all_{key_suffix}")
+                with d_col2:
+                    frame_paths_main = st.session_state.get('all_frames_paths', [])
+                    if frames_zip and os.path.exists(frames_zip):
+                        with open(frames_zip, "rb") as fzip:
+                            st.download_button("📦 Tải tất cả frames (ZIP)", fzip, "all_frames.zip", "application/zip", width="stretch", key=f"dl_zip_main_{key_suffix}")
+                    elif frame_paths_main:
+                        if st.button("📦 Chuẩn bị file ZIP tải ảnh", width="stretch", key=f"btn_prep_zip_main_{key_suffix}"):
+                            with st.spinner("🔄 Đang nén khung hình..."):
+                                new_zip_main = create_zip_of_frames(frame_paths_main)
+                                if new_zip_main:
+                                    st.session_state.frames_zip = new_zip_main
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
+                                    
+            with v_tab_g1:
+                if os.path.exists(g1_v_path) and os.path.getsize(g1_v_path) > 0:
+                    st.video(g1_v_path)
+                    with open(g1_v_path, "rb") as f:
+                        st.download_button("📥 Tải video Giai đoạn 1", f, "processed_video_g1.mp4", "video/mp4", width="stretch", key=f"dl_v_g1_{key_suffix}")
+                else:
+                    st.info("ℹ️ Không tìm thấy video Giai đoạn 1 hoặc lỗi cắt phân đoạn.")
+                    
+            with v_tab_g2:
+                if os.path.exists(g2_v_path) and os.path.getsize(g2_v_path) > 0:
+                    st.video(g2_v_path)
+                    with open(g2_v_path, "rb") as f:
+                        st.download_button("📥 Tải video Giai đoạn 2", f, "processed_video_g2.mp4", "video/mp4", width="stretch", key=f"dl_v_g2_{key_suffix}")
+                else:
+                    st.info("ℹ️ Không tìm thấy video Giai đoạn 2 hoặc lỗi cắt phân đoạn.")
+                    
+            with v_tab_g3:
+                if os.path.exists(g3_v_path) and os.path.getsize(g3_v_path) > 0:
+                    st.video(g3_v_path)
+                    with open(g3_v_path, "rb") as f:
+                        st.download_button("📥 Tải video Giai đoạn 3", f, "processed_video_g3.mp4", "video/mp4", width="stretch", key=f"dl_v_g3_{key_suffix}")
+                else:
+                    st.info("ℹ️ Không tìm thấy video Giai đoạn 3 hoặc lỗi cắt phân đoạn.")
         else:
             st.info("ℹ️ Đang tải hoặc không tìm thấy video trích xuất khung xương.")
             
@@ -6018,21 +6183,34 @@ def hien_thi_frames_day_du(key_suffix=""):
             </div>
         """, height=min(calculated_height, 25000), scrolling=True)
 
+    # Lấy ranh giới phân đoạn đã tính toán ở trên
+    if 'segment_bounds' not in st.session_state or st.session_state.get('last_processed_video_for_bounds') != processed_video_path:
+        st.session_state.segment_bounds = segment_frames(all_frames_data)
+        st.session_state.last_processed_video_for_bounds = processed_video_path
+        
+    n0, n1, n2, n3 = st.session_state.segment_bounds
+
     # Tất cả frame indices
     all_indices = list(range(len(all_frames_data)))
+    
+    # Phân chia chỉ số theo từng phân đoạn giai đoạn
+    g1_indices = all_indices[n0:n1]
+    g2_indices = all_indices[n1:n2]
+    g3_indices = all_indices[n2:n3]
 
     # Tính trước số frame pass cho từng giai đoạn để hiển thị trên tiêu đề tab
-    def _count_pass(threshold):
-        return sum(1 for f in all_frames_data if _frame_phase_status(f, threshold) == "PASS")
-    g1_pass = _count_pass(45)
-    g2_pass = _count_pass(30)
-    g3_pass = _count_pass(15)
+    def _count_pass_segment(indices_list, threshold):
+        return sum(1 for i in indices_list if _frame_phase_status(all_frames_data[i], threshold) == "PASS")
+        
+    g1_pass = _count_pass_segment(g1_indices, 45)
+    g2_pass = _count_pass_segment(g2_indices, 30)
+    g3_pass = _count_pass_segment(g3_indices, 15)
 
     tab_all, tab_g1, tab_g2, tab_g3 = st.tabs([
         f"📋 Tất cả ({total_frames})",
-        f"🟢 Giai đoạn 1 — Sai số 45° ({g1_pass} PASS)",
-        f"🟡 Giai đoạn 2 — Sai số 30° ({g2_pass} PASS)",
-        f"🔴 Giai đoạn 3 — Sai số 15° ({g3_pass} PASS)",
+        f"🟢 G1 (Lượt 1: {len(g1_indices)} frames | {g1_pass} PASS)",
+        f"🟡 G2 (Lượt 2 lặp: {len(g2_indices)} frames | {g2_pass} PASS)",
+        f"🔴 G3 (Lượt 3 lặp: {len(g3_indices)} frames | {g3_pass} PASS)",
     ])
 
     with tab_all:
@@ -6040,16 +6218,16 @@ def hien_thi_frames_day_du(key_suffix=""):
         _render_frame_grid(all_indices, all_frames_data, None, 30, "all", key_suffix)
 
     with tab_g1:
-        st.info("🟢 **Giai đoạn 1 — Khởi đầu (Sai số 45°):** Dành cho bệnh nhân mới bắt đầu, khớp chưa linh hoạt. Badge **PASS** = cả hai góc lệch chuẩn ≤ 45°.")
-        _render_frame_grid(all_indices, all_frames_data, None, 45, "g1", key_suffix)
+        st.info("🟢 **Giai đoạn 1 — Khởi đầu (Sai số 45°):** Chỉ hiển thị các khung hình thuộc **Lượt tập 1**. Badge **PASS** = lệch chuẩn ≤ 45°.")
+        _render_frame_grid(g1_indices, all_frames_data, None, 45, "g1", key_suffix)
 
     with tab_g2:
-        st.info("🟡 **Giai đoạn 2 — Hồi phục (Sai số 30°):** Bệnh nhân đã thích nghi và quen chuyển động. Badge **PASS** = cả hai góc lệch chuẩn ≤ 30°.")
-        _render_frame_grid(all_indices, all_frames_data, None, 30, "g2", key_suffix)
+        st.info("🟡 **Giai đoạn 2 — Hồi phục (Sai số 30°):** Chỉ hiển thị các khung hình thuộc **Lượt lặp lại lần 2**. Badge **PASS** = lệch chuẩn ≤ 30°.")
+        _render_frame_grid(g2_indices, all_frames_data, None, 30, "g2", key_suffix)
 
     with tab_g3:
-        st.info("🔴 **Giai đoạn 3 — Chuẩn xác (Sai số 15°):** Đòi hỏi sự chuẩn xác cao. Badge **PASS** = cả hai góc lệch chuẩn ≤ 15°.")
-        _render_frame_grid(all_indices, all_frames_data, None, 15, "g3", key_suffix)
+        st.info("🔴 **Giai đoạn 3 — Chuẩn xác (Sai số 15°):** Chỉ hiển thị các khung hình thuộc **Lượt lặp lại lần 3**. Badge **PASS** = lệch chuẩn ≤ 15°.")
+        _render_frame_grid(g3_indices, all_frames_data, None, 15, "g3", key_suffix)
 
     st.write("")  # Final spacer
 
