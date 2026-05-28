@@ -6034,6 +6034,13 @@ def hien_thi_frames_day_du(key_suffix=""):
     # Hàm helper tính G1/G2/G3 status cho một frame_data
     def _frame_phase_status(f_data, threshold):
         """Tính PASS/NEAR/FAIL cho frame theo ngưỡng sai số threshold"""
+        if threshold is None:
+            if f_data.get('dung'):
+                return "PASS"
+            elif f_data.get('gan_dung'):
+                return "NEAR"
+            return "FAIL"
+            
         goc_v = f_data.get('goc_vai')
         goc_k = f_data.get('goc_khuyu')
         eval_info = f_data.get('eval_info', {})
@@ -6218,7 +6225,7 @@ def hien_thi_frames_day_du(key_suffix=""):
 
     with tab_all:
         st.caption("Hiển thị tất cả khung hình. Badge màu theo **giai đoạn mặc định** bạn đã chọn trước khi phân tích.")
-        _render_frame_grid(all_indices, all_frames_data, None, 30, "all", key_suffix)
+        _render_frame_grid(all_indices, all_frames_data, None, None, "all", key_suffix)
 
     with tab_g1:
         st.info("🟢 **Giai đoạn 1 — Khởi đầu (Sai số 45°):** Chỉ hiển thị các khung hình thuộc **Lượt tập 1**. Badge **PASS** = lệch chuẩn ≤ 45°.")
