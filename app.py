@@ -87,16 +87,23 @@ def setup_mediapipe_resources():
     try:
         import mediapipe as mp
         import mediapipe.python.solutions.download_utils as download_utils
+        import mediapipe.python._framework_bindings.resource_util as resource_util
         mp_package_dir = os.path.dirname(mp.__file__)
         
         # Thư mục chứa tài nguyên ảo
         tmp_root = os.path.join(tempfile.gettempdir(), "mediapipe_virtual_resources")
         tmp_mp_dir = os.path.join(tmp_root, "mediapipe")
         
+        # Chặn ghi đè set_resource_dir của SolutionBase bằng cách monkey-patching nó
+        original_set_resource_dir = resource_util.set_resource_dir
+        def custom_set_resource_dir(path):
+            original_set_resource_dir(tmp_root)
+        resource_util.set_resource_dir = custom_set_resource_dir
+        
         # Nếu đã thiết lập rồi thì bỏ qua
         heavy_model_path = os.path.join(tmp_root, "mediapipe", "modules", "pose_landmark", "pose_landmark_heavy.tflite")
         if os.path.exists(heavy_model_path) and os.path.exists(os.path.join(tmp_mp_dir, "graphs")):
-            mp.resource_util.set_resource_dir(tmp_root)
+            resource_util.set_resource_dir(tmp_root)
             # Áp dụng monkey-patch download_oss_model để tránh download thừa
             def custom_download_oss_model(model_path: str):
                 return
@@ -134,8 +141,8 @@ def setup_mediapipe_resources():
             else:
                 os.symlink(src_path, dst_path)
                         
-        # Đặt resource dir của MediaPipe
-        mp.resource_util.set_resource_dir(tmp_root)
+        # Đặt resource dir của MediaPipe sang thư mục ảo
+        resource_util.set_resource_dir(tmp_root)
         
         # Monkey-patch download_oss_model để chuyển hướng tải mô hình sang thư mục ảo
         def custom_download_oss_model(model_path: str):
