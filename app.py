@@ -4416,7 +4416,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 col_v1, col_v2 = st.columns([2, 1])
                 with col_v1:
                     if os.path.exists(v['video_path']):
-                        render_video(v['video_path'])
+                        st.video(v['video_path'])
                     else:
                         st.error("❌ Không tìm thấy file video.")
                 with col_v2:
@@ -5396,7 +5396,7 @@ def hien_thi_form_danh_gia_bac_si():
             st.markdown(f"#### 🎬 Đang đánh giá: {selected_video['full_name']} - {selected_video['exercise']}")
             
             if os.path.exists(selected_video['video_path']):
-                render_video(selected_video['video_path'])
+                st.video(selected_video['video_path'])
             
             with st.form("doctor_eval_form_final_v_fixed"):
                 col1, col2 = st.columns(2)
@@ -8114,7 +8114,7 @@ def main():
                                     col_v1, col_v2 = st.columns([2, 1])
                                     with col_v1:
                                         if os.path.exists(v_display_path):
-                                            render_video(v_display_path)
+                                            st.video(v_display_path)
                                         else:
                                             st.error("File video không tồn tại trên hệ thống.")
                                     with col_v2:
