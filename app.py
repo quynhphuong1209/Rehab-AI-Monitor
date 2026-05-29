@@ -6605,75 +6605,34 @@ def hien_thi_frames_day_du(key_suffix=""):
     v_col1, v_col2 = st.columns([2, 1], gap='large')
     with v_col1:
         if has_video:
-            # Tự động tính toán phân đoạn thông minh
+            # Tự động tính toán phân đoạn thông minh để giữ nguyên chia ba giai đoạn cho biểu đồ và chỉ số lâm sàng
             if 'segment_bounds' not in st.session_state or st.session_state.get('last_processed_video_for_bounds') != processed_video_path:
                 st.session_state.segment_bounds = segment_frames(all_frames_data)
                 st.session_state.last_processed_video_for_bounds = processed_video_path
                 
             n0, n1, n2, n3 = st.session_state.segment_bounds
             
-            # Phát hiện fps_export thực tế từ video đầu ra
-            try:
-                cap_test = cv2.VideoCapture(processed_video_path)
-                fps_export = int(cap_test.get(cv2.CAP_PROP_FPS)) or 15
-                cap_test.release()
-            except:
-                fps_export = 15
-                
-            g1_v_path, g2_v_path, g3_v_path = cut_video_segments(processed_video_path, n1, n2, total_frames, fps_export)
+            # Chỉ hiển thị duy nhất 1 video player chạy video đầy đủ (Tất cả) để người dùng xem được toàn bộ quá trình tập
+            render_video(processed_video_path)
             
-            # Giao diện tabs video phân đoạn
-            v_tab_all, v_tab_g1, v_tab_g2, v_tab_g3 = st.tabs([
-                "📋 Video Tất cả",
-                f"🟢 Video G1 (Lượt 1: {n1 - n0} F)",
-                f"🟡 Video G2 (Lượt 2 lặp lại: {n2 - n1} F)",
-                f"🔴 Video G3 (Lượt 3 lặp lại: {n3 - n2} F)"
-            ])
-            
-            with v_tab_all:
-                render_video(processed_video_path)
-                d_col1, d_col2 = st.columns(2)
-                with d_col1:
-                    with open(processed_video_path, "rb") as f:
-                        st.download_button("📥 Tải video Tất cả", f, "processed_video_full.mp4", "video/mp4", width="stretch", key=f"dl_v_all_{key_suffix}")
-                with d_col2:
-                    frame_paths_main = st.session_state.get('all_frames_paths', [])
-                    if frames_zip and os.path.exists(frames_zip):
-                        with open(frames_zip, "rb") as fzip:
-                            st.download_button("📦 Tải tất cả frames (ZIP)", fzip, "all_frames.zip", "application/zip", width="stretch", key=f"dl_zip_main_{key_suffix}")
-                    elif frame_paths_main:
-                        if st.button("📦 Chuẩn bị file ZIP tải ảnh", width="stretch", key=f"btn_prep_zip_main_{key_suffix}"):
-                            with st.spinner("🔄 Đang nén khung hình..."):
-                                new_zip_main = create_zip_of_frames(frame_paths_main)
-                                if new_zip_main:
-                                    st.session_state.frames_zip = new_zip_main
-                                    st.rerun()
-                                else:
-                                    st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
-                                    
-            with v_tab_g1:
-                if os.path.exists(g1_v_path) and os.path.getsize(g1_v_path) > 0:
-                    render_video(g1_v_path)
-                    with open(g1_v_path, "rb") as f:
-                        st.download_button("📥 Tải video Giai đoạn 1", f, "processed_video_g1.mp4", "video/mp4", width="stretch", key=f"dl_v_g1_{key_suffix}")
-                else:
-                    st.info("ℹ️ Không tìm thấy video Giai đoạn 1 hoặc lỗi cắt phân đoạn.")
-                    
-            with v_tab_g2:
-                if os.path.exists(g2_v_path) and os.path.getsize(g2_v_path) > 0:
-                    render_video(g2_v_path)
-                    with open(g2_v_path, "rb") as f:
-                        st.download_button("📥 Tải video Giai đoạn 2", f, "processed_video_g2.mp4", "video/mp4", width="stretch", key=f"dl_v_g2_{key_suffix}")
-                else:
-                    st.info("ℹ️ Không tìm thấy video Giai đoạn 2 hoặc lỗi cắt phân đoạn.")
-                    
-            with v_tab_g3:
-                if os.path.exists(g3_v_path) and os.path.getsize(g3_v_path) > 0:
-                    render_video(g3_v_path)
-                    with open(g3_v_path, "rb") as f:
-                        st.download_button("📥 Tải video Giai đoạn 3", f, "processed_video_g3.mp4", "video/mp4", width="stretch", key=f"dl_v_g3_{key_suffix}")
-                else:
-                    st.info("ℹ️ Không tìm thấy video Giai đoạn 3 hoặc lỗi cắt phân đoạn.")
+            d_col1, d_col2 = st.columns(2)
+            with d_col1:
+                with open(processed_video_path, "rb") as f:
+                    st.download_button("📥 Tải video Tất cả", f, "processed_video_full.mp4", "video/mp4", width="stretch", key=f"dl_v_all_{key_suffix}")
+            with d_col2:
+                frame_paths_main = st.session_state.get('all_frames_paths', [])
+                if frames_zip and os.path.exists(frames_zip):
+                    with open(frames_zip, "rb") as fzip:
+                        st.download_button("📦 Tải tất cả frames (ZIP)", fzip, "all_frames.zip", "application/zip", width="stretch", key=f"dl_zip_main_{key_suffix}")
+                elif frame_paths_main:
+                    if st.button("📦 Chuẩn bị file ZIP tải ảnh", width="stretch", key=f"btn_prep_zip_main_{key_suffix}"):
+                        with st.spinner("🔄 Đang nén khung hình..."):
+                            new_zip_main = create_zip_of_frames(frame_paths_main)
+                            if new_zip_main:
+                                st.session_state.frames_zip = new_zip_main
+                                st.rerun()
+                            else:
+                                st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
         else:
             st.info("ℹ️ Đang tải hoặc không tìm thấy video trích xuất khung xương.")
             
