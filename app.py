@@ -7407,6 +7407,30 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
+        # 3. Trạng thái đồng bộ Hugging Face Dataset (Đặc biệt quan trọng trên Space)
+        if HF_SPACE_ID or os.path.exists("/data"):
+            if HF_TOKEN:
+                st.markdown("""
+                <div style="background: rgba(46, 204, 113, 0.15); padding: 10px; border-radius: 8px; border: 1px solid rgba(46, 204, 113, 0.4); text-align: center; margin-top: 5px; margin-bottom: 15px;">
+                    <span style="color: #2ecc71; font-weight: bold; font-size: 0.85rem;">💚 Cloud Sync: ĐÃ KÍCH HOẠT</span>
+                    <p style="color: #aaa; font-size: 0.75rem; margin: 5px 0 0 0;">Dữ liệu bệnh nhân được lưu trữ an toàn lâu dài.</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style="background: rgba(231, 76, 60, 0.15); padding: 12px; border-radius: 8px; border: 1px solid rgba(231, 76, 60, 0.4); text-align: center; margin-top: 5px; margin-bottom: 15px;">
+                    <span style="color: #e74c3c; font-weight: bold; font-size: 0.85rem;">⚠️ Cloud Sync: TẮT (NGUY HIỂM)</span>
+                    <p style="color: #ddd; font-size: 0.75rem; margin: 5px 0 0 0;">Dữ liệu sẽ bị xóa sạch khi Space restart! Hãy cấu hình <b>HF_TOKEN</b> (loại Write) trong Space Secrets.</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="background: rgba(52, 152, 219, 0.15); padding: 10px; border-radius: 8px; border: 1px solid rgba(52, 152, 219, 0.4); text-align: center; margin-top: 5px; margin-bottom: 15px;">
+                <span style="color: #3498db; font-weight: bold; font-size: 0.85rem;">💾 Bộ nhớ: Local Storage</span>
+                <p style="color: #aaa; font-size: 0.75rem; margin: 5px 0 0 0;">Đang chạy offline trên máy tính cá nhân.</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
         if st.button("🚪 Đăng xuất hệ thống", width="stretch", key="logout_sidebar", type="secondary"):
             if st.session_state.user_info and st.session_state.user_info.get("auth_type") == "google":
                 st.logout()
