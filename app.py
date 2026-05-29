@@ -4418,28 +4418,33 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 
                 # Nếu video ĐÃ CÓ metrics và không chủ động yêu cầu phân tích lại -> TỰ ĐỘNG TẢI LẠI
                 if 'metrics' in v and v['metrics'] and not st.session_state.get('reanalyze_triggered', False):
-                    # Tải file CSV, JSON và MP4 nếu bị thiếu cục bộ
-                    ensure_local_file(v.get('df_path'))
-                    ensure_local_file(v.get('all_frames_data_path'))
-                    ensure_local_file(v.get('processed_path'))
+                    # Kiểm tra xem file CSV có tồn tại hoặc tải được không
+                    csv_ok = ensure_local_file(v.get('df_path'))
+                    
+                    if not csv_ok and user_role == "Nghiên cứu viên":
+                        # Nếu file CSV bị thiếu và là Nghiên cứu viên, tự động chuyển sang chế độ phân tích lại
+                        st.session_state.reanalyze_triggered = True
+                    else:
+                        ensure_local_file(v.get('all_frames_data_path'))
+                        ensure_local_file(v.get('processed_path'))
 
-                    st.session_state.stats = v['metrics']
-                    st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
-                    st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
-                    st.session_state.all_frames_data_path = v.get('all_frames_data_path')
-                    ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP['codman'])
-                    st.session_state.exercise = ex_base.copy()
-                    if 'sai_so' in v:
-                        st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
-                        st.session_state.exercise['chuan']['sai_so'] = v['sai_so']
-                    st.session_state.has_data = True
-                    if 'df_path' in v and os.path.exists(v['df_path']):
-                        try:
-                            st.session_state.angle_df = pd.read_csv(v['df_path'])
-                        except:
-                            pass
-                    st.toast(f"✅ Tự động tải lại kết quả cho bệnh nhân {v.get('full_name')}!", icon="📊")
-                    st.rerun()
+                        st.session_state.stats = v['metrics']
+                        st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
+                        st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
+                        st.session_state.all_frames_data_path = v.get('all_frames_data_path')
+                        ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP['codman'])
+                        st.session_state.exercise = ex_base.copy()
+                        if 'sai_so' in v:
+                            st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
+                            st.session_state.exercise['chuan']['sai_so'] = v['sai_so']
+                        st.session_state.has_data = True
+                        if 'df_path' in v and os.path.exists(v['df_path']):
+                            try:
+                                st.session_state.angle_df = pd.read_csv(v['df_path'])
+                            except:
+                                pass
+                        st.toast(f"✅ Tự động tải lại kết quả cho bệnh nhân {v.get('full_name')}!", icon="📊")
+                        st.rerun()
                 
                 # Nếu người dùng chủ động nhấn chạy lại phân tích -> Hiện tùy chọn quay lại kết quả cũ
                 if st.session_state.get('reanalyze_triggered', False):
@@ -4598,6 +4603,14 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
     if tk is None or df is None:
         st.warning("⚠️ Dữ liệu phân tích chi tiết không khả dụng hoặc chưa được tải.")
         st.info("💡 Vui lòng đảm bảo Nghiên cứu viên đã hoàn tất việc trích xuất khung xương cho video này.")
+        if user_role == "Nghiên cứu viên":
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("⚙️ CHẠY LẠI PHÂN TÍCH AI", type="primary", use_container_width=True, key=f"re_run_ai_missing_{key_suffix}"):
+                st.session_state.reanalyze_triggered = True
+                st.session_state.has_data = False
+                st.session_state.stats = None
+                st.session_state.angle_df = None
+                st.rerun()
         return
 
     # Nút chạy lại phân tích dành cho Nghiên cứu viên
