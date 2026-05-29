@@ -6721,6 +6721,23 @@ def hien_thi_frames_day_du(key_suffix=""):
             for orig_idx in page_inds:
                 f_data = frame_data_list[orig_idx]
                 f_path = f_data.get('path')
+                
+                # Dynamic recovery: nếu file ảnh bị xóa/thiếu, tự động trích xuất lại từ video đã xử lý
+                if f_path and not os.path.exists(f_path) and processed_video_path and os.path.exists(processed_video_path):
+                    try:
+                        os.makedirs(os.path.dirname(f_path), exist_ok=True)
+                        cap = cv2.VideoCapture(processed_video_path)
+                        if cap.isOpened():
+                            # Frame index là 0-based
+                            f_idx = max(0, f_data.get('index', 1) - 1)
+                            cap.set(cv2.CAP_PROP_POS_FRAMES, f_idx)
+                            ret, frame_img = cap.read()
+                            if ret:
+                                cv2.imwrite(f_path, frame_img, [cv2.IMWRITE_JPEG_QUALITY, 50])
+                            cap.release()
+                    except Exception as e:
+                        print(f"[Frame Recovery] Lỗi tự động trích xuất ảnh frame {orig_idx}: {e}")
+                
                 if not f_path or not os.path.exists(f_path):
                     continue
 
@@ -6761,7 +6778,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         num_rows = math.ceil(len(page_inds) / grid_cols)
         card_height = int(720 * (4 / grid_cols))
         calculated_height = num_rows * card_height + 80
-        st.iframe(src=f"""
+        st.components.v1.html(f"""
             <style>
                 html, body {{ width: 100%; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; color: white; font-family: 'Times New Roman', serif; }}
                 img {{ width: 100%; height: auto; max-height: 1500px; object-fit: contain; background:#000; display:block; }}
@@ -6770,7 +6787,7 @@ def hien_thi_frames_day_du(key_suffix=""):
             <div style='width: 100%; display:grid; grid-template-columns:repeat({grid_cols},1fr); gap:15px;'>
                 {grid_html}
             </div>
-        """, height=min(calculated_height, 25000), width="stretch")
+        """, height=min(calculated_height, 25000), scrolling=False)
 
     # Lấy ranh giới phân đoạn đã tính toán ở trên
     if 'segment_bounds' not in st.session_state or st.session_state.get('last_processed_video_for_bounds') != processed_video_path:
