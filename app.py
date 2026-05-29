@@ -1602,7 +1602,7 @@ MAX_FILE_SIZE_MB = 10000
 # CẤU HÌNH XỬ LÝ - TỐI ƯU ĐỘ CHÍNH XÁC CAO
 # ============================================
 SKIP_FRAMES = 0    # Mặc định: Xử lý mọi khung hình
-RESIZE_WIDTH = 480 # Giảm nhẹ từ 640 xuống 480 để tăng tốc độ xử lý 1.5x
+RESIZE_WIDTH = 720 # Mặc định độ phân giải HD (720p) để trích xuất sắc nét và chuẩn xác nhất
 OUTPUT_QUALITY = 50 
 MAX_FRAMES = 20000  # Nâng hạn mức lên 20000 frame (khoảng 11 phút ở 30fps)
 THUMBNAIL_QUALITY = 80
@@ -1640,6 +1640,12 @@ def convert_mov_to_mp4(input_path):
 # ============================================
 if 'has_data' not in st.session_state:
     st.session_state.has_data = False
+if 'ncv_model_type' not in st.session_state:
+    st.session_state.ncv_model_type = "MediaPipe Heavy"
+if 'ncv_resize_width' not in st.session_state:
+    st.session_state.ncv_resize_width = 720
+if 'view_old_analysis' not in st.session_state:
+    st.session_state.view_old_analysis = False
 if 'angle_df' not in st.session_state:
     st.session_state.angle_df = None
 if 'stats' not in st.session_state:
@@ -1894,9 +1900,8 @@ class PoseProcessor(VideoProcessorBase):
         
         # Xử lý với MediaPipe
         results = self.pose.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-        
         if results.pose_landmarks:
-            mp_drawing.draw_landmarks(img, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+            ve_khung_xuong_custom(img, results.pose_landmarks, active_side="LEFT", mau_tong=(0, 255, 0), scale_factor=w/640.0)
             
             try:
                 landmarks = results.pose_landmarks.landmark
@@ -2346,7 +2351,7 @@ def ve_cung_tron_goc(image, point1, center, point3, angle, color, radius=40):
 # ============================================
 # MEDIAPIPE VỚI GPU
 # ============================================
-def get_pose_model(model_type="MediaPipe Full", min_confidence=0.5):
+def get_pose_model(model_type="MediaPipe Heavy", min_confidence=0.5):
     """Khởi tạo MediaPipe Pose với cấu hình linh hoạt"""
     # pyrefly: ignore [missing-import]
     # Kích hoạt thiết lập tài nguyên ảo và monkey-patching
@@ -2421,9 +2426,69 @@ def get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, sai_so):
 
 
 
+def ve_khung_xuong_custom(frame_output, current_landmarks, active_side=None, mau_tong=(0, 255, 0), scale_factor=1.0):
+    """Vẽ khung xương 33 điểm tùy chỉnh chuyên nghiệp, đảm bảo hiển thị 100% cả hai bên chân"""
+    h, w = frame_output.shape[:2]
+    lm = current_landmarks.landmark
+    pts = [(int(lm[i].x * w), int(lm[i].y * h)) for i in range(33)]
+    
+    line_thickness = max(2, int(2.5 * scale_factor))
+    circle_rad = max(3, int(3.5 * scale_factor))
+    
+    # Định nghĩa các liên kết xương vẽ thủ công
+    LIEN_KET_TRAI = [
+        (11, 13), (13, 15), (15, 17), (15, 19), (15, 21), (17, 19), # Tay trái
+        (23, 25), (25, 27), (27, 29), (27, 31), (29, 31)             # Chân trái
+    ]
+    LIEN_KET_PHAI = [
+        (12, 14), (14, 16), (16, 18), (16, 20), (16, 22), (18, 20), # Tay phải
+        (24, 26), (26, 28), (28, 30), (28, 32), (30, 32)             # Chân phải
+    ]
+    LIEN_KET_THAN = [
+        (11, 12), (11, 23), (12, 24), (23, 24)                       # Thân mình
+    ]
+    LIEN_KET_MAT = [
+        (0, 1), (1, 2), (2, 3), (0, 4), (4, 5), (5, 6),              # Mắt, mũi
+        (3, 7), (6, 8), (9, 10)                                      # Tai, miệng
+    ]
+    
+    # 1. Vẽ các đường nối (connections) trước
+    # Đường nối thân mình
+    for start_idx, end_idx in LIEN_KET_THAN:
+        cv2.line(frame_output, pts[start_idx], pts[end_idx], (180, 180, 180), line_thickness)
+        
+    # Đường nối đầu/mặt
+    for start_idx, end_idx in LIEN_KET_MAT:
+        cv2.line(frame_output, pts[start_idx], pts[end_idx], (200, 200, 200), max(1, line_thickness - 1))
+        
+    # Đường nối bên trái
+    color_trai = mau_tong if active_side == "LEFT" else (180, 180, 180)
+    for start_idx, end_idx in LIEN_KET_TRAI:
+        cv2.line(frame_output, pts[start_idx], pts[end_idx], color_trai, line_thickness)
+        
+    # Đường nối bên phải
+    color_phai = mau_tong if active_side == "RIGHT" else (180, 180, 180)
+    for start_idx, end_idx in LIEN_KET_PHAI:
+        cv2.line(frame_output, pts[start_idx], pts[end_idx], color_phai, line_thickness)
+        
+    # 2. Vẽ các điểm khớp (joints)
+    # Khớp mặt
+    for i in range(11):
+        cv2.circle(frame_output, pts[i], max(2, circle_rad - 1), (255, 255, 255), -1)
+        
+    # Khớp thân và tứ chi
+    for i in range(11, 33):
+        is_left = i in [11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31]
+        is_active = (active_side == "LEFT" and is_left) or (active_side == "RIGHT" and not is_left)
+        
+        # Màu sắc khớp: Vàng sáng cho bên active, Trắng cho bên inactive
+        color_khop = (0, 235, 255) if is_active else (240, 240, 240)
+        cv2.circle(frame_output, pts[i], circle_rad, color_khop, -1)
+
+
 # ============================================
 # XỬ LÝ FRAME - CẢI THIỆN BOX THÔNG TIN
-# ============================================
+# ============================================================
 def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, active_side=None, last_pose_landmarks=None):
     # 1. LẤY KÍCH THƯỚC VÀ CHUYỂN ĐỔI MÀU (Không dùng padding gây lệch)
     h, w = frame.shape[:2]
@@ -2591,35 +2656,43 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     mau_khuyu = (0, 255, 0) if khuyu_dung else (ORANGE_BGR if khuyu_gan_dung else (0, 0, 255))
     mau_tong = (0, 255, 0) if tong_the else (ORANGE_BGR if gan_dung_tong_the else (0, 0, 255))
     
-    # === 0. VẼ KHUNG XƯƠNG ĐỘNG (XANH/CAM/ĐỎ THEO ĐÁNH GIÁ CHUNG CỦA FRAME) ===
-    _mp_drawing.draw_landmarks(
-        frame_output,
-        current_landmarks,
-        _mp_pose.POSE_CONNECTIONS,
-        landmark_drawing_spec=_mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=1, circle_radius=2),
-        connection_drawing_spec=_mp_drawing.DrawingSpec(color=mau_tong, thickness=2)
-    )
+    scale_factor = h / 480.0
+    line_thickness = max(2, int(2 * scale_factor))
+    circle_rad = max(2, int(2 * scale_factor))
+    
+    font_scale = 0.8 * scale_factor
+    font_scale_small = 0.55 * scale_factor
+    font_scale_tiny = 0.38 * scale_factor
+    font_scale_mini = 0.42 * scale_factor
+    font_scale_medium = 0.72 * scale_factor
+    font_scale_large = 0.78 * scale_factor
+    font_scale_g = 0.52 * scale_factor
+    text_thick = max(1, int(2 * scale_factor))
+    text_thick_thin = max(1, int(1 * scale_factor))
+
+    # === 0. VẼ KHUNG XƯƠNG ĐỘNG 33 ĐIỂM TỰ VẼ (ĐẢM BẢO HIỂN THỊ ĐẦY ĐỦ CẢ HAI CHÂN) ===
+    ve_khung_xuong_custom(frame_output, current_landmarks, active_side=active_side, mau_tong=mau_tong, scale_factor=scale_factor)
     
     # === 1. VẼ HEADER TRÊN CÙNG (TOP BAR) ===
-    header_h = 35
+    header_h = int(35 * scale_factor)
     cv2.rectangle(frame_output, (0, 0), (w, header_h), (10, 10, 10), -1) # Nền đen
-    cv2.rectangle(frame_output, (0, 0), (w, header_h), (80, 80, 80), 2)    # Viền xám trung tính
-    cv2.putText(frame_output, f"Frame #{frame_idx}", (w // 2 - 50, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    cv2.rectangle(frame_output, (0, 0), (w, header_h), (80, 80, 80), text_thick)    # Viền xám trung tính
+    cv2.putText(frame_output, f"Frame #{frame_idx}", (w // 2 - int(50 * scale_factor), int(22 * scale_factor)), cv2.FONT_HERSHEY_SIMPLEX, 0.6 * scale_factor, (255, 255, 255), text_thick)
     
     # === 2. VẼ CUNG TRÒN VÀ SỐ ĐO TẠI KHỚP (JOINT LABELS) ===
     # Vẽ cung tròn
-    ve_cung_tron_goc(frame_output, pts_vai[0], pts_vai[1], pts_vai[2], goc_vai, mau_vai, radius=35)
-    ve_cung_tron_goc(frame_output, pts_khuyu[0], pts_khuyu[1], pts_khuyu[2], goc_khuyu, mau_khuyu, radius=30)
+    ve_cung_tron_goc(frame_output, pts_vai[0], pts_vai[1], pts_vai[2], goc_vai, mau_vai, radius=int(35 * scale_factor))
+    ve_cung_tron_goc(frame_output, pts_khuyu[0], pts_khuyu[1], pts_khuyu[2], goc_khuyu, mau_khuyu, radius=int(30 * scale_factor))
     
     # Vẽ nhãn số đo ngay tại khớp
-    cv2.putText(frame_output, f"{int(goc_vai)}", (pts_vai[1][0] + 15, pts_vai[1][1] - 15), 
-                cv2.FONT_HERSHEY_SIMPLEX, 0.8, mau_vai, 2)
-    cv2.putText(frame_output, f"{int(goc_khuyu)}", (pts_khuyu[1][0] + 15, pts_khuyu[1][1] - 15), 
-                cv2.FONT_HERSHEY_SIMPLEX, 0.8, mau_khuyu, 2)
+    cv2.putText(frame_output, f"{int(goc_vai)}", (pts_vai[1][0] + int(15 * scale_factor), pts_vai[1][1] - int(15 * scale_factor)), 
+                cv2.FONT_HERSHEY_SIMPLEX, font_scale_large, mau_vai, text_thick)
+    cv2.putText(frame_output, f"{int(goc_khuyu)}", (pts_khuyu[1][0] + int(15 * scale_factor), pts_khuyu[1][1] - int(15 * scale_factor)), 
+                cv2.FONT_HERSHEY_SIMPLEX, font_scale_large, mau_khuyu, text_thick)
     
     # === 3. VẼ BOX THÔNG TIN CHI TIẾT (TOP-LEFT BOX) — MỞ RỘNG 3 GIAI ĐOẠN ===
-    box_x, box_y = 15, 50
-    box_w, box_h = 345, 235   # Tăng chiều cao để chứa thêm 3 giai đoạn
+    box_x, box_y = int(15 * scale_factor), int(50 * scale_factor)
+    box_w, box_h = int(345 * scale_factor), int(235 * scale_factor)   # Tăng chiều cao để chứa thêm 3 giai đoạn
     
     # TỐI ƯU: Chỉ tạo overlay cho vùng Box thay vì toàn bộ frame
     # Đảm bảo box không vượt quá biên frame
@@ -2630,7 +2703,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     cv2.rectangle(overlay, (0, 0), (safe_box_x2 - box_x, safe_box_y2 - box_y), (20, 20, 35), -1)
     cv2.addWeighted(overlay, 0.72, box_roi, 0.28, 0, box_roi)
     frame_output[box_y:safe_box_y2, box_x:safe_box_x2] = box_roi
-    cv2.rectangle(frame_output, (box_x, box_y), (box_x + box_w, box_y + box_h), (255, 255, 255), 2)
+    cv2.rectangle(frame_output, (box_x, box_y), (box_x + box_w, box_y + box_h), (255, 255, 255), text_thick)
     
     # Text thông tin trong Box
     status_text = "PASS" if tong_the else ("NEARLY" if gan_dung_tong_the else "FAIL")
@@ -2638,45 +2711,45 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     font = cv2.FONT_HERSHEY_SIMPLEX
     
     # Dòng 1: FRAME & STATUS
-    cv2.putText(frame_output, f"FRAME #{frame_idx}", (box_x + 15, box_y + 28), font, 0.72, CYAN, 2)
+    cv2.putText(frame_output, f"FRAME #{frame_idx}", (box_x + int(15 * scale_factor), box_y + int(28 * scale_factor)), font, font_scale_medium, CYAN, text_thick)
     # Không vẽ status_text tổng thể tại đây để tránh mâu thuẫn giữa các giai đoạn (được quản lý động bằng HTML Card Badge)
     
     # Dòng 2: TIME
     time_sec = frame_idx / fps
     time_str = f"{int(time_sec // 60):02d}:{int(time_sec % 60):02d}"
     if not ket_qua.pose_landmarks and last_pose_landmarks:
-        cv2.putText(frame_output, f"TIME: {time_str} (EST)", (box_x + 15, box_y + 52), font, 0.55, (0, 165, 255), 1)
+        cv2.putText(frame_output, f"TIME: {time_str} (EST)", (box_x + int(15 * scale_factor), box_y + int(52 * scale_factor)), font, font_scale_small, (0, 165, 255), text_thick_thin)
     else:
-        cv2.putText(frame_output, f"TIME: {time_str}", (box_x + 15, box_y + 52), font, 0.55, (180, 180, 180), 1)
+        cv2.putText(frame_output, f"TIME: {time_str}", (box_x + int(15 * scale_factor), box_y + int(52 * scale_factor)), font, font_scale_small, (180, 180, 180), text_thick_thin)
     
     # Dòng 3: SHOULDER & ELBOW
-    cv2.putText(frame_output, "SHOULDER", (box_x + 15, box_y + 82), font, 0.48, (200, 200, 200), 1)
-    cv2.putText(frame_output, f"{int(goc_vai)}", (box_x + 15, box_y + 108), font, 0.78, mau_vai, 2)
-    cv2.putText(frame_output, f"/{int(chuan_vai)}", (box_x + 70, box_y + 108), font, 0.55, (140, 140, 140), 1)
-    cv2.putText(frame_output, "ELBOW", (box_x + 180, box_y + 82), font, 0.48, (200, 200, 200), 1)
-    cv2.putText(frame_output, f"{int(goc_khuyu)}", (box_x + 180, box_y + 108), font, 0.78, mau_khuyu, 2)
-    cv2.putText(frame_output, f"/{int(chuan_khuyu)}", (box_x + 240, box_y + 108), font, 0.55, (140, 140, 140), 1)
+    cv2.putText(frame_output, "SHOULDER", (box_x + int(15 * scale_factor), box_y + int(82 * scale_factor)), font, 0.48 * scale_factor, (200, 200, 200), text_thick_thin)
+    cv2.putText(frame_output, f"{int(goc_vai)}", (box_x + int(15 * scale_factor), box_y + int(108 * scale_factor)), font, font_scale_large, mau_vai, text_thick)
+    cv2.putText(frame_output, f"/{int(chuan_vai)}", (box_x + int(70 * scale_factor), box_y + int(108 * scale_factor)), font, font_scale_small, (140, 140, 140), text_thick_thin)
+    cv2.putText(frame_output, "ELBOW", (box_x + int(180 * scale_factor), box_y + int(82 * scale_factor)), font, 0.48 * scale_factor, (200, 200, 200), text_thick_thin)
+    cv2.putText(frame_output, f"{int(goc_khuyu)}", (box_x + int(180 * scale_factor), box_y + int(108 * scale_factor)), font, font_scale_large, mau_khuyu, text_thick)
+    cv2.putText(frame_output, f"/{int(chuan_khuyu)}", (box_x + int(240 * scale_factor), box_y + int(108 * scale_factor)), font, font_scale_small, (140, 140, 140), text_thick_thin)
     
     # === ĐƯỜNG PHÂN CÁCH ===
-    cv2.line(frame_output, (box_x + 8, box_y + 120), (box_x + box_w - 8, box_y + 120), (80, 80, 100), 1)
-    cv2.putText(frame_output, "3 GIAI DOAN (45/30/15):", (box_x + 15, box_y + 137), font, 0.42, (150, 200, 255), 1)
+    cv2.line(frame_output, (box_x + int(8 * scale_factor), box_y + int(120 * scale_factor)), (box_x + box_w - int(8 * scale_factor), box_y + int(120 * scale_factor)), (80, 80, 100), text_thick_thin)
+    cv2.putText(frame_output, "3 GIAI DOAN (45/30/15):", (box_x + int(15 * scale_factor), box_y + int(137 * scale_factor)), font, font_scale_mini, (150, 200, 255), text_thick_thin)
     
     # === G1 (45°) ===
     g1_label = f"G1(45): {g1_text}"
-    cv2.putText(frame_output, g1_label, (box_x + 15, box_y + 160), font, 0.52, g1_color, 2)
+    cv2.putText(frame_output, g1_label, (box_x + int(15 * scale_factor), box_y + int(160 * scale_factor)), font, font_scale_g, g1_color, text_thick)
     
     # === G2 (30°) ===
     g2_label = f"G2(30): {g2_text}"
-    cv2.putText(frame_output, g2_label, (box_x + 15, box_y + 183), font, 0.52, g2_color, 2)
+    cv2.putText(frame_output, g2_label, (box_x + int(15 * scale_factor), box_y + int(183 * scale_factor)), font, font_scale_g, g2_color, text_thick)
     
     # === G3 (15°) ===
     g3_label = f"G3(15): {g3_text}"
-    cv2.putText(frame_output, g3_label, (box_x + 15, box_y + 206), font, 0.52, g3_color, 2)
+    cv2.putText(frame_output, g3_label, (box_x + int(15 * scale_factor), box_y + int(206 * scale_factor)), font, font_scale_g, g3_color, text_thick)
     
     warnings_list = get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, ss)
     if warnings_list:
         w_text = warnings_list[0][:38] + ".." if len(warnings_list[0]) > 38 else warnings_list[0]
-        cv2.putText(frame_output, f"! {w_text}", (box_x + 15, box_y + 228), font, 0.38, (0, 255, 255), 1)
+        cv2.putText(frame_output, f"! {w_text}", (box_x + int(15 * scale_factor), box_y + int(228 * scale_factor)), font, font_scale_tiny, (0, 255, 255), text_thick_thin)
 
     # Đảm bảo trả về kiểu dữ liệu Python chuẩn
     goc_vai = float(goc_vai)
@@ -2746,7 +2819,7 @@ def create_zip_of_frames(frame_paths):
 # ============================================
 # XỬ LÝ VIDEO
 # ============================================
-def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaPipe Full", min_confidence=0.5, exercise_name="codman"):
+def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaPipe Heavy", min_confidence=0.5, exercise_name="codman"):
     import gc
     import json
     import os
@@ -2826,8 +2899,9 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     last_audio_time = -10.0
     last_pose_landmarks = None
     
-    # Lấy giá trị skip từ session_state nếu có (NCV chỉnh), nếu không dùng mặc định
+    # Lấy giá trị skip và resolution từ session_state nếu có (NCV chỉnh), nếu không dùng mặc định
     skip_step = st.session_state.get('ncv_skip_frames', SKIP_FRAMES)
+    resize_width = st.session_state.get('ncv_resize_width', RESIZE_WIDTH)
 
     # Tự động phát hiện bên tay tập chủ đạo (LEFT hoặc RIGHT) để tránh nhảy bên gây lỗi trích xuất
     active_side = "RIGHT"
@@ -2845,17 +2919,17 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             # Xoay và resize tương tự để khớp tọa độ (Tối ưu hóa RAM: Resize trước khi xoay)
             h_det, w_det = frame_det.shape[:2]
             if w_det > h_det:
-                scale_det = RESIZE_WIDTH / h_det
+                scale_det = resize_width / h_det
                 new_w_det = int(w_det * scale_det)
                 if new_w_det % 2 != 0: new_w_det -= 1
-                frame_det = cv2.resize(frame_det, (new_w_det, RESIZE_WIDTH), interpolation=cv2.INTER_LINEAR)
+                frame_det = cv2.resize(frame_det, (new_w_det, resize_width), interpolation=cv2.INTER_LINEAR)
                 frame_det = cv2.rotate(frame_det, cv2.ROTATE_90_CLOCKWISE)
             else:
-                if w_det != RESIZE_WIDTH:
-                    scale_det = RESIZE_WIDTH / w_det
+                if w_det != resize_width:
+                    scale_det = resize_width / w_det
                     new_h_det = int(h_det * scale_det)
                     if new_h_det % 2 != 0: new_h_det -= 1
-                    frame_det = cv2.resize(frame_det, (RESIZE_WIDTH, new_h_det), interpolation=cv2.INTER_LINEAR)
+                    frame_det = cv2.resize(frame_det, (resize_width, new_h_det), interpolation=cv2.INTER_LINEAR)
             h_det, w_det = frame_det.shape[:2]
                 
             rgb_det = cv2.cvtColor(frame_det, cv2.COLOR_BGR2RGB)
@@ -2916,17 +2990,17 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             h_orig, w_orig = frame.shape[:2]
             if w_orig > h_orig:
                 # Tối ưu hóa RAM cực hạn: Resize trước khi xoay để tránh xoay mảng 4K/FullHD lớn
-                scale = RESIZE_WIDTH / h_orig
+                scale = resize_width / h_orig
                 new_w = int(w_orig * scale)
                 if new_w % 2 != 0: new_w -= 1
-                frame = cv2.resize(frame, (new_w, RESIZE_WIDTH), interpolation=cv2.INTER_LINEAR)
+                frame = cv2.resize(frame, (new_w, resize_width), interpolation=cv2.INTER_LINEAR)
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
             else:
-                if w_orig != RESIZE_WIDTH:
-                    scale = RESIZE_WIDTH / w_orig
+                if w_orig != resize_width:
+                    scale = resize_width / w_orig
                     new_h = int(h_orig * scale)
                     if new_h % 2 != 0: new_h -= 1
-                    frame = cv2.resize(frame, (RESIZE_WIDTH, new_h), interpolation=cv2.INTER_LINEAR)
+                    frame = cv2.resize(frame, (resize_width, new_h), interpolation=cv2.INTER_LINEAR)
                 
             try:
                 # Xử lý AI với active_side được phát hiện khóa cứng và truyền last_pose_landmarks để khôi phục khi mất dấu
@@ -4416,41 +4490,85 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             if st.session_state.get('current_eval_video'):
                 v = st.session_state.current_eval_video
                 
-                # Nếu video ĐÃ CÓ metrics và không chủ động yêu cầu phân tích lại -> TỰ ĐỘNG TẢI LẠI
-                if 'metrics' in v and v['metrics'] and not st.session_state.get('reanalyze_triggered', False):
-                    # Kiểm tra xem file CSV có tồn tại hoặc tải được không
-                    csv_ok = ensure_local_file(v.get('df_path'))
-                    
-                    if not csv_ok and user_role == "Nghiên cứu viên":
-                        # Nếu file CSV bị thiếu và là Nghiên cứu viên, tự động chuyển sang chế độ phân tích lại
-                        st.session_state.reanalyze_triggered = True
-                    else:
-                        ensure_local_file(v.get('all_frames_data_path'))
-                        ensure_local_file(v.get('processed_path'))
-
-                        st.session_state.stats = v['metrics']
-                        st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
-                        st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
-                        st.session_state.all_frames_data_path = v.get('all_frames_data_path')
-                        ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP['codman'])
-                        st.session_state.exercise = ex_base.copy()
-                        if 'sai_so' in v:
-                            st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
-                            st.session_state.exercise['chuan']['sai_so'] = v['sai_so']
-                        st.session_state.has_data = True
-                        if 'df_path' in v and os.path.exists(v['df_path']):
-                            try:
-                                st.session_state.angle_df = pd.read_csv(v['df_path'])
-                            except:
-                                pass
-                        st.toast(f"✅ Tự động tải lại kết quả cho bệnh nhân {v.get('full_name')}!", icon="📊")
-                        st.rerun()
+                # Nếu video ĐÃ CÓ metrics
+                if 'metrics' in v and v['metrics']:
+                    # Nếu là Nghiên cứu viên và chưa chọn xem bản cũ hay chạy lại mới -> HIỂN THỊ CHOICE SCREEN
+                    if user_role == "Nghiên cứu viên" and not st.session_state.get('reanalyze_triggered', False) and not st.session_state.get('view_old_analysis', False):
+                        st.markdown("### 🔬 TÙY CHỌN PHÂN TÍCH & TRÍCH XUẤT KHUNG XƯƠNG")
+                        st.markdown(f"""
+                        <div style="background: rgba(255, 255, 255, 0.05); padding: 18px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
+                            <p style="margin: 0; font-size: 1.05rem; color: #fff;">💡 Video <b>{v.get('video_name')}</b> của bệnh nhân <b>{v.get('full_name')}</b> đã có kết quả phân tích và trích xuất khung xương trước đó.</p>
+                            <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #aaa;">Hãy chọn một trong hai chế độ bên dưới để tiếp tục:</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        col_c1, col_c2 = st.columns(2)
+                        with col_c1:
+                            st.markdown("""
+                            <div style="background: rgba(0, 198, 255, 0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(0, 198, 255, 0.2); height: 160px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <h4 style="margin: 0 0 8px 0; color: #00c6ff; font-weight: bold;">📂 XEM KẾT QUẢ ĐÃ LƯU</h4>
+                                    <p style="margin: 0; font-size: 0.85rem; color: #ccc;">Tải nhanh các chỉ số lâm sàng, biểu đồ góc khớp và video khung xương đã xử lý từ phiên trước.</p>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            if st.button("📂 XEM KẾT QUẢ CŨ (ĐÃ LƯU)", key=f"btn_choose_old_{key_suffix}", type="secondary", use_container_width=True):
+                                st.session_state.view_old_analysis = True
+                                st.rerun()
+                                
+                        with col_c2:
+                            st.markdown("""
+                            <div style="background: rgba(255, 215, 0, 0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 215, 0, 0.2); height: 160px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <h4 style="margin: 0 0 8px 0; color: #ffd700; font-weight: bold;">🚀 TRÍCH XUẤT KHUNG XƯƠNG MỚI</h4>
+                                    <p style="margin: 0; font-size: 0.85rem; color: #ccc;">Cấu hình lại độ phân giải HD/Full HD, chọn mô hình AI (Heavy/Full/Lite) và chạy trích xuất lại từ đầu.</p>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            if st.button("🚀 CHẠY PHÂN TÍCH & TRÍCH XUẤT MỚI", key=f"btn_choose_new_{key_suffix}", type="primary", use_container_width=True):
+                                st.session_state.reanalyze_triggered = True
+                                st.session_state.view_old_analysis = False
+                                st.rerun()
+                        return
+                        
+                    # Nếu đã chọn xem bản cũ (hoặc không phải NCV), tiến hành tải lại tự động
+                    if not st.session_state.get('reanalyze_triggered', False):
+                        # Kiểm tra xem file CSV có tồn tại hoặc tải được không
+                        csv_ok = ensure_local_file(v.get('df_path'))
+                        
+                        if not csv_ok and user_role == "Nghiên cứu viên":
+                            # Nếu file CSV bị thiếu và là Nghiên cứu viên, tự động chuyển sang chế độ phân tích lại
+                            st.session_state.reanalyze_triggered = True
+                        else:
+                            ensure_local_file(v.get('all_frames_data_path'))
+                            ensure_local_file(v.get('processed_path'))
+    
+                            st.session_state.stats = v['metrics']
+                            st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
+                            st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
+                            st.session_state.all_frames_data_path = v.get('all_frames_data_path')
+                            ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP['codman'])
+                            st.session_state.exercise = ex_base.copy()
+                            if 'sai_so' in v:
+                                st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
+                                st.session_state.exercise['chuan']['sai_so'] = v['sai_so']
+                            st.session_state.has_data = True
+                            if 'df_path' in v and os.path.exists(v['df_path']):
+                                try:
+                                    st.session_state.angle_df = pd.read_csv(v['df_path'])
+                                except:
+                                    pass
+                            st.toast(f"✅ Tải thành công kết quả phân tích cũ của bệnh nhân {v.get('full_name')}!", icon="📊")
+                            st.rerun()
                 
                 # Nếu người dùng chủ động nhấn chạy lại phân tích -> Hiện tùy chọn quay lại kết quả cũ
                 if st.session_state.get('reanalyze_triggered', False):
                     st.info("💡 Bạn đang cấu hình lại để chạy phân tích AI mới. Kết quả phân tích cũ vẫn được bảo lưu an toàn.")
                     if st.button("⬅️ HỦY BỎ & XEM LẠI KẾT QUẢ ĐÃ LƯU", key=f"btn_cancel_reanalyze_{key_suffix}", width="stretch"):
                         st.session_state.reanalyze_triggered = False
+                        st.session_state.view_old_analysis = True
                         st.rerun()
                     st.markdown("---")
                 
@@ -4498,7 +4616,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                             
                             output_path, _, _, angle_data, total_frames, valid_frames, _, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
                                 v['video_path'], bt_chuan_ncv, update_progress,
-                                model_type=st.session_state.get('ncv_model_type', 'MediaPipe Full'),
+                                model_type=st.session_state.get('ncv_model_type', 'MediaPipe Heavy'),
                                 min_confidence=st.session_state.get('ncv_confidence', 0.5),
                                 exercise_name=v['exercise']
                             )
@@ -4610,6 +4728,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 st.session_state.has_data = False
                 st.session_state.stats = None
                 st.session_state.angle_df = None
+                st.session_state.view_old_analysis = False
                 st.rerun()
         return
 
@@ -4624,6 +4743,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 st.session_state.has_data = False
                 st.session_state.stats = None
                 st.session_state.angle_df = None
+                st.session_state.view_old_analysis = False
                 st.rerun()
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -4796,7 +4916,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
     })
 
     # Lấy thông tin mô hình hiện tại
-    model_type = st.session_state.get('ncv_model_type', 'MediaPipe Full')
+    model_type = st.session_state.get('ncv_model_type', 'MediaPipe Heavy')
     
     # 1. HEADER CHỈ SỐ TỔNG QUAN (CỐ ĐỊNH) - HIỂN THỊ ĐẦU TIÊN
     header_title = "📊 DASHBOARD PHÂN TÍCH NHANH" if "Lite" in model_type else "📊 DASHBOARD PHÂN TÍCH LÂM SÀNG"
@@ -7504,6 +7624,12 @@ def main():
                          format_func=lambda x: "Mặc định (Mọi frame)" if x==0 else f"Nhanh (Bỏ qua {x} frame)",
                          key="ncv_skip_frames",
                          help="Bỏ qua một số khung hình để tăng tốc độ xử lý video dài.")
+            st.selectbox("Độ phân giải video (Video Quality)",
+                         options=[480, 720, 1080],
+                         index=1, # Mặc định là 720p HD
+                         format_func=lambda x: "480p (Tốc độ tối ưu)" if x==480 else ("720p (HD - Chuẩn sắc nét)" if x==720 else "1080p (Full HD - Cực kỳ chuẩn xác)"),
+                         key="ncv_resize_width",
+                         help="Độ phân giải càng cao thì vẽ khung xương càng sắc nét và bám sát khớp bệnh nhân hơn.")
             st.slider("Độ nhạy chuyển động (Sensitivity)", 0.0, 1.0, 0.7, key="ncv_sensitivity", help="Ảnh hưởng đến việc tính toán vận tốc khớp.")
             st.selectbox("🌱 Giai đoạn tập bệnh nhân (Mặc định video):",
                          options=["Giai đoạn 1: Khởi đầu (Sai số lớn - 45°)",
@@ -7539,9 +7665,9 @@ def main():
             st.markdown("### 🎯 CHỌN MÔ HÌNH")
             st.selectbox("Mô hình Pose", 
                          options=["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], 
-                         index=0, 
+                         index=1, # Mặc định là Heavy để trích xuất 33 điểm bám sát tối đa
                          key="ncv_model_type",
-                         help="Mô hình Full được khuyến nghị cho môi trường cloud/Streamlit. Mô hình Heavy yêu cầu tải file bổ sung và có thể bị lỗi phân quyền trên server.")
+                         help="Mô hình Heavy giúp trích xuất 33 điểm khớp xương bám sát tối đa vào cơ thể bệnh nhân.")
             
             # st.markdown("### 🎯 CHỌN BÀI TẬP") # Cắt bỏ chọn bài tập ở sidebar cho NCV
             # ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
@@ -7949,6 +8075,7 @@ def main():
                         if st.button(btn_text, width="stretch", type="primary"):
                             st.session_state.processing = True
                             st.session_state.has_data = True
+                            st.session_state.view_old_analysis = False
                             
                             progress_bar = st.progress(0)
                             status_text = st.empty()
@@ -7971,7 +8098,7 @@ def main():
                                     status_text.info(f"🔄 Đang xử lý frame... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
                                 
                                 # Lấy cấu hình từ session state (NCV) nếu có, nếu không dùng mặc định
-                                model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Full')
+                                model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Heavy')
                                 conf_ncv = st.session_state.get('ncv_confidence', 0.5)
 
                                 # Xác định sai số theo giai đoạn tập của NCV
@@ -8278,6 +8405,7 @@ def main():
                                         eval_btn_label = "📝 Đánh giá của chuyên môn PHCN" if user_role == "Bác sĩ / KTV PHCN" else "📝 Phân tích và trích xuất khung xương AI"
                                         if st.button(eval_btn_label, key=f"eval_btn_{idx}", width="stretch"):
                                             st.session_state.current_eval_video = v
+                                            st.session_state.view_old_analysis = False
                                             # Reset analysis state để load video mới
                                             st.session_state.has_data = False
                                             st.session_state.stats = None
