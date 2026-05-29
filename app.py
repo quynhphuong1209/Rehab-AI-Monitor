@@ -85,14 +85,13 @@ def get_base64_image(path):
         return None
 
 def render_video(video_path):
-    """Đọc video và hiển thị dưới dạng nhị phân (bytes) để tránh lỗi buffering/loading liên tục trên Hugging Face"""
+    """Hiển thị video bằng đường dẫn trực tiếp (string) để kích hoạt HTTP Range Requests (streaming).
+    Giúp trình duyệt load từng phần cực nhanh, xem tức thì và tránh tràn bộ nhớ RAM."""
     if not video_path or not os.path.exists(video_path):
         st.error("❌ File video không tồn tại hoặc đường dẫn trống.")
         return
     try:
-        with open(video_path, "rb") as f:
-            video_bytes = f.read()
-        st.video(video_bytes)
+        st.video(video_path)
     except Exception as e:
         st.error(f"⚠️ Lỗi hiển thị video: {e}")
 import threading
