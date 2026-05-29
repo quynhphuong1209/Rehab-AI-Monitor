@@ -2432,8 +2432,8 @@ def ve_khung_xuong_custom(frame_output, current_landmarks, active_side=None, mau
     lm = current_landmarks.landmark
     pts = [(int(lm[i].x * w), int(lm[i].y * h)) for i in range(33)]
     
-    line_thickness = max(2, int(2.5 * scale_factor))
-    circle_rad = max(3, int(3.5 * scale_factor))
+    line_thickness = max(3, int(3 * scale_factor))
+    circle_rad = max(4, int(4.5 * scale_factor))
     
     # Định nghĩa các liên kết xương vẽ thủ công
     LIEN_KET_TRAI = [
@@ -2656,7 +2656,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     mau_khuyu = (0, 255, 0) if khuyu_dung else (ORANGE_BGR if khuyu_gan_dung else (0, 0, 255))
     mau_tong = (0, 255, 0) if tong_the else (ORANGE_BGR if gan_dung_tong_the else (0, 0, 255))
     
-    scale_factor = h / 480.0
+    scale_factor = w / 640.0
     line_thickness = max(2, int(2 * scale_factor))
     circle_rad = max(2, int(2 * scale_factor))
     
@@ -3046,7 +3046,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             writer.write(xu_ly)
             
             frame_path = os.path.join(thu_muc_frame, f"f_{processed_count:06d}.jpg")
-            cv2.imwrite(frame_path, xu_ly, [cv2.IMWRITE_JPEG_QUALITY, 50])
+            cv2.imwrite(frame_path, xu_ly, [cv2.IMWRITE_JPEG_QUALITY, 85])
             danh_sach_frame_paths.append(frame_path)
             
             ts_frame_goc = frame_count / fps # Dữ liệu tọa độ vẫn giữ theo thời gian thực tế để vẽ biểu đồ
@@ -3186,10 +3186,10 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             '-vcodec', 'libx264', 
             '-pix_fmt', 'yuv420p', 
             '-preset', 'ultrafast',
-            '-vf', 'scale=360:-2',  # Giảm chiều rộng xuống 360px để tải nhanh hơn
-            '-crf', '35',           # Tăng độ nén (CRF 35) để dung lượng giảm tối đa 5-8x
-            '-maxrate', '350k',     # Giới hạn bitrate 350kbps giúp xem trực tuyến mượt mà
-            '-bufsize', '700k',
+            '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',  # Bảo toàn độ phân giải HD đã chọn
+            '-crf', '23',           # Độ nén tiêu chuẩn cho chất lượng HD sắc nét
+            '-maxrate', '2500k',    # Tăng giới hạn bitrate tối đa lên 2500kbps để không bị vỡ nét
+            '-bufsize', '5000k',
             '-movflags', '+faststart',
             '-threads', '0',
             final_h264
