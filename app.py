@@ -83,6 +83,18 @@ def get_base64_image(path):
             return base64.b64encode(data).decode()
     except:
         return None
+
+def render_video(video_path):
+    """Đọc video và hiển thị dưới dạng nhị phân (bytes) để tránh lỗi buffering/loading liên tục trên Hugging Face"""
+    if not video_path or not os.path.exists(video_path):
+        st.error("❌ File video không tồn tại hoặc đường dẫn trống.")
+        return
+    try:
+        with open(video_path, "rb") as f:
+            video_bytes = f.read()
+        st.video(video_bytes)
+    except Exception as e:
+        st.error(f"⚠️ Lỗi hiển thị video: {e}")
 import threading
 import queue
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
@@ -4404,7 +4416,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 col_v1, col_v2 = st.columns([2, 1])
                 with col_v1:
                     if os.path.exists(v['video_path']):
-                        st.video(v['video_path'])
+                        render_video(v['video_path'])
                     else:
                         st.error("❌ Không tìm thấy file video.")
                 with col_v2:
@@ -5384,7 +5396,7 @@ def hien_thi_form_danh_gia_bac_si():
             st.markdown(f"#### 🎬 Đang đánh giá: {selected_video['full_name']} - {selected_video['exercise']}")
             
             if os.path.exists(selected_video['video_path']):
-                st.video(selected_video['video_path'])
+                render_video(selected_video['video_path'])
             
             with st.form("doctor_eval_form_final_v_fixed"):
                 col1, col2 = st.columns(2)
@@ -6426,7 +6438,7 @@ def hien_thi_frames_day_du(key_suffix=""):
             ])
             
             with v_tab_all:
-                st.video(processed_video_path)
+                render_video(processed_video_path)
                 d_col1, d_col2 = st.columns(2)
                 with d_col1:
                     with open(processed_video_path, "rb") as f:
@@ -6448,7 +6460,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                                     
             with v_tab_g1:
                 if os.path.exists(g1_v_path) and os.path.getsize(g1_v_path) > 0:
-                    st.video(g1_v_path)
+                    render_video(g1_v_path)
                     with open(g1_v_path, "rb") as f:
                         st.download_button("📥 Tải video Giai đoạn 1", f, "processed_video_g1.mp4", "video/mp4", width="stretch", key=f"dl_v_g1_{key_suffix}")
                 else:
@@ -6456,7 +6468,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                     
             with v_tab_g2:
                 if os.path.exists(g2_v_path) and os.path.getsize(g2_v_path) > 0:
-                    st.video(g2_v_path)
+                    render_video(g2_v_path)
                     with open(g2_v_path, "rb") as f:
                         st.download_button("📥 Tải video Giai đoạn 2", f, "processed_video_g2.mp4", "video/mp4", width="stretch", key=f"dl_v_g2_{key_suffix}")
                 else:
@@ -6464,7 +6476,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                     
             with v_tab_g3:
                 if os.path.exists(g3_v_path) and os.path.getsize(g3_v_path) > 0:
-                    st.video(g3_v_path)
+                    render_video(g3_v_path)
                     with open(g3_v_path, "rb") as f:
                         st.download_button("📥 Tải video Giai đoạn 3", f, "processed_video_g3.mp4", "video/mp4", width="stretch", key=f"dl_v_g3_{key_suffix}")
                 else:
@@ -8102,7 +8114,7 @@ def main():
                                     col_v1, col_v2 = st.columns([2, 1])
                                     with col_v1:
                                         if os.path.exists(v_display_path):
-                                            st.video(v_display_path)
+                                            render_video(v_display_path)
                                         else:
                                             st.error("File video không tồn tại trên hệ thống.")
                                     with col_v2:
