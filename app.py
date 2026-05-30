@@ -3046,8 +3046,6 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 
     except Exception as e:
         print("Lỗi trong Pass 1:", e)
-    finally:
-        if cap: cap.release()
         
     # Tính toán phân đoạn 3 giai đoạn dựa trên kết quả Pass 1
     segment_bounds = segment_frames(raw_pass1_data)
@@ -3055,20 +3053,30 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     st.session_state.last_processed_video_for_bounds = out_path
     n0, n1, n2, n3 = segment_bounds
     
-    # PASS 2: Vẽ đè và ghi video với sai số động theo giai đoạn
-    cap = cv2.VideoCapture(duong_dan_video)
+    # PASS 2: Reset video capture và vẽ đè/ghi video với sai số động theo giai đoạn
+    seek_success = cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    if not seek_success:
+        if cap: cap.release()
+        import time as _time
+        _time.sleep(0.5)
+        cap = cv2.VideoCapture(duong_dan_video)
+        
     frame_count = 0
     processed_count = 0
     last_state = None
     last_audio_time = -10.0
     
     try:
-        for p1_data in raw_pass1_data:
+        while cap.isOpened() and processed_count < len(raw_pass1_data):
             ret, frame = cap.read()
             if not ret: break
             
-            frame_count = p1_data['frame_idx']
-            processed_count = p1_data['processed_count']
+            frame_count += 1
+            if skip_step > 0 and frame_count % (skip_step + 1) != 1:
+                continue
+                
+            p1_data = raw_pass1_data[processed_count]
+            processed_count += 1
             
             h_orig, w_orig = frame.shape[:2]
             if w_orig > h_orig:
@@ -3183,6 +3191,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 
             if processed_count % 50 == 0:
                 gc.collect()
+    except Exception as e:
+        print("Lỗi trong Pass 2:", e)
     finally:
         if cap: cap.release()
         if writer: writer.release()
