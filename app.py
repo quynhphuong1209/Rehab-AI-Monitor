@@ -3056,12 +3056,10 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     n0, n1, n2, n3 = segment_bounds
     
     # PASS 2: Reset video capture và vẽ đè/ghi video với sai số động theo giai đoạn
-    seek_success = cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-    if not seek_success:
-        if cap: cap.release()
-        import time as _time
-        _time.sleep(0.5)
-        cap = cv2.VideoCapture(duong_dan_video)
+    if cap: cap.release()
+    import time as _time
+    _time.sleep(0.5)
+    cap = cv2.VideoCapture(duong_dan_video)
         
     frame_count = 0
     processed_count = 0
