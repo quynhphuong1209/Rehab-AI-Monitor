@@ -2488,13 +2488,9 @@ def ve_khung_xuong_custom(frame_output, current_landmarks, active_side=None, mau
 # ============================================
 # XỬ LÝ FRAME - CẢI THIỆN BOX THÔNG TIN
 # ============================================================
-def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, active_side=None, last_pose_landmarks=None):
+def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, active_side=None, last_pose_landmarks=None, precomputed_landmarks=None):
     # 1. LẤY KÍCH THƯỚC VÀ CHUYỂN ĐỔI MÀU (Không dùng padding gây lệch)
     h, w = frame.shape[:2]
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
-    # 2. AI XỬ LÝ TRỰC TIẾP TRÊN FRAME GỐC
-    ket_qua = model.process(rgb)
     
     frame_output = frame.copy()
     GREEN, RED, WHITE = (0, 255, 0), (0, 0, 255), (255, 255, 255)
@@ -2507,10 +2503,18 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     
     # Sử dụng landmarks hiện tại hoặc khôi phục từ frame trước nếu mất dấu
     current_landmarks = None
-    if ket_qua and ket_qua.pose_landmarks:
-        current_landmarks = ket_qua.pose_landmarks
-    elif last_pose_landmarks:
-        current_landmarks = last_pose_landmarks
+    if precomputed_landmarks is not None:
+        current_landmarks = precomputed_landmarks
+    else:
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # 2. AI XỬ LÝ TRỰC TIẾP TRÊN FRAME GỐC
+        ket_qua = model.process(rgb) if model else None
+        if ket_qua and ket_qua.pose_landmarks:
+            current_landmarks = ket_qua.pose_landmarks
+        elif last_pose_landmarks:
+            current_landmarks = last_pose_landmarks
+        del rgb
+        del ket_qua
         
     if not current_landmarks:
         # Box thông tin khi không có pose - CẢI THIỆN
@@ -2524,8 +2528,6 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
                    cv2.FONT_HERSHEY_DUPLEX, 0.7, (200, 200, 200), 2)
         cv2.putText(frame_output, "NO POSE DETECTED", (20, 115), 
                    cv2.FONT_HERSHEY_DUPLEX, 0.6, (0, 0, 255), 2)
-        del rgb
-        del ket_qua
         gc.collect()
         return frame_output, None, None, None, None, [], None
     
@@ -3104,17 +3106,12 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             chuan_dynamic = chuan.copy()
             chuan_dynamic['sai_so'] = ss_dynamic
             
-            class MockPoseResult:
-                def __init__(self, lm):
-                    self.pose_landmarks = lm
-                    
-            mock_result = MockPoseResult(p1_data['landmarks'])
-            
             try:
                 xu_ly, goc_v, goc_k, dung, eval_info, warnings_list, _ = xu_ly_frame(
-                    frame, mock_result, chuan_dynamic, frame_count, fps,
+                    frame, None, chuan_dynamic, frame_count, fps,
                     dynamic_chuan=dynamic_chuan, active_side=active_side,
-                    last_pose_landmarks=None
+                    last_pose_landmarks=None,
+                    precomputed_landmarks=p1_data['landmarks']
                 )
                 
                 if goc_v is not None:
