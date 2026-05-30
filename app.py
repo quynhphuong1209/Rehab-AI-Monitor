@@ -2605,7 +2605,12 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     if dynamic_chuan:
         # Tìm frame gần nhất trong dynamic_chuan (dữ liệu thường theo giây)
         # Giả sử dynamic_chuan là list các dict {'time': 0.1, 'vai': 30, 'khuyu': 175}
-        target_time = round(thoi_gian_giay, 1)
+        max_ref_time = max((x['time'] for x in dynamic_chuan), default=10.0) if dynamic_chuan else 10.0
+        if max_ref_time > 0:
+            target_time = round(thoi_gian_giay % max_ref_time, 1)
+        else:
+            target_time = round(thoi_gian_giay, 1)
+            
         # Lặp để tìm (hoặc dùng nội suy nếu muốn mượt hơn, ở đây ta lấy gần đúng nhất)
         closest_ref = min(dynamic_chuan, key=lambda x: abs(x['time'] - target_time), default=None)
         if closest_ref:
@@ -2973,14 +2978,14 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     except Exception as e:
         print("Lỗi tự động phát hiện bên tập:", e)
 
+    # PASS 1: Trích xuất landmarks và tọa độ (Không vẽ, không ghi file để tối ưu bộ nhớ)
+    raw_pass1_data = []
     try:
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret or (MAX_FRAMES and processed_count >= MAX_FRAMES): break
             
             frame_count += 1
-            
-            # LOGIC SKIP FRAME: Bỏ qua các frame không nằm trong bước nhảy để tăng tốc
             if skip_step > 0 and frame_count % (skip_step + 1) != 1:
                 continue
                 
@@ -2988,7 +2993,6 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             
             h_orig, w_orig = frame.shape[:2]
             if w_orig > h_orig:
-                # Tối ưu hóa RAM cực hạn: Resize trước khi xoay để tránh xoay mảng 4K/FullHD lớn
                 scale = resize_width / h_orig
                 new_w = int(w_orig * scale)
                 if new_w % 2 != 0: new_w -= 1
@@ -3000,21 +3004,111 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                     new_h = int(h_orig * scale)
                     if new_h % 2 != 0: new_h -= 1
                     frame = cv2.resize(frame, (resize_width, new_h), interpolation=cv2.INTER_LINEAR)
+            
+            h, w = frame.shape[:2]
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            ket_qua = model.process(rgb)
+            
+            current_landmarks = None
+            if ket_qua and ket_qua.pose_landmarks:
+                current_landmarks = ket_qua.pose_landmarks
+                last_pose_landmarks = current_landmarks
+            elif last_pose_landmarks:
+                current_landmarks = last_pose_landmarks
                 
+            goc_v, goc_k = None, None
+            if current_landmarks:
+                lm = current_landmarks.landmark
+                def get_coords_det(idx):
+                    return (int(lm[idx].x * w), int(lm[idx].y * h))
+                
+                if active_side == "LEFT":
+                    goc_v = tinh_goc(get_coords_det(23), get_coords_det(11), get_coords_det(13))
+                    goc_k = tinh_goc(get_coords_det(11), get_coords_det(13), get_coords_det(15))
+                else:
+                    goc_v = tinh_goc(get_coords_det(24), get_coords_det(12), get_coords_det(14))
+                    goc_k = tinh_goc(get_coords_det(12), get_coords_det(14), get_coords_det(16))
+                    
+            raw_pass1_data.append({
+                'frame_idx': frame_count,
+                'processed_count': processed_count,
+                'landmarks': current_landmarks,
+                'goc_vai': goc_v,
+                'goc_khuyu': goc_k
+            })
+            
+            if callback and tong_frame > 0:
+                prog = min(frame_count / tong_frame, 1.0) * 0.5
+                callback(prog)
+                
+            if processed_count % 50 == 0:
+                gc.collect()
+                
+    except Exception as e:
+        print("Lỗi trong Pass 1:", e)
+    finally:
+        if cap: cap.release()
+        
+    # Tính toán phân đoạn 3 giai đoạn dựa trên kết quả Pass 1
+    segment_bounds = segment_frames(raw_pass1_data)
+    st.session_state.segment_bounds = segment_bounds
+    st.session_state.last_processed_video_for_bounds = out_path
+    n0, n1, n2, n3 = segment_bounds
+    
+    # PASS 2: Vẽ đè và ghi video với sai số động theo giai đoạn
+    cap = cv2.VideoCapture(duong_dan_video)
+    frame_count = 0
+    processed_count = 0
+    last_state = None
+    last_audio_time = -10.0
+    
+    try:
+        for p1_data in raw_pass1_data:
+            ret, frame = cap.read()
+            if not ret: break
+            
+            frame_count = p1_data['frame_idx']
+            processed_count = p1_data['processed_count']
+            
+            h_orig, w_orig = frame.shape[:2]
+            if w_orig > h_orig:
+                scale = resize_width / h_orig
+                new_w = int(w_orig * scale)
+                if new_w % 2 != 0: new_w -= 1
+                frame = cv2.resize(frame, (new_w, resize_width), interpolation=cv2.INTER_LINEAR)
+                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+            else:
+                if w_orig != resize_width:
+                    scale = resize_width / w_orig
+                    new_h = int(h_orig * scale)
+                    if new_h % 2 != 0: new_h -= 1
+                    frame = cv2.resize(frame, (resize_width, new_h), interpolation=cv2.INTER_LINEAR)
+                    
+            # Xác định sai số theo giai đoạn hiện tại (G1=45, G2=30, G3=15)
+            idx_in_list = processed_count - 1
+            if idx_in_list < n1:
+                ss_dynamic = 45
+            elif idx_in_list < n2:
+                ss_dynamic = 30
+            else:
+                ss_dynamic = 15
+                
+            chuan_dynamic = chuan.copy()
+            chuan_dynamic['sai_so'] = ss_dynamic
+            
+            class MockPoseResult:
+                def __init__(self, lm):
+                    self.pose_landmarks = lm
+                    
+            mock_result = MockPoseResult(p1_data['landmarks'])
+            
             try:
-                # Xử lý AI với active_side được phát hiện khóa cứng và truyền last_pose_landmarks để khôi phục khi mất dấu
-                xu_ly, goc_v, goc_k, dung, eval_info, warnings_list, current_landmarks = xu_ly_frame(
-                    frame, model, chuan, frame_count, fps, 
-                    dynamic_chuan=dynamic_chuan, active_side=active_side, 
-                    last_pose_landmarks=last_pose_landmarks
+                xu_ly, goc_v, goc_k, dung, eval_info, warnings_list, _ = xu_ly_frame(
+                    frame, mock_result, chuan_dynamic, frame_count, fps,
+                    dynamic_chuan=dynamic_chuan, active_side=active_side,
+                    last_pose_landmarks=None
                 )
                 
-                # Cập nhật landmarks cuối cùng nhận dạng được
-                if current_landmarks is not None:
-                    last_pose_landmarks = current_landmarks
-                
-                # Xác định trạng thái âm thanh:
-                # Chỉ thay đổi trạng thái nếu nhận dạng được khớp ở frame này (hoặc khôi phục thành công từ frame trước)
                 if goc_v is not None:
                     current_state = "sai"
                     if dung:
@@ -3022,20 +3116,17 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                     elif eval_info and eval_info.get("nearly_correct"):
                         current_state = "gan_dung"
                 else:
-                    # Nếu hoàn toàn không nhận dạng được pose (cả hiện tại lẫn lịch sử), giữ nguyên trạng thái cũ
                     current_state = last_state
-                
-                ts_frame_export = frame_count / fps_export # Thời gian chiếu chậm của video đầu ra
-                
-                # CHỈ phát âm thanh khi đổi trạng thái VÀ cách lần phát trước tối thiểu 1.5 giây
+                    
+                ts_frame_export = frame_count / fps_export
                 if current_state != last_state:
                     if ts_frame_export - last_audio_time >= 1.5:
                         audio_events.append({"time": ts_frame_export, "state": current_state})
                         last_audio_time = ts_frame_export
                         last_state = current_state
-                    
+                        
             except Exception as e:
-                print(f"Error processing frame {frame_count}: {e}")
+                print(f"Lỗi vẽ đè frame {frame_count}: {e}")
                 continue
                 
             if writer is None:
@@ -3048,7 +3139,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             cv2.imwrite(frame_path, xu_ly, [cv2.IMWRITE_JPEG_QUALITY, 85])
             danh_sach_frame_paths.append(frame_path)
             
-            ts_frame_goc = frame_count / fps # Dữ liệu tọa độ vẫn giữ theo thời gian thực tế để vẽ biểu đồ
+            ts_frame_goc = frame_count / fps
             time_str = f"{int(ts_frame_goc // 60):02d}:{int(ts_frame_goc % 60):02d}"
             
             if warnings_list: all_warnings.extend(warnings_list)
@@ -3061,7 +3152,6 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             }
             danh_sach_frame_data.append(d_frame)
             
-            # Tạo bản ghi cho mọi frame để đảm bảo trích xuất đầy đủ, liên tục và chính xác 33 điểm
             row_data = {
                 'frame': frame_count, 'timestamp': time_str, 'timestamp_seconds': ts_frame_goc,
                 'goc_vai': goc_v, 'goc_khuyu': goc_k, 'dung': dung if goc_v is not None else False,
@@ -3072,9 +3162,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 'khuyu_chuan': eval_info['elbow_ref'] if (eval_info and goc_v is not None) else 170.0
             }
             
-            # Trích xuất tọa độ chi tiết của toàn bộ 33 điểm khớp xương MediaPipe (x, y, z, visibility)
-            if current_landmarks is not None:
-                for idx, lm_pt in enumerate(current_landmarks.landmark):
+            if p1_data['landmarks'] is not None:
+                for idx, lm_pt in enumerate(p1_data['landmarks'].landmark):
                     row_data[f"pt{idx}_x"] = lm_pt.x
                     row_data[f"pt{idx}_y"] = lm_pt.y
                     row_data[f"pt{idx}_z"] = lm_pt.z
@@ -3089,14 +3178,9 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             du_lieu_goc.append(row_data)
             
             if callback and tong_frame > 0:
-                prog = min(frame_count/tong_frame, 1.0)
-                if prog - last_progress >= 0.02: # Cập nhật progress nhạy hơn (2% thay vì 5%)
-                    callback(prog)
-                    last_progress = prog
-                    
-            # Giải phóng RAM định kỳ tránh tràn bộ nhớ (OOM) trên Streamlit Cloud (Hạn mức 1GB RAM)
-            if 'frame' in locals(): del frame
-            if 'xu_ly' in locals(): del xu_ly
+                prog = 0.5 + min(processed_count / len(raw_pass1_data), 1.0) * 0.5
+                callback(prog)
+                
             if processed_count % 50 == 0:
                 gc.collect()
     finally:
@@ -3367,10 +3451,17 @@ def gui_bao_cao_tong_hop_3_giai_doan():
         st.error("❌ Không thể nạp dữ liệu tọa độ chi tiết của video để phân tích 3 giai đoạn.")
         return False
 
-    # Tính toán chỉ số cho cả 3 giai đoạn
-    metrics_g1 = recalc_metrics(df, 45)
-    metrics_g2 = recalc_metrics(df, 30)
-    metrics_g3 = recalc_metrics(df, 15)
+    # Tính toán chỉ số cho cả 3 giai đoạn tương ứng với từng phân đoạn
+    bounds = segment_frames(df)
+    n0, n1, n2, n3 = bounds
+    
+    df_g1 = df.iloc[n0:n1]
+    df_g2 = df.iloc[n1:n2]
+    df_g3 = df.iloc[n2:n3]
+    
+    metrics_g1 = recalc_metrics(df_g1, 45)
+    metrics_g2 = recalc_metrics(df_g2, 30)
+    metrics_g3 = recalc_metrics(df_g3, 15)
 
     acc_g1 = metrics_g1['do_chinh_xac']
     acc_g2 = metrics_g2['do_chinh_xac']
@@ -4625,9 +4716,14 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                             if valid_frames > 0:
                                 df = pd.DataFrame(angle_data)
                                 metrics = tinh_metrics_chi_tiet(df, bt_ncv)
-                                metrics_g1 = recalc_metrics(df, 45)
-                                metrics_g2 = recalc_metrics(df, 30)
-                                metrics_g3 = recalc_metrics(df, 15)
+                                bounds = segment_frames(df)
+                                n0, n1, n2, n3 = bounds
+                                df_g1 = df.iloc[n0:n1]
+                                df_g2 = df.iloc[n1:n2]
+                                df_g3 = df.iloc[n2:n3]
+                                metrics_g1 = recalc_metrics(df_g1, 45)
+                                metrics_g2 = recalc_metrics(df_g2, 30)
+                                metrics_g3 = recalc_metrics(df_g3, 15)
                                 
                                 # Cập nhật session state
                                 st.session_state.stats = {
@@ -4748,9 +4844,14 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
 
     # Tính toán chỉ số cho cả 3 giai đoạn
     if df is not None and len(df) > 0:
-        metrics_g1 = recalc_metrics(df, 45)
-        metrics_g2 = recalc_metrics(df, 30)
-        metrics_g3 = recalc_metrics(df, 15)
+        bounds = segment_frames(df)
+        n0, n1, n2, n3 = bounds
+        df_g1 = df.iloc[n0:n1]
+        df_g2 = df.iloc[n1:n2]
+        df_g3 = df.iloc[n2:n3]
+        metrics_g1 = recalc_metrics(df_g1, 45)
+        metrics_g2 = recalc_metrics(df_g2, 30)
+        metrics_g3 = recalc_metrics(df_g3, 15)
     else:
         metrics_g1 = tk.get("metrics_g1", tk)
         metrics_g2 = tk.get("metrics_g2", tk)
@@ -6439,59 +6540,56 @@ def hien_thi_tab_phieu_nckh():
 
 def segment_frames(all_frames_data):
     """
-    Phân đoạn danh sách frames thành 3 giai đoạn (lần lặp 1, 2, 3) 
-    dựa trên thuật toán phân tích chu kỳ góc của khớp vai/khuỷu.
+    Phân đoạn danh sách frames hoặc DataFrame thành 3 giai đoạn dựa trên chu kỳ góc khớp.
+    Đảm bảo đầu mỗi giai đoạn là xuất phát của động tác dơ vai (đáy - valley).
     """
-    total = len(all_frames_data)
-    if total < 30:
-        return [0, total // 3, (2 * total) // 3, total]
-        
-    goc_v = [f.get('goc_vai', 90) or 90 for f in all_frames_data]
-    goc_k = [f.get('goc_khuyu', 170) or 170 for f in all_frames_data]
+    import pandas as pd
+    import numpy as np
     
+    if isinstance(all_frames_data, pd.DataFrame):
+        total = len(all_frames_data)
+        if total < 30:
+            return [0, total // 3, (2 * total) // 3, total]
+        goc_v = all_frames_data['goc_vai'].fillna(90).tolist()
+        goc_k = all_frames_data['goc_khuyu'].fillna(170).tolist()
+    else:
+        total = len(all_frames_data)
+        if total < 30:
+            return [0, total // 3, (2 * total) // 3, total]
+        goc_v = [f.get('goc_vai', 90) or 90 for f in all_frames_data]
+        goc_k = [f.get('goc_khuyu', 170) or 170 for f in all_frames_data]
+        
     var_v = np.std(goc_v)
     var_k = np.std(goc_k)
-    angles = goc_v if var_v > var_k else goc_k
+    angles = np.array(goc_v) if var_v > var_k else np.array(goc_k)
     
-    # Smooth signal
-    window_size = min(15, max(3, total // 50))
+    # Smooth signal using a moving average
+    window_size = min(15, max(5, total // 30))
     smoothed = np.convolve(angles, np.ones(window_size)/window_size, mode='same')
     
-    # Tự động quyết định tìm Đỉnh (peaks) hay Đáy (valleys)
-    p10 = np.percentile(smoothed, 10)
-    p90 = np.percentile(smoothed, 90)
-    mid = (p10 + p90) / 2
-    mean_val = np.mean(smoothed)
-    find_peaks = mean_val > mid
+    # Tìm các thung lũng (valleys) - điểm xuất phát giơ vai
+    valleys = []
+    threshold_val = np.percentile(smoothed, 50)
+    min_dist = max(15, total // 8)
     
-    # Find extremes (các cực trị tương đối - nơi chuyển tiếp giữa các lần lặp lại)
-    extremes = []
-    for i in range(window_size, len(smoothed) - window_size):
-        is_extreme = True
-        if find_peaks:
-            for j in range(i - window_size, i + window_size + 1):
-                if smoothed[j] > smoothed[i]:
-                    is_extreme = False
-                    break
-        else:
-            for j in range(i - window_size, i + window_size + 1):
-                if smoothed[j] < smoothed[i]:
-                    is_extreme = False
-                    break
-        if is_extreme:
-            extremes.append(i)
-            
-    min_dist = total // 10
-    filtered_valleys = []
-    for v in extremes:
-        if not filtered_valleys or (v - filtered_valleys[-1] >= min_dist):
-            if v > min_dist and v < total - min_dist:
-                filtered_valleys.append(v)
+    for i in range(window_size, total - window_size):
+        is_min = True
+        for j in range(i - window_size, i + window_size + 1):
+            if smoothed[j] < smoothed[i]:
+                is_min = False
+                break
+        if is_min and smoothed[i] < threshold_val:
+            if not valleys or (i - valleys[-1] >= min_dist):
+                valleys.append(i)
                 
+    # Lọc valleys nằm ngoài khoảng 10% biên
+    filtered_valleys = [v for v in valleys if v > total // 10 and v < total - total // 10]
+    
     if len(filtered_valleys) >= 2:
         if len(filtered_valleys) == 2:
             n1, n2 = filtered_valleys[0], filtered_valleys[1]
         else:
+            # Chọn 2 thung lũng chia đều video tốt nhất
             best_diff = float('inf')
             n1, n2 = total // 3, (2 * total) // 3
             for i in range(len(filtered_valleys)):
@@ -6503,6 +6601,14 @@ def segment_frames(all_frames_data):
                     if diff < best_diff:
                         best_diff = diff
                         n1, n2 = p1, p2
+    elif len(filtered_valleys) == 1:
+        v = filtered_valleys[0]
+        if v < total // 2:
+            n1 = v
+            n2 = v + (total - v) // 2
+        else:
+            n1 = v // 2
+            n2 = v
     else:
         n1 = total // 3
         n2 = (2 * total) // 3
@@ -8129,6 +8235,15 @@ def main():
                                     df = pd.DataFrame(angle_data)
                                     metrics = tinh_metrics_chi_tiet(df, bai_tap_ncv)
                                     
+                                    bounds = segment_frames(df)
+                                    n0, n1, n2, n3 = bounds
+                                    df_g1 = df.iloc[n0:n1]
+                                    df_g2 = df.iloc[n1:n2]
+                                    df_g3 = df.iloc[n2:n3]
+                                    metrics_g1 = recalc_metrics(df_g1, 45)
+                                    metrics_g2 = recalc_metrics(df_g2, 30)
+                                    metrics_g3 = recalc_metrics(df_g3, 15)
+                                    
                                     st.session_state.has_data = True
                                     st.session_state.angle_df = df
                                     st.session_state.stats = {
@@ -8154,7 +8269,10 @@ def main():
                                         "icc": metrics["icc"],
                                         "thoi_gian": process_time,
                                         "tong_frame": total_frames,
-                                        "warnings": all_warnings
+                                        "warnings": all_warnings,
+                                        "metrics_g1": metrics_g1,
+                                        "metrics_g2": metrics_g2,
+                                        "metrics_g3": metrics_g3
                                     }
                                     st.session_state.frames_zip = zip_data
                                     st.session_state.exercise = bai_tap_ncv
