@@ -2830,6 +2830,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     import json
     import os
     
+    temp_copy_path = duong_dan_video
+    
     # 1. LOAD DYNAMIC REFERENCE (BẢN CHUẨN YOUTUBE)
     dynamic_chuan = None
     try:
@@ -3057,9 +3059,17 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     
     # PASS 2: Reset video capture và vẽ đè/ghi video với sai số động theo giai đoạn
     if cap: cap.release()
-    import time as _time
-    _time.sleep(0.5)
-    cap = cv2.VideoCapture(duong_dan_video)
+    
+    # Tạo bản sao của video để Pass 2 đọc độc lập, tránh xung đột khóa file (File Lock)
+    import shutil
+    temp_copy_path = duong_dan_video + "_pass2.mp4"
+    try:
+        shutil.copy(duong_dan_video, temp_copy_path)
+    except Exception as e:
+        print("Lỗi tạo bản sao video:", e)
+        temp_copy_path = duong_dan_video  # Fallback
+        
+    cap = cv2.VideoCapture(temp_copy_path)
         
     frame_count = 0
     processed_count = 0
@@ -3193,6 +3203,9 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         if writer: writer.release()
         if model: 
             try: model.close()
+            except: pass
+        if os.path.exists(temp_copy_path) and temp_copy_path != duong_dan_video:
+            try: os.unlink(temp_copy_path)
             except: pass
         gc.collect()
 
