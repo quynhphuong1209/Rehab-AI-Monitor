@@ -3273,6 +3273,10 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(danh_sach_frame_data, f, ensure_ascii=False)
     
+    if callback:
+        try: callback(0.96)
+        except: pass
+
     final_video_path = out_path
     final_h264 = out_path.replace('.mp4', '_f.mp4')
     try:
@@ -3287,7 +3291,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         cmd.extend([
             '-vcodec', 'libx264', 
             '-pix_fmt', 'yuv420p', 
-            '-preset', 'veryfast',  # Cân bằng: Tốc độ xử lý nhanh & nén tối ưu hơn 2 lần ultrafast
+            '-preset', 'ultrafast',  # Dùng preset ultrafast để đóng gói cực nhanh cho video dài
             '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',  # Bảo toàn độ phân giải HD đã chọn
             '-crf', '24',           # Giữ nguyên độ nét HD lâm sàng nhưng dung lượng file giảm thêm 20-30%
             '-maxrate', '1200k',    # Giới hạn bitrate 1.2Mbps cực nét cho chuyển động tĩnh, tránh lag/buffering
@@ -3298,7 +3302,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         ])
         
         # TỐI ƯU RAM: Xả log ffmpeg ra DEVNULL thay vì buffer vào RAM Python
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=600)
         if os.path.exists(final_h264): final_video_path = final_h264
     except: pass
     
