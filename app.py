@@ -2723,7 +2723,8 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     # Dòng 2: TIME
     time_sec = frame_idx / fps
     time_str = f"{int(time_sec // 60):02d}:{int(time_sec % 60):02d}"
-    if not ket_qua.pose_landmarks and last_pose_landmarks:
+    has_real_pose = (precomputed_landmarks is not None) or (ket_qua and ket_qua.pose_landmarks if 'ket_qua' in locals() and ket_qua else False)
+    if not has_real_pose and last_pose_landmarks:
         cv2.putText(frame_output, f"TIME: {time_str} (EST)", (box_x + int(15 * scale_factor), box_y + int(52 * scale_factor)), font, font_scale_small, (0, 165, 255), text_thick_thin)
     else:
         cv2.putText(frame_output, f"TIME: {time_str}", (box_x + int(15 * scale_factor), box_y + int(52 * scale_factor)), font, font_scale_small, (180, 180, 180), text_thick_thin)
@@ -3297,7 +3298,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         ])
         
         # TỐI ƯU RAM: Xả log ffmpeg ra DEVNULL thay vì buffer vào RAM Python
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
         if os.path.exists(final_h264): final_video_path = final_h264
     except: pass
     
@@ -4803,6 +4804,9 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                                 st.success("✅ Phân tích hoàn tất!")
                                 st.session_state.reanalyze_triggered = False
                                 st.rerun()
+                            else:
+                                st.error("❌ Không thể trích xuất khung xương từ video (0 frame hợp lệ). Vui lòng đảm bảo người tập xuất hiện đầy đủ trong camera.")
+                                st.session_state.processing = False
                         except Exception as e:
                             st.error(f"❌ Lỗi: {e}")
                         finally:
