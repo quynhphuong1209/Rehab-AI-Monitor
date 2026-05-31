@@ -84,14 +84,82 @@ def get_base64_image(path):
     except:
         return None
 
+def ensure_playable_video(video_path):
+    """Đảm bảo video có định dạng H.264 mượt mà (đuôi _f.mp4) để chơi được trên trình duyệt.
+    Nếu file _f.mp4 chưa có, tự động chuyển đổi từ file gốc mp4v cực nhanh."""
+    if not video_path or not os.path.exists(video_path):
+        return video_path
+        
+    if video_path.endswith('_f.mp4'):
+        return video_path
+        
+    final_h264 = video_path.replace('.mp4', '_f.mp4')
+    if os.path.exists(final_h264):
+        return final_h264
+        
+    import subprocess
+    cmd = [
+        'ffmpeg', '-y', 
+        '-i', video_path,
+        '-vcodec', 'libx264', 
+        '-pix_fmt', 'yuv420p', 
+        '-preset', 'ultrafast', 
+        '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', 
+        '-crf', '24', 
+        '-maxrate', '1200k', 
+        '-bufsize', '2400k',
+        '-movflags', '+faststart',
+        '-threads', '0',
+        final_h264
+    ]
+    try:
+        print(f"[Auto-Heal Video] Đang convert {video_path} sang H.264...")
+        st.toast(f"🔄 Đang tối ưu hóa định dạng video H.264 để phát mượt mà trên trình duyệt...", icon="🎬")
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=180)
+        if result.returncode != 0:
+            print("[Auto-Heal Video] FFmpeg failed with exit code", result.returncode)
+            print("[Auto-Heal Video] FFmpeg stderr:", result.stderr)
+            
+        if os.path.exists(final_h264):
+            print(f"[Auto-Heal Video] Đã convert thành công sang {final_h264}")
+            try:
+                video_list = load_data(VIDEOS_FILE)
+                updated = False
+                for vid in video_list:
+                    if vid.get('processed_path') == video_path:
+                        vid['processed_path'] = final_h264
+                        updated = True
+                if updated:
+                    save_data(VIDEOS_FILE, video_list)
+                    print("[Auto-Heal Video] Đã cập nhật database video_list.json")
+            except Exception as db_err:
+                print(f"[Auto-Heal Video] Lỗi cập nhật database: {db_err}")
+                
+            if st.session_state.get('processed_video_path') == video_path:
+                st.session_state.processed_video_path = final_h264
+                
+            push_file_to_hf_async(final_h264)
+            return final_h264
+    except Exception as e:
+        print(f"[Auto-Heal Video] Lỗi convert video: {e}")
+        
+    return video_path
+
 def render_video(video_path):
     """Hiển thị video bằng đường dẫn trực tiếp (string) để kích hoạt HTTP Range Requests (streaming).
     Giúp trình duyệt load từng phần cực nhanh, xem tức thì và tránh tràn bộ nhớ RAM."""
-    if not video_path or not os.path.exists(video_path):
+    if not video_path:
         st.error("❌ File video không tồn tại hoặc đường dẫn trống.")
         return
+        
+    # Tự động chuyển đổi sang H.264 nếu video thô mp4v không chơi được
+    playable_path = ensure_playable_video(video_path)
+    
+    if not os.path.exists(playable_path):
+        st.error("❌ File video không tồn tại.")
+        return
     try:
-        st.video(video_path)
+        st.video(playable_path)
     except Exception as e:
         st.error(f"⚠️ Lỗi hiển thị video: {e}")
 import threading
@@ -8514,7 +8582,7 @@ def main():
                                     col_v1, col_v2 = st.columns([2, 1])
                                     with col_v1:
                                         if os.path.exists(v_display_path):
-                                            st.video(v_display_path)
+                                            render_video(v_display_path)
                                         else:
                                             st.error("File video không tồn tại trên hệ thống.")
                                     with col_v2:
