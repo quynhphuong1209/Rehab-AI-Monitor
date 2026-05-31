@@ -2006,7 +2006,7 @@ def hien_thi_tab_realtime(bai_tap):
     
     RTC_CONFIGURATION = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
     
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([1.3, 1])
     
     with col2:
         st.markdown(f"""
@@ -4760,7 +4760,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 
                 # Nếu video CHƯA CÓ metrics hoặc NCV muốn chạy lại
                 st.warning(f"⚠️ Video '{v.get('video_name')}' của BN {v.get('full_name')} chưa được phân tích.")
-                col_v1, col_v2 = st.columns([2, 1])
+                col_v1, col_v2 = st.columns([1.3, 1])
                 with col_v1:
                     if os.path.exists(v['video_path']):
                         st.video(v['video_path'])
@@ -6807,7 +6807,7 @@ def hien_thi_frames_day_du(key_suffix=""):
     st.markdown("### 🎬 VIDEO ĐÃ PHÂN TÍCH")
     
     # Khung video và thông tin
-    v_col1, v_col2 = st.columns([2, 1], gap='large')
+    v_col1, v_col2 = st.columns([1.3, 1], gap='large')
     with v_col1:
         if has_video:
             # Tự động tính toán phân đoạn thông minh
@@ -8587,7 +8587,7 @@ def main():
                                         display_status = "Đang chờ bác sĩ đánh giá"
 
                                 with st.expander(f"🎬 {v['full_name']} - {v['exercise']} ({v['time']}) - {display_status}"):
-                                    col_v1, col_v2 = st.columns([2, 1])
+                                    col_v1, col_v2 = st.columns([1.3, 1])
                                     with col_v1:
                                         if os.path.exists(v_display_path):
                                             render_video(v_display_path)
