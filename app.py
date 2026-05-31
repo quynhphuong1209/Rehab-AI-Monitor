@@ -90,6 +90,11 @@ def ensure_playable_video(video_path):
     if not video_path or not os.path.exists(video_path):
         return video_path
         
+    # Chỉ tự động sửa lỗi/convert đối với video thành phẩm đã qua xử lý (processed_)
+    # Video gốc do bệnh nhân tải lên (patient_uploads/) đã ở định dạng chuẩn web, không cần convert
+    if "processed_" not in os.path.basename(video_path):
+        return video_path
+        
     if video_path.endswith('_f.mp4'):
         return video_path
         
@@ -8562,8 +8567,11 @@ def main():
                             with col_list1:
                                 # LUÔN HIỂN THỊ VIDEO GỐC TRONG DANH SÁCH ĐỂ ĐỐI CHIẾU (Có fallback video đã xử lý)
                                 v_display_path = v['video_path']
-                                if not os.path.exists(v_display_path) and v.get('processed_path') and os.path.exists(v['processed_path']):
-                                    v_display_path = v['processed_path']
+                                ensure_local_file(v_display_path)
+                                if not os.path.exists(v_display_path) and v.get('processed_path'):
+                                    ensure_local_file(v['processed_path'])
+                                    if os.path.exists(v['processed_path']):
+                                        v_display_path = v['processed_path']
                                 
                                 # Xác định xem đã có kết quả AI chưa để hiển thị text
                                 evals_db = load_data(EVALUATIONS_FILE)
