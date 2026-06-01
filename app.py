@@ -257,9 +257,9 @@ def render_video(video_path):
         st.error("❌ File video không tồn tại.")
         return
     try:
-        # Ngưỡng dung lượng: 10 MB (10 * 1024 * 1024 bytes)
+        # Ngưỡng dung lượng: 2 MB (2 * 1024 * 1024 bytes)
         file_size = os.path.getsize(playable_path)
-        if file_size < 10 * 1024 * 1024:
+        if file_size < 2 * 1024 * 1024:
             # Video nhỏ: Đọc bytes để chạy mượt, tránh lỗi range-request
             with open(playable_path, "rb") as f:
                 video_bytes = f.read()
@@ -9060,10 +9060,10 @@ def main():
                                 except:
                                     pass
                             
-                            # Tạo tên file duy nhất với đuôi .mp4 cố định để tương thích tốt nhất với trình duyệt
+                            # Tạo tên file duy nhất với đuôi _f.mp4 cố định để tương thích tốt nhất với trình duyệt và bỏ qua convert lặp lại
                             timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
                             base_name, _ = os.path.splitext(file_upload.name)
-                            filename = f"{st.session_state.user_info['username']}_{timestamp}_{base_name}.mp4"
+                            filename = f"{st.session_state.user_info['username']}_{timestamp}_{base_name}_f.mp4"
                             file_path = os.path.join(save_dir, filename)
                             
                             # Lưu file video tạm
@@ -9083,12 +9083,13 @@ def main():
                                     '-maxrate', '800k',
                                     '-bufsize', '1600k',
                                     '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+                                    '-movflags', '+faststart',
                                     '-threads', '0',
                                     '-map', '0:v:0', '-map', '0:a?', '-c:a', 'aac',
                                     file_path
                                 ]
                                 result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
-                                if result_compress.returncode == 0 and os.path.exists(file_path) and os.path.getsize(file_path) > 1024:
+                                if result_compress.returncode == 0 and os.path.exists(file_path) and os.path.getsize(file_path) > 5 * 1024:
                                     try: os.remove(temp_uploaded_path)
                                     except: pass
                                 else:
