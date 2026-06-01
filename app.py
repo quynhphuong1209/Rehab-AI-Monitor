@@ -8177,12 +8177,12 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             pass
                     return False
                     
-                if is_valid_local_file(v_display_path):
-                    local_exists = True
-                    active_display_path = v_display_path
-                elif is_valid_local_file(processed_path):
+                if is_valid_local_file(processed_path):
                     local_exists = True
                     active_display_path = processed_path
+                elif is_valid_local_file(v_display_path):
+                    local_exists = True
+                    active_display_path = v_display_path
                 
                 # Xác định xem đã có kết quả AI chưa để hiển thị text
                 v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise') for e in evals_db)
@@ -8207,10 +8207,10 @@ def hien_thi_danh_sach_video_fragment(user_role):
                         if st.button("📥 Tải video về hệ thống", key=f"download_vid_{idx}", type="primary", width="stretch"):
                             with st.spinner("Đang tải video từ Cloud..."):
                                 success = False
-                                if v_display_path:
-                                    success = ensure_local_file(v_display_path)
-                                if not success and processed_path:
+                                if processed_path:
                                     success = ensure_local_file(processed_path)
+                                if not success and v_display_path:
+                                    success = ensure_local_file(v_display_path)
                                 if success:
                                     st.success("✅ Tải video thành công!")
                                     st.rerun()
