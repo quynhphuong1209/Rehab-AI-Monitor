@@ -7085,16 +7085,14 @@ def hien_thi_frames_day_du(key_suffix=""):
         if page_key not in st.session_state:
             st.session_state[page_key] = 1
 
-        rc1, rc2, rc3, rc4, rc5 = st.columns([1.5, 1.5, 1.5, 1.5, 0.6])
+        rc1, rc2, rc3, rc4 = st.columns([1.5, 1.5, 2.0, 0.6])
         with rc1:
-            qlabel = st.selectbox("✨ Chất lượng", ["Tốc độ", "Cân bằng", "Sắc nét"], index=1, key=f"fq_{tab_key}_{key_suffix_val}")
-        with rc2:
             fpp = st.selectbox("📄 Số/Trang", [12, 24, 36, 48], index=1, key=f"fpp_{tab_key}_{key_suffix_val}")
+        with rc2:
+            grid_cols = st.selectbox("🗂️ Số cột", [1, 2, 3, 4], index=3, key=f"fcols_{tab_key}_{key_suffix_val}")
         with rc3:
-            grid_cols = st.selectbox("🗂️ Số cột", [1, 2, 3, 4], index=3, key=f"fcols_{tab_key}_{key_suffix_val}") # Mặc định 4 cột theo yêu cầu của bạn
-        with rc4:
             sub_filter = st.selectbox("🔍 Lọc thêm", ["Tất cả", "PASS", "NEAR", "FAIL"], key=f"fsub_{tab_key}_{key_suffix_val}")
-        with rc5:
+        with rc4:
             st.write("")
             st.write("")
             if st.button("🔄", width="stretch", key=f"fref_{tab_key}_{key_suffix_val}"):
@@ -7142,20 +7140,6 @@ def hien_thi_frames_day_du(key_suffix=""):
             st.info("ℹ️ Không có frame nào trong bộ lọc này.")
             return
 
-        # Tối ưu hóa kích thước ảnh động theo số cột và chất lượng lựa chọn để giảm tải mạng
-        col_factor = 1.0 / grid_cols
-        if qlabel == "Tốc độ":
-            target_w = int(720 * col_factor)
-            jpeg_quality = 30
-        elif qlabel == "Cân bằng":
-            target_w = int(1440 * col_factor)
-            jpeg_quality = 50
-        else: # Sắc nét
-            target_w = int(2160 * col_factor)
-            jpeg_quality = 70
-            
-        target_w = max(160, min(target_w, 1080)) # Ngưỡng an toàn tối ưu cho web
-
         s_idx = (st.session_state[page_key] - 1) * fpp
         e_idx = min(s_idx + fpp, total_f)
         page_inds = indices_list[s_idx:e_idx]
@@ -7170,10 +7154,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                 print("[Frame Recovery] Lỗi mở video phục hồi frame:", e)
                 cap_recover = None
 
-        # Song song hóa: Chuẩn bị danh sách ảnh cần mã hóa Base64
-        args_list = []
-        valid_indices = []
-        for loop_idx, orig_idx in enumerate(page_inds):
+        for orig_idx in page_inds:
             f_data = frame_data_list[orig_idx]
             f_path = f_data.get('path')
             
@@ -7188,36 +7169,17 @@ def hien_thi_frames_day_du(key_suffix=""):
                         cv2.imwrite(f_path, frame_img, [cv2.IMWRITE_JPEG_QUALITY, 50])
                 except Exception as e:
                     print(f"[Frame Recovery] Lỗi tự động trích xuất ảnh frame {orig_idx}: {e}")
-            
-            if f_path and os.path.exists(f_path):
-                args_list.append((f_path, target_w, jpeg_quality))
-                valid_indices.append(loop_idx)
-            else:
-                args_list.append(None)
 
         if cap_recover:
             cap_recover.release()
 
-        # Mã hóa Base64 song song qua ThreadPoolExecutor
-        b64_list = [""] * len(page_inds)
-        if valid_indices:
-            from concurrent.futures import ThreadPoolExecutor
-            valid_args = [args_list[i] for i in valid_indices]
-            with ThreadPoolExecutor(max_workers=min(8, len(valid_indices))) as executor:
-                results = list(executor.map(lambda x: get_cached_frame_b64(*x), valid_args))
-                for idx_in_valid, res in zip(valid_indices, results):
-                    b64_list[idx_in_valid] = res
-
-        grid_html = ""
-        for loop_idx, orig_idx in enumerate(page_inds):
+        # Vẽ lưới bằng cột và container native của Streamlit (Tránh truyền tải Base64 khổng lồ qua WebSocket)
+        cols = st.columns(grid_cols)
+        for i, orig_idx in enumerate(page_inds):
+            col_target = cols[i % grid_cols]
             f_data = frame_data_list[orig_idx]
             f_path = f_data.get('path')
-            b64_str = b64_list[loop_idx]
             
-            if not b64_str:
-                continue
-
-            # Tính lại trạng thái theo ngưỡng giai đoạn tab này
             phase_st = _frame_phase_status(f_data, tab_threshold)
             color = "#22c55e" if phase_st == "PASS" else ("#f59e0b" if phase_st == "NEAR" else "#ef4444")
             bg_alpha = "rgba(34,197,94,0.12)" if phase_st == "PASS" else ("rgba(245,158,11,0.12)" if phase_st == "NEAR" else "rgba(239,68,68,0.12)")
@@ -7229,38 +7191,36 @@ def hien_thi_frames_day_du(key_suffix=""):
             ck_ref = eval_inf.get('elbow_ref', 170)
             diff_v = abs(gv - cv_ref)
             diff_k = abs(gk - ck_ref)
-
-            grid_html += f"""
-            <div class='card' style='border: 2px solid {color};'>
-                <div style='background: {bg_alpha}; padding: 6px 12px; display: flex; justify-content: space-between; align-items:center;'>
-                    <span style='color: #ddd; font-size: 0.75rem; font-weight: bold;'>#{f_data.get('index')}</span>
-                    <span style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing:1px;'>{phase_st}</span>
-                </div>
-                <img src='data:image/jpeg;base64,{b64_str}'>
-                <div style='padding: 8px 12px; font-size: 0.72rem; color: #bbb; background: rgba(0,0,0,0.6); display:grid; grid-template-columns:1fr 1fr; gap:4px;'>
-                    <span>Vai: {gv:.0f}° / {cv_ref:.0f}°</span>
-                    <span>Khuỷu: {gk:.0f}° / {ck_ref:.0f}°</span>
-                    <span style='color:{color}'>Δ Vai: {diff_v:.1f}°</span>
-                    <span style='color:{color}'>Δ Khuỷu: {diff_k:.1f}°</span>
-                </div>
-            </div>
-            """
-            # End of grid layout loop
-
-        num_rows = math.ceil(len(page_inds) / grid_cols)
-        card_height = int(720 * (4 / grid_cols))
-        calculated_height = num_rows * card_height + 80
-        st.components.v1.html(f"""
-            <style>
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
-                html, body {{ width: 100%; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; color: white; font-family: 'Outfit', sans-serif; }}
-                img {{ width: 100%; height: auto; max-height: 1500px; object-fit: contain; background:#000; display:block; }}
-                .card {{ border-radius: 16px; overflow: hidden; background: #1a1a2e; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width:100%; }}
-            </style>
-            <div style='width: 100%; display:grid; grid-template-columns:repeat({grid_cols},1fr); gap:15px;'>
-                {grid_html}
-            </div>
-        """, height=min(calculated_height, 25000), scrolling=False)
+            
+            with col_target:
+                with st.container(border=True):
+                    # Header: #Index - Status
+                    st.markdown(f"""
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;'>
+                        <span style='color: #888; font-size: 0.8rem; font-weight: bold;'>#{f_data.get('index')}</span>
+                        <span style='background: {bg_alpha}; color: {color}; font-size: 0.75rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; border: 1px solid {color}40;'>{phase_st}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Hình ảnh
+                    if f_path and os.path.exists(f_path):
+                        st.image(f_path, use_container_width=True)
+                    else:
+                        st.error("Ảnh lỗi")
+                        
+                    # Thông số
+                    st.markdown(f"""
+                    <div style='font-size: 0.75rem; line-height: 1.4; margin-top: 6px;'>
+                        <div style='display: flex; justify-content: space-between;'>
+                            <span>Vai: <b>{gv:.0f}°</b> / {cv_ref:.0f}°</span>
+                            <span style='color: {color}; font-weight: bold;'>Δ {diff_v:.1f}°</span>
+                        </div>
+                        <div style='display: flex; justify-content: space-between;'>
+                            <span>Khuỷu: <b>{gk:.0f}°</b> / {ck_ref:.0f}°</span>
+                            <span style='color: {color}; font-weight: bold;'>Δ {diff_k:.1f}°</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
     # Lấy ranh giới phân đoạn đã tính toán ở trên
     if 'segment_bounds' not in st.session_state or st.session_state.get('last_processed_video_for_bounds') != processed_video_path:
