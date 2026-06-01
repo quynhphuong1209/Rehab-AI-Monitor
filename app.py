@@ -95,7 +95,8 @@ def ensure_playable_video(video_path):
     if "processed_" not in os.path.basename(video_path):
         return video_path
         
-    if video_path.endswith('_f.mp4'):
+    # BỎ QUA việc convert lại đối với các video phân đoạn (_g1, _g2, _g3) hoặc đã có đuôi _f.mp4
+    if video_path.endswith('_f.mp4') or '_g1' in video_path or '_g2' in video_path or '_g3' in video_path:
         return video_path
         
     final_h264 = video_path.replace('.mp4', '_f.mp4')
@@ -151,10 +152,19 @@ def ensure_playable_video(video_path):
     return video_path
 
 def render_video(video_path):
-    """Hiển thị video bằng đường dẫn trực tiếp (string) để kích hoạt HTTP Range Requests (streaming).
-    Giúp trình duyệt load từng phần cực nhanh, xem tức thì và tránh tràn bộ nhớ RAM."""
+    """Hiển thị video bằng cách đọc bytes để kích hoạt truyền tải dữ liệu trực tiếp,
+    tránh lỗi proxy HTTP Range Requests trên Hugging Face Spaces gây treo/lag video.
+    Nếu đường dẫn là URL (ví dụ YouTube), sử dụng st.video trực tiếp."""
     if not video_path:
         st.error("❌ File video không tồn tại hoặc đường dẫn trống.")
+        return
+        
+    # Phát hiện URL web để gọi trực tiếp st.video
+    if isinstance(video_path, str) and (video_path.startswith("http://") or video_path.startswith("https://") or "youtube" in video_path or "youtu.be" in video_path):
+        try:
+            st.video(video_path)
+        except Exception as e:
+            st.error(f"⚠️ Lỗi hiển thị video: {e}")
         return
         
     # Tự động chuyển đổi sang H.264 nếu video thô mp4v không chơi được
@@ -164,7 +174,10 @@ def render_video(video_path):
         st.error("❌ File video không tồn tại.")
         return
     try:
-        st.video(playable_path)
+        # Đọc bytes của video để tránh lỗi HTTP Range Requests/Proxy của HF Spaces
+        with open(playable_path, "rb") as f:
+            video_bytes = f.read()
+        st.video(video_bytes)
     except Exception as e:
         st.error(f"⚠️ Lỗi hiển thị video: {e}")
 import threading
@@ -2872,29 +2885,74 @@ def ensure_voice_files():
 # ============================================
 # HÀM TẠO ZIP THEO YÊU CẦU (LAZY ZIP - TRÁNH OOM)
 # ============================================
-def create_zip_of_frames(frame_paths):
-    """Nén danh sách ảnh frame thành file ZIP khi người dùng yêu cầu.
-    Không tự động chạy sau xử lý video để tránh tràn RAM (OOM) trên Cloud.
+def create_zip_of_frames(frame_data_list, processed_video_path=None):
+    """Nén tất cả các frame ảnh thành file ZIP.
+    Nếu file ảnh bị thiếu, tự động giải nén/trích xuất trực tiếp từ video đã xử lý trên fly để đảm bảo đầy đủ.
     """
     import zipfile
     import tempfile
     import time
     import os
+    import cv2
     
-    if not frame_paths:
+    if not frame_data_list:
         return None
         
     timestamp = int(time.time())
     zip_path = os.path.join(tempfile.gettempdir(), f"frames_{timestamp}.zip")
+    
+    cap = None
+    if processed_video_path and os.path.exists(processed_video_path):
+        try:
+            cap = cv2.VideoCapture(processed_video_path)
+        except Exception as e:
+            print("Lỗi mở video phục hồi frame khi tạo ZIP:", e)
+            cap = None
+        
     try:
+        # Nếu frame_data_list là list of strings (để tương thích ngược)
+        if len(frame_data_list) > 0 and isinstance(frame_data_list[0], str):
+            paths = frame_data_list
+            frame_data_list = []
+            for idx, p in enumerate(paths):
+                try:
+                    f_name = os.path.basename(p)
+                    f_idx_str = ''.join(c for c in f_name if c.isdigit())
+                    f_idx = int(f_idx_str) if f_idx_str else idx + 1
+                except:
+                    f_idx = idx + 1
+                frame_data_list.append({'index': f_idx, 'path': p})
+            
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=1) as z:
-            for p in frame_paths:
-                if os.path.exists(p):
-                    z.write(p, os.path.basename(p))
+            for idx, f_data in enumerate(frame_data_list):
+                if not isinstance(f_data, dict):
+                    continue
+                f_path = f_data.get('path')
+                if not f_path:
+                    continue
+                    
+                # Phục hồi ảnh nếu thiếu và có video nguồn
+                if not os.path.exists(f_path) and cap and cap.isOpened():
+                    try:
+                        os.makedirs(os.path.dirname(f_path), exist_ok=True)
+                        f_idx = max(0, f_data.get('index', 1) - 1)
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, f_idx)
+                        ret, frame_img = cap.read()
+                        if ret:
+                            cv2.imwrite(f_path, frame_img, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                    except Exception as err:
+                        print(f"Lỗi khôi phục frame {f_data.get('index')} khi nén ZIP: {err}")
+                
+                # Nén vào file ZIP
+                if os.path.exists(f_path):
+                    z.write(f_path, os.path.basename(f_path))
         return zip_path
     except Exception as e:
-        print(f"Lỗi tạo zip: {e}")
+        print("Lỗi tạo file ZIP robust:", e)
         return None
+    finally:
+        if cap:
+            cap.release()
 
 # ============================================
 # XỬ LÝ VIDEO
@@ -4763,7 +4821,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 col_v1, col_v2 = st.columns([1.3, 1])
                 with col_v1:
                     if os.path.exists(v['video_path']):
-                        st.video(v['video_path'])
+                        render_video(v['video_path'])
                     else:
                         st.error("❌ Không tìm thấy file video.")
                 with col_v2:
@@ -5789,7 +5847,7 @@ def hien_thi_form_danh_gia_bac_si():
             st.markdown(f"#### 🎬 Đang đánh giá: {selected_video['full_name']} - {selected_video['exercise']}")
             
             if os.path.exists(selected_video['video_path']):
-                st.video(selected_video['video_path'])
+                render_video(selected_video['video_path'])
             
             with st.form("doctor_eval_form_final_v_fixed"):
                 col1, col2 = st.columns(2)
@@ -6842,14 +6900,13 @@ def hien_thi_frames_day_du(key_suffix=""):
                     with open(processed_video_path, "rb") as f:
                         st.download_button("📥 Tải video Tất cả", f, "processed_video_full.mp4", "video/mp4", width="stretch", key=f"dl_v_all_{key_suffix}")
                 with d_col2:
-                    frame_paths_main = st.session_state.get('all_frames_paths', [])
                     if frames_zip and os.path.exists(frames_zip):
                         with open(frames_zip, "rb") as fzip:
                             st.download_button("📦 Tải tất cả frames (ZIP)", fzip, "all_frames.zip", "application/zip", width="stretch", key=f"dl_zip_main_{key_suffix}")
-                    elif frame_paths_main:
+                    else:
                         if st.button("📦 Chuẩn bị file ZIP tải ảnh", width="stretch", key=f"btn_prep_zip_main_{key_suffix}"):
                             with st.spinner("🔄 Đang nén khung hình..."):
-                                new_zip_main = create_zip_of_frames(frame_paths_main)
+                                new_zip_main = create_zip_of_frames(all_frames_data, processed_video_path)
                                 if new_zip_main:
                                     st.session_state.frames_zip = new_zip_main
                                     st.rerun()
@@ -6859,24 +6916,72 @@ def hien_thi_frames_day_du(key_suffix=""):
             with v_tab_g1:
                 if os.path.exists(g1_v_path) and os.path.getsize(g1_v_path) > 0:
                     render_video(g1_v_path)
-                    with open(g1_v_path, "rb") as f:
-                        st.download_button("📥 Tải video Giai đoạn 1", f, "processed_video_g1.mp4", "video/mp4", width="stretch", key=f"dl_v_g1_{key_suffix}")
+                    dg1_col1, dg1_col2 = st.columns(2)
+                    with dg1_col1:
+                        with open(g1_v_path, "rb") as f:
+                            st.download_button("📥 Tải video Giai đoạn 1", f, "processed_video_g1.mp4", "video/mp4", width="stretch", key=f"dl_v_g1_{key_suffix}")
+                    with dg1_col2:
+                        frames_zip_g1 = st.session_state.get(f'frames_zip_g1_{key_suffix}')
+                        if frames_zip_g1 and os.path.exists(frames_zip_g1):
+                            with open(frames_zip_g1, "rb") as fzip:
+                                st.download_button("📦 Tải ảnh Giai đoạn 1 (ZIP)", fzip, "frames_g1.zip", "application/zip", width="stretch", key=f"dl_zip_g1_{key_suffix}")
+                        else:
+                            if st.button("📦 Chuẩn bị file ZIP ảnh G1", width="stretch", key=f"btn_prep_zip_g1_{key_suffix}"):
+                                with st.spinner("🔄 Đang nén khung hình G1..."):
+                                    new_zip = create_zip_of_frames(all_frames_data[n0:n1], processed_video_path)
+                                    if new_zip:
+                                        st.session_state[f'frames_zip_g1_{key_suffix}'] = new_zip
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
                 else:
                     st.info("ℹ️ Không tìm thấy video Giai đoạn 1 hoặc lỗi cắt phân đoạn.")
                     
             with v_tab_g2:
                 if os.path.exists(g2_v_path) and os.path.getsize(g2_v_path) > 0:
                     render_video(g2_v_path)
-                    with open(g2_v_path, "rb") as f:
-                        st.download_button("📥 Tải video Giai đoạn 2", f, "processed_video_g2.mp4", "video/mp4", width="stretch", key=f"dl_v_g2_{key_suffix}")
+                    dg2_col1, dg2_col2 = st.columns(2)
+                    with dg2_col1:
+                        with open(g2_v_path, "rb") as f:
+                            st.download_button("📥 Tải video Giai đoạn 2", f, "processed_video_g2.mp4", "video/mp4", width="stretch", key=f"dl_v_g2_{key_suffix}")
+                    with dg2_col2:
+                        frames_zip_g2 = st.session_state.get(f'frames_zip_g2_{key_suffix}')
+                        if frames_zip_g2 and os.path.exists(frames_zip_g2):
+                            with open(frames_zip_g2, "rb") as fzip:
+                                st.download_button("📦 Tải ảnh Giai đoạn 2 (ZIP)", fzip, "frames_g2.zip", "application/zip", width="stretch", key=f"dl_zip_g2_{key_suffix}")
+                        else:
+                            if st.button("📦 Chuẩn bị file ZIP ảnh G2", width="stretch", key=f"btn_prep_zip_g2_{key_suffix}"):
+                                with st.spinner("🔄 Đang nén khung hình G2..."):
+                                    new_zip = create_zip_of_frames(all_frames_data[n1:n2], processed_video_path)
+                                    if new_zip:
+                                        st.session_state[f'frames_zip_g2_{key_suffix}'] = new_zip
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
                 else:
                     st.info("ℹ️ Không tìm thấy video Giai đoạn 2 hoặc lỗi cắt phân đoạn.")
                     
             with v_tab_g3:
                 if os.path.exists(g3_v_path) and os.path.getsize(g3_v_path) > 0:
                     render_video(g3_v_path)
-                    with open(g3_v_path, "rb") as f:
-                        st.download_button("📥 Tải video Giai đoạn 3", f, "processed_video_g3.mp4", "video/mp4", width="stretch", key=f"dl_v_g3_{key_suffix}")
+                    dg3_col1, dg3_col2 = st.columns(2)
+                    with dg3_col1:
+                        with open(g3_v_path, "rb") as f:
+                            st.download_button("📥 Tải video Giai đoạn 3", f, "processed_video_g3.mp4", "video/mp4", width="stretch", key=f"dl_v_g3_{key_suffix}")
+                    with dg3_col2:
+                        frames_zip_g3 = st.session_state.get(f'frames_zip_g3_{key_suffix}')
+                        if frames_zip_g3 and os.path.exists(frames_zip_g3):
+                            with open(frames_zip_g3, "rb") as fzip:
+                                st.download_button("📦 Tải ảnh Giai đoạn 3 (ZIP)", fzip, "frames_g3.zip", "application/zip", width="stretch", key=f"dl_zip_g3_{key_suffix}")
+                        else:
+                            if st.button("📦 Chuẩn bị file ZIP ảnh G3", width="stretch", key=f"btn_prep_zip_g3_{key_suffix}"):
+                                with st.spinner("🔄 Đang nén khung hình G3..."):
+                                    new_zip = create_zip_of_frames(all_frames_data[n2:n3], processed_video_path)
+                                    if new_zip:
+                                        st.session_state[f'frames_zip_g3_{key_suffix}'] = new_zip
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
                 else:
                     st.info("ℹ️ Không tìm thấy video Giai đoạn 3 hoặc lỗi cắt phân đoạn.")
         else:
@@ -8143,7 +8248,7 @@ def main():
                             """, unsafe_allow_html=True)
                             if 'video_guide' in bai_tap:
                                 st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
-                                st.video(bai_tap['video_guide'])
+                                render_video(bai_tap['video_guide'])
                             elif bai_tap.get('youtube'):
                                 st.markdown("### 📺 VIDEO YOUTUBE THAM KHẢO")
                                 st.video(bai_tap['youtube'])
