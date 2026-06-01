@@ -147,6 +147,34 @@ def get_video_codec(path):
         pass
     return None, None
 
+@st.cache_data(max_entries=300, show_spinner=False)
+def _get_playable_path_fast(video_path, mtime, size):
+    """Cache nhanh đường dẫn playable của video: trả về kết quả đường dẫn cuối cùng mà không có side-effect.
+    Lần đầu tiên sẽ chạy full kiểm tra, các lần sau chỉ tra cache O(1)."""
+    # 1. Nếu đường dẫn đã là _f.mp4 và file tồn tại hợp lệ → phát thẳng
+    if video_path.endswith('_f.mp4') and os.path.exists(video_path) and size >= 5 * 1024:
+        return video_path
+    # 2. Kiểm tra file _f.mp4 tương ứng có tồn tại hợp lệ không
+    final_h264 = (video_path
+        .replace('.mp4', '_f.mp4')
+        .replace('.mov', '_f.mp4')
+        .replace('.MOV', '_f.mp4')
+        .replace('.avi', '_f.mp4')
+        .replace('.mkv', '_f.mp4'))
+    if os.path.exists(final_h264):
+        try:
+            if os.path.getsize(final_h264) >= 5 * 1024:
+                return final_h264
+        except:
+            pass
+    # 3. Kiểm tra codec: nếu đã là h264 → phát trực tiếp, không cần convert
+    if video_path.endswith('.mp4') and os.path.exists(video_path) and size >= 5 * 1024:
+        v_codec, _ = _get_video_codec_cached(video_path, mtime, size)
+        if v_codec == 'h264':
+            return video_path
+    # 4. Chưa biết codec hoặc cần convert → báo là cần gọi ensure_playable_video
+    return None  # None = cần xử lý đầy đủ
+
 def ensure_playable_video(video_path):
     """Đảm bảo video có định dạng H.264 mượt mà (đuôi _f.mp4) để chơi được trên trình duyệt.
     Nếu file _f.mp4 chưa có hoặc bị lỗi (0 byte, quá nhỏ), tự động chuyển đổi từ file gốc cực nhanh."""
@@ -306,11 +334,22 @@ def render_video(video_path):
         except Exception as e:
             st.error(f"⚠️ Lỗi hiển thị video: {e}")
         return
-        
-    # Tự động chuyển đổi sang H.264 nếu video thô mp4v không chơi được
-    playable_path = ensure_playable_video(video_path)
     
-    if not os.path.exists(playable_path):
+    # ⚡ Fast-path: tra cache trước để tránh gọi ffprobe/ensure_playable lại lần 2+
+    playable_path = None
+    try:
+        if os.path.exists(video_path):
+            _mtime = os.path.getmtime(video_path)
+            _size = os.path.getsize(video_path)
+            playable_path = _get_playable_path_fast(video_path, _mtime, _size)
+    except:
+        pass
+    
+    # Nếu cache chưa biết (lần đầu, hoặc cần convert) → chạy full ensure_playable_video
+    if playable_path is None:
+        playable_path = ensure_playable_video(video_path)
+        
+    if not playable_path or not os.path.exists(playable_path):
         st.error("❌ File video không tồn tại.")
         return
     try:
@@ -8268,6 +8307,24 @@ def hien_thi_danh_sach_video_fragment(user_role):
 
         start_idx = st.session_state.vid_list_page * PAGE_SIZE
         page_videos = list(enumerate(video_list))[start_idx: start_idx + PAGE_SIZE]
+
+        # ⚡ Pre-warm cache codec cho các video trong trang hiện tại (chạy background, không block UI)
+        def _prewarm_video_cache(videos_on_page):
+            """Chạy nền để cache trước kết quả codec của các video — khi user mở expander thì đã có sẵn."""
+            for _, v in videos_on_page:
+                vp = v.get('video_path') or v.get('processed_path')
+                if vp and os.path.exists(vp):
+                    try:
+                        _mtime = os.path.getmtime(vp)
+                        _size = os.path.getsize(vp)
+                        if _size >= 5 * 1024:
+                            _get_playable_path_fast(vp, _mtime, _size)
+                    except:
+                        pass
+
+        import threading as _threading
+        _t = _threading.Thread(target=_prewarm_video_cache, args=(page_videos,), daemon=True)
+        _t.start()
 
         for idx, v in page_videos:
             col_list1, col_list2 = st.columns([12, 1])
