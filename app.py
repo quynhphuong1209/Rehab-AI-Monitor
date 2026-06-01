@@ -394,7 +394,7 @@ def hien_thi_footer_chung():
     col_border = "rgba(0,0,0,0.1)" if is_light else "rgba(255,255,255,0.1)"
     
     footer_html = f"""<style>
-.main-footer {{background:{footer_bg};padding:60px 20px 40px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:3px solid {border_color};box-shadow:0 -15px 35px rgba(0, 114, 255, 0.1);margin-top:80px;position:relative;overflow:hidden}}
+.main-footer {{background:{footer_bg};padding:60px 20px 40px;color:{footer_text};font-family:'Outfit',sans-serif!important;border-top:3px solid {border_color};box-shadow:0 -15px 35px rgba(0, 114, 255, 0.1);margin-top:80px;position:relative;overflow:hidden}}
 .footer-container {{display:flex;flex-wrap:wrap;justify-content:space-between;max-width:1550px;margin:0 auto;gap:20px}}
 .footer-col {{flex:1;min-width:280px;padding:20px 30px;border-right:1px solid {col_border}}}
 .footer-col:last-child {{border-right:none}}
@@ -2284,7 +2284,7 @@ def hien_thi_tab_lien_he():
     # Header xịn
     st.markdown("""
         <div style="text-align: center; padding: 10px 20px 30px 20px; margin-bottom: 10px;">
-            <h1 style="color: #00c6ff; font-family: 'Times New Roman', serif; text-shadow: 2px 2px 10px rgba(0,198,255,0.3);">📞 THÔNG TIN LIÊN HỆ KHẨN CẤP</h1>
+            <h1 style="color: #00c6ff; font-family: 'Outfit', sans-serif; text-shadow: 2px 2px 10px rgba(0,198,255,0.3);">📞 THÔNG TIN LIÊN HỆ KHẨN CẤP</h1>
             <p style="color: #aaa; font-style: italic; font-size: 1.1rem;">Hệ thống luôn sẵn sàng hỗ trợ bạn trong quá trình nghiên cứu và tập luyện.</p>
         </div>
     """, unsafe_allow_html=True)
@@ -2300,7 +2300,7 @@ def hien_thi_tab_lien_he():
             </h2>
             <div style="margin-bottom: 20px;">
                 <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Họ và tên</p>
-                <p style="font-size: 1.4rem; font-weight: bold; color: white; font-family: 'Times New Roman', serif;">Đinh Lê Quỳnh Phương</p>
+                <p style="font-size: 1.4rem; font-weight: bold; color: white; font-family: 'Outfit', sans-serif;">Đinh Lê Quỳnh Phương</p>
             </div>
             <div style="margin-bottom: 20px;">
                 <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Đơn vị công tác</p>
@@ -2326,7 +2326,7 @@ def hien_thi_tab_lien_he():
             </h2>
             <div style="margin-bottom: 20px;">
                 <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Tên cơ quan</p>
-                <p style="font-size: 1.4rem; font-weight: bold; color: white; font-family: 'Times New Roman', serif;">HĐĐĐ Trường ĐH Y tế Công cộng</p>
+                <p style="font-size: 1.4rem; font-weight: bold; color: white; font-family: 'Outfit', sans-serif;">HĐĐĐ Trường ĐH Y tế Công cộng</p>
             </div>
             <div style="margin-bottom: 20px;">
                 <p style="color: #888; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Địa chỉ trụ sở</p>
@@ -4538,7 +4538,8 @@ metric_bg = "linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%)" if is_light else
 
 st.markdown(f"""
 <style>
-    * {{ font-family: 'Times New Roman', Times, serif !important; }}
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700&display=swap');
+    * {{ font-family: 'Outfit', 'Montserrat', sans-serif !important; }}
     .stApp {{ background: {app_bg}; }}
     
     /* HEADER */
@@ -6830,6 +6831,17 @@ def cut_video_segments(input_path, n1, n2, total_frames, fps_export=15):
     return g1_path, g2_path, g3_path
 
 
+@st.cache_data(show_spinner=False)
+def load_all_frames_data_cached(path):
+    if not path or not os.path.exists(path):
+        return []
+    import json
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except:
+        return []
+
 # ============================================
 # HÀM HIỂN THỊ LỊCH FRAMES ĐẦY ĐỦ
 # ============================================
@@ -6842,9 +6854,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         st.info("📭 Không có dữ liệu khung hình để hiển thị.")
         return
 
-    import json
-    with open(st.session_state.all_frames_data_path, 'r', encoding='utf-8') as f:
-        all_frames_data = json.load(f)
+    all_frames_data = load_all_frames_data_cached(st.session_state.all_frames_data_path)
 
     total_frames = len(all_frames_data)
     if total_frames == 0:
@@ -7145,63 +7155,91 @@ def hien_thi_frames_day_du(key_suffix=""):
         e_idx = min(s_idx + fpp, total_f)
         page_inds = indices_list[s_idx:e_idx]
 
+        # Tối ưu hóa: Phục hồi ảnh bị thiếu bằng cách mở video duy nhất 1 lần thay vì mở/đóng liên tục
+        any_missing = any(not os.path.exists(frame_data_list[idx].get('path', '')) for idx in page_inds)
+        cap_recover = None
+        if any_missing and processed_video_path and os.path.exists(processed_video_path):
+            try:
+                cap_recover = cv2.VideoCapture(processed_video_path)
+            except Exception as e:
+                print("[Frame Recovery] Lỗi mở video phục hồi frame:", e)
+                cap_recover = None
+
+        # Song song hóa: Chuẩn bị danh sách ảnh cần mã hóa Base64
+        args_list = []
+        valid_indices = []
+        for loop_idx, orig_idx in enumerate(page_inds):
+            f_data = frame_data_list[orig_idx]
+            f_path = f_data.get('path')
+            
+            # Khôi phục ảnh từ video nếu thiếu
+            if f_path and not os.path.exists(f_path) and cap_recover and cap_recover.isOpened():
+                try:
+                    os.makedirs(os.path.dirname(f_path), exist_ok=True)
+                    f_idx = max(0, f_data.get('index', 1) - 1)
+                    cap_recover.set(cv2.CAP_PROP_POS_FRAMES, f_idx)
+                    ret, frame_img = cap_recover.read()
+                    if ret:
+                        cv2.imwrite(f_path, frame_img, [cv2.IMWRITE_JPEG_QUALITY, 50])
+                except Exception as e:
+                    print(f"[Frame Recovery] Lỗi tự động trích xuất ảnh frame {orig_idx}: {e}")
+            
+            if f_path and os.path.exists(f_path):
+                args_list.append((f_path, target_w, jpeg_quality))
+                valid_indices.append(loop_idx)
+            else:
+                args_list.append(None)
+
+        if cap_recover:
+            cap_recover.release()
+
+        # Mã hóa Base64 song song qua ThreadPoolExecutor
+        b64_list = [""] * len(page_inds)
+        if valid_indices:
+            from concurrent.futures import ThreadPoolExecutor
+            valid_args = [args_list[i] for i in valid_indices]
+            with ThreadPoolExecutor(max_workers=min(8, len(valid_indices))) as executor:
+                results = list(executor.map(lambda x: get_cached_frame_b64(*x), valid_args))
+                for idx_in_valid, res in zip(valid_indices, results):
+                    b64_list[idx_in_valid] = res
+
         grid_html = ""
-        with st.spinner("🚀 Đang tải ảnh..."):
-            for orig_idx in page_inds:
-                f_data = frame_data_list[orig_idx]
-                f_path = f_data.get('path')
-                
-                # Dynamic recovery: nếu file ảnh bị xóa/thiếu, tự động trích xuất lại từ video đã xử lý
-                if f_path and not os.path.exists(f_path) and processed_video_path and os.path.exists(processed_video_path):
-                    try:
-                        os.makedirs(os.path.dirname(f_path), exist_ok=True)
-                        cap = cv2.VideoCapture(processed_video_path)
-                        if cap.isOpened():
-                            # Frame index là 0-based
-                            f_idx = max(0, f_data.get('index', 1) - 1)
-                            cap.set(cv2.CAP_PROP_POS_FRAMES, f_idx)
-                            ret, frame_img = cap.read()
-                            if ret:
-                                cv2.imwrite(f_path, frame_img, [cv2.IMWRITE_JPEG_QUALITY, 50])
-                            cap.release()
-                    except Exception as e:
-                        print(f"[Frame Recovery] Lỗi tự động trích xuất ảnh frame {orig_idx}: {e}")
-                
-                if not f_path or not os.path.exists(f_path):
-                    continue
+        for loop_idx, orig_idx in enumerate(page_inds):
+            f_data = frame_data_list[orig_idx]
+            f_path = f_data.get('path')
+            b64_str = b64_list[loop_idx]
+            
+            if not b64_str:
+                continue
 
-                # Tính lại trạng thái theo ngưỡng giai đoạn tab này
-                phase_st = _frame_phase_status(f_data, tab_threshold)
-                color = "#22c55e" if phase_st == "PASS" else ("#f59e0b" if phase_st == "NEAR" else "#ef4444")
-                bg_alpha = "rgba(34,197,94,0.12)" if phase_st == "PASS" else ("rgba(245,158,11,0.12)" if phase_st == "NEAR" else "rgba(239,68,68,0.12)")
+            # Tính lại trạng thái theo ngưỡng giai đoạn tab này
+            phase_st = _frame_phase_status(f_data, tab_threshold)
+            color = "#22c55e" if phase_st == "PASS" else ("#f59e0b" if phase_st == "NEAR" else "#ef4444")
+            bg_alpha = "rgba(34,197,94,0.12)" if phase_st == "PASS" else ("rgba(245,158,11,0.12)" if phase_st == "NEAR" else "rgba(239,68,68,0.12)")
 
-                # Dùng phiên bản cached base64 để tải tức thời (mất < 1ms từ lần thứ 2)
-                b64_str = get_cached_frame_b64(f_path, target_w, jpeg_quality)
+            gv = f_data.get('goc_vai', 0) or 0
+            gk = f_data.get('goc_khuyu', 0) or 0
+            eval_inf = f_data.get('eval_info', {})
+            cv_ref = eval_inf.get('shoulder_ref', 90)
+            ck_ref = eval_inf.get('elbow_ref', 170)
+            diff_v = abs(gv - cv_ref)
+            diff_k = abs(gk - ck_ref)
 
-                gv = f_data.get('goc_vai', 0) or 0
-                gk = f_data.get('goc_khuyu', 0) or 0
-                eval_inf = f_data.get('eval_info', {})
-                cv_ref = eval_inf.get('shoulder_ref', 90)
-                ck_ref = eval_inf.get('elbow_ref', 170)
-                # Badge hiển thị sai lệch với chuẩn
-                diff_v = abs(gv - cv_ref)
-                diff_k = abs(gk - ck_ref)
-
-                grid_html += f"""
-                <div class='card' style='border: 2px solid {color};'>
-                    <div style='background: {bg_alpha}; padding: 6px 12px; display: flex; justify-content: space-between; align-items:center;'>
-                        <span style='color: #ddd; font-size: 0.75rem; font-weight: bold;'>#{f_data.get('index')}</span>
-                        <span style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing:1px;'>{phase_st}</span>
-                    </div>
-                    <img src='data:image/jpeg;base64,{b64_str}'>
-                    <div style='padding: 8px 12px; font-size: 0.72rem; color: #bbb; background: rgba(0,0,0,0.6); display:grid; grid-template-columns:1fr 1fr; gap:4px;'>
-                        <span>Vai: {gv:.0f}° / {cv_ref:.0f}°</span>
-                        <span>Khuỷu: {gk:.0f}° / {ck_ref:.0f}°</span>
-                        <span style='color:{color}'>Δ Vai: {diff_v:.1f}°</span>
-                        <span style='color:{color}'>Δ Khuỷu: {diff_k:.1f}°</span>
-                    </div>
+            grid_html += f"""
+            <div class='card' style='border: 2px solid {color};'>
+                <div style='background: {bg_alpha}; padding: 6px 12px; display: flex; justify-content: space-between; align-items:center;'>
+                    <span style='color: #ddd; font-size: 0.75rem; font-weight: bold;'>#{f_data.get('index')}</span>
+                    <span style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing:1px;'>{phase_st}</span>
                 </div>
-                """
+                <img src='data:image/jpeg;base64,{b64_str}'>
+                <div style='padding: 8px 12px; font-size: 0.72rem; color: #bbb; background: rgba(0,0,0,0.6); display:grid; grid-template-columns:1fr 1fr; gap:4px;'>
+                    <span>Vai: {gv:.0f}° / {cv_ref:.0f}°</span>
+                    <span>Khuỷu: {gk:.0f}° / {ck_ref:.0f}°</span>
+                    <span style='color:{color}'>Δ Vai: {diff_v:.1f}°</span>
+                    <span style='color:{color}'>Δ Khuỷu: {diff_k:.1f}°</span>
+                </div>
+            </div>
+            """
             # End of grid layout loop
 
         num_rows = math.ceil(len(page_inds) / grid_cols)
@@ -7209,7 +7247,8 @@ def hien_thi_frames_day_du(key_suffix=""):
         calculated_height = num_rows * card_height + 80
         st.components.v1.html(f"""
             <style>
-                html, body {{ width: 100%; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; color: white; font-family: 'Times New Roman', serif; }}
+                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+                html, body {{ width: 100%; margin: 0; padding: 10px; box-sizing: border-box; background: transparent; color: white; font-family: 'Outfit', sans-serif; }}
                 img {{ width: 100%; height: auto; max-height: 1500px; object-fit: contain; background:#000; display:block; }}
                 .card {{ border-radius: 16px; overflow: hidden; background: #1a1a2e; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width:100%; }}
             </style>
@@ -7293,8 +7332,8 @@ def hien_thi_dang_nhap_dang_ky():
     
     st.markdown(f"""
     <div style="text-align: center; padding: 0.5rem 0 2rem 0;">
-        <h1 style="color: {header_color}; font-family: 'Times New Roman', Times, serif !important; font-weight: bold; font-size: 3.2rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem;">🏥 Rehab AI Monitor</h1>
-        <p style="color: {sub_color}; font-family: 'Times New Roman', Times, serif !important; font-size: 1.3rem; font-style: italic; opacity: 0.9;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
+        <h1 style="color: {header_color}; font-family: 'Outfit', sans-serif !important; font-weight: bold; font-size: 3.2rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem;">🏥 Rehab AI Monitor</h1>
+        <p style="color: {sub_color}; font-family: 'Outfit', sans-serif !important; font-size: 1.3rem; font-style: italic; opacity: 0.9;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -7894,14 +7933,14 @@ def main():
     
     st.markdown(f"""
     <div class="main-header" style="text-align: center; margin-bottom: 2rem; background: transparent !important; border: none !important; box-shadow: none !important;">
-        <h1 style="color: {header_h1_color}; font-family: 'Times New Roman', Times, serif !important; font-weight: bold; font-size: 3rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🏥 Rehab AI Monitor</h1>
-        <p style="color: {header_p_color}; font-family: 'Times New Roman', Times, serif !important; font-style: italic; font-size: 1.25rem;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
+        <h1 style="color: {header_h1_color}; font-family: 'Outfit', sans-serif !important; font-weight: bold; font-size: 3rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🏥 Rehab AI Monitor</h1>
+        <p style="color: {header_p_color}; font-family: 'Outfit', sans-serif !important; font-style: italic; font-size: 1.25rem;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
         <div class="research-badge" style="margin-top: 1rem;">
-            <span style="background: {badge_bg}; color: {header_h1_color}; padding: 6px 18px; border-radius: 20px; border: 1px solid {badge_border}; font-size: 0.9rem; font-weight: bold; font-family: 'Times New Roman', Times, serif !important;">
+            <span style="background: {badge_bg}; color: {header_h1_color}; padding: 6px 18px; border-radius: 20px; border: 1px solid {badge_border}; font-size: 0.9rem; font-weight: bold; font-family: 'Outfit', sans-serif !important;">
                 📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC CẤP TRƯỜNG - NĂM HỌC 2025-2026
             </span>
         </div>
-        <p style="font-size: 0.9rem; color: {'#ccc' if not is_light else '#666'}; margin-top: 0.8rem; font-family: 'Times New Roman', Times, serif !important;">
+        <p style="font-size: 0.9rem; color: {'#ccc' if not is_light else '#666'}; margin-top: 0.8rem; font-family: 'Outfit', sans-serif !important;">
             Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng
         </p>
     </div>
