@@ -8612,6 +8612,18 @@ def main():
     res_data_list = load_data(RESEARCH_DATA_FILE)
     if not isinstance(res_data_list, list): res_data_list = []
 
+    # Tự động chọn video đầu tiên nếu chưa chọn để tăng tốc độ hiển thị kết quả lập tức cho Bác sĩ & NCV
+    if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
+        if not st.session_state.get('current_eval_video'):
+            all_vids = load_data(VIDEOS_FILE)
+            if all_vids:
+                # Ưu tiên các video đã được phân tích AI
+                analyzed_vids = [v for v in all_vids if v.get('status') == "Đã phân tích"]
+                if analyzed_vids:
+                    st.session_state.current_eval_video = analyzed_vids[0]
+                else:
+                    st.session_state.current_eval_video = all_vids[0]
+
     if user_role == "Quản trị viên":
         tab_titles = ["🏠 TRANG CHỦ", "🛠️ QUẢN TRỊ VIÊN", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
     elif user_role == "Bác sĩ / KTV PHCN":
