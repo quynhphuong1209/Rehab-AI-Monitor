@@ -32,6 +32,32 @@ import hashlib
 import gc
 
 
+# --- OPTIMIZED CACHING FOR FASTER PAGE LOADS ---
+@st.cache_data(show_spinner=False)
+def _check_video_valid_cached(path, mtime, size):
+    try:
+        import cv2
+        cap_check = cv2.VideoCapture(path)
+        if cap_check.isOpened() and int(cap_check.get(cv2.CAP_PROP_FRAME_COUNT)) > 0:
+            cap_check.release()
+            return True
+        cap_check.release()
+    except:
+        pass
+    return False
+
+@st.cache_data(show_spinner=False)
+def get_video_fps_cached(path, mtime, size):
+    try:
+        import cv2
+        cap_test = cv2.VideoCapture(path)
+        fps = int(cap_test.get(cv2.CAP_PROP_FPS)) or 15
+        cap_test.release()
+        return fps
+    except:
+        return 15
+
+
 # --- THUMBNAIL GENERATOR ---
 def get_thumbnail(path, width=320):
     """Tạo thumbnail nhẹ để load web nhanh"""
@@ -170,15 +196,13 @@ def ensure_playable_video(video_path):
 
     final_h264 = video_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
     
-    # Kiểm tra xem file h264 đã tồn tại và có hợp lệ (đọc được khung hình) không
+    # Kiểm tra xem file h264 đã tồn tại và có hợp lệ (đọc được khung hình) không (sử dụng cache tối ưu hóa)
     is_valid_h264 = False
     if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
         try:
-            import cv2
-            cap_check = cv2.VideoCapture(final_h264)
-            if cap_check.isOpened() and int(cap_check.get(cv2.CAP_PROP_FRAME_COUNT)) > 0:
-                is_valid_h264 = True
-            cap_check.release()
+            mtime = os.path.getmtime(final_h264)
+            size = os.path.getsize(final_h264)
+            is_valid_h264 = _check_video_valid_cached(final_h264, mtime, size)
         except:
             pass
             
@@ -725,13 +749,25 @@ def ensure_local_file(file_path):
             print(f"[HF Sync] Không thể tải file yêu cầu {file_path}: {e}")
     return False
 
+@st.cache_data(show_spinner=False)
+def _load_data_cached(file_path, mtime):
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return [] if "users" not in file_path else {}
+
 def load_data(file_path):
     if os.path.exists(file_path):
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            mtime = os.path.getmtime(file_path)
+            return _load_data_cached(file_path, mtime)
         except:
-            return [] if "users" not in file_path else {}
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except:
+                return [] if "users" not in file_path else {}
     return [] if "users" not in file_path else {}
 
 def save_data(file_path, data):
@@ -5026,7 +5062,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 
                 # Nếu video CHƯA CÓ metrics hoặc NCV muốn chạy lại
                 st.warning(f"⚠️ Video '{v.get('video_name')}' của BN {v.get('full_name')} chưa được phân tích.")
-                col_v1, col_v2 = st.columns([1.3, 1])
+                col_v1, col_v2 = st.columns([0.6, 1.4])
                 with col_v1:
                     if os.path.exists(v['video_path']):
                         render_video(v['video_path'])
@@ -7108,13 +7144,15 @@ def hien_thi_frames_day_du(key_suffix=""):
                 
             n0, n1, n2, n3 = st.session_state.segment_bounds
             
-            # Phát hiện fps_export thực tế từ video đầu ra
-            try:
-                cap_test = cv2.VideoCapture(processed_video_path)
-                fps_export = int(cap_test.get(cv2.CAP_PROP_FPS)) or 15
-                cap_test.release()
-            except:
-                fps_export = 15
+            # Phát hiện fps_export thực tế từ video đầu ra (sử dụng cache tối ưu hóa)
+            fps_export = 15
+            if processed_video_path and os.path.exists(processed_video_path):
+                try:
+                    mtime = os.path.getmtime(processed_video_path)
+                    size = os.path.getsize(processed_video_path)
+                    fps_export = get_video_fps_cached(processed_video_path, mtime, size)
+                except:
+                    pass
                 
             g1_v_path, g2_v_path, g3_v_path = cut_video_segments(processed_video_path, n1, n2, total_frames, fps_export)
             
