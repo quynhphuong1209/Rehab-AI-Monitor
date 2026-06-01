@@ -90,6 +90,9 @@ def ensure_playable_video(video_path):
     if not video_path:
         return video_path
         
+    # Đảm bảo video gốc thô tồn tại đầy đủ cục bộ (nếu là file LFS pointer, tự động tải nội dung thật từ Cloud)
+    ensure_local_file(video_path)
+        
     # PHỤC HỒI VIDEO GỐC NẾU VIDEO_PATH TRONG DATABASE BỊ GHI ĐÈ BỞI FILE _F.MP4 BỊ LỖI
     if video_path.endswith('_f.mp4'):
         is_corrupted = False
@@ -637,11 +640,28 @@ def push_file_to_hf_async(local_path):
     threading.Thread(target=_run_upload, daemon=True).start()
 
 def ensure_local_file(file_path):
-    """Đảm bảo file tồn tại cục bộ. Nếu không có, thử tải từ Hugging Face Dataset."""
+    """Đảm bảo file tồn tại cục bộ và hợp lệ. Nếu không có hoặc bị lỗi (nhỏ hơn 100KB), thử tải từ Hugging Face Dataset."""
     if not file_path:
         return False
+        
+    is_valid = False
     if os.path.exists(file_path):
+        try:
+            # File LFS pointer thường có kích thước rất nhỏ (~130 byte)
+            # File video hợp lệ luôn lớn hơn 100KB
+            if os.path.getsize(file_path) >= 100 * 1024:
+                is_valid = True
+        except:
+            pass
+            
+    if is_valid:
         return True
+        
+    # Nếu file tồn tại nhưng bị lỗi/là LFS pointer thô, xóa nó đi để tải lại file thật từ Hugging Face
+    if os.path.exists(file_path):
+        try: os.remove(file_path)
+        except: pass
+        
     if HF_TOKEN and HF_DATASET_ID:
         try:
             rel_path = os.path.relpath(file_path, DATA_DIR).replace("\\", "/")
@@ -653,6 +673,9 @@ def ensure_local_file(file_path):
                 token=HF_TOKEN,
                 local_dir=DATA_DIR
             )
+            # Kiểm tra xem file sau khi tải về có hợp lệ không
+            if os.path.exists(file_path) and os.path.getsize(file_path) >= 100 * 1024:
+                return True
             return os.path.exists(file_path)
         except Exception as e:
             print(f"[HF Sync] Không thể tải file yêu cầu {file_path}: {e}")
@@ -8038,13 +8061,23 @@ def hien_thi_danh_sach_video_fragment(user_role):
                 v_display_path = v.get('video_path')
                 processed_path = v.get('processed_path')
                 
-                # Kiểm tra sự tồn tại của file cục bộ mà không thực hiện tải xuống
+                # Kiểm tra sự tồn tại của file cục bộ có dung lượng hợp lệ (> 100KB) mà không thực hiện tải xuống
                 local_exists = False
                 active_display_path = None
-                if v_display_path and os.path.exists(v_display_path):
+                
+                def is_valid_local_file(path):
+                    if path and os.path.exists(path):
+                        try:
+                            if os.path.getsize(path) >= 100 * 1024:
+                                return True
+                        except:
+                            pass
+                    return False
+                    
+                if is_valid_local_file(v_display_path):
                     local_exists = True
                     active_display_path = v_display_path
-                elif processed_path and os.path.exists(processed_path):
+                elif is_valid_local_file(processed_path):
                     local_exists = True
                     active_display_path = processed_path
                 
