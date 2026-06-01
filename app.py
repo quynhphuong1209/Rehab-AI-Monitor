@@ -6887,6 +6887,15 @@ def hien_thi_frames_day_du(key_suffix=""):
     tk = st.session_state.get('stats') or {}
     filename = st.session_state.get('uploaded_file_name') or os.path.basename(st.session_state.get('processed_video_path', '') or 'Video hệ thống')
     ai_acc = tk.get('do_chinh_xac', 0.0) if isinstance(tk, dict) else 0.0
+    
+    # Lấy thông số 3 giai đoạn để hiển thị chi tiết
+    metrics_g1 = tk.get('metrics_g1', {}) if isinstance(tk, dict) else {}
+    metrics_g2 = tk.get('metrics_g2', {}) if isinstance(tk, dict) else {}
+    metrics_g3 = tk.get('metrics_g3', {}) if isinstance(tk, dict) else {}
+    
+    acc_g1 = metrics_g1.get('do_chinh_xac', 0.0) if isinstance(metrics_g1, dict) else 0.0
+    acc_g2 = metrics_g2.get('do_chinh_xac', 0.0) if isinstance(metrics_g2, dict) else 0.0
+    acc_g3 = metrics_g3.get('do_chinh_xac', 0.0) if isinstance(metrics_g3, dict) else 0.0
     processed_video_path = st.session_state.get('processed_video_path')
     frames_zip = st.session_state.get('frames_zip')
     has_video = bool(processed_video_path and os.path.exists(processed_video_path))
@@ -7023,11 +7032,26 @@ def hien_thi_frames_day_du(key_suffix=""):
         v_stats_border = "#eee" if is_light else "rgba(100, 116, 139, 0.2)"
         v_stats_text = "#000000" if is_light else "#ffffff"
         
+        # Tạo phần HTML hiển thị độ chính xác
+        if acc_g1 > 0 or acc_g2 > 0 or acc_g3 > 0:
+            accuracy_html = f"""
+            <div style='margin-bottom:10px;'>
+                <b>Độ chính xác 3 giai đoạn:</b>
+                <ul style='margin: 5px 0 0 10px; padding: 0; list-style-type: none;'>
+                    <li style='margin-bottom:3px;'>🌱 GĐ 1 (45°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>
+                    <li style='margin-bottom:3px;'>📈 GĐ 2 (30°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>
+                    <li style='margin-bottom:3px;'>🎯 GĐ 3 (15°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>
+                </ul>
+            </div>
+            """
+        else:
+            accuracy_html = f"<div style='margin-bottom:10px;'><b>Độ chính xác:</b> <span style='color:#22c55e; font-size:1.2rem; font-weight:bold;'>{ai_acc:.1f}%</span></div>"
+
         st.markdown(f"""
         <div style='background: {v_stats_bg}; border: 1px solid {v_stats_border}; border-radius: 16px; padding: 20px; color: {v_stats_text}; box-shadow: 0 4px 15px rgba(0,0,0,{"0.05" if is_light else "0.3"});'>
             <h4 style='color:#38bdf8; margin-top:0;'>📊 Thông số Video</h4>
             <div style='margin-bottom:10px;'><b>Tên:</b> {filename}</div>
-            <div style='margin-bottom:10px;'><b>Độ chính xác:</b> <span style='color:#22c55e; font-size:1.2rem; font-weight:bold;'>{ai_acc:.1f}%</span></div>
+            {accuracy_html}
             <div style='margin-bottom:10px;'><b>Thời lượng:</b> {total_frames} frames</div>
             <hr style='opacity:0.1; margin:15px 0;'>
             <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
@@ -7945,11 +7969,32 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             if user_role == "Bác sĩ / KTV PHCN" and not v_has_ai:
                                 st.write("**Độ chính xác AI:** ⏳ Chờ NCV phân tích")
                             else:
-                                # Lấy accuracy mới nhất từ evals nếu có, nếu không lấy từ video
+                                # Lấy accuracy mới nhất từ evals hoặc video và hiển thị chi tiết theo 3 giai đoạn
                                 ai_eval_record = next((e for e in reversed(evals_db) if e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
-                                acc_val = ai_eval_record['ai_accuracy'] if ai_eval_record else v.get('accuracy', 0)
-                                acc_text = f"{acc_val}%" if acc_val > 0 else "Chưa phân tích"
-                                st.write(f"**Độ chính xác AI:** {acc_text}")
+                                
+                                metrics_v = v.get('metrics', {}) if isinstance(v.get('metrics'), dict) else {}
+                                acc_g1 = metrics_v.get('metrics_g1', {}).get('do_chinh_xac') if isinstance(metrics_v.get('metrics_g1'), dict) else None
+                                acc_g2 = metrics_v.get('metrics_g2', {}).get('do_chinh_xac') if isinstance(metrics_v.get('metrics_g2'), dict) else None
+                                acc_g3 = metrics_v.get('metrics_g3', {}).get('do_chinh_xac') if isinstance(metrics_v.get('metrics_g3'), dict) else None
+                                
+                                if ai_eval_record:
+                                    acc_g1 = ai_eval_record.get('ai_accuracy_g1', acc_g1)
+                                    acc_g2 = ai_eval_record.get('ai_accuracy_g2', acc_g2)
+                                    acc_g3 = ai_eval_record.get('ai_accuracy_g3', acc_g3)
+                                
+                                if acc_g1 is not None and acc_g2 is not None and acc_g3 is not None:
+                                    st.write("**Độ chính xác AI theo 3 giai đoạn:**")
+                                    st.markdown(f"""
+                                    <ul style='margin: 0 0 10px 10px; padding: 0; list-style-type: none;'>
+                                        <li style='margin-bottom:3px;'>🌱 Giai đoạn 1 (45°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>
+                                        <li style='margin-bottom:3px;'>📈 Giai đoạn 2 (30°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>
+                                        <li style='margin-bottom:3px;'>🎯 Giai đoạn 3 (15°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>
+                                    </ul>
+                                    """, unsafe_allow_html=True)
+                                else:
+                                    acc_val = ai_eval_record['ai_accuracy'] if ai_eval_record else v.get('accuracy', 0)
+                                    acc_text = f"{acc_val}%" if acc_val > 0 else "Chưa phân tích"
+                                    st.write(f"**Độ chính xác AI:** {acc_text}")
                                 
                             st.write(f"**Trạng thái:** {v['status']}")
                             
