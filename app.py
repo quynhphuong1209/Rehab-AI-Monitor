@@ -8221,9 +8221,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
                 if is_valid_local_file(v_display_path):
                     local_exists = True
                     active_display_path = v_display_path
-                elif is_valid_local_file(processed_path):
-                    local_exists = True
-                    active_display_path = processed_path
+                else:
+                    local_exists = False
+                    active_display_path = v_display_path
                 
                 # Xác định xem đã có kết quả AI chưa để hiển thị text
                 v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise') for e in evals_db)
