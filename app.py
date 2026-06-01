@@ -145,8 +145,8 @@ def ensure_playable_video(video_path):
     # Đảm bảo video gốc thô tồn tại đầy đủ cục bộ (nếu là file LFS pointer, tự động tải nội dung thật từ Cloud)
     ensure_local_file(video_path)
     
-    # Nếu đã là định dạng MP4 hoặc H264, cho phép phát trực tiếp ngay lập tức để tối ưu tốc độ và tránh bị đen màn hình/gây treo lag
-    if video_path.lower().endswith('.mp4') or video_path.endswith('_f.mp4'):
+    # Nếu đã là định dạng H264 đã transcode, cho phép phát trực tiếp ngay lập tức
+    if video_path.endswith('_f.mp4'):
         return video_path
         
     # PHỤC HỒI VIDEO GỐC NẾU VIDEO_PATH TRONG DATABASE BỊ GHI ĐÈ BỞI FILE _F.MP4 BỊ LỖI
@@ -303,9 +303,10 @@ def render_video(video_path):
         st.error("❌ File video không tồn tại.")
         return
     try:
-        # Phát trực tiếp bằng đường dẫn file để trình duyệt tự động stream qua HTTP (Range Requests).
-        # Cách này giúp video phát ngay lập tức (chưa đầy 1 giây) mà không làm nghẽn WebSocket/gây đơ web.
-        st.video(playable_path)
+        # Đọc bytes để tránh lỗi proxy HF không hỗ trợ range requests (gây đen màn hình và spinner vô tận)
+        with open(playable_path, "rb") as f_vid:
+            video_bytes = f_vid.read()
+        st.video(video_bytes)
     except Exception as e:
         st.error(f"⚠️ Lỗi hiển thị video: {e}")
 import threading
@@ -7142,7 +7143,13 @@ def hien_thi_frames_day_du(key_suffix=""):
     """Hiển thị frames với Streamlit Fragment (Chỉ load lại vùng này, cực nhanh)"""
     user_role = st.session_state.user_info.get('role')
 
-    if not st.session_state.get('all_frames_data_path') or not os.path.exists(st.session_state.all_frames_data_path):
+    if not st.session_state.get('all_frames_data_path'):
+        st.info("📭 Không có dữ liệu khung hình để hiển thị.")
+        return
+
+    ensure_local_file(st.session_state.all_frames_data_path)
+
+    if not os.path.exists(st.session_state.all_frames_data_path):
         st.info("📭 Không có dữ liệu khung hình để hiển thị.")
         return
 
@@ -7169,6 +7176,8 @@ def hien_thi_frames_day_du(key_suffix=""):
     acc_g2 = metrics_g2.get('do_chinh_xac', 0.0) if isinstance(metrics_g2, dict) else 0.0
     acc_g3 = metrics_g3.get('do_chinh_xac', 0.0) if isinstance(metrics_g3, dict) else 0.0
     processed_video_path = st.session_state.get('processed_video_path')
+    if processed_video_path:
+        ensure_local_file(processed_video_path)
     frames_zip = st.session_state.get('frames_zip')
     has_video = bool(processed_video_path and os.path.exists(processed_video_path))
 
@@ -7456,8 +7465,16 @@ def hien_thi_frames_day_du(key_suffix=""):
         e_idx = min(s_idx + fpp, total_f)
         page_inds = indices_list[s_idx:e_idx]
 
-        # Tối ưu hóa: Phục hồi ảnh bị thiếu bằng cách mở video duy nhất 1 lần thay vì mở/đóng liên tục
-        any_missing = any(not os.path.exists(frame_data_list[idx].get('path', '')) for idx in page_inds)
+        # Tối ưu hóa: Phục hồi ảnh bị thiếu hoặc lỗi (LFS pointer hoặc size < 5KB) bằng cách mở video
+        def _is_image_missing_or_invalid(img_p):
+            if not img_p or not os.path.exists(img_p):
+                return True
+            try:
+                return os.path.getsize(img_p) < 5 * 1024
+            except:
+                return True
+
+        any_missing = any(_is_image_missing_or_invalid(frame_data_list[idx].get('path', '')) for idx in page_inds)
         cap_recover = None
         if any_missing and processed_video_path and os.path.exists(processed_video_path):
             try:
@@ -7470,8 +7487,8 @@ def hien_thi_frames_day_du(key_suffix=""):
             f_data = frame_data_list[orig_idx]
             f_path = f_data.get('path')
             
-            # Khôi phục ảnh từ video nếu thiếu
-            if f_path and not os.path.exists(f_path) and cap_recover and cap_recover.isOpened():
+            # Khôi phục ảnh từ video nếu thiếu hoặc lỗi
+            if f_path and _is_image_missing_or_invalid(f_path) and cap_recover and cap_recover.isOpened():
                 try:
                     os.makedirs(os.path.dirname(f_path), exist_ok=True)
                     f_idx = orig_idx
