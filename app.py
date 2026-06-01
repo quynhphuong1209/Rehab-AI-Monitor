@@ -103,7 +103,6 @@ def ensure_playable_video(video_path):
     if os.path.exists(final_h264):
         return final_h264
         
-    import subprocess
     cmd = [
         'ffmpeg', '-y', 
         '-i', video_path,
@@ -111,9 +110,9 @@ def ensure_playable_video(video_path):
         '-pix_fmt', 'yuv420p', 
         '-preset', 'ultrafast', 
         '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', 
-        '-crf', '24', 
-        '-maxrate', '1200k', 
-        '-bufsize', '2400k',
+        '-crf', '28', 
+        '-maxrate', '800k', 
+        '-bufsize', '1600k',
         '-movflags', '+faststart',
         '-threads', '0',
         final_h264
@@ -152,9 +151,8 @@ def ensure_playable_video(video_path):
     return video_path
 
 def render_video(video_path):
-    """Hiển thị video bằng cách đọc bytes để kích hoạt truyền tải dữ liệu trực tiếp,
-    tránh lỗi proxy HTTP Range Requests trên Hugging Face Spaces gây treo/lag video.
-    Nếu đường dẫn là URL (ví dụ YouTube), sử dụng st.video trực tiếp."""
+    """Hiển thị video bằng cách đọc bytes nếu dung lượng nhỏ để tránh lỗi proxy HF,
+    hoặc dùng đường dẫn trực tiếp nếu video lớn để tránh làm nghẽn WebSocket/đơ web."""
     if not video_path:
         st.error("❌ File video không tồn tại hoặc đường dẫn trống.")
         return
@@ -174,10 +172,16 @@ def render_video(video_path):
         st.error("❌ File video không tồn tại.")
         return
     try:
-        # Đọc bytes của video để tránh lỗi HTTP Range Requests/Proxy của HF Spaces
-        with open(playable_path, "rb") as f:
-            video_bytes = f.read()
-        st.video(video_bytes)
+        # Ngưỡng dung lượng: 10 MB (10 * 1024 * 1024 bytes)
+        file_size = os.path.getsize(playable_path)
+        if file_size < 10 * 1024 * 1024:
+            # Video nhỏ: Đọc bytes để chạy mượt, tránh lỗi range-request
+            with open(playable_path, "rb") as f:
+                video_bytes = f.read()
+            st.video(video_bytes)
+        else:
+            # Video lớn: Dùng đường dẫn để trình duyệt stream qua HTTP, tránh nghẽn WebSocket gây đơ web
+            st.video(playable_path)
     except Exception as e:
         st.error(f"⚠️ Lỗi hiển thị video: {e}")
 import threading
@@ -3424,9 +3428,9 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             '-pix_fmt', 'yuv420p', 
             '-preset', 'ultrafast',  # Dùng preset ultrafast để đóng gói cực nhanh cho video dài
             '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',  # Bảo toàn độ phân giải HD đã chọn
-            '-crf', '24',           # Giữ nguyên độ nét HD lâm sàng nhưng dung lượng file giảm thêm 20-30%
-            '-maxrate', '1200k',    # Giới hạn bitrate 1.2Mbps cực nét cho chuyển động tĩnh, tránh lag/buffering
-            '-bufsize', '2400k',
+            '-crf', '28',           # Giảm chất lượng 1 chút nhưng giảm cực lớn dung lượng file (40-50%)
+            '-maxrate', '800k',     # Giới hạn bitrate 800Kbps cực kỳ tối ưu cho mạng
+            '-bufsize', '1600k',
             '-movflags', '+faststart',
             '-threads', '0',
             final_h264
