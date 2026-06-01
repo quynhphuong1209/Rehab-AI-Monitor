@@ -86,20 +86,24 @@ def get_base64_image(path):
 
 def ensure_playable_video(video_path):
     """Đảm bảo video có định dạng H.264 mượt mà (đuôi _f.mp4) để chơi được trên trình duyệt.
-    Nếu file _f.mp4 chưa có, tự động chuyển đổi từ file gốc mp4v cực nhanh."""
+    Nếu file _f.mp4 chưa có, tự động chuyển đổi từ file gốc cực nhanh."""
     if not video_path or not os.path.exists(video_path):
-        return video_path
-        
-    # Chỉ tự động sửa lỗi/convert đối với video thành phẩm đã qua xử lý (processed_)
-    # Video gốc do bệnh nhân tải lên (patient_uploads/) đã ở định dạng chuẩn web, không cần convert
-    if "processed_" not in os.path.basename(video_path):
         return video_path
         
     # BỎ QUA việc convert lại đối với các video phân đoạn (_g1, _g2, _g3) hoặc đã có đuôi _f.mp4
     if video_path.endswith('_f.mp4') or '_g1' in video_path or '_g2' in video_path or '_g3' in video_path:
         return video_path
         
-    final_h264 = video_path.replace('.mp4', '_f.mp4')
+    # Nếu là video gốc của bệnh nhân (patient_uploads/) và dung lượng nhỏ (< 10MB), không cần nén để tiết kiệm thời gian
+    is_patient_upload = "processed_" not in os.path.basename(video_path)
+    if is_patient_upload:
+        try:
+            if os.path.getsize(video_path) < 10 * 1024 * 1024:
+                return video_path
+        except:
+            pass
+            
+    final_h264 = video_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
     if os.path.exists(final_h264):
         return final_h264
         
@@ -134,6 +138,9 @@ def ensure_playable_video(video_path):
                     if vid.get('processed_path') == video_path:
                         vid['processed_path'] = final_h264
                         updated = True
+                    elif vid.get('video_path') == video_path:
+                        vid['video_path'] = final_h264
+                        updated = True
                 if updated:
                     save_data(VIDEOS_FILE, video_list)
                     print("[Auto-Heal Video] Đã cập nhật database video_list.json")
@@ -147,6 +154,7 @@ def ensure_playable_video(video_path):
             return final_h264
     except Exception as e:
         print(f"[Auto-Heal Video] Lỗi convert video: {e}")
+    return video_path
         
     return video_path
 
@@ -8837,14 +8845,50 @@ def main():
                                 except:
                                     pass
                             
-                            # Tạo tên file duy nhất
+                            # Tạo tên file duy nhất với đuôi .mp4 cố định để tương thích tốt nhất với trình duyệt
                             timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
-                            filename = f"{st.session_state.user_info['username']}_{timestamp}_{file_upload.name}"
+                            base_name, _ = os.path.splitext(file_upload.name)
+                            filename = f"{st.session_state.user_info['username']}_{timestamp}_{base_name}.mp4"
                             file_path = os.path.join(save_dir, filename)
                             
-                            # Lưu file video
-                            with open(file_path, "wb") as f:
+                            # Lưu file video tạm
+                            temp_uploaded_path = file_path + "_temp" + os.path.splitext(file_upload.name)[1]
+                            with open(temp_uploaded_path, "wb") as f:
                                 f.write(file_upload.getbuffer())
+                            
+                            # Nén tối ưu hóa video sang H.264 (giúp web load nhanh gấp 10 lần)
+                            try:
+                                import subprocess
+                                cmd = [
+                                    'ffmpeg', '-y', '-i', temp_uploaded_path,
+                                    '-vcodec', 'libx264',
+                                    '-pix_fmt', 'yuv420p',
+                                    '-preset', 'ultrafast',
+                                    '-crf', '28',
+                                    '-maxrate', '800k',
+                                    '-bufsize', '1600k',
+                                    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+                                    '-threads', '0',
+                                    file_path
+                                ]
+                                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+                                if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                                    try: os.remove(temp_uploaded_path)
+                                    except: pass
+                                else:
+                                    # Fallback nếu ffmpeg fail
+                                    if os.path.exists(file_path):
+                                        try: os.remove(file_path)
+                                        except: pass
+                                    os.rename(temp_uploaded_path, file_path)
+                            except Exception as compress_err:
+                                print(f"[Compress Upload] Lỗi nén video: {compress_err}")
+                                # Fallback nếu không có ffmpeg
+                                if os.path.exists(temp_uploaded_path):
+                                    if os.path.exists(file_path):
+                                        try: os.remove(file_path)
+                                        except: pass
+                                    os.rename(temp_uploaded_path, file_path)
                             
                             # Tự động đẩy file video lên Hugging Face Dataset dưới dạng nền
                             push_file_to_hf_async(file_path)
