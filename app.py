@@ -1882,9 +1882,11 @@ def convert_mov_to_mp4(input_path):
 if 'has_data' not in st.session_state:
     st.session_state.has_data = False
 if 'ncv_model_type' not in st.session_state:
-    st.session_state.ncv_model_type = "MediaPipe Heavy"
+    st.session_state.ncv_model_type = "MediaPipe Full"
 if 'ncv_resize_width' not in st.session_state:
-    st.session_state.ncv_resize_width = 720
+    st.session_state.ncv_resize_width = 480
+if 'ncv_skip_frames' not in st.session_state:
+    st.session_state.ncv_skip_frames = 1
 if 'view_old_analysis' not in st.session_state:
     st.session_state.view_old_analysis = False
 if 'angle_df' not in st.session_state:
@@ -5124,7 +5126,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                             
                             output_path, ref_name_detected, _, angle_data, total_frames, valid_frames, _, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
                                 v['video_path'], bt_chuan_ncv, update_progress,
-                                model_type=st.session_state.get('ncv_model_type', 'MediaPipe Heavy'),
+                                model_type=st.session_state.get('ncv_model_type', 'MediaPipe Full'),
                                 min_confidence=st.session_state.get('ncv_confidence', 0.5),
                                 exercise_name=v['exercise']
                             )
@@ -8425,13 +8427,13 @@ def main():
             st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.5, key="ncv_confidence", help="Ngưỡng để AI chấp nhận một điểm khớp xương.")
             st.selectbox("Tốc độ xử lý", 
                          options=[0, 1, 2, 4], 
-                         index=0, 
+                         index=1, # Mặc định là nhanh (bỏ qua 1 frame - 15 FPS) để tăng tốc độ 2x
                          format_func=lambda x: "Mặc định (Mọi frame)" if x==0 else f"Nhanh (Bỏ qua {x} frame)",
                          key="ncv_skip_frames",
                          help="Bỏ qua một số khung hình để tăng tốc độ xử lý video dài.")
             st.selectbox("Độ phân giải video (Video Quality)",
                          options=[480, 720, 1080],
-                         index=1, # Mặc định là 720p HD
+                         index=0, # Mặc định là 480p (Tốc độ tối ưu) giúp xử lý nhanh gấp đôi
                          format_func=lambda x: "480p (Tốc độ tối ưu)" if x==480 else ("720p (HD - Chuẩn sắc nét)" if x==720 else "1080p (Full HD - Cực kỳ chuẩn xác)"),
                          key="ncv_resize_width",
                          help="Độ phân giải càng cao thì vẽ khung xương càng sắc nét và bám sát khớp bệnh nhân hơn.")
@@ -8470,9 +8472,9 @@ def main():
             st.markdown("### 🎯 CHỌN MÔ HÌNH")
             st.selectbox("Mô hình Pose", 
                          options=["MediaPipe Full", "MediaPipe Heavy", "MediaPipe Lite"], 
-                         index=1, # Mặc định là Heavy để trích xuất 33 điểm bám sát tối đa
+                         index=0, # Mặc định là Full để tăng tốc độ xử lý trên CPU
                          key="ncv_model_type",
-                         help="Mô hình Heavy giúp trích xuất 33 điểm khớp xương bám sát tối đa vào cơ thể bệnh nhân.")
+                         help="Mô hình Full cân bằng hoàn hảo giữa độ chính xác và tốc độ xử lý trên CPU.")
             
             # st.markdown("### 🎯 CHỌN BÀI TẬP") # Cắt bỏ chọn bài tập ở sidebar cho NCV
             # ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
@@ -8965,7 +8967,7 @@ def main():
                                     status_text.info(f"🔄 Đang xử lý frame... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
                                 
                                 # Lấy cấu hình từ session state (NCV) nếu có, nếu không dùng mặc định
-                                model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Heavy')
+                                model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Full')
                                 conf_ncv = st.session_state.get('ncv_confidence', 0.5)
 
                                 # Xác định sai số theo giai đoạn tập của NCV
