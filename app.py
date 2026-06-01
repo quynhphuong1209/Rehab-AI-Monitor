@@ -84,6 +84,32 @@ def get_base64_image(path):
     except:
         return None
 
+def get_video_codec(path):
+    """Sử dụng ffprobe để lấy thông tin codec video và audio nhanh chóng."""
+    try:
+        import subprocess
+        import json
+        cmd = [
+            'ffprobe', '-v', 'quiet',
+            '-print_format', 'json',
+            '-show_streams', path
+        ]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=10)
+        if result.returncode == 0:
+            info = json.loads(result.stdout)
+            streams = info.get('streams', [])
+            v_codec = None
+            a_codec = None
+            for s in streams:
+                if s.get('codec_type') == 'video':
+                    v_codec = s.get('codec_name')
+                elif s.get('codec_type') == 'audio':
+                    a_codec = s.get('codec_name')
+            return v_codec, a_codec
+    except:
+        pass
+    return None, None
+
 def ensure_playable_video(video_path):
     """Đảm bảo video có định dạng H.264 mượt mà (đuôi _f.mp4) để chơi được trên trình duyệt.
     Nếu file _f.mp4 chưa có hoặc bị lỗi (0 byte, quá nhỏ), tự động chuyển đổi từ file gốc cực nhanh."""
@@ -98,7 +124,7 @@ def ensure_playable_video(video_path):
         is_corrupted = False
         if os.path.exists(video_path):
             try:
-                if os.path.getsize(video_path) < 100 * 1024:  # < 100KB chắc chắn là file lỗi
+                if os.path.getsize(video_path) < 5 * 1024:  # < 5KB chắc chắn là file lỗi / Git LFS pointer
                     is_corrupted = True
             except:
                 is_corrupted = True
@@ -106,7 +132,7 @@ def ensure_playable_video(video_path):
             success_download = ensure_local_file(video_path)
             if success_download:
                 try:
-                    if os.path.getsize(video_path) < 100 * 1024:
+                    if os.path.getsize(video_path) < 5 * 1024:
                         is_corrupted = True
                 except:
                     is_corrupted = True
@@ -135,8 +161,15 @@ def ensure_playable_video(video_path):
             else:
                 return video_path
 
+    # KIỂM TRA CODEC: Nếu đã là H.264 và đuôi là .mp4, cho phép phát trực tiếp không cần convert
+    if video_path.endswith('.mp4') and not video_path.endswith('_f.mp4'):
+        v_codec, _ = get_video_codec(video_path)
+        if v_codec == 'h264':
+            print(f"[Playable Check] Video {video_path} đã ở định dạng H.264, phát trực tiếp.")
+            return video_path
+
     final_h264 = video_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
-    if os.path.exists(final_h264) and os.path.getsize(final_h264) > 100 * 1024:
+    if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
         return final_h264
         
     if os.path.exists(final_h264):
@@ -170,7 +203,7 @@ def ensure_playable_video(video_path):
                 except: pass
             return video_path
             
-        if os.path.exists(final_h264) and os.path.getsize(final_h264) > 100 * 1024:
+        if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
             print(f"[Auto-Heal Video] Đã convert thành công sang {final_h264}")
             try:
                 video_list = load_data(VIDEOS_FILE)
@@ -640,7 +673,7 @@ def push_file_to_hf_async(local_path):
     threading.Thread(target=_run_upload, daemon=True).start()
 
 def ensure_local_file(file_path):
-    """Đảm bảo file tồn tại cục bộ và hợp lệ. Nếu không có hoặc bị lỗi (nhỏ hơn 100KB), thử tải từ Hugging Face Dataset."""
+    """Đảm bảo file tồn tại cục bộ và hợp lệ. Nếu không có hoặc bị lỗi (nhỏ hơn 5KB), thử tải từ Hugging Face Dataset."""
     if not file_path:
         return False
         
@@ -648,8 +681,8 @@ def ensure_local_file(file_path):
     if os.path.exists(file_path):
         try:
             # File LFS pointer thường có kích thước rất nhỏ (~130 byte)
-            # File video hợp lệ luôn lớn hơn 100KB
-            if os.path.getsize(file_path) >= 100 * 1024:
+            # File video hợp lệ luôn lớn hơn 5KB
+            if os.path.getsize(file_path) >= 5 * 1024:
                 is_valid = True
         except:
             pass
@@ -674,7 +707,7 @@ def ensure_local_file(file_path):
                 local_dir=DATA_DIR
             )
             # Kiểm tra xem file sau khi tải về có hợp lệ không
-            if os.path.exists(file_path) and os.path.getsize(file_path) >= 100 * 1024:
+            if os.path.exists(file_path) and os.path.getsize(file_path) >= 5 * 1024:
                 return True
             return os.path.exists(file_path)
         except Exception as e:
@@ -8061,14 +8094,14 @@ def hien_thi_danh_sach_video_fragment(user_role):
                 v_display_path = v.get('video_path')
                 processed_path = v.get('processed_path')
                 
-                # Kiểm tra sự tồn tại của file cục bộ có dung lượng hợp lệ (> 100KB) mà không thực hiện tải xuống
+                # Kiểm tra sự tồn tại của file cục bộ có dung lượng hợp lệ (> 5KB) mà không thực hiện tải xuống
                 local_exists = False
                 active_display_path = None
                 
                 def is_valid_local_file(path):
                     if path and os.path.exists(path):
                         try:
-                            if os.path.getsize(path) >= 100 * 1024:
+                            if os.path.getsize(path) >= 5 * 1024:
                                 return True
                         except:
                             pass
