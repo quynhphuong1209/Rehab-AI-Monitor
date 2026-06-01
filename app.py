@@ -7863,6 +7863,132 @@ def hien_thi_tab_doi_mat_khau():
                 st.error("❌ Mật khẩu hiện tại không chính xác. Vui lòng thử lại.")
 
 
+def delete_video_callback(video_name, username):
+    # Load video list
+    video_list = load_data(VIDEOS_FILE)
+    
+    # Tìm video cần xóa
+    target_idx = None
+    for idx, v in enumerate(video_list):
+        if v.get('video_name') == video_name and v.get('username') == username:
+            target_idx = idx
+            break
+            
+    if target_idx is not None:
+        v = video_list[target_idx]
+        
+        # Xóa file thực tế
+        for f_path in [v.get('video_path'), v.get('processed_path'), v.get('df_path'), v.get('all_frames_data_path')]:
+            if f_path and os.path.exists(f_path):
+                try:
+                    os.remove(f_path)
+                except:
+                    pass
+        
+        # CASCADE DELETE
+        evals_all = load_data(EVALUATIONS_FILE)
+        evals_filtered = [ev for ev in evals_all if not (ev['patient_username'] == v['username'] and ev['video_name'] == v['video_name'])]
+        save_data(EVALUATIONS_FILE, evals_filtered)
+        
+        # Xóa khỏi danh sách
+        video_list.pop(target_idx)
+        save_data(VIDEOS_FILE, video_list)
+        st.session_state.delete_success = f"Đã xóa video: {v.get('video_name', 'Không rõ tên')}"
+
+
+@st.fragment
+def hien_thi_danh_sach_video_fragment(user_role):
+    video_list = load_data(VIDEOS_FILE)
+    
+    if st.session_state.get('delete_success'):
+        st.toast(f"🗑️ {st.session_state.delete_success}", icon="✅")
+        st.session_state.delete_success = None
+        
+    if not video_list:
+        st.info("📭 Hiện chưa có video nào được gửi đến.")
+    else:
+        for idx, v in enumerate(video_list):
+            col_list1, col_list2 = st.columns([12, 1])
+            with col_list1:
+                # LUÔN HIỂN THỊ VIDEO GỐC TRONG DANH SÁCH ĐỂ ĐỐI CHIẾU (Có fallback video đã xử lý)
+                v_display_path = v['video_path']
+                ensure_local_file(v_display_path)
+                if not os.path.exists(v_display_path) and v.get('processed_path'):
+                    ensure_local_file(v['processed_path'])
+                    if os.path.exists(v['processed_path']):
+                        v_display_path = v['processed_path']
+                
+                # Xác định xem đã có kết quả AI chưa để hiển thị text
+                evals_db = load_data(EVALUATIONS_FILE)
+                v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise') for e in evals_db)
+                
+                doc_eval = next((e for e in reversed(evals_db) if e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
+
+                display_status = v['status']
+                if user_role == "Bác sĩ / KTV PHCN":
+                    if doc_eval:
+                        display_status = "Đã đánh giá"
+                    else:
+                        display_status = "Đang chờ bác sĩ đánh giá"
+
+                with st.expander(f"🎬 {v['full_name']} - {v['exercise']} ({v['time']}) - {display_status}"):
+                    col_v1, col_v2 = st.columns([1.3, 1])
+                    with col_v1:
+                        if os.path.exists(v_display_path):
+                            render_video(v_display_path)
+                        else:
+                            st.error("File video không tồn tại trên hệ thống.")
+                    with col_v2:
+                        st.write(f"**Người tập:** {v['full_name']}")
+                        
+                        if user_role == "Bác sĩ / KTV PHCN" and not v_has_ai:
+                            st.write("**Độ chính xác AI:** ⏳ Chờ NCV phân tích")
+                        else:
+                            # Lấy accuracy mới nhất từ evals nếu có, nếu không lấy từ video
+                            ai_eval_record = next((e for e in reversed(evals_db) if e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
+                            acc_val = ai_eval_record['ai_accuracy'] if ai_eval_record else v.get('accuracy', 0)
+                            acc_text = f"{acc_val}%" if acc_val > 0 else "Chưa phân tích"
+                            st.write(f"**Độ chính xác AI:** {acc_text}")
+                            
+                        st.write(f"**Trạng thái:** {v['status']}")
+                        
+                        # HIỂN THỊ ĐÁNH GIÁ CỦA BÁC SĨ (GROUND TRUTH) CHO NCV
+                        if doc_eval:
+                            with st.expander("🩺 ĐÁNH GIÁ CHUYÊN MÔN (GROUND TRUTH)", expanded=True):
+                                st.success(f"**Bác sĩ:** {doc_eval.get('doctor_name', 'Bác sĩ')}")
+                                st.write(f"**Kết quả:** {doc_eval['doctor_result']}")
+                                if doc_eval.get('comments_ncv'):
+                                    st.markdown(f"<div style='background: rgba(0,198,255,0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00c6ff;'><b>💬 Ghi chú cho NCV:</b> {doc_eval['comments_ncv']}</div>", unsafe_allow_html=True)
+                                st.write(f"**Nhận xét cho BN:** {doc_eval['comments']}")
+                                st.write(f"**Kế hoạch:** {doc_eval['plan']}")
+                        elif user_role == "Nghiên cứu viên":
+                            st.warning("⏳ Đang chờ Bác sĩ / KTV đánh giá chuyên môn.")
+                        
+                        # Đổi nhãn nút theo vai trò
+                        eval_btn_label = "📝 Đánh giá của chuyên môn PHCN" if user_role == "Bác sĩ / KTV PHCN" else "📝 Phân tích và trích xuất khung xương AI"
+                        if st.button(eval_btn_label, key=f"eval_btn_{idx}", width="stretch"):
+                            st.session_state.current_eval_video = v
+                            st.session_state.view_old_analysis = False
+                            # Reset analysis state để load video mới
+                            st.session_state.has_data = False
+                            st.session_state.stats = None
+                            st.session_state.reanalyze_triggered = False
+                            
+                            if user_role == "Bác sĩ / KTV PHCN":
+                                st.toast("🚀 Đang chuyển sang tab 📊 QUẢN LÝ ĐÁNH GIÁ & NCKH...", icon="🔄")
+                                st.session_state.trigger_tab_switch = "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"
+                            else: # Nghiên cứu viên
+                                st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU...", icon="🔄")
+                                st.session_state.trigger_tab_switch = "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"
+                            st.rerun()
+                        
+                        st.button("🗑️ Xóa video này", key=f"del_video_{idx}", width="stretch",
+                                  on_click=delete_video_callback, args=(v.get('video_name'), v.get('username')))
+            with col_list2:
+                st.button("❌", key=f"quick_x_video_{idx}", help="Xóa nhanh",
+                          on_click=delete_video_callback, args=(v.get('video_name'), v.get('username')))
+
+
 # ============================================
 # MAIN - GIỮ NGUYÊN CẤU TRÚC TAB
 # ============================================
@@ -8706,119 +8832,7 @@ def main():
                 if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
                     st.markdown("---")
                     st.markdown("### 🎬 DANH SÁCH VIDEO BỆNH NHÂN ĐÃ QUAY")
-                    video_list = load_data(VIDEOS_FILE)
-                    if not video_list:
-                        st.info("📭 Hiện chưa có video nào được gửi đến.")
-                    else:
-                        for idx, v in enumerate(video_list):
-                            col_list1, col_list2 = st.columns([12, 1])
-                            with col_list1:
-                                # LUÔN HIỂN THỊ VIDEO GỐC TRONG DANH SÁCH ĐỂ ĐỐI CHIẾU (Có fallback video đã xử lý)
-                                v_display_path = v['video_path']
-                                ensure_local_file(v_display_path)
-                                if not os.path.exists(v_display_path) and v.get('processed_path'):
-                                    ensure_local_file(v['processed_path'])
-                                    if os.path.exists(v['processed_path']):
-                                        v_display_path = v['processed_path']
-                                
-                                # Xác định xem đã có kết quả AI chưa để hiển thị text
-                                evals_db = load_data(EVALUATIONS_FILE)
-                                v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise') for e in evals_db)
-                                
-                                doc_eval = next((e for e in reversed(evals_db) if e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
-
-                                display_status = v['status']
-                                if user_role == "Bác sĩ / KTV PHCN":
-                                    if doc_eval:
-                                        display_status = "Đã đánh giá"
-                                    else:
-                                        display_status = "Đang chờ bác sĩ đánh giá"
-
-                                with st.expander(f"🎬 {v['full_name']} - {v['exercise']} ({v['time']}) - {display_status}"):
-                                    col_v1, col_v2 = st.columns([1.3, 1])
-                                    with col_v1:
-                                        if os.path.exists(v_display_path):
-                                            render_video(v_display_path)
-                                        else:
-                                            st.error("File video không tồn tại trên hệ thống.")
-                                    with col_v2:
-                                        st.write(f"**Người tập:** {v['full_name']}")
-                                        
-                                        if user_role == "Bác sĩ / KTV PHCN" and not v_has_ai:
-                                            st.write("**Độ chính xác AI:** ⏳ Chờ NCV phân tích")
-                                        else:
-                                            # Lấy accuracy mới nhất từ evals nếu có, nếu không lấy từ video
-                                            ai_eval_record = next((e for e in reversed(evals_db) if e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
-                                            acc_val = ai_eval_record['ai_accuracy'] if ai_eval_record else v.get('accuracy', 0)
-                                            acc_text = f"{acc_val}%" if acc_val > 0 else "Chưa phân tích"
-                                            st.write(f"**Độ chính xác AI:** {acc_text}")
-                                            
-                                        st.write(f"**Trạng thái:** {v['status']}")
-                                        
-                                        # HIỂN THỊ ĐÁNH GIÁ CỦA BÁC SĨ (GROUND TRUTH) CHO NCV
-                                        # doc_eval đã được lấy ở trên
-                                        if doc_eval:
-                                            with st.expander("🩺 ĐÁNH GIÁ CHUYÊN MÔN (GROUND TRUTH)", expanded=True):
-                                                st.success(f"**Bác sĩ:** {doc_eval.get('doctor_name', 'Bác sĩ')}")
-                                                st.write(f"**Kết quả:** {doc_eval['doctor_result']}")
-                                                if doc_eval.get('comments_ncv'):
-                                                    st.markdown(f"<div style='background: rgba(0,198,255,0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00c6ff;'><b>💬 Ghi chú cho NCV:</b> {doc_eval['comments_ncv']}</div>", unsafe_allow_html=True)
-                                                st.write(f"**Nhận xét cho BN:** {doc_eval['comments']}")
-                                                st.write(f"**Kế hoạch:** {doc_eval['plan']}")
-                                        elif user_role == "Nghiên cứu viên":
-                                            st.warning("⏳ Đang chờ Bác sĩ / KTV đánh giá chuyên môn.")
-                                        
-                                        # Đổi nhãn nút theo vai trò
-                                        eval_btn_label = "📝 Đánh giá của chuyên môn PHCN" if user_role == "Bác sĩ / KTV PHCN" else "📝 Phân tích và trích xuất khung xương AI"
-                                        if st.button(eval_btn_label, key=f"eval_btn_{idx}", width="stretch"):
-                                            st.session_state.current_eval_video = v
-                                            st.session_state.view_old_analysis = False
-                                            # Reset analysis state để load video mới
-                                            st.session_state.has_data = False
-                                            st.session_state.stats = None
-                                            st.session_state.reanalyze_triggered = False
-                                            
-                                            
-                                            if user_role == "Bác sĩ / KTV PHCN":
-                                                st.toast("🚀 Đang chuyển sang tab 📊 QUẢN LÝ ĐÁNH GIÁ & NCKH...", icon="🔄")
-                                                st.session_state.trigger_tab_switch = "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"
-                                            else: # Nghiên cứu viên
-                                                st.toast("🚀 Đang chuyển sang tab 🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU...", icon="🔄")
-                                                st.session_state.trigger_tab_switch = "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"
-                                            st.rerun()
-                                        
-                                        if st.button("🗑️ Xóa video này", key=f"del_video_{idx}", width="stretch"):
-                                            # Xóa file thực tế (gốc và các file phân tích đi kèm)
-                                            for f_path in [v.get('video_path'), v.get('processed_path'), v.get('df_path'), v.get('all_frames_data_path')]:
-                                                if f_path and os.path.exists(f_path):
-                                                    try: os.remove(f_path)
-                                                    except: pass
-                                            
-                                            # XÓA CẢ ĐÁNH GIÁ LIÊN QUAN (CASCADE DELETE)
-                                            evals_all = load_data(EVALUATIONS_FILE)
-                                            evals_filtered = [ev for ev in evals_all if not (ev['patient_username'] == v['username'] and ev['video_name'] == v['video_name'])]
-                                            save_data(EVALUATIONS_FILE, evals_filtered)
-                                            
-                                            video_list.pop(idx)
-                                            save_data(VIDEOS_FILE, video_list)
-                                            st.success("✅ Đã xóa video và các đánh giá liên quan!")
-                                            st.rerun()
-                            with col_list2:
-                                if st.button("❌", key=f"quick_x_video_{idx}", help="Xóa nhanh"):
-                                    # Xóa file thực tế (gốc và các file phân tích đi kèm)
-                                    for f_path in [v.get('video_path'), v.get('processed_path'), v.get('df_path'), v.get('all_frames_data_path')]:
-                                        if f_path and os.path.exists(f_path):
-                                            try: os.remove(f_path)
-                                            except: pass
-                                    
-                                    # CASCADE DELETE
-                                    evals_all = load_data(EVALUATIONS_FILE)
-                                    evals_filtered = [ev for ev in evals_all if not (ev['patient_username'] == v['username'] and ev['video_name'] == v['video_name'])]
-                                    save_data(EVALUATIONS_FILE, evals_filtered)
-                                    
-                                    video_list.pop(idx)
-                                    save_data(VIDEOS_FILE, video_list)
-                                    st.rerun()
+                    hien_thi_danh_sach_video_fragment(user_role)
 
                 # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC (CHỈ HIỆN CHO BỆNH NHÂN) ===
                 if user_role == "Bệnh nhân":
