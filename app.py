@@ -169,8 +169,26 @@ def ensure_playable_video(video_path):
             return video_path
 
     final_h264 = video_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
+    
+    # Kiểm tra xem file h264 đã tồn tại và có hợp lệ (đọc được khung hình) không
+    is_valid_h264 = False
     if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
+        try:
+            import cv2
+            cap_check = cv2.VideoCapture(final_h264)
+            if cap_check.isOpened() and int(cap_check.get(cv2.CAP_PROP_FRAME_COUNT)) > 0:
+                is_valid_h264 = True
+            cap_check.release()
+        except:
+            pass
+            
+    if is_valid_h264:
         return final_h264
+        
+    # Nếu tồn tại nhưng không hợp lệ (không đọc được), xóa đi để ép convert lại từ đầu
+    if os.path.exists(final_h264):
+        try: os.remove(final_h264)
+        except: pass
         
     if os.path.exists(final_h264):
         try: os.remove(final_h264)
