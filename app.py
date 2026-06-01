@@ -104,8 +104,14 @@ def ensure_playable_video(video_path):
             pass
             
     final_h264 = video_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
-    if os.path.exists(final_h264):
+    # Kiểm tra xem file _f.mp4 đã tồn tại và hợp lệ chưa (lớn hơn 1KB) để tránh nhận diện nhầm file lỗi/0 byte
+    if os.path.exists(final_h264) and os.path.getsize(final_h264) > 1024:
         return final_h264
+        
+    # Nếu có file placeholder lỗi, xóa đi để chạy lại
+    if os.path.exists(final_h264):
+        try: os.remove(final_h264)
+        except: pass
         
     cmd = [
         'ffmpeg', '-y', 
@@ -119,6 +125,7 @@ def ensure_playable_video(video_path):
         '-bufsize', '1600k',
         '-movflags', '+faststart',
         '-threads', '0',
+        '-map', '0:v:0', '-map', '0:a?', '-c:a', 'aac',
         final_h264
     ]
     try:
@@ -128,8 +135,12 @@ def ensure_playable_video(video_path):
         if result.returncode != 0:
             print("[Auto-Heal Video] FFmpeg failed with exit code", result.returncode)
             print("[Auto-Heal Video] FFmpeg stderr:", result.stderr)
+            if os.path.exists(final_h264):
+                try: os.remove(final_h264)
+                except: pass
+            return video_path
             
-        if os.path.exists(final_h264):
+        if os.path.exists(final_h264) and os.path.getsize(final_h264) > 1024:
             print(f"[Auto-Heal Video] Đã convert thành công sang {final_h264}")
             try:
                 video_list = load_data(VIDEOS_FILE)
@@ -154,6 +165,9 @@ def ensure_playable_video(video_path):
             return final_h264
     except Exception as e:
         print(f"[Auto-Heal Video] Lỗi convert video: {e}")
+        if os.path.exists(final_h264):
+            try: os.remove(final_h264)
+            except: pass
     return video_path
         
     return video_path
@@ -8869,14 +8883,15 @@ def main():
                                     '-bufsize', '1600k',
                                     '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
                                     '-threads', '0',
+                                    '-map', '0:v:0', '-map', '0:a?', '-c:a', 'aac',
                                     file_path
                                 ]
-                                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
-                                if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                                result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+                                if result_compress.returncode == 0 and os.path.exists(file_path) and os.path.getsize(file_path) > 1024:
                                     try: os.remove(temp_uploaded_path)
                                     except: pass
                                 else:
-                                    # Fallback nếu ffmpeg fail
+                                    # Fallback nếu ffmpeg fail hoặc file ra bị lỗi
                                     if os.path.exists(file_path):
                                         try: os.remove(file_path)
                                         except: pass
