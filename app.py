@@ -275,16 +275,9 @@ def render_video(video_path):
         st.error("❌ File video không tồn tại.")
         return
     try:
-        # Ngưỡng dung lượng: 100 MB (100 * 1024 * 1024 bytes) để tối ưu truyền tải qua HTTP/WebSocket tránh đơ web trên Cloud/Spaces
-        file_size = os.path.getsize(playable_path)
-        if file_size < 100 * 1024 * 1024:
-            # Video nhỏ/vừa: Đọc bytes để chạy mượt, tránh lỗi range-request và proxy blocking
-            with open(playable_path, "rb") as f:
-                video_bytes = f.read()
-            st.video(video_bytes)
-        else:
-            # Video quá lớn: Dùng đường dẫn để trình duyệt stream qua HTTP, tránh làm nghẽn WebSocket
-            st.video(playable_path)
+        # Phát trực tiếp bằng đường dẫn file để trình duyệt tự động stream qua HTTP (Range Requests).
+        # Cách này giúp video phát ngay lập tức (chưa đầy 1 giây) mà không làm nghẽn WebSocket/gây đơ web.
+        st.video(playable_path)
     except Exception as e:
         st.error(f"⚠️ Lỗi hiển thị video: {e}")
 import threading
