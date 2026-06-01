@@ -5023,15 +5023,29 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         
                     # Nếu đã chọn xem bản cũ (hoặc không phải NCV), tiến hành tải lại tự động
                     if not st.session_state.get('reanalyze_triggered', False):
-                        # Kiểm tra xem file CSV có tồn tại hoặc tải được không
-                        csv_ok = ensure_local_file(v.get('df_path'))
+                        # Kiểm tra xem các file có cần tải từ cloud không để hiển thị spinner
+                        need_download = False
+                        for path_key in ['df_path', 'all_frames_data_path', 'processed_path']:
+                            p = v.get(path_key)
+                            if p and (not os.path.exists(p) or os.path.getsize(p) < 5 * 1024):
+                                need_download = True
+                                break
+                        
+                        if need_download:
+                            with st.spinner("📥 Đang tải kết quả phân tích từ Cloud..."):
+                                csv_ok = ensure_local_file(v.get('df_path'))
+                                if csv_ok:
+                                    ensure_local_file(v.get('all_frames_data_path'))
+                                    ensure_local_file(v.get('processed_path'))
+                        else:
+                            csv_ok = ensure_local_file(v.get('df_path'))
+                            if csv_ok:
+                                ensure_local_file(v.get('all_frames_data_path'))
+                                ensure_local_file(v.get('processed_path'))
                         
                         if not csv_ok and user_role == "Nghiên cứu viên":
                             # Nếu file CSV bị thiếu và là Nghiên cứu viên, tự động chuyển sang chế độ phân tích lại
                             st.session_state.reanalyze_triggered = True
-                        else:
-                            ensure_local_file(v.get('all_frames_data_path'))
-                            ensure_local_file(v.get('processed_path'))
     
                             st.session_state.stats = v['metrics']
                             st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
@@ -5064,10 +5078,16 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 st.warning(f"⚠️ Video '{v.get('video_name')}' của BN {v.get('full_name')} chưa được phân tích.")
                 col_v1, col_v2 = st.columns([0.6, 1.4])
                 with col_v1:
-                    if os.path.exists(v['video_path']):
+                    # Kiểm tra xem video đã tồn tại cục bộ chưa để hiển thị spinner khi cần
+                    video_exists = False
+                    if v.get('video_path') and os.path.exists(v['video_path']) and os.path.getsize(v['video_path']) >= 5 * 1024:
+                        video_exists = True
+                        
+                    if video_exists:
                         render_video(v['video_path'])
                     else:
-                        st.error("❌ Không tìm thấy file video.")
+                        with st.spinner("📥 Đang tải video thô từ Cloud..."):
+                            render_video(v['video_path'])
                 with col_v2:
                     st.info("💡 Bạn có thể thực hiện phân tích ngay bây giờ để xem kết quả khung xương và chỉ số lâm sàng.")
                     if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
@@ -8274,13 +8294,6 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             # Đổi nhãn nút theo vai trò
                             eval_btn_label = "📝 Đánh giá của chuyên môn PHCN" if user_role == "Bác sĩ / KTV PHCN" else "📝 Phân tích và trích xuất khung xương AI"
                             if st.button(eval_btn_label, key=f"eval_btn_{idx}", width="stretch"):
-                                # Tự động tải video từ cloud về nếu chưa có
-                                if not local_exists:
-                                    with st.spinner("Đang tải video từ Cloud để bắt đầu phân tích..."):
-                                        if v_display_path:
-                                            ensure_local_file(v_display_path)
-                                        if processed_path:
-                                            ensure_local_file(processed_path)
                                 st.session_state.current_eval_video = v
                                 st.session_state.view_old_analysis = False
                                 # Reset analysis state để load video mới
