@@ -8099,6 +8099,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
     if not video_list:
         st.info("📭 Hiện chưa có video nào được gửi đến.")
     else:
+        # Load database evaluations outside the loop for extreme speed optimization
+        evals_db = load_data(EVALUATIONS_FILE)
+        
         for idx, v in enumerate(video_list):
             col_list1, col_list2 = st.columns([12, 1])
             with col_list1:
@@ -8126,7 +8129,6 @@ def hien_thi_danh_sach_video_fragment(user_role):
                     active_display_path = processed_path
                 
                 # Xác định xem đã có kết quả AI chưa để hiển thị text
-                evals_db = load_data(EVALUATIONS_FILE)
                 v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise') for e in evals_db)
                 
                 doc_eval = next((e for e in reversed(evals_db) if e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
@@ -8159,7 +8161,8 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                 else:
                                     st.error("❌ Không thể tải video từ Cloud. Vui lòng kiểm tra lại kết nối.")
                     else:
-                        col_v1, col_v2 = st.columns([1.3, 1])
+                        # Thay đổi tỷ lệ cột từ [1.3, 1] sang [0.6, 1.4] để thu nhỏ video hiển thị
+                        col_v1, col_v2 = st.columns([0.6, 1.4])
                         with col_v1:
                             if active_display_path and os.path.exists(active_display_path):
                                 render_video(active_display_path)
@@ -8820,10 +8823,68 @@ def main():
                             
                             try:
                                 status_text.info("📤 Đang đọc file video...")
-                                # Lưu file vào thư mục tạm để OpenCV có thể đọc
-                                with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
-                                    tmp_file.write(file_upload.getvalue())
-                                    video_path = tmp_file.name
+                                # Lưu video thô trực tiếp vào patient_uploads (không dùng file tạm để tránh mất tệp khi hiển thị)
+                                save_dir = UPLOAD_DIR
+                                if not os.path.exists(save_dir):
+                                    try: os.makedirs(save_dir, exist_ok=True)
+                                    except: pass
+                                
+                                timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
+                                base_name, _ = os.path.splitext(file_upload.name)
+                                target_u = st.session_state.get('last_uploaded_patient_username', st.session_state.user_info['username'])
+                                filename = f"{target_u}_{timestamp}_{base_name}.mp4"
+                                video_path = os.path.join(save_dir, filename)
+                                
+                                temp_uploaded_path = video_path + "_temp" + os.path.splitext(file_upload.name)[1]
+                                with open(temp_uploaded_path, "wb") as f:
+                                    f.write(file_upload.getbuffer())
+                                
+                                # Kiểm tra xem video tải lên có thể phát trực tiếp (đã là H.264 MP4) không để tránh nén lại
+                                v_codec = None
+                                try:
+                                    v_codec, _ = get_video_codec(temp_uploaded_path)
+                                except:
+                                    pass
+                                    
+                                is_h264_mp4 = (v_codec == 'h264' and os.path.splitext(file_upload.name)[1].lower() == '.mp4')
+                                if is_h264_mp4:
+                                    if os.path.exists(video_path):
+                                        try: os.remove(video_path)
+                                        except: pass
+                                    os.rename(temp_uploaded_path, video_path)
+                                else:
+                                    # Chuyển đổi và nén tối ưu hóa video sang H.264 MP4 để phát mượt mà không lỗi
+                                    try:
+                                        import subprocess
+                                        cmd = [
+                                            'ffmpeg', '-y', '-i', temp_uploaded_path,
+                                            '-vcodec', 'libx264',
+                                            '-pix_fmt', 'yuv420p',
+                                            '-preset', 'ultrafast',
+                                            '-crf', '28',
+                                            '-maxrate', '800k',
+                                            '-bufsize', '1600k',
+                                            '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+                                            '-threads', '0',
+                                            '-map', '0:v:0', '-map', '0:a?', '-c:a', 'aac',
+                                            video_path
+                                        ]
+                                        result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+                                        if result_compress.returncode == 0 and os.path.exists(video_path) and os.path.getsize(video_path) > 1024:
+                                            try: os.remove(temp_uploaded_path)
+                                            except: pass
+                                        else:
+                                            if os.path.exists(video_path):
+                                                try: os.remove(video_path)
+                                                except: pass
+                                            os.rename(temp_uploaded_path, video_path)
+                                    except Exception as compress_err:
+                                        print(f"[NCV Compress] Lỗi nén: {compress_err}")
+                                        if os.path.exists(temp_uploaded_path):
+                                            if os.path.exists(video_path):
+                                                try: os.remove(video_path)
+                                                except: pass
+                                            os.rename(temp_uploaded_path, video_path)
                                 
                                 progress_bar.progress(0.2)
                                 status_text.info("🎬 Đang xử lý video với AI... (có thể mất vài phút)")
@@ -8930,10 +8991,8 @@ def main():
                                     del angle_data
                                     gc.collect()
                                     
-                                    try:
-                                        os.unlink(video_path)
-                                    except:
-                                        pass
+                                    # Giữ lại video thô để hiển thị trong danh sách bệnh nhân
+                                    pass
                                     
                                     status_text.empty()
                                     progress_bar.empty()
