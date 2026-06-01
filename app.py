@@ -2978,13 +2978,23 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         # Mặc định là codman
         ref_name = "codman"
         
-        # Kiểm tra từ khóa trong cả tên bài tập và tên file video (Cực kỳ mạnh mẽ)
-        if any(kw in exercise_name_clean or kw in video_filename_clean for kw in ["gậy", "gay", "pulley", "stick"]):
-            ref_name = "gay"
-        elif any(kw in exercise_name_clean or kw in video_filename_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"]):
-            ref_name = "day"
-        elif "codman" in exercise_name_clean or "codman" in video_filename_clean:
+        # Ưu tiên kiểm tra từ khóa trong tên file video trước (do người dùng đặt tên file cụ thể thường chính xác hơn)
+        if "codman" in video_filename_clean:
             ref_name = "codman"
+        elif any(kw in video_filename_clean for kw in ["gậy", "gay", "pulley", "stick"]):
+            ref_name = "gay"
+        elif any(kw in video_filename_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"]):
+            ref_name = "day"
+        # Nếu tên file không chứa từ khóa đặc trưng, kiểm tra tên bài tập được chọn từ metadata
+        else:
+            if "codman" in exercise_name_clean:
+                ref_name = "codman"
+            elif any(kw in exercise_name_clean for kw in ["gậy", "gay", "pulley", "stick"]):
+                ref_name = "gay"
+            elif any(kw in exercise_name_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"]):
+                ref_name = "day"
+            else:
+                ref_name = "codman"
             
         # Sử dụng đường dẫn tuyệt đối để đảm bảo nạp được file trên mọi môi trường
         current_dir = os.path.dirname(os.path.abspath(__file__))
