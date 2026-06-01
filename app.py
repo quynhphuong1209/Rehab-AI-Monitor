@@ -110,8 +110,9 @@ def get_base64_image(path):
     except:
         return None
 
-def get_video_codec(path):
-    """Sử dụng ffprobe để lấy thông tin codec video và audio nhanh chóng."""
+@st.cache_data(max_entries=500, show_spinner=False)
+def _get_video_codec_cached(path, mtime, size):
+    """Cache kết quả ffprobe theo (path, mtime, size) để tránh gọi lại subprocess."""
     try:
         import subprocess
         import json
@@ -132,6 +133,16 @@ def get_video_codec(path):
                 elif s.get('codec_type') == 'audio':
                     a_codec = s.get('codec_name')
             return v_codec, a_codec
+    except:
+        pass
+    return None, None
+
+def get_video_codec(path):
+    """Sử dụng ffprobe để lấy thông tin codec video và audio nhanh chóng (có cache)."""
+    try:
+        mtime = os.path.getmtime(path)
+        size = os.path.getsize(path)
+        return _get_video_codec_cached(path, mtime, size)
     except:
         pass
     return None, None
@@ -8198,8 +8209,50 @@ def hien_thi_danh_sach_video_fragment(user_role):
     else:
         # Load database evaluations outside the loop for extreme speed optimization
         evals_db = load_data(EVALUATIONS_FILE)
+
+        # --- Tối ưu: xây dựng lookup dict O(1) thay vì O(n) linear scan trong vòng lặp ---
+        ai_eval_lookup = {}    # key: (patient_username, video_name, exercise)
+        doc_eval_lookup = {}   # key: (patient_username, video_name, exercise) -> last doc eval
+        for e in evals_db:
+            key = (e.get('patient_username'), e.get('video_name'), e.get('exercise'))
+            if e.get('doctor_username') == "AI_Researcher":
+                ai_eval_lookup[key] = e
+            else:
+                doc_eval_lookup[key] = e  # ghi đè để giữ cái mới nhất (list đã theo thứ tự)
+
+        # --- Pagination: chỉ render 10 video/trang để tránh render quá nhiều expander ---
+        PAGE_SIZE = 10
+        total_videos = len(video_list)
+        total_pages = max(1, (total_videos + PAGE_SIZE - 1) // PAGE_SIZE)
         
-        for idx, v in enumerate(video_list):
+        if 'vid_list_page' not in st.session_state:
+            st.session_state.vid_list_page = 0
+        # Đảm bảo trang hiện tại không vượt quá tổng số trang
+        if st.session_state.vid_list_page >= total_pages:
+            st.session_state.vid_list_page = total_pages - 1
+
+        # Thanh điều hướng trang
+        if total_pages > 1:
+            pg_c1, pg_c2, pg_c3 = st.columns([1, 3, 1])
+            with pg_c1:
+                if st.button("◀ Trang trước", disabled=(st.session_state.vid_list_page == 0), key="vid_pg_prev"):
+                    st.session_state.vid_list_page -= 1
+                    st.rerun()
+            with pg_c2:
+                st.markdown(
+                    f"<div style='text-align:center; padding:6px; color:#aaa;'>Trang {st.session_state.vid_list_page + 1} / {total_pages} "
+                    f"({total_videos} video)</div>",
+                    unsafe_allow_html=True
+                )
+            with pg_c3:
+                if st.button("Trang sau ▶", disabled=(st.session_state.vid_list_page >= total_pages - 1), key="vid_pg_next"):
+                    st.session_state.vid_list_page += 1
+                    st.rerun()
+
+        start_idx = st.session_state.vid_list_page * PAGE_SIZE
+        page_videos = list(enumerate(video_list))[start_idx: start_idx + PAGE_SIZE]
+
+        for idx, v in page_videos:
             col_list1, col_list2 = st.columns([12, 1])
             with col_list1:
                 v_display_path = v.get('video_path')
@@ -8225,10 +8278,10 @@ def hien_thi_danh_sach_video_fragment(user_role):
                     local_exists = False
                     active_display_path = v_display_path
                 
-                # Xác định xem đã có kết quả AI chưa để hiển thị text
-                v_has_ai = any(e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise') for e in evals_db)
-                
-                doc_eval = next((e for e in reversed(evals_db) if e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
+                # Tra cứu O(1) từ dict đã build sẵn
+                ev_key = (v.get('username'), v.get('video_name'), v.get('exercise'))
+                v_has_ai = ev_key in ai_eval_lookup
+                doc_eval = doc_eval_lookup.get(ev_key)
 
                 display_status = v['status']
                 if user_role == "Bác sĩ / KTV PHCN":
@@ -8262,7 +8315,32 @@ def hien_thi_danh_sach_video_fragment(user_role):
                         col_v1, col_v2 = st.columns([1.3, 1.0])
                         with col_v1:
                             if active_display_path and os.path.exists(active_display_path):
-                                render_video(active_display_path)
+                                # Lazy load: chỉ render video khi user bấm nút xem
+                                vid_show_key = f"show_video_{idx}"
+                                if st.session_state.get(vid_show_key):
+                                    render_video(active_display_path)
+                                    if st.button("⏹️ Ẩn video", key=f"hide_vid_{idx}", use_container_width=True):
+                                        st.session_state[vid_show_key] = False
+                                        st.rerun()
+                                else:
+                                    # Hiển thị thumbnail thay vì load video ngay
+                                    st.markdown(
+                                        f"""
+                                        <div style="background: rgba(0,0,0,0.3); border-radius: 10px; 
+                                             border: 1px solid rgba(255,255,255,0.1);
+                                             display: flex; align-items: center; justify-content: center;
+                                             padding: 30px 10px; text-align: center; cursor: pointer;">
+                                            <div>
+                                                <div style="font-size: 3rem; margin-bottom: 8px;">🎬</div>
+                                                <div style="color: #aaa; font-size: 0.85rem;">{os.path.basename(active_display_path)}</div>
+                                            </div>
+                                        </div>
+                                        """,
+                                        unsafe_allow_html=True
+                                    )
+                                    if st.button("▶️ Xem video", key=f"play_vid_{idx}", use_container_width=True, type="primary"):
+                                        st.session_state[vid_show_key] = True
+                                        st.rerun()
                             else:
                                 st.error("File video không tồn tại trên hệ thống.")
                         with col_v2:
@@ -8272,7 +8350,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                 st.write("**Độ chính xác AI:** ⏳ Chờ NCV phân tích")
                             else:
                                 # Lấy accuracy mới nhất từ evals hoặc video và hiển thị chi tiết theo 3 giai đoạn
-                                ai_eval_record = next((e for e in reversed(evals_db) if e.get('doctor_username') == "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise')), None)
+                                ai_eval_record = ai_eval_lookup.get(ev_key)  # O(1) lookup
                                 
                                 metrics_v = v.get('metrics', {}) if isinstance(v.get('metrics'), dict) else {}
                                 acc_g1 = metrics_v.get('metrics_g1', {}).get('do_chinh_xac') if isinstance(metrics_v.get('metrics_g1'), dict) else None
