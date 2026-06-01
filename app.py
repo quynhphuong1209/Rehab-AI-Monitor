@@ -5071,15 +5071,11 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                                     ensure_local_file(v.get('all_frames_data_path'))
                                     ensure_local_file(v.get('processed_path'))
                         else:
-                            csv_ok = ensure_local_file(v.get('df_path'))
-                            if csv_ok:
-                                ensure_local_file(v.get('all_frames_data_path'))
-                                ensure_local_file(v.get('processed_path'))
+                            # File có sẵn local, không cần download
+                            csv_ok = bool(v.get('df_path') and os.path.exists(v.get('df_path', '')) and os.path.getsize(v.get('df_path', '')) >= 5 * 1024)
                         
-                        if not csv_ok and user_role == "Nghiên cứu viên":
-                            # Nếu file CSV bị thiếu và là Nghiên cứu viên, tự động chuyển sang chế độ phân tích lại
-                            st.session_state.reanalyze_triggered = True
-    
+                        if csv_ok:
+                            # ✅ Load kết quả cũ ngay lập tức vào session state → hiển thị biểu đồ không cần chờ
                             st.session_state.stats = v['metrics']
                             st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
                             st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
@@ -5090,13 +5086,34 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                                 st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
                                 st.session_state.exercise['chuan']['sai_so'] = v['sai_so']
                             st.session_state.has_data = True
-                            if 'df_path' in v and os.path.exists(v['df_path']):
+                            if v.get('df_path') and os.path.exists(v['df_path']):
+                                try:
+                                    st.session_state.angle_df = pd.read_csv(v['df_path'])
+                                except:
+                                    pass
+                            st.toast(f"✅ Tải thành công kết quả phân tích của bệnh nhân {v.get('full_name')}!", icon="📊")
+                            st.rerun()
+                        elif not csv_ok and user_role == "Nghiên cứu viên":
+                            # Nếu file CSV bị thiếu và là Nghiên cứu viên, tự động chuyển sang chế độ phân tích lại
+                            st.session_state.reanalyze_triggered = True
+                            st.session_state.stats = v['metrics']
+                            st.session_state.processed_video_path = v.get('processed_path', v['video_path'])
+                            st.session_state.uploaded_file_name = v.get('video_name', 'Video đã lưu')
+                            st.session_state.all_frames_data_path = v.get('all_frames_data_path')
+                            ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v['exercise']), BAI_TAP['codman'])
+                            st.session_state.exercise = ex_base.copy()
+                            if 'sai_so' in v:
+                                st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
+                                st.session_state.exercise['chuan']['sai_so'] = v['sai_so']
+                            st.session_state.has_data = True
+                            if v.get('df_path') and os.path.exists(v['df_path']):
                                 try:
                                     st.session_state.angle_df = pd.read_csv(v['df_path'])
                                 except:
                                     pass
                             st.toast(f"✅ Tải thành công kết quả phân tích cũ của bệnh nhân {v.get('full_name')}!", icon="📊")
                             st.rerun()
+
                 
                 # Nếu người dùng chủ động nhấn chạy lại phân tích -> Hiện tùy chọn quay lại kết quả cũ
                 if st.session_state.get('reanalyze_triggered', False):
@@ -8370,11 +8387,17 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             eval_btn_label = "📝 Đánh giá của chuyên môn PHCN" if user_role == "Bác sĩ / KTV PHCN" else "📝 Phân tích và trích xuất khung xương AI"
                             if st.button(eval_btn_label, key=f"eval_btn_{idx}", width="stretch"):
                                 st.session_state.current_eval_video = v
-                                st.session_state.view_old_analysis = False
                                 # Reset analysis state để load video mới
                                 st.session_state.has_data = False
                                 st.session_state.stats = None
                                 st.session_state.reanalyze_triggered = False
+                                
+                                # Nếu video ĐÃ CÓ kết quả phân tích cũ → tự động load ngay biểu đồ,
+                                # không hiện choice screen để tiết kiệm thời gian chờ
+                                if v.get('metrics'):
+                                    st.session_state.view_old_analysis = True
+                                else:
+                                    st.session_state.view_old_analysis = False
                                 
                                 if user_role == "Bác sĩ / KTV PHCN":
                                     st.toast("🚀 Đang chuyển sang tab 📊 QUẢN LÝ ĐÁNH GIÁ & NCKH...", icon="🔄")
