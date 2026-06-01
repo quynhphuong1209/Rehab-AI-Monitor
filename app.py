@@ -2971,18 +2971,19 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     # 1. LOAD DYNAMIC REFERENCE (BẢN CHUẨN YOUTUBE)
     dynamic_chuan = None
     try:
-        # Chuẩn hóa tên bài tập để so khớp từ khóa
+        # Chuẩn hóa tên bài tập và tên file video để so khớp từ khóa
         exercise_name_clean = exercise_name.lower().strip()
+        video_filename_clean = os.path.basename(duong_dan_video).lower()
         
         # Mặc định là codman
         ref_name = "codman"
         
-        # Kiểm tra từ khóa trong tên bài tập (Cực kỳ mạnh mẽ)
-        if any(kw in exercise_name_clean for kw in ["gậy", "gay", "pulley", "stick"]):
+        # Kiểm tra từ khóa trong cả tên bài tập và tên file video (Cực kỳ mạnh mẽ)
+        if any(kw in exercise_name_clean or kw in video_filename_clean for kw in ["gậy", "gay", "pulley", "stick"]):
             ref_name = "gay"
-        elif any(kw in exercise_name_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"]):
+        elif any(kw in exercise_name_clean or kw in video_filename_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"]):
             ref_name = "day"
-        elif "codman" in exercise_name_clean:
+        elif "codman" in exercise_name_clean or "codman" in video_filename_clean:
             ref_name = "codman"
             
         # Sử dụng đường dẫn tuyệt đối để đảm bảo nạp được file trên mọi môi trường
@@ -8506,6 +8507,10 @@ def main():
                     elif user_role == "Nghiên cứu viên":
                         st.markdown("### 🧪 PHÂN TÍCH VIDEO NGHIÊN CỨU")
                         st.info("💡 NCV có quyền truy cập sâu vào tọa độ khớp và biểu đồ nghiên cứu.")
+                        ma_bai_tap = st.selectbox("🎯 Chọn bài tập nghiên cứu", list(BAI_TAP.keys()),
+                                                   format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
+                                                   key="ncv_tab_bt")
+                        bai_tap = BAI_TAP[ma_bai_tap]
                         file_upload = st.file_uploader(
                             "Tải lên video thô (Raw Data)", 
                             type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
