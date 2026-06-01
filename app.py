@@ -7034,37 +7034,35 @@ def hien_thi_frames_day_du(key_suffix=""):
         
         # Tạo phần HTML hiển thị độ chính xác
         if acc_g1 > 0 or acc_g2 > 0 or acc_g3 > 0:
-            accuracy_html = f"""
-            <div style='margin-bottom:10px;'>
-                <b>Độ chính xác 3 giai đoạn:</b>
-                <ul style='margin: 5px 0 0 10px; padding: 0; list-style-type: none;'>
-                    <li style='margin-bottom:3px;'>🌱 GĐ 1 (45°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>
-                    <li style='margin-bottom:3px;'>📈 GĐ 2 (30°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>
-                    <li style='margin-bottom:3px;'>🎯 GĐ 3 (15°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>
-                </ul>
-            </div>
-            """
+            accuracy_html = (
+                f"<div style='margin-bottom:10px;'>"
+                f"<b>Độ chính xác 3 giai đoạn:</b>"
+                f"<ul style='margin: 5px 0 0 10px; padding: 0; list-style-type: none;'>"
+                f"<li style='margin-bottom:3px;'>🌱 GĐ 1 (45°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>"
+                f"<li style='margin-bottom:3px;'>📈 GĐ 2 (30°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>"
+                f"<li style='margin-bottom:3px;'>🎯 GĐ 3 (15°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>"
+                f"</ul>"
+                f"</div>"
+            )
         else:
             accuracy_html = f"<div style='margin-bottom:10px;'><b>Độ chính xác:</b> <span style='color:#22c55e; font-size:1.2rem; font-weight:bold;'>{ai_acc:.1f}%</span></div>"
 
-        st.markdown(f"""
-        <div style='background: {v_stats_bg}; border: 1px solid {v_stats_border}; border-radius: 16px; padding: 20px; color: {v_stats_text}; box-shadow: 0 4px 15px rgba(0,0,0,{"0.05" if is_light else "0.3"});'>
-            <h4 style='color:#38bdf8; margin-top:0;'>📊 Thông số Video</h4>
-            <div style='margin-bottom:10px;'><b>Tên:</b> {filename}</div>
-            {accuracy_html}
-            <div style='margin-bottom:10px;'><b>Thời lượng:</b> {total_frames} frames</div>
-            <hr style='opacity:0.1; margin:15px 0;'>
-            <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
-                <span>✅ PASS:</span> <b>{pass_count}</b>
-            </div>
-            <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
-                <span>⚠️ NEARLY:</span> <b>{nearly_count}</b>
-            </div>
-            <div style='display:flex; justify-content:space-between;'>
-                <span>❌ FAIL:</span> <b>{fail_count}</b>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div style='background: {v_stats_bg}; border: 1px solid {v_stats_border}; border-radius: 16px; padding: 20px; color: {v_stats_text}; box-shadow: 0 4px 15px rgba(0,0,0,{"0.05" if is_light else "0.3"});'>
+<h4 style='color:#38bdf8; margin-top:0;'>📊 Thông số Video</h4>
+<div style='margin-bottom:10px;'><b>Tên:</b> {filename}</div>
+{accuracy_html}
+<div style='margin-bottom:10px;'><b>Thời lượng:</b> {total_frames} frames</div>
+<hr style='opacity:0.1; margin:15px 0;'>
+<div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
+<span>✅ PASS:</span> <b>{pass_count}</b>
+</div>
+<div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
+<span>⚠️ NEARLY:</span> <b>{nearly_count}</b>
+</div>
+<div style='display:flex; justify-content:space-between;'>
+<span>❌ FAIL:</span> <b>{fail_count}</b>
+</div>
+</div>""", unsafe_allow_html=True)
         
         if user_role == "Nghiên cứu viên":
             st.write("")
@@ -7984,13 +7982,14 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                 
                                 if acc_g1 is not None and acc_g2 is not None and acc_g3 is not None:
                                     st.write("**Độ chính xác AI theo 3 giai đoạn:**")
-                                    st.markdown(f"""
-                                    <ul style='margin: 0 0 10px 10px; padding: 0; list-style-type: none;'>
-                                        <li style='margin-bottom:3px;'>🌱 Giai đoạn 1 (45°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>
-                                        <li style='margin-bottom:3px;'>📈 Giai đoạn 2 (30°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>
-                                        <li style='margin-bottom:3px;'>🎯 Giai đoạn 3 (15°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>
-                                    </ul>
-                                    """, unsafe_allow_html=True)
+                                    st.markdown(
+                                        f"<ul style='margin: 0 0 10px 10px; padding: 0; list-style-type: none;'>"
+                                        f"<li style='margin-bottom:3px;'>🌱 Giai đoạn 1 (45°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>"
+                                        f"<li style='margin-bottom:3px;'>📈 Giai đoạn 2 (30°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>"
+                                        f"<li style='margin-bottom:3px;'>🎯 Giai đoạn 3 (15°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>"
+                                        f"</ul>",
+                                        unsafe_allow_html=True
+                                    )
                                 else:
                                     acc_val = ai_eval_record['ai_accuracy'] if ai_eval_record else v.get('accuracy', 0)
                                     acc_text = f"{acc_val}%" if acc_val > 0 else "Chưa phân tích"
