@@ -3059,75 +3059,80 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     resize_width = st.session_state.get('ncv_resize_width', RESIZE_WIDTH)
 
     # Tự động phát hiện bên tay tập chủ đạo (LEFT hoặc RIGHT) để tránh nhảy bên gây lỗi trích xuất
-    active_side = "RIGHT"
-    try:
-        cap_detect = cv2.VideoCapture(duong_dan_video)
-        detect_count = 0
-        left_deviations = []
-        right_deviations = []
-        
-        while cap_detect.isOpened() and detect_count < 60:
-            ret_det, frame_det = cap_detect.read()
-            if not ret_det: break
-            detect_count += 1
+    # Riêng bài tập Codman, cố định tay tập chủ đạo là tay phải (RIGHT) theo yêu cầu chuyên môn
+    if ref_name == "codman":
+        active_side = "RIGHT"
+        st.toast("🦾 Bài tập Codman: Cố định bên tập chủ đạo là TAY PHẢI (RIGHT)", icon="🦾")
+    else:
+        active_side = "RIGHT"
+        try:
+            cap_detect = cv2.VideoCapture(duong_dan_video)
+            detect_count = 0
+            left_deviations = []
+            right_deviations = []
             
-            # Xoay và resize tương tự để khớp tọa độ (Tối ưu hóa RAM: Resize trước khi xoay)
-            h_det, w_det = frame_det.shape[:2]
-            if w_det > h_det:
-                scale_det = resize_width / h_det
-                new_w_det = int(w_det * scale_det)
-                if new_w_det % 2 != 0: new_w_det -= 1
-                frame_det = cv2.resize(frame_det, (new_w_det, resize_width), interpolation=cv2.INTER_LINEAR)
-                frame_det = cv2.rotate(frame_det, cv2.ROTATE_90_CLOCKWISE)
-            else:
-                if w_det != resize_width:
-                    scale_det = resize_width / w_det
-                    new_h_det = int(h_det * scale_det)
-                    if new_h_det % 2 != 0: new_h_det -= 1
-                    frame_det = cv2.resize(frame_det, (resize_width, new_h_det), interpolation=cv2.INTER_LINEAR)
-            h_det, w_det = frame_det.shape[:2]
+            while cap_detect.isOpened() and detect_count < 60:
+                ret_det, frame_det = cap_detect.read()
+                if not ret_det: break
+                detect_count += 1
                 
-            rgb_det = cv2.cvtColor(frame_det, cv2.COLOR_BGR2RGB)
-            res_det = model.process(rgb_det)
-            if res_det.pose_landmarks:
-                lm_det = res_det.pose_landmarks.landmark
-                
-                # Trái
-                vai_t = (int(lm_det[11].x * w_det), int(lm_det[11].y * h_det))
-                khuyu_t = (int(lm_det[13].x * w_det), int(lm_det[13].y * h_det))
-                hong_t = (int(lm_det[23].x * w_det), int(lm_det[23].y * h_det))
-                g_vai_t = tinh_goc(hong_t, vai_t, khuyu_t)
-                
-                # Phải
-                vai_p = (int(lm_det[12].x * w_det), int(lm_det[12].y * h_det))
-                khuyu_p = (int(lm_det[14].x * w_det), int(lm_det[14].y * h_det))
-                hong_p = (int(lm_det[24].x * w_det), int(lm_det[24].y * h_det))
-                g_vai_p = tinh_goc(hong_p, vai_p, khuyu_p)
-                
-                left_deviations.append(abs(g_vai_t - 10))
-                right_deviations.append(abs(g_vai_p - 10))
-        cap_detect.release()
-        if 'frame_det' in locals(): del frame_det
-        if 'rgb_det' in locals(): del rgb_det
-        if 'res_det' in locals(): del res_det
-        gc.collect()
-        
-        if left_deviations and right_deviations:
-            mean_left = float(np.mean(left_deviations))
-            mean_right = float(np.mean(right_deviations))
-            std_left = float(np.std(left_deviations))
-            std_right = float(np.std(right_deviations))
+                # Xoay và resize tương tự để khớp tọa độ (Tối ưu hóa RAM: Resize trước khi xoay)
+                h_det, w_det = frame_det.shape[:2]
+                if w_det > h_det:
+                    scale_det = resize_width / h_det
+                    new_w_det = int(w_det * scale_det)
+                    if new_w_det % 2 != 0: new_w_det -= 1
+                    frame_det = cv2.resize(frame_det, (new_w_det, resize_width), interpolation=cv2.INTER_LINEAR)
+                    frame_det = cv2.rotate(frame_det, cv2.ROTATE_90_CLOCKWISE)
+                else:
+                    if w_det != resize_width:
+                        scale_det = resize_width / w_det
+                        new_h_det = int(h_det * scale_det)
+                        if new_h_det % 2 != 0: new_h_det -= 1
+                        frame_det = cv2.resize(frame_det, (resize_width, new_h_det), interpolation=cv2.INTER_LINEAR)
+                h_det, w_det = frame_det.shape[:2]
+                    
+                rgb_det = cv2.cvtColor(frame_det, cv2.COLOR_BGR2RGB)
+                res_det = model.process(rgb_det)
+                if res_det.pose_landmarks:
+                    lm_det = res_det.pose_landmarks.landmark
+                    
+                    # Trái
+                    vai_t = (int(lm_det[11].x * w_det), int(lm_det[11].y * h_det))
+                    khuyu_t = (int(lm_det[13].x * w_det), int(lm_det[13].y * h_det))
+                    hong_t = (int(lm_det[23].x * w_det), int(lm_det[23].y * h_det))
+                    g_vai_t = tinh_goc(hong_t, vai_t, khuyu_t)
+                    
+                    # Phải
+                    vai_p = (int(lm_det[12].x * w_det), int(lm_det[12].y * h_det))
+                    khuyu_p = (int(lm_det[14].x * w_det), int(lm_det[14].y * h_det))
+                    hong_p = (int(lm_det[24].x * w_det), int(lm_det[24].y * h_det))
+                    g_vai_p = tinh_goc(hong_p, vai_p, khuyu_p)
+                    
+                    left_deviations.append(abs(g_vai_t - 10))
+                    right_deviations.append(abs(g_vai_p - 10))
+            cap_detect.release()
+            if 'frame_det' in locals(): del frame_det
+            if 'rgb_det' in locals(): del rgb_det
+            if 'res_det' in locals(): del res_det
+            gc.collect()
             
-            score_left = mean_left + std_left * 2
-            score_right = mean_right + std_right * 2
-            
-            if score_left > score_right:
-                active_side = "LEFT"
-            else:
-                active_side = "RIGHT"
-            st.toast(f"🤖 AI phát hiện bên tập chủ đạo: {'TAY TRÁI (LEFT)' if active_side == 'LEFT' else 'TAY PHẢI (RIGHT)'}", icon="🦾")
-    except Exception as e:
-        print("Lỗi tự động phát hiện bên tập:", e)
+            if left_deviations and right_deviations:
+                mean_left = float(np.mean(left_deviations))
+                mean_right = float(np.mean(right_deviations))
+                std_left = float(np.std(left_deviations))
+                std_right = float(np.std(right_deviations))
+                
+                score_left = mean_left + std_left * 2
+                score_right = mean_right + std_right * 2
+                
+                if score_left > score_right:
+                    active_side = "LEFT"
+                else:
+                    active_side = "RIGHT"
+                st.toast(f"🤖 AI phát hiện bên tập chủ đạo: {'TAY TRÁI (LEFT)' if active_side == 'LEFT' else 'TAY PHẢI (RIGHT)'}", icon="🦾")
+        except Exception as e:
+            print("Lỗi tự động phát hiện bên tập:", e)
 
     # PASS 1: Trích xuất landmarks và tọa độ (Không vẽ, không ghi file để tối ưu bộ nhớ)
     raw_pass1_data = []
