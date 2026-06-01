@@ -86,29 +86,56 @@ def get_base64_image(path):
 
 def ensure_playable_video(video_path):
     """Đảm bảo video có định dạng H.264 mượt mà (đuôi _f.mp4) để chơi được trên trình duyệt.
-    Nếu file _f.mp4 chưa có, tự động chuyển đổi từ file gốc cực nhanh."""
-    if not video_path or not os.path.exists(video_path):
+    Nếu file _f.mp4 chưa có hoặc bị lỗi (0 byte, quá nhỏ), tự động chuyển đổi từ file gốc cực nhanh."""
+    if not video_path:
         return video_path
         
-    # BỎ QUA việc convert lại đối với các video phân đoạn (_g1, _g2, _g3) hoặc đã có đuôi _f.mp4
-    if video_path.endswith('_f.mp4') or '_g1' in video_path or '_g2' in video_path or '_g3' in video_path:
-        return video_path
-        
-    # Nếu là video gốc của bệnh nhân (patient_uploads/) và dung lượng nhỏ (< 10MB), không cần nén để tiết kiệm thời gian
-    is_patient_upload = "processed_" not in os.path.basename(video_path)
-    if is_patient_upload:
-        try:
-            if os.path.getsize(video_path) < 10 * 1024 * 1024:
+    # PHỤC HỒI VIDEO GỐC NẾU VIDEO_PATH TRONG DATABASE BỊ GHI ĐÈ BỞI FILE _F.MP4 BỊ LỖI
+    if video_path.endswith('_f.mp4'):
+        is_corrupted = False
+        if os.path.exists(video_path):
+            try:
+                if os.path.getsize(video_path) < 100 * 1024:  # < 100KB chắc chắn là file lỗi
+                    is_corrupted = True
+            except:
+                is_corrupted = True
+        else:
+            success_download = ensure_local_file(video_path)
+            if success_download:
+                try:
+                    if os.path.getsize(video_path) < 100 * 1024:
+                        is_corrupted = True
+                except:
+                    is_corrupted = True
+            else:
+                is_corrupted = True
+                
+        if is_corrupted:
+            # Thử khôi phục video gốc bằng cách dò các đuôi mở rộng gốc
+            possible_orig_paths = []
+            base_without_f = video_path.replace('_f.mp4', '')
+            for ext in ['.mp4', '.mov', '.MOV', '.avi', '.mkv']:
+                possible_orig_paths.append(base_without_f + ext)
+                
+            orig_recovered_path = None
+            for p_orig in possible_orig_paths:
+                if os.path.exists(p_orig) or ensure_local_file(p_orig):
+                    orig_recovered_path = p_orig
+                    break
+                    
+            if orig_recovered_path:
+                print(f"[Recover Video] Phục hồi video gốc thành công: {orig_recovered_path}")
+                if os.path.exists(video_path):
+                    try: os.remove(video_path)
+                    except: pass
+                video_path = orig_recovered_path
+            else:
                 return video_path
-        except:
-            pass
-            
+
     final_h264 = video_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
-    # Kiểm tra xem file _f.mp4 đã tồn tại và hợp lệ chưa (lớn hơn 1KB) để tránh nhận diện nhầm file lỗi/0 byte
     if os.path.exists(final_h264) and os.path.getsize(final_h264) > 1024:
         return final_h264
         
-    # Nếu có file placeholder lỗi, xóa đi để chạy lại
     if os.path.exists(final_h264):
         try: os.remove(final_h264)
         except: pass
@@ -2983,6 +3010,64 @@ def create_zip_of_frames(frame_data_list, processed_video_path=None):
 # ============================================
 # XỬ LÝ VIDEO
 # ============================================
+def dong_bo_va_chuan_hoa_exercise(username, video_name, video_path, original_exercise):
+    # 1. Nhận diện động tác thực tế
+    video_filename_clean = os.path.basename(video_path or video_name or '').lower()
+    exercise_clean = str(original_exercise or '').lower()
+    
+    ref_name_detected = "codman"
+    if "codman" in video_filename_clean:
+        ref_name_detected = "codman"
+    elif any(kw in video_filename_clean for kw in ["gậy", "gay", "pulley", "stick"]):
+        ref_name_detected = "gay"
+    elif any(kw in video_filename_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"]):
+        ref_name_detected = "day"
+    else:
+        if "codman" in exercise_clean:
+            ref_name_detected = "codman"
+        elif any(kw in exercise_clean for kw in ["gậy", "gay", "pulley", "stick"]):
+            ref_name_detected = "gay"
+        elif any(kw in exercise_clean for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"]):
+            ref_name_detected = "day"
+            
+    correct_ex_name = "Bài tập con lắc Codman"
+    if ref_name_detected == "gay":
+        correct_ex_name = "Bài tập với gậy (Pulley Exercise)"
+    elif ref_name_detected == "day":
+        correct_ex_name = "Bài tập với dây kháng lực (Theraband)"
+        
+    # 2. Đồng bộ trong video_list.json
+    video_list = load_data(VIDEOS_FILE)
+    updated_vid = False
+    for v in video_list:
+        if v.get('username') == username and (v.get('video_name') == video_name or v.get('video_path') == video_path):
+            v['exercise'] = correct_ex_name
+            updated_vid = True
+    if updated_vid:
+        save_data(VIDEOS_FILE, video_list)
+        
+    # 3. Đồng bộ trong doctor_evaluations.json
+    evals = load_data(EVALUATIONS_FILE)
+    updated_eval = False
+    for e in evals:
+        if e.get('patient_username') == username and (e.get('video_name') == video_name or (video_name and video_name in e.get('video_name', ''))):
+            e['exercise'] = correct_ex_name
+            updated_eval = True
+    if updated_eval:
+        save_data(EVALUATIONS_FILE, evals)
+        
+    # 4. Đồng bộ trong patient_symptoms.json
+    symptoms = load_data(SYMPTOMS_FILE)
+    updated_symp = False
+    for s in symptoms:
+        if s.get('username') == username and s.get('exercise') == original_exercise:
+            s['exercise'] = correct_ex_name
+            updated_symp = True
+    if updated_symp:
+        save_data(SYMPTOMS_FILE, symptoms)
+        
+    return correct_ex_name
+
 def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaPipe Heavy", min_confidence=0.5, exercise_name="codman"):
     import gc
     import json
@@ -3481,7 +3566,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     
     gc.collect()
     valid_count = sum(1 for row in du_lieu_goc if row['goc_vai'] is not None)
-    return final_video_path, None, None, du_lieu_goc, frame_count, valid_count, thu_muc_frame, zip_path, danh_sach_frame_paths, {}, json_path, all_warnings
+    return final_video_path, ref_name, None, du_lieu_goc, frame_count, valid_count, thu_muc_frame, zip_path, danh_sach_frame_paths, {}, json_path, all_warnings
 
 def recalc_metrics(df, ss):
     if df is None or len(df) == 0:
@@ -3630,6 +3715,17 @@ def gui_bao_cao_tong_hop_3_giai_doan():
             "video_path": st.session_state.get('processed_video_path', '')
         }
         
+    # Đồng bộ & chuẩn hóa exercise ngay lập tức cho các file DB khác
+    correct_ex_name = dong_bo_va_chuan_hoa_exercise(
+        username=v_meta['username'],
+        video_name=v_meta.get('video_name'),
+        video_path=v_meta.get('video_path'),
+        original_exercise=v_meta.get('exercise')
+    )
+    v_meta['exercise'] = correct_ex_name
+    if st.session_state.get('current_eval_video'):
+        st.session_state.current_eval_video['exercise'] = correct_ex_name
+        
     df = st.session_state.get('angle_df')
     # Nếu không có df trong session state, thử đọc từ file csv của video
     if df is None and v_meta.get('df_path') and os.path.exists(v_meta.get('df_path')):
@@ -3674,7 +3770,7 @@ def gui_bao_cao_tong_hop_3_giai_doan():
         "patient_username": v_meta['username'],
         "doctor_username": "AI_Researcher",
         "video_name": v_meta.get('video_name', 'N/A'),
-        "exercise": v_meta['exercise'],
+        "exercise": correct_ex_name,
         "ai_accuracy": round(float(acc_g2), 1),
         "ai_accuracy_g1": round(float(acc_g1), 1),
         "ai_accuracy_g2": round(float(acc_g2), 1),
@@ -3712,6 +3808,8 @@ def gui_bao_cao_tong_hop_3_giai_doan():
         if v.get('video_path') == v_meta.get('video_path') or (v.get('video_name') == v_meta.get('video_name') and v.get('username') == v_meta.get('username')):
             v['accuracy'] = round(float(acc_g2), 1)
             v['status'] = "Đã phân tích"
+            v['exercise'] = correct_ex_name
+            
             # Lưu stats và các giai đoạn vào metadata video
             v['metrics'] = {
                 "do_chinh_xac": acc_g2,
@@ -4901,7 +4999,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                                 progress_bar.progress(p)
                                 status_text.info(f"🔄 Đang xử lý... {p*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
                             
-                            output_path, _, _, angle_data, total_frames, valid_frames, _, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
+                            output_path, ref_name_detected, _, angle_data, total_frames, valid_frames, _, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
                                 v['video_path'], bt_chuan_ncv, update_progress,
                                 model_type=st.session_state.get('ncv_model_type', 'MediaPipe Heavy'),
                                 min_confidence=st.session_state.get('ncv_confidence', 0.5),
@@ -4959,10 +5057,16 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                                 st.session_state.all_frames_data_path = all_frames_data
                                 st.session_state.exercise = bt_ncv
                                 
-                                # Cập nhật ngược lại vào video_list
+                                # Cập nhật ngược lại vào video_list, evaluations, symptoms
+                                correct_ex_name = dong_bo_va_chuan_hoa_exercise(
+                                    username=v['username'],
+                                    video_name=v.get('video_name'),
+                                    video_path=v.get('video_path'),
+                                    original_exercise=v.get('exercise')
+                                )
                                 video_list = load_data(VIDEOS_FILE)
                                 for vid in video_list:
-                                    if vid['video_path'] == v['video_path']:
+                                    if vid.get('username') == v['username'] and (vid.get('video_path') == v.get('video_path') or vid.get('video_name') == v.get('video_name')):
                                         vid['accuracy'] = round(metrics["ty_le_tong_the"], 1)
                                         vid['metrics'] = st.session_state.stats
                                         vid['all_frames_data_path'] = all_frames_data
@@ -4971,6 +5075,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                                         vid['status'] = "Đã phân tích"
                                         vid['sai_so'] = ss_override
                                         vid['giai_doan'] = ncv_gd
+                                        vid['exercise'] = correct_ex_name
                                         # Lưu CSV
                                         df.to_csv(vid['df_path'], index=False)
                                         # Đồng bộ các file phân tích lên Hugging Face Dataset
@@ -8671,7 +8776,7 @@ def main():
                                 bai_tap_ncv = bai_tap.copy()
                                 bai_tap_ncv['chuan'] = bt_chuan_ncv
 
-                                output_path, _, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
+                                output_path, ref_name_detected, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
                                     video_path, bt_chuan_ncv, update_progress,
                                     model_type=model_type_ncv, min_confidence=conf_ncv,
                                     exercise_name=ma_bai_tap
@@ -8790,12 +8895,26 @@ def main():
                                         users_db = load_users()
                                         target_fn = users_db.get(target_u, {}).get('full_name', target_u)
                                         
+                                        # Cập nhật loại bài tập đúng thực tế theo nhận diện tự động
+                                        correct_ex_name = "Bài tập con lắc Codman"
+                                        if ref_name_detected == "gay":
+                                            correct_ex_name = "Bài tập với gậy (Pulley Exercise)"
+                                        elif ref_name_detected == "day":
+                                            correct_ex_name = "Bài tập với dây kháng lực (Theraband)"
+                                            
                                         video_list = load_data(VIDEOS_FILE)
-                                        video_list.append({
+                                        # Kiểm tra xem đã có bản ghi video của người dùng này trùng tên video name chưa
+                                        found_vid = None
+                                        for x_v in video_list:
+                                            if x_v.get('username') == target_u and x_v.get('video_name') == file_upload.name:
+                                                found_vid = x_v
+                                                break
+                                                
+                                        new_vid_record = {
                                             "username": target_u,
                                             "full_name": target_fn,
                                             "video_name": file_upload.name,
-                                            "exercise": bai_tap['ten'],
+                                            "exercise": correct_ex_name,  # Lưu bài tập đúng thực tế
                                             "accuracy": round(metrics["ty_le_tong_the"], 1),
                                             "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
                                             "video_path": video_path,        # Video gốc
@@ -8806,8 +8925,24 @@ def main():
                                             "status": "Đã phân tích",
                                             "sai_so": ss_override,
                                             "giai_doan": ncv_gd
-                                        })
+                                        }
+                                        
+                                        if found_vid:
+                                            found_vid.update(new_vid_record)
+                                            print(f"[Save Analysis] Đã cập nhật bản ghi video cũ của {target_fn}")
+                                        else:
+                                            video_list.append(new_vid_record)
+                                            print(f"[Save Analysis] Đã tạo bản ghi video mới cho {target_fn}")
+                                            
                                         save_data(VIDEOS_FILE, video_list)
+                                        
+                                        # Đồng bộ các bảng khác
+                                        dong_bo_va_chuan_hoa_exercise(
+                                            username=target_u,
+                                            video_name=file_upload.name,
+                                            video_path=video_path,
+                                            original_exercise=correct_ex_name
+                                        )
                                         st.info(f"📁 Video đã được lưu cho BN: {target_fn}")
                                     st.markdown("---")
                            
