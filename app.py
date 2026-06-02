@@ -184,72 +184,30 @@ if '_transcoding_lock' not in globals():
 
 def ensure_playable_video(video_path):
     """Đảm bảo video có định dạng H.264 mượt mà (đuôi _f.mp4) để chơi được trên trình duyệt.
-    Nếu file _f.mp4 chưa có hoặc bị lỗi (0 byte, quá nhỏ), tự động chuyển đổi từ file gốc dưới nền (không block UI)."""
+    Nếu file _f.mp4 chưa có hoặc bị lỗi (0 byte, quá nhỏ), tự động tải và chuyển đổi từ file gốc dưới nền bất đồng bộ (không block UI)."""
     if not video_path:
         return video_path
         
-    # Đảm bảo video gốc thô tồn tại đầy đủ cục bộ (nếu là file LFS pointer, tự động tải nội dung thật từ Cloud)
-    ensure_local_file(video_path)
-    
-    # Nếu đã là định dạng H264 đã transcode, cho phép phát trực tiếp ngay lập tức
-    if video_path.endswith('_f.mp4'):
-        return video_path
-        
-    # PHỤC HỒI VIDEO GỐC NẾU VIDEO_PATH TRONG DATABASE BỊ GHI ĐÈ BỞI FILE _F.MP4 BỊ LỖI
-    if video_path.endswith('_f.mp4'):
-        is_corrupted = False
-        if os.path.exists(video_path):
-            try:
-                if os.path.getsize(video_path) < 5 * 1024:  # < 5KB chắc chắn là file lỗi / Git LFS pointer
-                    is_corrupted = True
-            except:
-                is_corrupted = True
-        else:
-            success_download = ensure_local_file(video_path)
-            if success_download:
-                try:
-                    if os.path.getsize(video_path) < 5 * 1024:
-                        is_corrupted = True
-                except:
-                    is_corrupted = True
-            else:
-                is_corrupted = True
-                
-        if is_corrupted:
-            # Thử khôi phục video gốc bằng cách dò các đuôi mở rộng gốc
-            possible_orig_paths = []
-            base_without_f = video_path.replace('_f.mp4', '')
-            for ext in ['.mp4', '.mov', '.MOV', '.avi', '.mkv']:
-                possible_orig_paths.append(base_without_f + ext)
-                
-            orig_recovered_path = None
-            for p_orig in possible_orig_paths:
-                if os.path.exists(p_orig) or ensure_local_file(p_orig):
-                    orig_recovered_path = p_orig
-                    break
-                    
-            if orig_recovered_path:
-                print(f"[Recover Video] Phục hồi video gốc thành công: {orig_recovered_path}")
-                if os.path.exists(video_path):
-                    try: os.remove(video_path)
-                    except: pass
-                video_path = orig_recovered_path
-            else:
-                return video_path
-
-    # KIỂM TRA CODEC: Nếu đã là H.264 và đuôi là .mp4, cho phép phát trực tiếp không cần convert
-    if video_path.endswith('.mp4') and not video_path.endswith('_f.mp4'):
-        try:
-            v_codec, _ = get_video_codec(video_path)
-            if v_codec == 'h264':
-                print(f"[Playable Check] Video {video_path} đã ở định dạng H.264, phát trực tiếp.")
-                return video_path
-        except:
-            pass
-
+    # Xác định file H264 đích mong muốn
     final_h264 = video_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
-    
-    # Kiểm tra xem file h264 đã tồn tại và có hợp lệ (đọc được khung hình) không (sử dụng cache tối ưu hóa)
+
+    # Nếu video_path đã là file H264 transcode và tồn tại hợp lệ cục bộ → dùng ngay
+    if video_path.endswith('_f.mp4'):
+        if os.path.exists(video_path) and os.path.getsize(video_path) >= 5 * 1024:
+            return video_path
+    else:
+        # Nếu video gốc thô đã có sẵn cục bộ và là định dạng H264 → phát trực tiếp luôn
+        if os.path.exists(video_path) and os.path.getsize(video_path) >= 5 * 1024:
+            if video_path.endswith('.mp4'):
+                try:
+                    # Tra cứu cache codec cực nhanh
+                    v_codec, _ = get_video_codec(video_path)
+                    if v_codec == 'h264':
+                        return video_path
+                except:
+                    pass
+
+    # Nếu đã tồn tại file H264 đích hợp lệ cục bộ → dùng ngay
     is_valid_h264 = False
     if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
         try:
@@ -261,20 +219,56 @@ def ensure_playable_video(video_path):
             
     if is_valid_h264:
         return final_h264
-        
-    # Khởi chạy convert dưới nền nếu chưa chạy
+
+    # Khởi chạy tải và convert bất đồng bộ hoàn toàn dưới nền để tránh chặn luồng UI
     with _transcoding_lock:
         if final_h264 in _transcoding_jobs:
-            return video_path  # Trả về tạm video gốc trong khi convert
+            return video_path
         _transcoding_jobs.add(final_h264)
 
-    def _run_transcode():
+    def _async_download_and_transcode():
+        nonlocal video_path
         try:
-            # Nếu tồn tại nhưng không hợp lệ (không đọc được), xóa đi để ép convert lại từ đầu
+            # 1. PHỤC HỒI / TẢI VIDEO GỐC DƯỚI NỀN (NẾU CHƯA CÓ)
+            if video_path.endswith('_f.mp4'):
+                is_corrupted = False
+                if os.path.exists(video_path):
+                    if os.path.getsize(video_path) < 5 * 1024:
+                        is_corrupted = True
+                else:
+                    success_dl = ensure_local_file(video_path)
+                    if not success_dl or os.path.getsize(video_path) < 5 * 1024:
+                        is_corrupted = True
+                
+                if is_corrupted:
+                    possible_orig_paths = []
+                    base_without_f = video_path.replace('_f.mp4', '')
+                    for ext in ['.mp4', '.mov', '.MOV', '.avi', '.mkv']:
+                        possible_orig_paths.append(base_without_f + ext)
+                    orig_recovered_path = None
+                    for p_orig in possible_orig_paths:
+                        if os.path.exists(p_orig) or ensure_local_file(p_orig):
+                            orig_recovered_path = p_orig
+                            break
+                    if orig_recovered_path:
+                        if os.path.exists(video_path):
+                            try: os.remove(video_path)
+                            except: pass
+                        video_path = orig_recovered_path
+            else:
+                ensure_local_file(video_path)
+                
+            # Kiểm tra xem video gốc thô đã hợp lệ chưa
+            if not os.path.exists(video_path) or os.path.getsize(video_path) < 5 * 1024:
+                print(f"[Async Video] Không thể tải/phát hiện video gốc hợp lệ {video_path}")
+                return
+                
+            # 2. XÓA FILE H264 NẾU BỊ HỎNG TRƯỚC KHI TRẦN THUẬT LẠI
             if os.path.exists(final_h264):
                 try: os.remove(final_h264)
                 except: pass
                 
+            # 3. TRÍCH CODEC & TRANSCODE
             v_codec, a_codec = get_video_codec(video_path)
             cmd = [
                 'ffmpeg', '-y', 
@@ -295,18 +289,18 @@ def ensure_playable_video(video_path):
                 cmd.extend(['-an'])
             cmd.append(final_h264)
             
-            print(f"[Auto-Heal Video] Đang convert {video_path} sang H.264 dưới nền...")
+            print(f"[Async Video] Đang convert {video_path} sang H.264 dưới nền...")
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=300)
             if result.returncode != 0:
-                print("[Auto-Heal Video] FFmpeg failed with exit code", result.returncode)
-                print("[Auto-Heal Video] FFmpeg stderr:", result.stderr)
+                print("[Async Video] FFmpeg failed with exit code", result.returncode)
+                print("[Async Video] FFmpeg stderr:", result.stderr)
                 if os.path.exists(final_h264):
                     try: os.remove(final_h264)
                     except: pass
                 return
                 
             if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
-                print(f"[Auto-Heal Video] Đã convert thành công sang {final_h264}")
+                print(f"[Async Video] Đã convert thành công sang {final_h264}")
                 try:
                     video_list = load_data(VIDEOS_FILE)
                     updated = False
@@ -319,23 +313,18 @@ def ensure_playable_video(video_path):
                             updated = True
                     if updated:
                         save_data(VIDEOS_FILE, video_list)
-                        print("[Auto-Heal Video] Đã cập nhật database video_list.json")
+                        print("[Async Video] Đã cập nhật database video_list.json")
                 except Exception as db_err:
-                    print(f"[Auto-Heal Video] Lỗi cập nhật database: {db_err}")
-                    
+                    print(f"[Async Video] Lỗi cập nhật database: {db_err}")
+                
                 push_file_to_hf_async(final_h264)
-        except Exception as e:
-            print(f"[Auto-Heal Video] Lỗi convert video: {e}")
-            if os.path.exists(final_h264):
-                try: os.remove(final_h264)
-                except: pass
+        except Exception as err:
+            print(f"[Async Video] Lỗi trong tiến trình chạy nền: {err}")
         finally:
             with _transcoding_lock:
                 _transcoding_jobs.discard(final_h264)
 
-    threading.Thread(target=_run_transcode, daemon=True).start()
-    return video_path
-        
+    threading.Thread(target=_async_download_and_transcode, daemon=True).start()
     return video_path
 
 
@@ -467,7 +456,7 @@ def _get_video_server_url(video_path):
 
 def render_video(video_path):
     """Hiển thị video: ưu tiên HTTP Range Request server (local) để phát ngay lập tức.
-    Tự động đảm bảo H264 trước khi phát, hỗ trợ stream trực tiếp từ Cloud nếu chưa tải về local."""
+    Tự động đảm bảo H.264 trước khi phát, hỗ trợ stream trực tiếp từ Cloud nếu chưa tải về local."""
     if not video_path:
         st.error("❌ File video không tồn tại hoặc đường dẫn trống.")
         return
@@ -501,15 +490,28 @@ def render_video(video_path):
             st.error(f'⚠️ Lỗi hiển thị video: {e}')
         return
 
-    # Bước 1: Kiểm tra xem file có tồn tại local hợp lệ không
-    is_local = os.path.exists(video_path) and os.path.getsize(video_path) >= 5 * 1024
+    # Bước 1: Kiểm tra xem file H264 có sẵn local không
+    final_h264 = video_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
+    is_local_h264 = os.path.exists(final_h264) and os.path.getsize(final_h264) >= 5 * 1024
+    is_local_raw = os.path.exists(video_path) and os.path.getsize(video_path) >= 5 * 1024
 
-    if not is_local:
-        # Nếu không có local, thử sinh link stream từ Hugging Face Dataset (Cloud)
+    # Xác định đường dẫn thực tế phát
+    target_path = None
+    if is_local_h264:
+        target_path = final_h264
+    elif is_local_raw:
+        # File gốc có sẵn local nhưng chưa có H264, kích hoạt convert dưới nền và dùng tạm file gốc
+        target_path = ensure_playable_video(video_path)
+    else:
+        # Không có sẵn local, kích hoạt tải và convert dưới nền
+        ensure_playable_video(video_path) # Chạy nền, không block UI
+        
         if HF_TOKEN and HF_DATASET_ID:
             try:
                 rel_path = os.path.relpath(video_path, DATA_DIR).replace("\\", "/")
-                cloud_url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path}?token={HF_TOKEN}"
+                # Thử stream file H264 từ Cloud nếu đã được đồng bộ lên đó trước đó
+                rel_path_f = rel_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
+                cloud_url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_f}?token={HF_TOKEN}"
                 
                 import streamlit.components.v1 as _stcomp
                 _stcomp.html(f"""
@@ -531,48 +533,25 @@ def render_video(video_path):
                 return
             except Exception as e:
                 pass
-                
-        # Fallback cuối cùng nếu không có cấu hình cloud
-        st.warning("⚠️ File video không có sẵn trên máy và cấu hình Cloud bị thiếu.")
-        try:
-            st.video(video_path)
-        except:
-            st.error("❌ Không thể hiển thị video.")
-        return
 
-    # Bước 2: Lấy đường dẫn playable (H264) — dùng cache để tránh gọi ffprobe lại
-    playable_path = None
-    try:
-        _mtime = os.path.getmtime(video_path)
-        _size  = os.path.getsize(video_path)
-        playable_path = _get_playable_path_fast(video_path, _mtime, _size)
-    except:
-        pass
-    # Nếu cache chưa biết hoặc cần convert → gọi ensure_playable_video (blocking, nhưng cached)
-    if playable_path is None:
-        playable_path = ensure_playable_video(video_path)
-    # Xác nhận path trả về hợp lệ và đủ lớn
-    if not playable_path or not os.path.exists(playable_path) or os.path.getsize(playable_path) < 5 * 1024:
-        playable_path = video_path  # dùng file gốc, để browser tự xử lý
+    if target_path:
+        # Bước 3: Chọn phương thức phát
+        is_cloud = bool(os.environ.get('HF_SPACE_ID')) or bool(os.environ.get('SPACE_ID')) or (os.name != 'nt' and os.path.exists('/data'))
 
-    # Bước 3: Chọn phương thức phát
-    is_cloud = bool(os.environ.get('HF_SPACE_ID')) or bool(os.environ.get('SPACE_ID')) or (os.name != 'nt' and os.path.exists('/data'))
-
-    if not is_cloud:
-        video_url = _get_video_server_url(playable_path)
-        if video_url:
-            try:
-                fsize_mb = os.path.getsize(playable_path) / (1024 * 1024)
-                size_label = f'{fsize_mb:.1f} MB'
-            except:
-                size_label = ''
-            import streamlit.components.v1 as _stcomp
-            _stcomp.html(f"""
+        if not is_cloud:
+            video_url = _get_video_server_url(target_path)
+            if video_url:
+                try:
+                    fsize_mb = os.path.getsize(target_path) / (1024 * 1024)
+                    size_label = f'{fsize_mb:.1f} MB'
+                except:
+                    size_label = ''
+                import streamlit.components.v1 as _stcomp
+                _stcomp.html(f"""
 <!DOCTYPE html><html><head>
 <style>
   body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
   video{{width:100%;border-radius:8px;display:block;height:240px;background:#000;}}
-  .info{{color:#888;font-size:11px;text-align:right;padding:3px 0;}}
 </style>
 </head><body>
 <video id="vp" controls preload="metadata">
@@ -580,17 +559,19 @@ def render_video(video_path):
   Trình duyệt không hỗ trợ video HTML5.
 </video>
 <div style="color:#888; font-size:0.72rem; margin-top:4px; text-align:right; font-family:sans-serif;">
-  📹 {os.path.basename(playable_path)}&nbsp;&nbsp;|&nbsp;&nbsp;💾 {size_label}
+  📹 {os.path.basename(target_path)}&nbsp;&nbsp;|&nbsp;&nbsp;💾 {size_label}
 </div>
 </body></html>
 """, height=270)
-            return
+                return
 
-    # Fallback cho Cloud hoặc khi server chưa khởi động kịp
-    try:
-        st.video(playable_path)
-    except Exception as e:
-        st.error(f'⚠️ Lỗi hiển thị video: {e}')
+        # Fallback cho Cloud
+        try:
+            st.video(target_path)
+        except Exception as e:
+            st.error(f'⚠️ Lỗi hiển thị video: {e}')
+    else:
+        st.warning("⚠️ File video đang được xử lý dưới nền hoặc không khả dụng.")
 
 import threading
 import queue
@@ -7514,21 +7495,31 @@ def hien_thi_frames_day_du(key_suffix=""):
                 
             g1_v_path, g2_v_path, g3_v_path = cut_video_segments(processed_video_path, n1, n2, total_frames, fps_export)
             
-            # Giao diện tabs video phân đoạn
-            v_tab_all, v_tab_g1, v_tab_g2, v_tab_g3 = st.tabs([
+            # Lựa chọn ngang bằng st.radio thay cho st.tabs để tăng tối đa tốc độ hiển thị
+            giai_doan_options = [
                 "📋 Video Tất cả",
                 f"🟢 Video G1 (Lượt 1: {n1 - n0} F)",
                 f"🟡 Video G2 (Lượt 2 lặp lại: {n2 - n1} F)",
                 f"🔴 Video G3 (Lượt 3 lặp lại: {n3 - n2} F)"
-            ])
+            ]
             
-            with v_tab_all:
+            sel_giai_doan = st.radio(
+                "Chọn phân đoạn video hiển thị:",
+                options=giai_doan_options,
+                horizontal=True,
+                key=f"sel_giai_doan_{key_suffix}"
+            )
+            
+            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+            
+            if sel_giai_doan == "📋 Video Tất cả":
                 render_video(processed_video_path)
                 d_col1, d_col2 = st.columns(2)
                 with d_col1:
                     with open(processed_video_path, "rb") as f:
                         st.download_button("📥 Tải video Tất cả", f, "processed_video_full.mp4", "video/mp4", width="stretch", key=f"dl_v_all_{key_suffix}")
                 with d_col2:
+                    frames_zip = st.session_state.get('frames_zip')
                     if frames_zip and os.path.exists(frames_zip):
                         with open(frames_zip, "rb") as fzip:
                             st.download_button("📦 Tải tất cả frames (ZIP)", fzip, "all_frames.zip", "application/zip", width="stretch", key=f"dl_zip_main_{key_suffix}")
@@ -7542,7 +7533,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                                 else:
                                     st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
                                     
-            with v_tab_g1:
+            elif sel_giai_doan == giai_doan_options[1]:
                 if os.path.exists(g1_v_path) and os.path.getsize(g1_v_path) > 0:
                     render_video(g1_v_path)
                     dg1_col1, dg1_col2 = st.columns(2)
@@ -7566,7 +7557,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                 else:
                     st.info("ℹ️ Không tìm thấy video Giai đoạn 1 hoặc lỗi cắt phân đoạn.")
                     
-            with v_tab_g2:
+            elif sel_giai_doan == giai_doan_options[2]:
                 if os.path.exists(g2_v_path) and os.path.getsize(g2_v_path) > 0:
                     render_video(g2_v_path)
                     dg2_col1, dg2_col2 = st.columns(2)
@@ -7590,7 +7581,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                 else:
                     st.info("ℹ️ Không tìm thấy video Giai đoạn 2 hoặc lỗi cắt phân đoạn.")
                     
-            with v_tab_g3:
+            elif sel_giai_doan == giai_doan_options[3]:
                 if os.path.exists(g3_v_path) and os.path.getsize(g3_v_path) > 0:
                     render_video(g3_v_path)
                     dg3_col1, dg3_col2 = st.columns(2)
@@ -8605,10 +8596,20 @@ def hien_thi_danh_sach_video_fragment(user_role):
                     # Tỷ lệ cột [1.3, 1.0] để nới rộng video hiển thị vừa vặn hơn
                     col_v1, col_v2 = st.columns([1.3, 1.0])
                     with col_v1:
-                        if active_display_path:
-                            render_video(active_display_path)
+                        show_vid_key = f"show_video_{v.get('username')}_{v.get('video_name')}_{idx}"
+                        if st.session_state.get(show_vid_key):
+                            if active_display_path:
+                                render_video(active_display_path)
+                            else:
+                                st.error("File video không tồn tại hoặc đường dẫn trống.")
+                            if st.button("⏸️ Ẩn video", key=f"hide_vid_btn_{idx}", use_container_width=True):
+                                st.session_state[show_vid_key] = False
+                                st.rerun()
                         else:
-                            st.error("File video không tồn tại hoặc đường dẫn trống.")
+                            st.info("ℹ️ Nhấp vào nút bên dưới để tải và xem video.")
+                            if st.button("▶️ Xem video", key=f"play_vid_btn_{idx}", type="primary", use_container_width=True):
+                                st.session_state[show_vid_key] = True
+                                st.rerun()
                             
                         # Nếu không có local, hiển thị nút tải về tùy chọn bên dưới video để người dùng có thể tải về lưu trữ
                         if not local_exists and active_display_path:
