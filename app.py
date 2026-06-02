@@ -483,36 +483,37 @@ def _get_video_server_url(video_path):
 
 
 def get_playable_local_copy(target_path):
-    """Tạo bản sao tạm thời của video trong thư mục ứng dụng (/app) để Streamlit serve trực tiếp mà không bị lỗi bảo mật của /data."""
+    """Tạo bản sao tạm thời của video trong /tmp (có quyền ghi trên mọi môi trường Cloud) để st.video phát qua bytes."""
     if not target_path or not os.path.exists(target_path):
         return None
     try:
-        temp_dir = os.path.abspath("temp_static_videos")
+        import tempfile
+        temp_dir = os.path.join(tempfile.gettempdir(), "rehab_videos")
         os.makedirs(temp_dir, exist_ok=True)
         
-        import hashlib
         h = hashlib.md5(target_path.encode()).hexdigest()[:10]
-        ext = os.path.splitext(target_path)[1]
+        ext = os.path.splitext(target_path)[1] or ".mp4"
         filename = f"{h}{ext}"
         dest_path = os.path.join(temp_dir, filename)
         
         # Nếu chưa copy hoặc file nguồn mới hơn -> copy sang
-        if not os.path.exists(dest_path) or os.path.getmtime(target_path) > os.path.getmtime(dest_path):
+        src_mtime = os.path.getmtime(target_path)
+        if not os.path.exists(dest_path) or src_mtime > os.path.getmtime(dest_path):
             import shutil
             shutil.copy2(target_path, dest_path)
             
             # Tự động dọn dẹp để tránh đầy đĩa (chỉ giữ tối đa 15 file gần nhất)
             try:
-                files = [os.path.join(temp_dir, f) for f in os.listdir(temp_dir)]
-                if len(files) > 15:
-                    files.sort(key=os.path.getmtime)
-                    for f in files[:-15]:
+                all_files = [os.path.join(temp_dir, f) for f in os.listdir(temp_dir)]
+                if len(all_files) > 15:
+                    all_files.sort(key=os.path.getmtime)
+                    for f in all_files[:-15]:
                         try: os.remove(f)
                         except: pass
             except:
                 pass
                 
-        return f"temp_static_videos/{filename}"
+        return dest_path  # Trả về đường dẫn tuyệt đối trong /tmp
     except Exception as e:
         print(f"[TempCopy] Lỗi sao chép file: {e}")
         return None
@@ -601,11 +602,24 @@ def render_video(video_path):
                 except:
                     pass
 
-            # B. Ưu tiên 2: Tạo bản sao tạm trong thư mục làm việc của Streamlit (/app/temp_static_videos) để stream cục bộ hợp lệ
+            # B. Ưu tiên 2: Đọc file bytes trực tiếp và truyền vào st.video() - hoạt động 100% với mọi đường dẫn kể cả /data
+            try:
+                with open(target_path, 'rb') as _vf:
+                    _video_bytes = _vf.read()
+                if _video_bytes:
+                    st.video(_video_bytes, format="video/mp4")
+                    return
+            except Exception as _ve:
+                print(f"[VideoBytes] Lỗi đọc bytes: {_ve}")
+
+            # C. Ưu tiên 3: Tạo bản sao tạm trong /tmp để stream cục bộ
             try:
                 temp_path = get_playable_local_copy(target_path)
-                if temp_path:
-                    st.video(temp_path)
+                if temp_path and os.path.exists(temp_path):
+                    with open(temp_path, 'rb') as _tvf:
+                        _tv_bytes = _tvf.read()
+                    if _tv_bytes:
+                        st.video(_tv_bytes, format="video/mp4")
                     return
             except:
                 pass
