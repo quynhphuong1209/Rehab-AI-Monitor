@@ -589,14 +589,20 @@ def render_video(video_path):
         # cho phép Streamlit tự quản lý cache và byte-range requests.
         # ─────────────────────────────────────────────────────────────────
         try:
-            with open(target_path, 'rb') as _vf:
-                _vbytes = _vf.read()
-            if _vbytes:
-                st.video(_vbytes, format="video/mp4")
-                return
-        except Exception as _ve:
-            st.error(f"❌ Không thể đọc video từ hệ thống: {_ve}")
+            # Ưu tiên truyền trực tiếp file path vào st.video để Streamlit tự xử lý stream (tránh lỗi file lớn)
+            st.video(target_path, format="video/mp4")
             return
+        except Exception as _ve:
+            try:
+                # Fallback: Nếu lỗi, thử đọc bytes (dành cho file nhỏ)
+                with open(target_path, 'rb') as _vf:
+                    _vbytes = _vf.read()
+                if _vbytes:
+                    st.video(_vbytes, format="video/mp4")
+                    return
+            except Exception as _ve2:
+                st.error(f"❌ Lỗi phát video: {_ve2}")
+                return
 
 
     # 2. TRƯỜNG HỢP 2: Không có sẵn cục bộ -> Stream trực tiếp từ Cloud
