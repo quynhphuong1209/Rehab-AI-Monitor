@@ -482,6 +482,42 @@ def _get_video_server_url(video_path):
         return None
 
 
+def get_playable_local_copy(target_path):
+    """Tạo bản sao tạm thời của video trong thư mục ứng dụng (/app) để Streamlit serve trực tiếp mà không bị lỗi bảo mật của /data."""
+    if not target_path or not os.path.exists(target_path):
+        return None
+    try:
+        temp_dir = os.path.abspath("temp_static_videos")
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        import hashlib
+        h = hashlib.md5(target_path.encode()).hexdigest()[:10]
+        ext = os.path.splitext(target_path)[1]
+        filename = f"{h}{ext}"
+        dest_path = os.path.join(temp_dir, filename)
+        
+        # Nếu chưa copy hoặc file nguồn mới hơn -> copy sang
+        if not os.path.exists(dest_path) or os.path.getmtime(target_path) > os.path.getmtime(dest_path):
+            import shutil
+            shutil.copy2(target_path, dest_path)
+            
+            # Tự động dọn dẹp để tránh đầy đĩa (chỉ giữ tối đa 15 file gần nhất)
+            try:
+                files = [os.path.join(temp_dir, f) for f in os.listdir(temp_dir)]
+                if len(files) > 15:
+                    files.sort(key=os.path.getmtime)
+                    for f in files[:-15]:
+                        try: os.remove(f)
+                        except: pass
+            except:
+                pass
+                
+        return f"temp_static_videos/{filename}"
+    except Exception as e:
+        print(f"[TempCopy] Lỗi sao chép file: {e}")
+        return None
+
+
 def render_video(video_path):
     """Hiển thị video: ưu tiên HTTP Range Request server (local) để phát ngay lập tức.
     Tự động đảm bảo H.264 trước khi phát, hỗ trợ stream trực tiếp từ Cloud nếu chưa tải về local."""
@@ -546,16 +582,35 @@ def render_video(video_path):
                 st.info("🔄 Video đang được nén tối ưu hóa định dạng H.264 dưới nền. Trình phát có thể tải chậm hoặc đen màn hình trong vài giây đầu...")
 
         if is_cloud:
-            # A. Ưu tiên phát trực tiếp bằng st.video thông qua đường dẫn tương đối (sử dụng symlink đã tạo sẵn sang /data)
-            try:
-                rel_play_path = get_clean_rel_path(target_path)
-                if rel_play_path:
-                    st.video(rel_play_path)
+            # A. Ưu tiên 1: Phát trực tiếp từ Cloud CDN (Hugging Face Dataset) bằng st.video (Không có rào cản iframe/CORS/Sandbox)
+            if HF_TOKEN and HF_DATASET_ID:
+                try:
+                    rel_path = get_clean_rel_path(video_path)
+                    if is_local_h264:
+                        rel_path_f = rel_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
+                        import urllib.parse
+                        rel_path_encoded_f = urllib.parse.quote(rel_path_f, safe='/')
+                        play_url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_f}?token={HF_TOKEN}"
+                    else:
+                        import urllib.parse
+                        rel_path_encoded = urllib.parse.quote(rel_path, safe='/')
+                        play_url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded}?token={HF_TOKEN}"
+                    
+                    st.video(play_url)
                     return
-            except Exception as e:
+                except:
+                    pass
+
+            # B. Ưu tiên 2: Tạo bản sao tạm trong thư mục làm việc của Streamlit (/app/temp_static_videos) để stream cục bộ hợp lệ
+            try:
+                temp_path = get_playable_local_copy(target_path)
+                if temp_path:
+                    st.video(temp_path)
+                    return
+            except:
                 pass
 
-            # B. Phương án dự phòng 1: Base64 cho file nhỏ (<25MB) nếu st.video gặp trục trặc
+            # C. Phương án dự phòng 3: Base64 cho file nhỏ (<25MB) nếu các phương án trên đều thất bại
             try:
                 fsize = os.path.getsize(target_path)
                 if fsize < 25 * 1024 * 1024:
@@ -584,7 +639,7 @@ def render_video(video_path):
             except Exception as e:
                 pass
 
-            # C. Phương án dự phòng 2: Nếu file lớn (>=25MB) hoặc Base64 bị lỗi, chuyển sang dùng Cloud URL (Hugging Face CDN) hỗ trợ Range Requests
+            # D. Phương án dự phòng 4: HTML5 Video Iframe từ Cloud CDN
             if HF_TOKEN and HF_DATASET_ID:
                 try:
                     rel_path = get_clean_rel_path(video_path)
