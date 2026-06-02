@@ -7101,16 +7101,75 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                 c1, c2 = st.columns([1, 2.5])
                 with c1:
                     if is_ai:
-                        acc_val = e.get('ai_accuracy', 'N/A')
-                        if isinstance(acc_val, (float, int)): acc_val = round(float(acc_val), 1)
-                        elif isinstance(acc_val, str) and acc_val.replace('.','',1).isdigit(): acc_val = round(float(acc_val), 1)
-                        
+                        # Lấy accuracy từng giai đoạn
+                        _ag1 = e.get('ai_accuracy_g1')
+                        _ag2 = e.get('ai_accuracy_g2')
+                        _ag3 = e.get('ai_accuracy_g3')
+                        # Parse fallback từ comments
+                        if _ag1 is None or _ag2 is None or _ag3 is None:
+                            import re as _re
+                            _raw = e.get('comments', '')
+                            def _pa(txt, pat):
+                                m = _re.search(pat + r'.*?(\d+\.?\d*)%', txt)
+                                return float(m.group(1)) if m else None
+                            _ag1 = _ag1 if _ag1 is not None else _pa(_raw, r'GĐ 1|GD1')
+                            _ag2 = _ag2 if _ag2 is not None else _pa(_raw, r'GĐ 2|GD2')
+                            _ag3 = _ag3 if _ag3 is not None else _pa(_raw, r'GĐ 3|GD3')
+
+                        def _c(v):
+                            if v is None: return "#888"
+                            return "#00e676" if v >= 80 else ("#ffd700" if v >= 60 else "#ff5252")
+
+                        def _lbl(v):
+                            if v is None: return "—"
+                            return "✅ Đạt" if v >= 80 else ("⚠️ Gần đạt" if v >= 60 else "❌ Cần tập")
+
+                        _verdict_color = {"Đúng": "#00e676", "Gần đúng": "#ffd700", "Sai": "#ff5252"}.get(e.get('doctor_result', ''), title_color)
+
                         st.markdown(f"""
-                        <div style="text-align: center; background: {eval_card_bg}; padding: 15px; border-radius: 12px; border: 1px solid {eval_card_border}; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                            <p style="margin:0; color:{eval_text_color}; font-size:0.8rem;">ĐỘ CHÍNH XÁC</p>
-                            <h2 style="margin:0; color:{title_color};">{acc_val}%</h2>
-                            <hr style="margin:10px 0; border:0; border-top:1px solid {"#eee" if is_light else "#333"};">
-                            <h4 style="margin:0; color:{title_color};">{e.get('doctor_result', 'N/A')}</h4>
+                        <div style="background:{eval_card_bg}; border-radius:14px; border:1px solid {eval_card_border};
+                                    padding:14px 10px; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                            <p style="text-align:center; margin:0 0 10px 0; color:{eval_text_color}; font-size:0.72rem; letter-spacing:1px; font-weight:600;">
+                                KẾT QUẢ 3 GIAI ĐOẠN
+                            </p>
+
+                            <div style="background:rgba(0,230,118,0.08); border:1px solid #00e676; border-radius:10px;
+                                        padding:8px 10px; margin-bottom:7px; display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <span style="font-size:0.7rem; color:#aaa; display:block;">🌱 GĐ1 · 45°</span>
+                                    <span style="font-size:0.75rem; color:#00e676;">{_lbl(_ag1)}</span>
+                                </div>
+                                <span style="font-size:1.25rem; font-weight:900; color:{_c(_ag1)};">
+                                    {f"{_ag1:.1f}%" if _ag1 is not None else "N/A"}
+                                </span>
+                            </div>
+
+                            <div style="background:rgba(255,215,0,0.08); border:1px solid #ffd700; border-radius:10px;
+                                        padding:8px 10px; margin-bottom:7px; display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <span style="font-size:0.7rem; color:#aaa; display:block;">📈 GĐ2 · 30°</span>
+                                    <span style="font-size:0.75rem; color:#ffd700;">{_lbl(_ag2)}</span>
+                                </div>
+                                <span style="font-size:1.25rem; font-weight:900; color:{_c(_ag2)};">
+                                    {f"{_ag2:.1f}%" if _ag2 is not None else "N/A"}
+                                </span>
+                            </div>
+
+                            <div style="background:rgba(0,198,255,0.08); border:1px solid #00c6ff; border-radius:10px;
+                                        padding:8px 10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <span style="font-size:0.7rem; color:#aaa; display:block;">🎯 GĐ3 · 15°</span>
+                                    <span style="font-size:0.75rem; color:#00c6ff;">{_lbl(_ag3)}</span>
+                                </div>
+                                <span style="font-size:1.25rem; font-weight:900; color:{_c(_ag3)};">
+                                    {f"{_ag3:.1f}%" if _ag3 is not None else "N/A"}
+                                </span>
+                            </div>
+
+                            <div style="text-align:center; border-top:1px solid {"#eee" if is_light else "#2a2a2a"}; padding-top:8px;">
+                                <span style="font-size:0.72rem; color:{eval_text_color};">KẾT LUẬN TỔNG THỂ</span><br>
+                                <span style="font-size:1.1rem; font-weight:800; color:{_verdict_color};">{e.get('doctor_result', 'N/A')}</span>
+                            </div>
                         </div>
                         """, unsafe_allow_html=True)
                     else:
