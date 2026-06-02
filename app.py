@@ -623,7 +623,7 @@ def render_video(video_path):
   video{{width:100%;border-radius:8px;display:block;height:240px;background:#000;}}
 </style>
 </head><body>
-<video id="vp" controls preload="metadata">
+<video id="vp" controls preload="metadata" onerror="this.outerHTML='<div style=\'padding:20px;background:#442222;color:#ff8888;border-radius:8px;text-align:center;height:240px;display:flex;align-items:center;justify-content:center;\'>⚠️ Lỗi kết nối: Không thể tải video từ Cloud.<br>Nguyên nhân có thể do Token sai quyền hoặc file đã bị xóa khi khởi động lại. Vui lòng upload lại video!</div>'">
   <source src="{cloud_url_f}">
   <source src="{cloud_url_raw}">
   Trình duyệt không hỗ trợ video HTML5.
