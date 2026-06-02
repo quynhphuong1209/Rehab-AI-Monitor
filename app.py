@@ -7126,6 +7126,7 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
 
                         _verdict_color = {"Đúng": "#00e676", "Gần đúng": "#ffd700", "Sai": "#ff5252"}.get(e.get('doctor_result', ''), title_color)
 
+                        _divider_color = "#eee" if is_light else "#2a2a2a"
                         st.markdown(f"""
                         <div style="background:{eval_card_bg}; border-radius:14px; border:1px solid {eval_card_border};
                                     padding:14px 10px; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
@@ -7166,7 +7167,7 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                                 </span>
                             </div>
 
-                            <div style="text-align:center; border-top:1px solid {"#eee" if is_light else "#2a2a2a"}; padding-top:8px;">
+                            <div style="text-align:center; border-top:1px solid {_divider_color}; padding-top:8px;">
                                 <span style="font-size:0.72rem; color:{eval_text_color};">KẾT LUẬN TỔNG THỂ</span><br>
                                 <span style="font-size:1.1rem; font-weight:800; color:{_verdict_color};">{e.get('doctor_result', 'N/A')}</span>
                             </div>
