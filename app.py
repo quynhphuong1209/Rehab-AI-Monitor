@@ -322,10 +322,11 @@ def ensure_playable_video(video_path):
                 print(f"[Async Video] Không thể tải/phát hiện video gốc hợp lệ {video_path}")
                 return
                 
-            # 2. XÓA CẢ FILE TẠM VÀ FILE H264 CŨ NẾU BỊ HỎNG
+            # 2. XÓA CẢ FILE TẠM, FILE H264 CŨ VÀ LOG LỖI CŨ
             # Dùng đuôi _ftmp.mp4 (không phải .mp4.tmp) để ffmpeg nhận đúng container MP4
             tmp_h264 = final_h264.replace('_f.mp4', '_ftmp.mp4')
-            for f_clean in [final_h264, tmp_h264]:
+            error_log_path = os.path.join(os.path.dirname(final_h264), "transcode_error.txt")
+            for f_clean in [final_h264, tmp_h264, error_log_path]:
                 if os.path.exists(f_clean):
                     try: os.remove(f_clean)
                     except: pass
