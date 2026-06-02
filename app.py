@@ -329,13 +329,14 @@ def ensure_playable_video(video_path):
                 
             # 3. TRÍCH CODEC & TRANSCODE
             v_codec, a_codec = get_video_codec(video_path)
+            # Tối ưu hóa độ phân giải về tối đa 720p (scale=-2:720) giúp giảm tải CPU nén gấp 3-4 lần
             cmd = [
                 'ffmpeg', '-y', 
                 '-i', video_path,
                 '-vcodec', 'libx264', 
                 '-pix_fmt', 'yuv420p', 
                 '-preset', 'ultrafast', 
-                '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', 
+                '-vf', 'scale=-2:720', 
                 '-crf', '28', 
                 '-maxrate', '800k', 
                 '-bufsize', '1600k',
@@ -349,7 +350,9 @@ def ensure_playable_video(video_path):
             cmd.append(final_h264)
             
             print(f"[Async Video] Đang convert {video_path} sang H.264 dưới nền...")
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=300)
+            # Tăng timeout lên 1800 giây (30 phút) để xử lý hoàn hảo các tệp tin cực lớn (như 550MB) trên Space CPU yếu
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=1800)
+            
             if result.returncode != 0:
                 print("[Async Video] FFmpeg failed with exit code", result.returncode)
                 print("[Async Video] FFmpeg stderr:", result.stderr)
@@ -359,6 +362,15 @@ def ensure_playable_video(video_path):
                 return
                 
             if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
+                # Kiểm tra tính toàn vẹn thực tế của tệp tin vừa tạo
+                mtime_f = os.path.getmtime(final_h264)
+                size_f = os.path.getsize(final_h264)
+                if not _check_video_valid_cached(final_h264, mtime_f, size_f):
+                    print("[Async Video] Tệp tin đầu ra không hợp lệ. Đang xóa...")
+                    try: os.remove(final_h264)
+                    except: pass
+                    return
+                    
                 print(f"[Async Video] Đã convert thành công sang {final_h264}")
                 try:
                     video_list = load_data(VIDEOS_FILE)
@@ -377,8 +389,16 @@ def ensure_playable_video(video_path):
                     print(f"[Async Video] Lỗi cập nhật database: {db_err}")
                 
                 push_file_to_hf_async(final_h264)
+            else:
+                # Nếu không tồn tại hoặc < 5KB thì xóa đi để tránh rác
+                if os.path.exists(final_h264):
+                    try: os.remove(final_h264)
+                    except: pass
         except Exception as err:
             print(f"[Async Video] Lỗi trong tiến trình chạy nền: {err}")
+            if os.path.exists(final_h264):
+                try: os.remove(final_h264)
+                except: pass
         finally:
             with _transcoding_lock:
                 _transcoding_jobs.discard(final_h264)
@@ -9587,13 +9607,23 @@ def main():
                                             '-crf', '28',
                                             '-maxrate', '800k',
                                             '-bufsize', '1600k',
-                                            '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+                                            '-vf', 'scale=-2:720',
                                             '-threads', '0',
                                             '-map', '0:v:0', '-map', '0:a?', '-c:a', 'aac',
                                             video_path
                                         ]
                                         result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
-                                        if result_compress.returncode == 0 and os.path.exists(video_path) and os.path.getsize(video_path) > 1024:
+                                        
+                                        is_compress_ok = False
+                                        if result_compress.returncode == 0 and os.path.exists(video_path) and os.path.getsize(video_path) > 5 * 1024:
+                                            try:
+                                                mtime_c = os.path.getmtime(video_path)
+                                                size_c = os.path.getsize(video_path)
+                                                is_compress_ok = _check_video_valid_cached(video_path, mtime_c, size_c)
+                                            except:
+                                                pass
+                                                
+                                        if is_compress_ok:
                                             try: os.remove(temp_uploaded_path)
                                             except: pass
                                         else:
