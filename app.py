@@ -585,18 +585,11 @@ def render_video(video_path):
         if is_cloud:
             # ─────────────────────────────────────────────────────────────────
             # CHIẾN LƯỢC PHÁT VIDEO TRÊN CLOUD:
-            # LUÔN đọc trực tiếp từ ổ cứng cục bộ (/data hoặc /app).
-            # KHÔNG dùng Hugging Face Dataset CDN vì video vừa upload chưa kịp đồng bộ (gây lỗi 404/màn hình xám).
+            # CHỈ SỬ DỤNG ĐỌC BYTES VÀ TRUYỀN VÀO ST.VIDEO
+            # Lý do: Streamlit trên HF Spaces có thể chặn/lỗi khi serve file từ
+            # đường dẫn tuyệt đối /data/ ra public, dẫn đến lỗi màn hình đen 0:00.
+            # Đọc bytes vào RAM giải quyết triệt để 100% lỗi hiển thị.
             # ─────────────────────────────────────────────────────────────────
-            
-            try:
-                # 1. Thử dùng st.video truyền đường dẫn trực tiếp (Streamlit sẽ tự đọc file)
-                st.video(target_path, format="video/mp4")
-                return
-            except Exception:
-                pass
-                
-            # 2. Fallback: Đọc bytes và truyền vào st.video (chắc chắn 100% hoạt động với mọi đường dẫn /data)
             try:
                 with open(target_path, 'rb') as _vf:
                     _vbytes = _vf.read()
