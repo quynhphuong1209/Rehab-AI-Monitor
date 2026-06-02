@@ -1253,6 +1253,53 @@ def ensure_local_file(file_path):
             print(f"[HF Sync] Không thể tải file yêu cầu {file_path}: {e}")
     return False
 
+def get_local_frame_path(stored_path):
+    """Chuyển đổi đường dẫn frame được lưu trữ (có thể là Windows/Linux/Tuyệt đối) 
+    thành đường dẫn chính xác và hợp lệ trên OS hiện tại dưới DATA_DIR."""
+    if not stored_path:
+        return ""
+    rel_path = get_clean_rel_path(stored_path)
+    return os.path.normpath(os.path.join(DATA_DIR, rel_path.replace("\\", "/")))
+
+def check_and_extract_frames_zip(processed_video_path):
+    """Kiểm tra và tự động tải/giải nén file ZIP chứa các frame ảnh nếu thư mục ảnh chưa có.
+    Hàm này giúp tải một lần duy nhất tất cả frames cực nhanh từ Cloud về thay vì trích xuất từng frame từ video."""
+    if not processed_video_path:
+        return
+    
+    filename = os.path.basename(processed_video_path)
+    import re
+    match = re.search(r'processed_(\d+)', filename)
+    if not match:
+        return
+    timestamp = match.group(1)
+    
+    frames_dir = os.path.join(PROCESSED_DIR, f"processed_{timestamp}_frames")
+    zip_path = os.path.join(PROCESSED_DIR, f"processed_{timestamp}_frames.zip")
+    
+    # Nếu thư mục frames đã tồn tại cục bộ và chứa ảnh, không cần làm gì thêm
+    if os.path.exists(frames_dir) and os.path.isdir(frames_dir):
+        try:
+            if len(os.listdir(frames_dir)) > 5:
+                return
+        except:
+            pass
+        
+    # Đảm bảo file ZIP tồn tại cục bộ (nếu chưa có, tự tải về từ Hugging Face Dataset)
+    if not os.path.exists(zip_path):
+        ensure_local_file(zip_path)
+        
+    # Nếu đã có file ZIP cục bộ, tiến hành giải nén ra thư mục frames_dir
+    if os.path.exists(zip_path) and os.path.getsize(zip_path) >= 5 * 1024:
+        try:
+            import zipfile
+            os.makedirs(frames_dir, exist_ok=True)
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(frames_dir)
+            print(f"[Frames Extract] Giải nén thành công {os.path.basename(zip_path)} vào {frames_dir}")
+        except Exception as e:
+            print(f"[Frames Extract] Lỗi giải nén ZIP: {e}")
+
 @st.cache_data(show_spinner=False)
 def _load_data_cached(file_path, mtime):
     try:
@@ -3685,7 +3732,7 @@ def create_zip_of_frames(frame_data_list, processed_video_path=None):
             for idx, f_data in enumerate(frame_data_list):
                 if not isinstance(f_data, dict):
                     continue
-                f_path = f_data.get('path')
+                f_path = get_local_frame_path(f_data.get('path'))
                 if not f_path:
                     continue
                     
@@ -3848,7 +3895,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     
     timestamp = int(time.time())
     out_path = os.path.join(PROCESSED_DIR, f'processed_{timestamp}.mp4')
-    thu_muc_frame = tempfile.mkdtemp()
+    thu_muc_frame = os.path.join(PROCESSED_DIR, f'processed_{timestamp}_frames')
+    os.makedirs(thu_muc_frame, exist_ok=True)
     
     from concurrent.futures import ThreadPoolExecutor
     img_writer_executor = ThreadPoolExecutor(max_workers=4)
@@ -4149,7 +4197,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             try: os.unlink(temp_copy_path)
             except: pass
         if 'img_writer_executor' in locals():
-            img_writer_executor.shutdown(wait=False)
+            img_writer_executor.shutdown(wait=True)
         gc.collect()
 
     # SAU KHI XỬ LÝ XONG, TIẾN HÀNH TRỘN ÂM THANH NẾU CÓ THAY ĐỔI
@@ -4208,8 +4256,18 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     
     gc.collect()
     
-    # LAZY ZIP: Không tự động tạo ZIP ngốn RAM — sẽ tạo khi người dùng yêu cầu
-    zip_path = None
+    # Tự động tạo tệp ZIP của các khung hình, không tốn RAM do ghi trực tiếp (z.write)
+    zip_path = out_path.replace('.mp4', '_frames.zip')
+    try:
+        import zipfile
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=1) as z:
+            for f_data in danh_sach_frame_data:
+                f_path = get_local_frame_path(f_data.get('path'))
+                if f_path and os.path.exists(f_path):
+                    z.write(f_path, os.path.basename(f_path))
+    except Exception as e:
+        print(f"Lỗi tự động tạo file ZIP frames: {e}")
+        zip_path = None
 
     json_path = os.path.join(PROCESSED_DIR, f'f_{timestamp}.json')
     with open(json_path, 'w', encoding='utf-8') as f:
@@ -5798,6 +5856,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                                         vid['all_frames_data_path'] = all_frames_data
                                         vid['df_path'] = output_path.replace('.mp4', '_data.csv')
                                         vid['processed_path'] = output_path
+                                        vid['frames_zip_path'] = zip_data
                                         vid['status'] = "Đã phân tích"
                                         vid['sai_so'] = ss_override
                                         vid['giai_doan'] = ncv_gd
@@ -5808,6 +5867,8 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                                         push_file_to_hf_async(vid['df_path'])
                                         push_file_to_hf_async(output_path)
                                         push_file_to_hf_async(all_frames_data)
+                                        if zip_data:
+                                            push_file_to_hf_async(zip_data)
                                 save_data(VIDEOS_FILE, video_list)
                                 
                                 st.success("✅ Phân tích hoàn tất!")
@@ -7762,6 +7823,7 @@ def hien_thi_frames_day_du(key_suffix=""):
     processed_video_path = st.session_state.get('processed_video_path')
     if processed_video_path:
         ensure_local_file(processed_video_path)
+        check_and_extract_frames_zip(processed_video_path)
     frames_zip = st.session_state.get('frames_zip')
     has_video = bool(processed_video_path and os.path.exists(processed_video_path))
 
@@ -8068,7 +8130,7 @@ def hien_thi_frames_day_du(key_suffix=""):
             except:
                 return True
 
-        any_missing = any(_is_image_missing_or_invalid(frame_data_list[idx].get('path', '')) for idx in page_inds)
+        any_missing = any(_is_image_missing_or_invalid(get_local_frame_path(frame_data_list[idx].get('path', ''))) for idx in page_inds)
         cap_recover = None
         if any_missing and processed_video_path and os.path.exists(processed_video_path):
             try:
@@ -8079,7 +8141,7 @@ def hien_thi_frames_day_du(key_suffix=""):
 
         for orig_idx in page_inds:
             f_data = frame_data_list[orig_idx]
-            f_path = f_data.get('path')
+            f_path = get_local_frame_path(f_data.get('path'))
             
             # Khôi phục ảnh từ video nếu thiếu hoặc lỗi
             if f_path and _is_image_missing_or_invalid(f_path) and cap_recover and cap_recover.isOpened():
@@ -8101,7 +8163,7 @@ def hien_thi_frames_day_du(key_suffix=""):
         for i, orig_idx in enumerate(page_inds):
             col_target = cols[i % grid_cols]
             f_data = frame_data_list[orig_idx]
-            f_path = f_data.get('path')
+            f_path = get_local_frame_path(f_data.get('path'))
             
             phase_st = _frame_phase_status(f_data, tab_threshold)
             color = "#22c55e" if phase_st == "PASS" else ("#f59e0b" if phase_st == "NEAR" else "#ef4444")
