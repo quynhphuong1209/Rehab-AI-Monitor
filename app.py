@@ -584,67 +584,19 @@ def render_video(video_path):
 
         if is_cloud:
             # ─────────────────────────────────────────────────────────────────
-            # CHIẾN LƯỢC PHÁT VIDEO TRÊN CLOUD (theo thứ tự ưu tiên tốc độ):
-            # A. File H264 nhỏ (<30MB): đọc bytes có cache → phát tức thì
-            # B. File lớn: dùng CDN URL từ HF Dataset → stream Range Requests
-            # C. Fallback: CDN URL raw video
+            # CHIẾN LƯỢC PHÁT VIDEO TRÊN CLOUD:
+            # LUÔN đọc trực tiếp từ ổ cứng cục bộ (/data hoặc /app).
+            # KHÔNG dùng Hugging Face Dataset CDN vì video vừa upload chưa kịp đồng bộ (gây lỗi 404/màn hình xám).
             # ─────────────────────────────────────────────────────────────────
             
             try:
-                fsize = os.path.getsize(target_path)
-            except:
-                fsize = 0
-
-            # A. Ưu tiên 1: Đọc bytes có cache từ file H264 nén nhỏ (<30MB) → phát tức thì, không delay
-            if fsize > 0 and fsize < 30 * 1024 * 1024:
-                try:
-                    mtime = os.path.getmtime(target_path)
-                    b64_str = get_video_base64_cached(target_path, mtime, fsize)
-                    if b64_str:
-                        import base64 as _b64
-                        _vbytes = _b64.b64decode(b64_str)
-                        st.video(_vbytes, format="video/mp4")
-                        return
-                except Exception as _be:
-                    pass
-                # Fallback: đọc bytes trực tiếp (không cache)
-                try:
-                    with open(target_path, 'rb') as _vf:
-                        _vbytes = _vf.read()
-                    if _vbytes:
-                        st.video(_vbytes, format="video/mp4")
-                        return
-                except:
-                    pass
-
-            # B. Ưu tiên 2: File lớn (>=30MB) hoặc đọc bytes thất bại → dùng CDN URL HF Dataset
-            if HF_TOKEN and HF_DATASET_ID:
-                try:
-                    import urllib.parse as _up
-                    rel_path = get_clean_rel_path(video_path)
-                    # Ưu tiên file H264 đã nén
-                    rel_path_f = rel_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
-                    encoded_f = _up.quote(rel_path_f, safe='/')
-                    encoded_raw = _up.quote(rel_path, safe='/')
-                    cdn_url_f   = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{encoded_f}?token={HF_TOKEN}"
-                    cdn_url_raw = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{encoded_raw}?token={HF_TOKEN}"
-                    
-                    # Dùng st.video với URL (hỗ trợ Range Requests chuẩn, tua nhanh tốt)
-                    st.video(cdn_url_f)
-                    return
-                except:
-                    pass
-                # Fallback CDN raw
-                try:
-                    import urllib.parse as _up
-                    rel_path = get_clean_rel_path(video_path)
-                    cdn_url_raw = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{_up.quote(rel_path, safe='/')}?token={HF_TOKEN}"
-                    st.video(cdn_url_raw)
-                    return
-                except:
-                    pass
-
-            # C. Fallback cuối: đọc bytes dù file lớn (chậm hơn nhưng chắc chắn hiển thị)
+                # 1. Thử dùng st.video truyền đường dẫn trực tiếp (Streamlit sẽ tự đọc file)
+                st.video(target_path, format="video/mp4")
+                return
+            except Exception:
+                pass
+                
+            # 2. Fallback: Đọc bytes và truyền vào st.video (chắc chắn 100% hoạt động với mọi đường dẫn /data)
             try:
                 with open(target_path, 'rb') as _vf:
                     _vbytes = _vf.read()
@@ -652,10 +604,9 @@ def render_video(video_path):
                     st.video(_vbytes, format="video/mp4")
                     return
             except Exception as _ve:
-                pass
-            
-            st.warning("⚠️ Không thể tải video. Vui lòng thử tải lại trang.")
-            return
+                st.error(f"❌ Không thể đọc video từ hệ thống: {_ve}")
+                return
+
 
         else:
             # C. Nếu chạy local (không phải Cloud) -> Dùng HTTP Range Request server
