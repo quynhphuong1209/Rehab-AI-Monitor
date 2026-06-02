@@ -1393,6 +1393,47 @@ def thuc_hien_khoi_tao_he_thong_mot_lan():
     import threading
     threading.Thread(target=khoi_tao_dong_bo_hf, daemon=True).start()
     don_dep_file_tam()
+
+    # ── AUTO-TRANSCODE: Tự động nén tất cả video HEVC sang H.264 khi Space khởi động ──
+    def _auto_transcode_all_hevc():
+        """Scan tất cả video trong database, tự động transcode HEVC → H.264 nền."""
+        import time
+        time.sleep(15)  # Chờ HF dataset sync xong trước
+        try:
+            video_list = load_data(VIDEOS_FILE)
+            print(f"[AutoTranscode] Bắt đầu scan {len(video_list)} video...")
+            for vid in video_list:
+                vpath = vid.get('processed_path') or vid.get('video_path', '')
+                if not vpath:
+                    continue
+                # Đảm bảo file tồn tại local
+                if not os.path.exists(vpath):
+                    ensure_local_file(vpath)
+                if not os.path.exists(vpath) or os.path.getsize(vpath) < 5 * 1024:
+                    continue
+                # Kiểm tra đã có H.264 hợp lệ chưa
+                final_h264 = get_final_h264_path(vpath)
+                if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
+                    try:
+                        mtime = os.path.getmtime(final_h264)
+                        size = os.path.getsize(final_h264)
+                        if _check_video_valid_cached(final_h264, mtime, size):
+                            continue  # Đã có H.264 hợp lệ, bỏ qua
+                    except:
+                        pass
+                # Chưa có H.264 hợp lệ → kích hoạt transcode nền
+                try:
+                    v_codec, _ = get_video_codec(vpath)
+                    if v_codec and v_codec != 'h264':
+                        print(f"[AutoTranscode] Kích hoạt transcode: {os.path.basename(vpath)} ({v_codec})")
+                        ensure_playable_video(vpath)
+                        time.sleep(2)  # Tránh chạy song song quá nhiều
+                except Exception as e:
+                    print(f"[AutoTranscode] Lỗi: {e}")
+        except Exception as e:
+            print(f"[AutoTranscode] Lỗi toàn cục: {e}")
+
+    threading.Thread(target=_auto_transcode_all_hevc, daemon=True).start()
     return True
 
 thuc_hien_khoi_tao_he_thong_mot_lan()
