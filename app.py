@@ -8630,20 +8630,51 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                 st.session_state[show_vid_key] = True
                                 st.rerun()
                             
-                        # Nếu không có local, hiển thị nút tải về tùy chọn bên dưới video để người dùng có thể tải về lưu trữ
+                        # Nếu không có local, hiển thị cảnh báo và các tùy chọn khôi phục
                         if not local_exists and active_display_path:
-                            if st.button("📥 Tải video về lưu trữ cục bộ", key=f"download_vid_{idx}", type="secondary", use_container_width=True):
-                                with st.spinner("Đang tải video từ Cloud..."):
-                                    success = False
-                                    if v_display_path:
-                                        success = ensure_local_file(v_display_path)
-                                    if not success and processed_path:
-                                        success = ensure_local_file(processed_path)
-                                    if success:
-                                        st.success("✅ Tải video thành công!")
+                            st.warning("⚠️ File video không tồn tại cục bộ trên máy chủ (có thể do môi trường bị reset).")
+                            
+                            c_down1, c_down2 = st.columns(2)
+                            with c_down1:
+                                if st.button("📥 Tải từ Cloud", key=f"download_vid_{idx}", use_container_width=True):
+                                    with st.spinner("Đang tải..."):
+                                        success = False
+                                        if v_display_path:
+                                            success = ensure_local_file(v_display_path)
+                                        if not success and processed_path:
+                                            success = ensure_local_file(processed_path)
+                                        if success:
+                                            st.success("✅ Tải video thành công!")
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ Không tìm thấy video trên Cloud.")
+                                            
+                            with c_down2:
+                                restore_key = f"restore_uploader_{v.get('username')}_{v.get('video_name')}_{idx}"
+                                uploaded_restore = st.file_uploader(
+                                    "📂 Upload khôi phục video", 
+                                    type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"], 
+                                    key=restore_key
+                                )
+                                if uploaded_restore is not None:
+                                    target_dir = os.path.dirname(v_display_path)
+                                    if target_dir:
+                                        os.makedirs(target_dir, exist_ok=True)
+                                    try:
+                                        with open(v_display_path, "wb") as f_out:
+                                            f_out.write(uploaded_restore.getbuffer())
+                                        
+                                        # Kích hoạt convert H264 dưới nền
+                                        ensure_playable_video(v_display_path)
+                                        
+                                        # Đồng bộ lên HF Cloud Dataset
+                                        push_file_to_hf_async(v_display_path)
+                                        
+                                        st.success("🎉 Khôi phục video thành công!")
+                                        st.session_state[show_vid_key] = True
                                         st.rerun()
-                                    else:
-                                        st.error("❌ Không thể tải video từ Cloud. Vui lòng kiểm tra lại kết nối.")
+                                    except Exception as e:
+                                        st.error(f"❌ Lỗi ghi file: {e}")
                         with col_v2:
                             st.write(f"**Người tập:** {v['full_name']}")
                             
