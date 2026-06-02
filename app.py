@@ -583,110 +583,80 @@ def render_video(video_path):
                 st.info("🔄 Video đang được nén tối ưu hóa định dạng H.264 dưới nền. Trình phát có thể tải chậm hoặc đen màn hình trong vài giây đầu...")
 
         if is_cloud:
-            # A. Ưu tiên 1: Phát trực tiếp từ Cloud CDN (Hugging Face Dataset) bằng st.video (Không có rào cản iframe/CORS/Sandbox)
-            if HF_TOKEN and HF_DATASET_ID:
-                try:
-                    rel_path = get_clean_rel_path(video_path)
-                    if is_local_h264:
-                        rel_path_f = rel_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
-                        import urllib.parse
-                        rel_path_encoded_f = urllib.parse.quote(rel_path_f, safe='/')
-                        play_url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_f}?token={HF_TOKEN}"
-                    else:
-                        import urllib.parse
-                        rel_path_encoded = urllib.parse.quote(rel_path, safe='/')
-                        play_url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded}?token={HF_TOKEN}"
-                    
-                    st.video(play_url)
-                    return
-                except:
-                    pass
-
-            # B. Ưu tiên 2: Đọc file bytes trực tiếp và truyền vào st.video() - hoạt động 100% với mọi đường dẫn kể cả /data
-            try:
-                with open(target_path, 'rb') as _vf:
-                    _video_bytes = _vf.read()
-                if _video_bytes:
-                    st.video(_video_bytes, format="video/mp4")
-                    return
-            except Exception as _ve:
-                print(f"[VideoBytes] Lỗi đọc bytes: {_ve}")
-
-            # C. Ưu tiên 3: Tạo bản sao tạm trong /tmp để stream cục bộ
-            try:
-                temp_path = get_playable_local_copy(target_path)
-                if temp_path and os.path.exists(temp_path):
-                    with open(temp_path, 'rb') as _tvf:
-                        _tv_bytes = _tvf.read()
-                    if _tv_bytes:
-                        st.video(_tv_bytes, format="video/mp4")
-                    return
-            except:
-                pass
-
-            # C. Phương án dự phòng 3: Base64 cho file nhỏ (<25MB) nếu các phương án trên đều thất bại
+            # ─────────────────────────────────────────────────────────────────
+            # CHIẾN LƯỢC PHÁT VIDEO TRÊN CLOUD (theo thứ tự ưu tiên tốc độ):
+            # A. File H264 nhỏ (<30MB): đọc bytes có cache → phát tức thì
+            # B. File lớn: dùng CDN URL từ HF Dataset → stream Range Requests
+            # C. Fallback: CDN URL raw video
+            # ─────────────────────────────────────────────────────────────────
+            
             try:
                 fsize = os.path.getsize(target_path)
-                if fsize < 25 * 1024 * 1024:
+            except:
+                fsize = 0
+
+            # A. Ưu tiên 1: Đọc bytes có cache từ file H264 nén nhỏ (<30MB) → phát tức thì, không delay
+            if fsize > 0 and fsize < 30 * 1024 * 1024:
+                try:
                     mtime = os.path.getmtime(target_path)
                     b64_str = get_video_base64_cached(target_path, mtime, fsize)
                     if b64_str:
-                        video_url = f"data:video/mp4;base64,{b64_str}"
-                        import streamlit.components.v1 as _stcomp
-                        _stcomp.html(f"""
-<!DOCTYPE html><html><head>
-<style>
-  body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
-  video{{width:100%;border-radius:8px;display:block;height:240px;background:#000;}}
-</style>
-</head><body>
-<video id="vp" controls preload="metadata">
-  <source src="{video_url}" type="video/mp4">
-  Trình duyệt không hỗ trợ video HTML5.
-</video>
-<div style="color:#2ecc71; font-size:0.72rem; margin-top:4px; text-align:right; font-family:sans-serif;">
-  ⚡ Đang phát cục bộ (Base64)&nbsp;&nbsp;|&nbsp;&nbsp;📹 {os.path.basename(target_path)}
-</div>
-</body></html>
-""", height=270)
+                        import base64 as _b64
+                        _vbytes = _b64.b64decode(b64_str)
+                        st.video(_vbytes, format="video/mp4")
                         return
-            except Exception as e:
-                pass
+                except Exception as _be:
+                    pass
+                # Fallback: đọc bytes trực tiếp (không cache)
+                try:
+                    with open(target_path, 'rb') as _vf:
+                        _vbytes = _vf.read()
+                    if _vbytes:
+                        st.video(_vbytes, format="video/mp4")
+                        return
+                except:
+                    pass
 
-            # D. Phương án dự phòng 4: HTML5 Video Iframe từ Cloud CDN
+            # B. Ưu tiên 2: File lớn (>=30MB) hoặc đọc bytes thất bại → dùng CDN URL HF Dataset
             if HF_TOKEN and HF_DATASET_ID:
                 try:
+                    import urllib.parse as _up
                     rel_path = get_clean_rel_path(video_path)
+                    # Ưu tiên file H264 đã nén
                     rel_path_f = rel_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
+                    encoded_f = _up.quote(rel_path_f, safe='/')
+                    encoded_raw = _up.quote(rel_path, safe='/')
+                    cdn_url_f   = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{encoded_f}?token={HF_TOKEN}"
+                    cdn_url_raw = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{encoded_raw}?token={HF_TOKEN}"
                     
-                    import urllib.parse
-                    rel_path_encoded_f = urllib.parse.quote(rel_path_f, safe='/')
-                    rel_path_encoded_raw = urllib.parse.quote(rel_path, safe='/')
-                    
-                    cloud_url_f = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_f}?token={HF_TOKEN}"
-                    cloud_url_raw = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_raw}?token={HF_TOKEN}"
-                    
-                    import streamlit.components.v1 as _stcomp
-                    _stcomp.html(f"""
-<!DOCTYPE html><html><head>
-<style>
-  body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
-  video{{width:100%;border-radius:8px;display:block;height:240px;background:#000;}}
-</style>
-</head><body>
-<video id="vp" controls preload="metadata">
-  <source src="{cloud_url_f}">
-  <source src="{cloud_url_raw}">
-  Trình duyệt không hỗ trợ video HTML5.
-</video>
-<div style="color:#ffd700; font-size:0.72rem; margin-top:4px; text-align:right; font-family:sans-serif;">
-  ☁️ Đang stream trực tiếp từ Cloud&nbsp;&nbsp;|&nbsp;&nbsp;📹 {os.path.basename(video_path)}
-</div>
-</body></html>
-""", height=270)
+                    # Dùng st.video với URL (hỗ trợ Range Requests chuẩn, tua nhanh tốt)
+                    st.video(cdn_url_f)
                     return
                 except:
                     pass
+                # Fallback CDN raw
+                try:
+                    import urllib.parse as _up
+                    rel_path = get_clean_rel_path(video_path)
+                    cdn_url_raw = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{_up.quote(rel_path, safe='/')}?token={HF_TOKEN}"
+                    st.video(cdn_url_raw)
+                    return
+                except:
+                    pass
+
+            # C. Fallback cuối: đọc bytes dù file lớn (chậm hơn nhưng chắc chắn hiển thị)
+            try:
+                with open(target_path, 'rb') as _vf:
+                    _vbytes = _vf.read()
+                if _vbytes:
+                    st.video(_vbytes, format="video/mp4")
+                    return
+            except Exception as _ve:
+                pass
+            
+            st.warning("⚠️ Không thể tải video. Vui lòng thử tải lại trang.")
+            return
+
         else:
             # C. Nếu chạy local (không phải Cloud) -> Dùng HTTP Range Request server
             video_url = _get_video_server_url(target_path)
