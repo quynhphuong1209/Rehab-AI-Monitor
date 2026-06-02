@@ -61,6 +61,24 @@ def get_final_h264_path(video_path):
 def _check_video_valid_cached(path, mtime, size):
     if not os.path.exists(path) or os.path.getsize(path) < 5 * 1024:
         return False
+    # Sử dụng ffprobe để kiểm tra tính toàn vẹn của video (đọc được duration = video chuẩn, không bị lỗi nửa chừng)
+    try:
+        import subprocess
+        cmd = [
+            'ffprobe', '-v', 'error',
+            '-show_entries', 'format=duration',
+            '-of', 'default=noprint_wrappers=1:nokey=1',
+            path
+        ]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5)
+        if result.returncode == 0:
+            duration_str = result.stdout.strip()
+            if duration_str:
+                float(duration_str)
+                return True
+    except:
+        pass
+    # Dự phòng: dùng OpenCV
     try:
         import cv2
         cap_check = cv2.VideoCapture(path)
@@ -70,9 +88,7 @@ def _check_video_valid_cached(path, mtime, size):
         cap_check.release()
     except:
         pass
-    # Nếu opencv gặp lỗi hoặc không đọc được trên Cloud, nhưng file tồn tại và size hợp lệ,
-    # ta vẫn tin tưởng và trả về True. Trình duyệt có bộ giải mã riêng để phát.
-    return True
+    return False
 
 @st.cache_data(show_spinner=False)
 def get_video_fps_cached(path, mtime, size):
