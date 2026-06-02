@@ -4495,7 +4495,11 @@ def recalc_metrics(df, ss, exercise_name="codman"):
     is_gay = any(kw in ex_clean for kw in ["gậy", "gay", "pulley", "stick"])
     is_codman = any(kw in ex_clean for kw in ["codman"])
     
-    if is_gay:
+    # Kiểm tra sự hiện diện của các cột Trái/Phải để đảm bảo tính tương thích ngược
+    has_gay_cols = all(col in df_valid.columns for col in ['goc_vai_trai', 'goc_vai_phai', 'goc_khuyu_trai', 'goc_khuyu_phai'])
+    has_codman_cols = all(col in df_valid.columns for col in ['goc_vai_phai', 'goc_khuyu_phai'])
+    
+    if is_gay and has_gay_cols:
         vai_diff_t = np.abs(df_valid['goc_vai_trai'] - chuan_vai)
         vai_diff_p = np.abs(df_valid['goc_vai_phai'] - chuan_vai)
         khuyu_diff_t = np.abs(df_valid['goc_khuyu_trai'] - chuan_khuyu)
@@ -4520,7 +4524,7 @@ def recalc_metrics(df, ss, exercise_name="codman"):
         
         std_goc_vai = (df_valid['goc_vai_trai'].std() + df_valid['goc_vai_phai'].std()) / 2
         std_goc_khuyu = (df_valid['goc_khuyu_trai'].std() + df_valid['goc_khuyu_phai'].std()) / 2
-    elif is_codman:
+    elif (is_codman or is_gay) and has_codman_cols:
         vai_diff = np.abs(df_valid['goc_vai_phai'] - chuan_vai)
         khuyu_diff = np.abs(df_valid['goc_khuyu_phai'] - chuan_khuyu)
         
@@ -4804,7 +4808,11 @@ def tinh_metrics_chi_tiet(df, bt):
     is_gay = any(kw in ex_clean for kw in ["gậy", "gay", "pulley", "stick"])
     is_codman = any(kw in ex_clean for kw in ["codman"])
     
-    if is_gay:
+    # Kiểm tra sự hiện diện của các cột Trái/Phải để đảm bảo tính tương thích ngược
+    has_gay_cols = all(col in df_valid.columns for col in ['goc_vai_trai', 'goc_vai_phai', 'goc_khuyu_trai', 'goc_khuyu_phai'])
+    has_codman_cols = all(col in df_valid.columns for col in ['goc_vai_phai', 'goc_khuyu_phai'])
+    
+    if is_gay and has_gay_cols:
         if 'vai_chuan' in df_valid.columns and 'khuyu_chuan' in df_valid.columns:
             mae_vai_t = np.abs(df_valid['goc_vai_trai'] - df_valid['vai_chuan'])
             mae_vai_p = np.abs(df_valid['goc_vai_phai'] - df_valid['vai_chuan'])
@@ -4826,7 +4834,7 @@ def tinh_metrics_chi_tiet(df, bt):
         max_goc_khuyu = max(df_valid['goc_khuyu_trai'].max(), df_valid['goc_khuyu_phai'].max())
         std_goc_vai = (df_valid['goc_vai_trai'].std() + df_valid['goc_vai_phai'].std()) / 2
         std_goc_khuyu = (df_valid['goc_khuyu_trai'].std() + df_valid['goc_khuyu_phai'].std()) / 2
-    elif is_codman:
+    elif (is_codman or is_gay) and has_codman_cols:
         if 'vai_chuan' in df_valid.columns and 'khuyu_chuan' in df_valid.columns:
             mae_vai = np.abs(df_valid['goc_vai_phai'] - df_valid['vai_chuan']).mean()
             mae_khuyu = np.abs(df_valid['goc_khuyu_phai'] - df_valid['khuyu_chuan']).mean()
