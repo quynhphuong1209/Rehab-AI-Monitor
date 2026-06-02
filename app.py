@@ -7131,9 +7131,89 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                     if not is_ai and errors:
                         st.markdown(f"**Lỗi sai:** {', '.join(errors)}")
                     
-                    st.markdown(f"**Nhận xét:** {e.get('comments', 'Không có')}")
+                    if is_ai:
+                        # ===== HIỂN THỊ 3 GIAI ĐOẠN RIÊNG BIỆT - TIÊU ĐỀ TO =====
+                        acc_g1 = e.get('ai_accuracy_g1')
+                        acc_g2 = e.get('ai_accuracy_g2')
+                        acc_g3 = e.get('ai_accuracy_g3')
                         
-                    st.markdown(f"**Kế hoạch:** {e.get('plan', 'N/A')}")
+                        # Parse từ comments nếu không có field riêng
+                        raw_comments = e.get('comments', '')
+                        if acc_g1 is None or acc_g2 is None or acc_g3 is None:
+                            import re
+                            def _parse_acc(text, label):
+                                m = re.search(label + r'.*?(\d+\.?\d*)%', text)
+                                return float(m.group(1)) if m else None
+                            acc_g1 = acc_g1 or _parse_acc(raw_comments, r'GĐ 1|GD1|Giai đoạn 1')
+                            acc_g2 = acc_g2 or _parse_acc(raw_comments, r'GĐ 2|GD2|Giai đoạn 2')
+                            acc_g3 = acc_g3 or _parse_acc(raw_comments, r'GĐ 3|GD3|Giai đoạn 3')
+
+                        def _acc_color(v):
+                            if v is None: return "#888"
+                            if v >= 80: return "#00e676"
+                            if v >= 60: return "#ffd700"
+                            return "#ff5252"
+
+                        def _acc_label(v):
+                            if v is None: return "N/A"
+                            if v >= 80: return "✅ Đạt"
+                            if v >= 60: return "⚠️ Gần đạt"
+                            return "❌ Cần tập thêm"
+
+                        # Tách phần kế hoạch từ plan
+                        plan_raw = e.get('plan', '')
+                        plan_lines = [l.strip() for l in plan_raw.split('\n') if l.strip() and l.strip().startswith('-')]
+
+                        gd_configs = [
+                            {"idx": 1, "label": "GIAI ĐOẠN 1", "sub": "Khởi đầu · Sai số 45°", "icon": "🌱",
+                             "acc": acc_g1, "bg": "rgba(0,230,118,0.06)", "border": "#00e676"},
+                            {"idx": 2, "label": "GIAI ĐOẠN 2", "sub": "Hồi phục · Sai số 30°", "icon": "📈",
+                             "acc": acc_g2, "bg": "rgba(255,215,0,0.06)", "border": "#ffd700"},
+                            {"idx": 3, "label": "GIAI ĐOẠN 3", "sub": "Chuẩn xác · Sai số 15°", "icon": "🎯",
+                             "acc": acc_g3, "bg": "rgba(0,198,255,0.06)", "border": "#00c6ff"},
+                        ]
+
+                        for gd in gd_configs:
+                            v_acc = gd["acc"]
+                            clr = _acc_color(v_acc)
+                            lbl = _acc_label(v_acc)
+                            acc_str = f"{v_acc:.1f}%" if v_acc is not None else "N/A"
+                            # Tìm dòng kế hoạch tương ứng
+                            plan_gd = next((l for l in plan_lines if f"GĐ{gd['idx']}" in l or f"GD{gd['idx']}" in l), "")
+                            plan_detail = plan_gd.split("-", 2)[-1].strip() if plan_gd else ""
+                            st.markdown(f"""
+                            <div style="background:{gd['bg']}; border:1.5px solid {gd['border']}; border-radius:14px;
+                                        padding:14px 18px; margin-bottom:12px;">
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                                    <span style="font-size:1.5rem;">{gd['icon']}</span>
+                                    <div>
+                                        <h3 style="margin:0; color:{gd['border']}; font-size:1.1rem; font-weight:800; letter-spacing:0.5px;">
+                                            {gd['label']}
+                                        </h3>
+                                        <span style="color:#aaa; font-size:0.82rem;">{gd['sub']}</span>
+                                    </div>
+                                    <div style="margin-left:auto; text-align:right;">
+                                        <span style="font-size:1.6rem; font-weight:900; color:{clr};">{acc_str}</span><br>
+                                        <span style="font-size:0.8rem; color:{clr};">{lbl}</span>
+                                    </div>
+                                </div>
+                                {"<p style='margin:4px 0 0 0; font-size:0.85rem; color:#ccc;'>💡 " + plan_detail + "</p>" if plan_detail else ""}
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                        # AI đề xuất
+                        ai_suggest_line = next((l for l in raw_comments.split('\n') if 'AI đề xuất' in l or 'Phù hợp' in l), "")
+                        if ai_suggest_line:
+                            st.markdown(f"""
+                            <div style="background:rgba(0,114,255,0.07); border:1px solid rgba(0,198,255,0.3);
+                                        border-radius:10px; padding:10px 14px; margin-top:4px;">
+                                <span style="font-size:0.9rem; color:#00c6ff;">🤖 {ai_suggest_line.strip()}</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"**Nhận xét:** {e.get('comments', 'Không có')}")
+                        st.markdown(f"**Kế hoạch:** {e.get('plan', 'N/A')}")
+                    
                     status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã phê duyệt"
                     st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic; margin-top:10px;">📩 {status_text}</p>', unsafe_allow_html=True)
         
