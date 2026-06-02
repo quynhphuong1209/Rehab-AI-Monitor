@@ -942,9 +942,9 @@ a {{color:{title_color};text-decoration:none}}
 # --- TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU SANG HUGGING FACE DATASET (MIỄN PHÍ - BỀN VỮNG) ---
 import threading
 
-HF_TOKEN = os.environ.get("HF_TOKEN")
-HF_SPACE_ID = os.environ.get("HF_SPACE_ID") or os.environ.get("SPACE_ID")
-HF_DATASET_ID = os.environ.get("HF_DATASET_ID") or (f"{HF_SPACE_ID}-data" if HF_SPACE_ID else None)
+HF_TOKEN = os.environ.get("HF_TOKEN", "").strip() or None
+HF_SPACE_ID = (os.environ.get("HF_SPACE_ID") or os.environ.get("SPACE_ID", "")).strip() or None
+HF_DATASET_ID = (os.environ.get("HF_DATASET_ID", "").strip() or None) or (f"{HF_SPACE_ID}-data" if HF_SPACE_ID else None)
 
 def khoi_tao_dong_bo_hf():
     """Tải tất cả dữ liệu từ Hugging Face Dataset về đĩa khi khởi động (chạy trong background thread - an toàn với hf-mount)"""
