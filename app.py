@@ -323,13 +323,14 @@ def ensure_playable_video(video_path):
                 return
                 
             # 2. XÓA CẢ FILE TẠM VÀ FILE H264 CŨ NẾU BỊ HỎNG
-            tmp_h264 = final_h264 + ".tmp"
+            # Dùng đuôi _ftmp.mp4 (không phải .mp4.tmp) để ffmpeg nhận đúng container MP4
+            tmp_h264 = final_h264.replace('_f.mp4', '_ftmp.mp4')
             for f_clean in [final_h264, tmp_h264]:
                 if os.path.exists(f_clean):
                     try: os.remove(f_clean)
                     except: pass
 
-            # 3. TRÍCH CODEC & TRANSCODE — ghi vào file TẠM .tmp trước
+            # 3. TRÍCH CODEC & TRANSCODE — ghi vào file TẠM _ftmp.mp4 trước
             # Sau khi xong mới đổi tên → _f.mp4 KHÔNG BAO GIỜ bị nửa vời (moov atom not found)
             v_codec, a_codec = get_video_codec(video_path)
             cmd = [
@@ -350,6 +351,7 @@ def ensure_playable_video(video_path):
                 cmd.extend(['-c:a', 'aac'])
             else:
                 cmd.extend(['-an'])
+            cmd.extend(['-f', 'mp4'])  # ← ép rõ format MP4 để tránh lỗi nhận dạng container
             cmd.append(tmp_h264)  # ← ghi vào file TẠM
 
             print(f"[Async Video] Đang convert {video_path} sang H.264 (file tạm: {tmp_h264})...")
@@ -8998,8 +9000,10 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                     if os.path.exists(error_log_path):
                                         st.warning("⚠️ Phát hiện log lỗi nén gần nhất:")
                                         try:
+                                            import hashlib as _hl_log
+                                            _log_key = f"ffmpeg_err_{_hl_log.md5(final_h264.encode()).hexdigest()[:8]}"
                                             with open(error_log_path, "r", encoding="utf-8") as f_err:
-                                                st.text_area("Chi tiết lỗi ffmpeg:", value=f_err.read(), height=150)
+                                                st.text_area("Chi tiết lỗi ffmpeg:", value=f_err.read(), height=150, key=_log_key)
                                         except Exception as e_log:
                                             st.write(f"Không thể đọc log lỗi: {e_log}")
                                         
