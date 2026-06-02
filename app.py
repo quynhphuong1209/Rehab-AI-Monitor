@@ -524,80 +524,20 @@ def render_video(video_path):
     elif is_local_raw:
         # File gốc có sẵn local nhưng chưa có H264, kích hoạt convert dưới nền và dùng tạm file gốc
         target_path = ensure_playable_video(video_path)
-        
-    # Phát trực tiếp bằng Base64 nếu file có sẵn cục bộ và dung lượng vừa phải (<15MB)
-    # Phương pháp này vượt qua 100% các rào cản CORS và lỗi HTTP Range Request trên Cloud (Hugging Face Spaces)
-    if target_path and os.path.exists(target_path) and os.path.getsize(target_path) >= 5 * 1024:
-        try:
-            mtime = os.path.getmtime(target_path)
-            size = os.path.getsize(target_path)
-            if size < 15 * 1024 * 1024:
-                b64_str = get_video_base64_cached(target_path, mtime, size)
-                if b64_str:
-                    video_url = f"data:video/mp4;base64,{b64_str}"
-                    import streamlit.components.v1 as _stcomp
-                    _stcomp.html(f"""
-<!DOCTYPE html><html><head>
-<style>
-  body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
-  video{{width:100%;border-radius:8px;display:block;height:240px;background:#000;}}
-</style>
-</head><body>
-<video id="vp" controls preload="metadata">
-  <source src="{video_url}" type="video/mp4">
-  Trình duyệt không hỗ trợ video HTML5.
-</video>
-<div style="color:#2ecc71; font-size:0.72rem; margin-top:4px; text-align:right; font-family:sans-serif;">
-  ⚡ Đang phát cục bộ (Base64)&nbsp;&nbsp;|&nbsp;&nbsp;📹 {os.path.basename(target_path)}
-</div>
-</body></html>
-""", height=270)
-                    return
-        except:
-            pass
 
-    if not target_path:
-        # Không có sẵn local, kích hoạt tải và convert dưới nền
-        ensure_playable_video(video_path) # Chạy nền, không block UI
-        
-        if HF_TOKEN and HF_DATASET_ID:
-            try:
-                rel_path = get_clean_rel_path(video_path)
-                # Thử stream file H264 từ Cloud nếu đã được đồng bộ lên đó trước đó
-                rel_path_f = rel_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
-                
-                import urllib.parse
-                rel_path_encoded_f = urllib.parse.quote(rel_path_f, safe='/')
-                rel_path_encoded_raw = urllib.parse.quote(rel_path, safe='/')
-                
-                cloud_url_f = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_f}?token={HF_TOKEN}"
-                cloud_url_raw = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_raw}?token={HF_TOKEN}"
-                
-                import streamlit.components.v1 as _stcomp
-                _stcomp.html(f"""
-<!DOCTYPE html><html><head>
-<style>
-  body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
-  video{{width:100%;border-radius:8px;display:block;height:240px;background:#000;}}
-</style>
-</head><body>
-<video id="vp" controls preload="metadata">
-  <source src="{cloud_url_f}">
-  <source src="{cloud_url_raw}">
-  Trình duyệt không hỗ trợ video HTML5.
-</video>
-<div style="color:#ffd700; font-size:0.72rem; margin-top:4px; text-align:right; font-family:sans-serif;">
-  ☁️ Đang stream trực tiếp từ Cloud&nbsp;&nbsp;|&nbsp;&nbsp;📹 {os.path.basename(video_path)}
-</div>
-</body></html>
-""", height=270)
-                return
-            except Exception as e:
-                pass
-
+    # 1. TRƯỜNG HỢP 1: Có sẵn file cục bộ (local) -> Dùng st.video để stream trực tiếp, cực kỳ nhanh
     if target_path:
-        # Bước 3: Chọn phương thức phát
         is_cloud = bool(os.environ.get('HF_SPACE_ID')) or bool(os.environ.get('SPACE_ID')) or (os.name != 'nt' and os.path.exists('/data'))
+        
+        # Nếu file raw chưa có H264 và là định dạng không tương thích, thông báo cho người dùng
+        if target_path == video_path and is_local_raw and not is_local_h264:
+            v_codec = None
+            try:
+                v_codec, _ = get_video_codec(video_path)
+            except:
+                pass
+            if v_codec != 'h264':
+                st.info("🔄 Video đang được nén tối ưu hóa định dạng H.264 dưới nền. Trình phát có thể tải chậm hoặc đen màn hình trong vài giây đầu...")
 
         if not is_cloud:
             video_url = _get_video_server_url(target_path)
@@ -626,13 +566,52 @@ def render_video(video_path):
 """, height=270)
                 return
 
-        # Fallback cho Cloud
+        # Phát bằng st.video (mặc định trên Cloud / Fallback local) -> Hỗ trợ tải phân đoạn tự động cực kỳ nhanh
         try:
             st.video(target_path)
         except Exception as e:
             st.error(f'⚠️ Lỗi hiển thị video: {e}')
-    else:
-        st.warning("⚠️ File video đang được xử lý dưới nền hoặc không khả dụng.")
+        return
+
+    # 2. TRƯỜNG HỢP 2: Không có sẵn cục bộ -> Stream trực tiếp từ Cloud
+    # Đồng thời kích hoạt tải/convert dưới nền
+    ensure_playable_video(video_path) # Chạy nền, không block UI
+    
+    if HF_TOKEN and HF_DATASET_ID:
+        try:
+            rel_path = get_clean_rel_path(video_path)
+            rel_path_f = rel_path.replace('.mp4', '_f.mp4').replace('.mov', '_f.mp4').replace('.MOV', '_f.mp4').replace('.avi', '_f.mp4').replace('.mkv', '_f.mp4')
+            
+            import urllib.parse
+            rel_path_encoded_f = urllib.parse.quote(rel_path_f, safe='/')
+            rel_path_encoded_raw = urllib.parse.quote(rel_path, safe='/')
+            
+            cloud_url_f = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_f}?token={HF_TOKEN}"
+            cloud_url_raw = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_raw}?token={HF_TOKEN}"
+            
+            import streamlit.components.v1 as _stcomp
+            _stcomp.html(f"""
+<!DOCTYPE html><html><head>
+<style>
+  body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
+  video{{width:100%;border-radius:8px;display:block;height:240px;background:#000;}}
+</style>
+</head><body>
+<video id="vp" controls preload="metadata">
+  <source src="{cloud_url_f}">
+  <source src="{cloud_url_raw}">
+  Trình duyệt không hỗ trợ video HTML5.
+</video>
+<div style="color:#ffd700; font-size:0.72rem; margin-top:4px; text-align:right; font-family:sans-serif;">
+  ☁️ Đang stream trực tiếp từ Cloud&nbsp;&nbsp;|&nbsp;&nbsp;📹 {os.path.basename(video_path)}
+</div>
+</body></html>
+""", height=270)
+            return
+        except:
+            pass
+
+    st.warning("⚠️ File video đang được xử lý dưới nền hoặc không khả dụng.")
 
 import threading
 import queue
