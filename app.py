@@ -874,30 +874,18 @@ def get_vn_now():
 import shutil
 
 DATA_DIR = "."
-if os.path.exists("/data") and os.access("/data", os.W_OK):
-    DATA_DIR = "/data"
-    
-    # Danh sách các file cần chuyển sang thư mục bền vững
-    files_to_persist = [
-        "users.json",
-        "patient_symptoms.json",
-        "doctor_evaluations.json",
-        "schedules.json",
-        "video_list.json",
-        "research_data.json",
-        "lich_su_tap_luyen.json",
-        "phan_hoi.json"
-    ]
-    
-    # Tự động sao chép file mặc định từ repo sang /data nếu chưa có
-    for f_name in files_to_persist:
-        target_path = os.path.join(DATA_DIR, f_name)
-        source_path = os.path.join(".", f_name)
-        if not os.path.exists(target_path) and os.path.exists(source_path):
-            try:
-                shutil.copy2(source_path, target_path)
-            except Exception as e:
-                pass
+# Phát hiện /data một cách an toàn - tránh xung đột với hf-mount
+try:
+    _data_ok = (
+        os.path.isdir("/data") and
+        os.access("/data", os.W_OK) and
+        os.access("/data", os.R_OK)
+    )
+    if _data_ok:
+        DATA_DIR = "/data"
+except Exception:
+    _data_ok = False
+
 
 USER_DATA_FILE = os.path.join(DATA_DIR, "users.json")
 SYMPTOMS_FILE = os.path.join(DATA_DIR, "patient_symptoms.json")
@@ -922,32 +910,6 @@ if not os.path.exists(PROCESSED_DIR):
     except:
         pass
 
-# Tạo liên kết tượng trưng (symlink) trên Cloud HF Spaces từ /app/... sang /data/... để Streamlit serve trực tiếp
-if DATA_DIR == "/data" and os.name != 'nt':
-    for folder in ["patient_uploads", "processed_results"]:
-        target_data_dir = os.path.join("/data", folder)
-        local_app_dir = os.path.abspath(folder)
-        
-        # Đảm bảo thư mục đích trong /data tồn tại
-        os.makedirs(target_data_dir, exist_ok=True)
-        
-        # Nếu thư mục local cũ tồn tại và không phải symlink -> xóa đi để chuẩn bị tạo symlink
-        if os.path.exists(local_app_dir) and not os.path.islink(local_app_dir):
-            try:
-                import shutil
-                if os.path.isdir(local_app_dir):
-                    shutil.rmtree(local_app_dir)
-                else:
-                    os.remove(local_app_dir)
-            except Exception as e:
-                pass
-        
-        # Tạo symlink
-        if not os.path.exists(local_app_dir):
-            try:
-                os.symlink(target_data_dir, local_app_dir)
-            except Exception as e:
-                pass
 
 EXTRACTED_FRAMES_DIR = "extracted_frames"
 OUTPUT_VIDEOS_DIR = "output_videos"
@@ -1078,8 +1040,23 @@ HF_SPACE_ID = os.environ.get("HF_SPACE_ID") or os.environ.get("SPACE_ID")
 HF_DATASET_ID = os.environ.get("HF_DATASET_ID") or (f"{HF_SPACE_ID}-data" if HF_SPACE_ID else None)
 
 def khoi_tao_dong_bo_hf():
-    """Tải tất cả dữ liệu từ Hugging Face Dataset về đĩa khi khởi động"""
+    """Tải tất cả dữ liệu từ Hugging Face Dataset về đĩa khi khởi động (chạy trong background thread - an toàn với hf-mount)"""
     if not HF_TOKEN or not HF_DATASET_ID:
+        # Kể cả không có HF_TOKEN, vẫn sao chép file mặc định sang /data nếu cần
+        if DATA_DIR == "/data":
+            _files_to_persist = [
+                "users.json", "patient_symptoms.json", "doctor_evaluations.json",
+                "schedules.json", "video_list.json", "research_data.json",
+                "lich_su_tap_luyen.json", "phan_hoi.json"
+            ]
+            for _f in _files_to_persist:
+                _dst = os.path.join(DATA_DIR, _f)
+                _src = os.path.join(".", _f)
+                if not os.path.exists(_dst) and os.path.exists(_src):
+                    try:
+                        shutil.copy2(_src, _dst)
+                    except:
+                        pass
         return
         
     try:
