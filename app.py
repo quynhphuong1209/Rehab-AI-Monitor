@@ -239,10 +239,16 @@ def ensure_playable_video(video_path):
     # Xác định file H264 đích mong muốn
     final_h264 = get_final_h264_path(video_path)
 
-    # Nếu video_path đã là file H264 transcode và tồn tại hợp lệ cục bộ → dùng ngay
+    # Nếu video_path đã là file H264 transcode và tồn tại hợp lệ cục bộ → dùng ngay nếu qua kiểm tra tính toàn vẹn
     if video_path.endswith('_f.mp4'):
         if os.path.exists(video_path) and os.path.getsize(video_path) >= 5 * 1024:
-            return video_path
+            try:
+                mtime = os.path.getmtime(video_path)
+                size = os.path.getsize(video_path)
+                if _check_video_valid_cached(video_path, mtime, size):
+                    return video_path
+            except:
+                pass
     else:
         # Nếu video gốc thô đã có sẵn cục bộ và là định dạng H264 → phát trực tiếp luôn
         if os.path.exists(video_path) and os.path.getsize(video_path) >= 5 * 1024:
@@ -281,7 +287,12 @@ def ensure_playable_video(video_path):
             if video_path.endswith('_f.mp4'):
                 is_corrupted = False
                 if os.path.exists(video_path):
-                    if os.path.getsize(video_path) < 5 * 1024:
+                    try:
+                        mtime = os.path.getmtime(video_path)
+                        size = os.path.getsize(video_path)
+                        if os.path.getsize(video_path) < 5 * 1024 or not _check_video_valid_cached(video_path, mtime, size):
+                            is_corrupted = True
+                    except:
                         is_corrupted = True
                 else:
                     success_dl = ensure_local_file(video_path)
