@@ -586,17 +586,32 @@ def render_video(video_path):
             st.error(f'⚠️ Lỗi hiển thị video: {e}')
         return
 
-    # Bước 1: Kiểm tra xem file H264 có sẵn local không
+    # Bước 1: Kiểm tra xem file H264 có sẵn local và hợp lệ không
     final_h264 = get_final_h264_path(video_path)
-    is_local_h264 = os.path.exists(final_h264) and os.path.getsize(final_h264) >= 5 * 1024
-    is_local_raw = os.path.exists(video_path) and os.path.getsize(video_path) >= 5 * 1024
+    is_local_h264 = False
+    if os.path.exists(final_h264) and os.path.getsize(final_h264) >= 5 * 1024:
+        try:
+            mtime = os.path.getmtime(final_h264)
+            size = os.path.getsize(final_h264)
+            is_local_h264 = _check_video_valid_cached(final_h264, mtime, size)
+        except:
+            pass
+            
+    is_local_raw = False
+    if os.path.exists(video_path) and os.path.getsize(video_path) >= 5 * 1024:
+        try:
+            mtime = os.path.getmtime(video_path)
+            size = os.path.getsize(video_path)
+            is_local_raw = _check_video_valid_cached(video_path, mtime, size)
+        except:
+            pass
 
     # Xác định đường dẫn thực tế phát
     target_path = None
     if is_local_h264:
         target_path = final_h264
     elif is_local_raw:
-        # File gốc có sẵn local nhưng chưa có H264, kích hoạt convert dưới nền và dùng tạm file gốc
+        # File gốc có sẵn local nhưng chưa có H264 hoặc H264 bị hỏng, kích hoạt convert dưới nền và dùng tạm file gốc
         target_path = ensure_playable_video(video_path)
 
     # 1. TRƯỜNG HỢP 1: Có sẵn file cục bộ (local)
@@ -8718,8 +8733,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
                 def is_valid_local_file(path):
                     if path and os.path.exists(path):
                         try:
-                            if os.path.getsize(path) >= 5 * 1024:
-                                return True
+                            mtime = os.path.getmtime(path)
+                            size = os.path.getsize(path)
+                            return _check_video_valid_cached(path, mtime, size)
                         except:
                             pass
                     return False
@@ -8865,10 +8881,29 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                             st.write(f"- Lỗi quét ffprobe: `{e}`")
                                     
                                     st.markdown(f"**Tệp nén H.264:** `{final_h264}`")
-                                    h264_exists = os.path.exists(final_h264) and os.path.getsize(final_h264) >= 5 * 1024
-                                    st.write(f"- Tồn tại cục bộ: {'✅ Có' if h264_exists else '❌ Không'}")
+                                    h264_exists = False
+                                    if os.path.exists(final_h264) and os.path.getsize(final_h264) >= 5 * 1024:
+                                        try:
+                                            mtime = os.path.getmtime(final_h264)
+                                            size = os.path.getsize(final_h264)
+                                            h264_exists = _check_video_valid_cached(final_h264, mtime, size)
+                                        except:
+                                            pass
+                                    st.write(f"- Tồn tại cục bộ và hợp lệ: {'✅ Có' if h264_exists else '❌ Không'}")
                                     if os.path.exists(final_h264):
                                         st.write(f"- Kích thước tệp: `{os.path.getsize(final_h264)/(1024*1024):.2f} MB`")
+                                        try:
+                                            v_codec_h, a_codec_h = get_video_codec(final_h264)
+                                            st.write(f"- Codec H264: `{v_codec_h} / {a_codec_h}`")
+                                            import subprocess
+                                            cmd_h = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', final_h264]
+                                            res_h = subprocess.run(cmd_h, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3)
+                                            dur_h = res_h.stdout.strip()
+                                            st.write(f"- Thời lượng ffprobe H264: `{dur_h if dur_h else 'Không xác định'} giây`")
+                                            if res_h.returncode != 0:
+                                                st.error(f"Lỗi ffprobe H264: {res_h.stderr.strip()}")
+                                        except Exception as e_h:
+                                            st.write(f"- Lỗi quét ffprobe H264: `{e_h}`")
                                         
                                     st.markdown("**Trạng thái Cloud:**")
                                     if HF_TOKEN and HF_DATASET_ID:
