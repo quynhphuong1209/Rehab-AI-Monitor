@@ -1355,7 +1355,9 @@ def don_dep_file_tam():
 @st.cache_resource(show_spinner=False)
 def thuc_hien_khoi_tao_he_thong_mot_lan():
     """Chạy đồng bộ và dọn dẹp hệ thống duy nhất MỘT LẦN khi server khởi động toàn cục"""
-    khoi_tao_dong_bo_hf()
+    # Khởi động đồng bộ dữ liệu trong background thread để tránh treo ứng dụng khi có tệp tin lớn
+    import threading
+    threading.Thread(target=khoi_tao_dong_bo_hf, daemon=True).start()
     don_dep_file_tam()
     return True
 
