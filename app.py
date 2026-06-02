@@ -4589,6 +4589,94 @@ def hien_thi_tien_trinh_background(video_path):
         
     return False
 
+@st.fragment(run_every=3)
+def hien_thi_tien_trinh_background_small(video_path):
+    """Hiển thị tiến trình chạy nền nhỏ gọn bên trong cột phải (không reload toàn trang)"""
+    prog = read_progress(video_path)
+    if not prog:
+        st.write("Đang khởi động...")
+        return
+        
+    status = prog.get("status")
+    if status == "processing":
+        p_val = prog.get("progress", 0.0)
+        elapsed = prog.get("elapsed", 0.0)
+        
+        st.progress(p_val)
+        st.info(f"🔄 Đang xử lý... {p_val*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
+        
+        # Mách nước tối ưu hóa tốc độ
+        st.markdown("""
+        <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 8px; padding: 10px; margin-top: 10px;">
+            <span style="color: #ffd700; font-size: 0.85rem; font-weight: bold;">💡 Mẹo tăng tốc:</span>
+            <span style="color: #ccc; font-size: 0.85rem;">Bạn có thể chỉnh <b>"Tốc độ xử lý"</b> ở sidebar bên trái thành <b>"Nhanh (Bỏ qua 2 hoặc 4 frame)"</b> để rút ngắn thời gian phân tích gấp 3-5 lần!</span>
+        </div>
+        """, unsafe_allow_html=True)
+    elif status == "success":
+        # Tiến trình đã xong -> Rerun toàn bộ trang để nạp kết quả
+        st.rerun()
+    elif status == "error":
+        err_msg = prog.get("error_msg", "Lỗi không xác định")
+        st.error(f"❌ Phân tích thất bại: {err_msg}")
+        if st.button("🔄 THỬ LẠI PHÂN TÍCH", type="primary", key=f"btn_retry_bg_small_{hashlib.md5(video_path.encode()).hexdigest()}"):
+            p_file = get_progress_file(video_path)
+            try:
+                if os.path.exists(p_file):
+                    os.remove(p_file)
+            except:
+                pass
+            st.rerun()
+
+@st.fragment(run_every=3)
+def hien_thi_tien_trinh_background_home_fragment(video_path):
+    """Hiển thị giao diện tiến trình chạy nền ở màn hình trang chủ (không reload toàn trang)"""
+    prog = read_progress(video_path)
+    if not prog:
+        st.write("Đang khởi động...")
+        return
+        
+    status = prog.get("status")
+    if status == "processing":
+        p_val = prog.get("progress", 0.0)
+        elapsed = prog.get("elapsed", 0.0)
+        
+        st.markdown(f"""
+        <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span style="color: #60a5fa; font-weight: 600; font-size: 1.1rem;">⚙️ Đang xử lý AI trong nền...</span>
+                <span style="color: #94a3b8; font-size: 0.9rem;">⏱️ Đang chạy: {elapsed:.1f}s</span>
+            </div>
+            <div style="color: #e2e8f0; font-size: 0.95rem; margin-bottom: 15px;">
+                Hệ thống đang thực hiện trích xuất khung xương và phân tích các chỉ số tập luyện lâm sàng. 
+                Bạn có thể an tâm <b>tắt trình duyệt, chuyển tab</b> hoặc làm việc khác. Tiến trình sẽ tự chạy đến khi hoàn tất.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.progress(p_val)
+        st.info(f"🔄 Tiến độ tổng thể: {p_val*100:.0f}%")
+        
+        # Mách nước tối ưu hóa tốc độ
+        st.markdown("""
+        <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 8px; padding: 10px; margin-top: 10px;">
+            <span style="color: #ffd700; font-size: 0.85rem; font-weight: bold;">💡 Mẹo tăng tốc:</span>
+            <span style="color: #ccc; font-size: 0.85rem;">Bạn có thể chỉnh <b>"Tốc độ xử lý"</b> ở sidebar bên trái thành <b>"Nhanh (Bỏ qua 2 hoặc 4 frame)"</b> để rút ngắn thời gian phân tích gấp 3-5 lần!</span>
+        </div>
+        """, unsafe_allow_html=True)
+    elif status == "success":
+        st.rerun()
+    elif status == "error":
+        err_msg = prog.get("error_msg", "Lỗi không xác định")
+        st.error(f"❌ Phân tích thất bại: {err_msg}")
+        if st.button("🔄 THỬ LẠI PHÂN TÍCH", type="primary", key=f"btn_retry_bg_home_{hashlib.md5(video_path.encode()).hexdigest()}"):
+            p_file = get_progress_file(video_path)
+            try:
+                if os.path.exists(p_file):
+                    os.remove(p_file)
+            except:
+                pass
+            st.rerun()
+
 def bat_dau_phan_tich_background(
     video_path,
     username,
@@ -6279,8 +6367,6 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
         v_path = st.session_state.current_eval_video.get('video_path')
         if v_path:
             check_and_populate_background_result(v_path)
-            if hien_thi_tien_trinh_background(v_path):
-                return
 
     # Nếu không có dữ liệu truyền vào -> Kiểm tra tải tự động (Dành cho NCV)
     if stats_ext is None and df_ext is None:
@@ -6428,22 +6514,27 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         with st.spinner("📥 Đang tải video thô từ Cloud..."):
                             render_video(v['video_path'])
                 with col_v2:
-                    st.info("💡 Bạn có thể thực hiện phân tích ngay bây giờ để xem kết quả khung xương và chỉ số lâm sàng.")
-                    if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
-                        ncv_gd = st.session_state.get('ncv_giai_doan', 'Giai đoạn 2: Hồi phục (Sai số vừa - 30°)')
-                        bat_dau_phan_tich_background(
-                            video_path=v['video_path'],
-                            username=v['username'],
-                            full_name=v['full_name'],
-                            video_name=v.get('video_name'),
-                            exercise_name=v['exercise'],
-                            giai_doan=ncv_gd,
-                            model_type=st.session_state.get('ncv_model_type', 'MediaPipe Heavy'),
-                            confidence=st.session_state.get('ncv_confidence', 0.5)
-                        )
-                        st.toast("🚀 Đã khởi chạy phân tích dưới nền thành công!", icon="⚡")
-                        time.sleep(0.5)
-                        st.rerun()
+                    prog_data = read_progress(v['video_path'])
+                    if prog_data and prog_data.get("status") in ["processing", "error"]:
+                        st.info("⚙️ Đang xử lý AI trong nền... Bạn có thể an tâm tắt trình duyệt hoặc chuyển tab.")
+                        hien_thi_tien_trinh_background_small(v['video_path'])
+                    else:
+                        st.info("💡 Bạn có thể thực hiện phân tích ngay bây giờ để xem kết quả khung xương và chỉ số lâm sàng.")
+                        if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
+                            ncv_gd = st.session_state.get('ncv_giai_doan', 'Giai đoạn 2: Hồi phục (Sai số vừa - 30°)')
+                            bat_dau_phan_tich_background(
+                                video_path=v['video_path'],
+                                username=v['username'],
+                                full_name=v['full_name'],
+                                video_name=v.get('video_name'),
+                                exercise_name=v['exercise'],
+                                giai_doan=ncv_gd,
+                                model_type=st.session_state.get('ncv_model_type', 'MediaPipe Heavy'),
+                                confidence=st.session_state.get('ncv_confidence', 0.5)
+                            )
+                            st.toast("🚀 Đã khởi chạy phân tích dưới nền thành công!", icon="⚡")
+                            time.sleep(0.5)
+                            st.rerun()
                 return
             else:
                 st.info("ℹ️ Chưa có video nào để phân tích. Vui lòng chọn một video ở trang chủ hoặc upload video mới.")
@@ -10589,7 +10680,7 @@ def main():
                         
                         if active_prog:
                             check_and_populate_background_result(active_video_path)
-                            hien_thi_tien_trinh_background(active_video_path)
+                            hien_thi_tien_trinh_background_home_fragment(active_video_path)
                         else:
                             btn_text = "🚀 BẮT ĐẦU XỬ LÝ AI"
                             if st.button(btn_text, width="stretch", type="primary"):
