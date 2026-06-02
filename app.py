@@ -693,7 +693,8 @@ def render_video(video_path):
                 st.warning("⏳ **Trình duyệt hiện tại chưa hỗ trợ phát trực tiếp định dạng video gốc này.**\n\n"
                            "Hệ thống đang tự động tối ưu hóa và nén video sang định dạng H.264 chuẩn dưới nền. "
                            "Vui lòng chờ khoảng 1 phút rồi tải lại trang (F5) để xem video.")
-                safe_btn_key = f"reload_btn_{hashlib.md5(video_path.encode()).hexdigest()[:8]}"
+                import hashlib as _hashlib
+                safe_btn_key = f"reload_btn_{_hashlib.md5(video_path.encode()).hexdigest()[:8]}"
                 if st.button("🔄 Tải lại trang (F5)", key=safe_btn_key):
                     st.rerun()
                 return
