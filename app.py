@@ -7127,50 +7127,40 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                         _verdict_color = {"Đúng": "#00e676", "Gần đúng": "#ffd700", "Sai": "#ff5252"}.get(e.get('doctor_result', ''), title_color)
 
                         _divider_color = "#eee" if is_light else "#2a2a2a"
+                        _ag1_str = f"{_ag1:.1f}%" if _ag1 is not None else "N/A"
+                        _ag2_str = f"{_ag2:.1f}%" if _ag2 is not None else "N/A"
+                        _ag3_str = f"{_ag3:.1f}%" if _ag3 is not None else "N/A"
+
                         st.markdown(f"""
-                        <div style="background:{eval_card_bg}; border-radius:14px; border:1px solid {eval_card_border};
-                                    padding:14px 10px; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
-                            <p style="text-align:center; margin:0 0 10px 0; color:{eval_text_color}; font-size:0.72rem; letter-spacing:1px; font-weight:600;">
-                                KẾT QUẢ 3 GIAI ĐOẠN
-                            </p>
+                        <p style="text-align:center; margin:0 0 8px 0; color:{eval_text_color};
+                                  font-size:0.72rem; letter-spacing:1px; font-weight:600;">
+                            KẾT QUẢ 3 GIAI ĐOẠN
+                        </p>
+                        """, unsafe_allow_html=True)
 
-                            <div style="background:rgba(0,230,118,0.08); border:1px solid #00e676; border-radius:10px;
-                                        padding:8px 10px; margin-bottom:7px; display:flex; justify-content:space-between; align-items:center;">
-                                <div>
-                                    <span style="font-size:0.7rem; color:#aaa; display:block;">🌱 GĐ1 · 45°</span>
-                                    <span style="font-size:0.75rem; color:#00e676;">{_lbl(_ag1)}</span>
-                                </div>
-                                <span style="font-size:1.25rem; font-weight:900; color:{_c(_ag1)};">
-                                    {f"{_ag1:.1f}%" if _ag1 is not None else "N/A"}
-                                </span>
+                        for _gi, _gl, _gv, _gc, _gb, _gs in [
+                            ("🌱", "GĐ1 · 45°", _ag1, "#00e676", "rgba(0,230,118,0.08)", _ag1_str),
+                            ("📈", "GĐ2 · 30°", _ag2, "#ffd700", "rgba(255,215,0,0.08)", _ag2_str),
+                            ("🎯", "GĐ3 · 15°", _ag3, "#00c6ff", "rgba(0,198,255,0.08)", _ag3_str),
+                        ]:
+                            _gclr = _c(_gv)
+                            _glbl = _lbl(_gv)
+                            st.markdown(f"""
+                            <div style="background:{_gb}; border:1px solid {_gc}; border-radius:10px;
+                                        padding:7px 10px; margin-bottom:6px;">
+                                <span style="font-size:0.68rem; color:#aaa;">{_gi} {_gl}</span><br>
+                                <span style="font-size:0.75rem; color:{_gc};">{_glbl}</span>
+                                <span style="float:right; font-size:1.2rem; font-weight:900; color:{_gclr};">{_gs}</span>
                             </div>
+                            """, unsafe_allow_html=True)
 
-                            <div style="background:rgba(255,215,0,0.08); border:1px solid #ffd700; border-radius:10px;
-                                        padding:8px 10px; margin-bottom:7px; display:flex; justify-content:space-between; align-items:center;">
-                                <div>
-                                    <span style="font-size:0.7rem; color:#aaa; display:block;">📈 GĐ2 · 30°</span>
-                                    <span style="font-size:0.75rem; color:#ffd700;">{_lbl(_ag2)}</span>
-                                </div>
-                                <span style="font-size:1.25rem; font-weight:900; color:{_c(_ag2)};">
-                                    {f"{_ag2:.1f}%" if _ag2 is not None else "N/A"}
-                                </span>
-                            </div>
-
-                            <div style="background:rgba(0,198,255,0.08); border:1px solid #00c6ff; border-radius:10px;
-                                        padding:8px 10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                                <div>
-                                    <span style="font-size:0.7rem; color:#aaa; display:block;">🎯 GĐ3 · 15°</span>
-                                    <span style="font-size:0.75rem; color:#00c6ff;">{_lbl(_ag3)}</span>
-                                </div>
-                                <span style="font-size:1.25rem; font-weight:900; color:{_c(_ag3)};">
-                                    {f"{_ag3:.1f}%" if _ag3 is not None else "N/A"}
-                                </span>
-                            </div>
-
-                            <div style="text-align:center; border-top:1px solid {_divider_color}; padding-top:8px;">
-                                <span style="font-size:0.72rem; color:{eval_text_color};">KẾT LUẬN TỔNG THỂ</span><br>
-                                <span style="font-size:1.1rem; font-weight:800; color:{_verdict_color};">{e.get('doctor_result', 'N/A')}</span>
-                            </div>
+                        st.markdown(f"""
+                        <div style="text-align:center; border-top:1px solid {_divider_color};
+                                    padding-top:8px; margin-top:4px;">
+                            <span style="font-size:0.72rem; color:{eval_text_color};">KẾT LUẬN TỔNG THỂ</span><br>
+                            <span style="font-size:1.1rem; font-weight:800; color:{_verdict_color};">
+                                {e.get('doctor_result', 'N/A')}
+                            </span>
                         </div>
                         """, unsafe_allow_html=True)
                     else:
