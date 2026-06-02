@@ -322,24 +322,25 @@ def ensure_playable_video(video_path):
                 print(f"[Async Video] Không thể tải/phát hiện video gốc hợp lệ {video_path}")
                 return
                 
-            # 2. XÓA FILE H264 NẾU BỊ HỎNG TRƯỚC KHI TRẦN THUẬT LẠI
-            if os.path.exists(final_h264):
-                try: os.remove(final_h264)
-                except: pass
-                
-            # 3. TRÍCH CODEC & TRANSCODE
+            # 2. XÓA CẢ FILE TẠM VÀ FILE H264 CŨ NẾU BỊ HỎNG
+            tmp_h264 = final_h264 + ".tmp"
+            for f_clean in [final_h264, tmp_h264]:
+                if os.path.exists(f_clean):
+                    try: os.remove(f_clean)
+                    except: pass
+
+            # 3. TRÍCH CODEC & TRANSCODE — ghi vào file TẠM .tmp trước
+            # Sau khi xong mới đổi tên → _f.mp4 KHÔNG BAO GIỜ bị nửa vời (moov atom not found)
             v_codec, a_codec = get_video_codec(video_path)
-            # Tối ưu hóa độ phân giải tối đa 720p mà không làm phóng to video (scale=-2:min(720,ih))
-            # Bổ dung -map 0:v:0 và -map 0:a? để đảm bảo xử lý được mọi dòng dữ liệu (metadata) của video gốc
             cmd = [
-                'ffmpeg', '-y', 
+                'ffmpeg', '-y',
                 '-i', video_path,
-                '-vcodec', 'libx264', 
-                '-pix_fmt', 'yuv420p', 
-                '-preset', 'ultrafast', 
-                '-vf', 'scale=-2:min(720\\,ih)', 
-                '-crf', '28', 
-                '-maxrate', '800k', 
+                '-vcodec', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                '-preset', 'ultrafast',
+                '-vf', 'scale=-2:min(720\\,ih)',
+                '-crf', '28',
+                '-maxrate', '800k',
                 '-bufsize', '1600k',
                 '-movflags', '+faststart',
                 '-threads', '0',
@@ -349,16 +350,13 @@ def ensure_playable_video(video_path):
                 cmd.extend(['-c:a', 'aac'])
             else:
                 cmd.extend(['-an'])
-            cmd.append(final_h264)
-            
-            print(f"[Async Video] Đang convert {video_path} sang H.264 dưới nền...")
-            # Tăng timeout lên 1800 giây (30 phút) để xử lý các tệp tin cực lớn (như 550MB) trên Space CPU yếu
+            cmd.append(tmp_h264)  # ← ghi vào file TẠM
+
+            print(f"[Async Video] Đang convert {video_path} sang H.264 (file tạm: {tmp_h264})...")
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=1800)
-            
+
             if result.returncode != 0:
-                print("[Async Video] FFmpeg failed with exit code", result.returncode)
-                print("[Async Video] FFmpeg stderr:", result.stderr)
-                # Ghi log lỗi để hiển thị trực quan lên giao diện bác sĩ
+                print("[Async Video] FFmpeg failed:", result.returncode, result.stderr[-500:])
                 try:
                     error_log_path = os.path.join(os.path.dirname(final_h264), "transcode_error.txt")
                     with open(error_log_path, "w", encoding="utf-8") as f_err:
@@ -368,37 +366,46 @@ def ensure_playable_video(video_path):
                         f_err.write(f"Stderr:\n{result.stderr}\n")
                 except:
                     pass
-                if os.path.exists(final_h264):
-                    try: os.remove(final_h264)
+                # Xóa file tạm nếu ffmpeg fail
+                if os.path.exists(tmp_h264):
+                    try: os.remove(tmp_h264)
                     except: pass
                 return
-                
-            if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
-                # Kiểm tra tính toàn vẹn thực tế của tệp tin vừa tạo
-                mtime_f = os.path.getmtime(final_h264)
-                size_f = os.path.getsize(final_h264)
-                if not _check_video_valid_cached(final_h264, mtime_f, size_f):
-                    print("[Async Video] Tệp tin đầu ra không hợp lệ. Đang xóa...")
+
+            # Kiểm tra file tạm hợp lệ trước khi đổi tên
+            if os.path.exists(tmp_h264) and os.path.getsize(tmp_h264) > 5 * 1024:
+                mtime_f = os.path.getmtime(tmp_h264)
+                size_f = os.path.getsize(tmp_h264)
+                if not _check_video_valid_cached(tmp_h264, mtime_f, size_f):
+                    print("[Async Video] File tạm không hợp lệ sau ffmpeg. Xóa...")
                     try:
                         error_log_path = os.path.join(os.path.dirname(final_h264), "transcode_error.txt")
                         with open(error_log_path, "w", encoding="utf-8") as f_err:
                             f_err.write(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                            f_err.write("Error: Output H.264 file created but failed integrity validation (ffprobe duration is invalid).\n")
+                            f_err.write("Error: Output file failed integrity check after ffmpeg.\n")
                     except:
                         pass
-                    try: os.remove(final_h264)
+                    try: os.remove(tmp_h264)
                     except: pass
                     return
-                
-                # Thành công -> Xóa file log lỗi cũ
+
+                # ✅ File tạm hợp lệ → đổi tên ATOMIC sang _f.mp4
+                try:
+                    os.replace(tmp_h264, final_h264)
+                    print(f"[Async Video] ✅ Convert thành công: {final_h264}")
+                except Exception as rename_err:
+                    print(f"[Async Video] Lỗi đổi tên: {rename_err}")
+                    return
+
+                # Xóa log lỗi cũ
                 try:
                     error_log_path = os.path.join(os.path.dirname(final_h264), "transcode_error.txt")
                     if os.path.exists(error_log_path):
                         os.remove(error_log_path)
                 except:
                     pass
-                    
-                print(f"[Async Video] Đã convert thành công sang {final_h264}")
+
+                # Cập nhật database
                 try:
                     video_list = load_data(VIDEOS_FILE)
                     updated = False
@@ -414,12 +421,12 @@ def ensure_playable_video(video_path):
                         print("[Async Video] Đã cập nhật database video_list.json")
                 except Exception as db_err:
                     print(f"[Async Video] Lỗi cập nhật database: {db_err}")
-                
+
                 push_file_to_hf_async(final_h264)
             else:
-                # Nếu không tồn tại hoặc < 5KB thì xóa đi để tránh rác
-                if os.path.exists(final_h264):
-                    try: os.remove(final_h264)
+                # File tạm không tồn tại hoặc quá nhỏ
+                if os.path.exists(tmp_h264):
+                    try: os.remove(tmp_h264)
                     except: pass
         except Exception as err:
             print(f"[Async Video] Lỗi trong tiến trình chạy nền: {err}")
@@ -430,9 +437,11 @@ def ensure_playable_video(video_path):
                     f_err.write(f"Exception: {str(err)}\n")
             except:
                 pass
-            if os.path.exists(final_h264):
-                try: os.remove(final_h264)
-                except: pass
+            # Xóa cả file tạm và file đích nếu có
+            for f_clean in [final_h264, final_h264 + ".tmp"]:
+                if os.path.exists(f_clean):
+                    try: os.remove(f_clean)
+                    except: pass
         finally:
             with _transcoding_lock:
                 _transcoding_jobs.discard(final_h264)
