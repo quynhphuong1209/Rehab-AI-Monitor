@@ -261,6 +261,7 @@ def ensure_playable_video(video_path):
         try: os.remove(final_h264)
         except: pass
         
+    v_codec, a_codec = get_video_codec(video_path)
     cmd = [
         'ffmpeg', '-y', 
         '-i', video_path,
@@ -273,9 +274,12 @@ def ensure_playable_video(video_path):
         '-bufsize', '1600k',
         '-movflags', '+faststart',
         '-threads', '0',
-        '-map', '0:v:0', '-map', '0:a?', '-c:a', 'aac',
-        final_h264
     ]
+    if a_codec:
+        cmd.extend(['-c:a', 'aac'])
+    else:
+        cmd.extend(['-an'])
+    cmd.append(final_h264)
     try:
         print(f"[Auto-Heal Video] Đang convert {video_path} sang H.264...")
         st.toast(f"🔄 Đang tối ưu hóa định dạng video H.264 để phát mượt mà trên trình duyệt...", icon="🎬")
@@ -8556,11 +8560,8 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             pass
                     return False
 
-                # Xác định video hiển thị: ưu tiên processed_path (video đã vẽ khung xương AI) nếu đã phân tích
-                if processed_path and (is_valid_local_file(processed_path) or not is_valid_local_file(raw_path)):
-                    v_display_path = processed_path
-                else:
-                    v_display_path = raw_path
+                # Luôn hiển thị video thô bệnh nhân upload ở trang chủ theo yêu cầu của người dùng
+                v_display_path = raw_path
 
                 # Kiểm tra sự tồn tại của file hiển thị cục bộ
                 local_exists = is_valid_local_file(v_display_path)
@@ -9587,8 +9588,9 @@ def main():
                             
                             # Kiểm tra xem video tải lên có thể phát trực tiếp (đã là H.264 MP4) không để lưu luôn tránh nén tốn CPU gây treo lag
                             v_codec = None
+                            a_codec = None
                             try:
-                                v_codec, _ = get_video_codec(temp_uploaded_path)
+                                v_codec, a_codec = get_video_codec(temp_uploaded_path)
                             except:
                                 pass
                                 
@@ -9615,9 +9617,12 @@ def main():
                                         '-bufsize', '1600k',
                                         '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
                                         '-threads', '0',
-                                        '-map', '0:v:0', '-map', '0:a?', '-c:a', 'aac',
-                                        file_path
                                     ]
+                                    if a_codec:
+                                        cmd.extend(['-c:a', 'aac'])
+                                    else:
+                                        cmd.extend(['-an'])
+                                    cmd.append(file_path)
                                     result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
                                     if result_compress.returncode == 0 and os.path.exists(file_path) and os.path.getsize(file_path) > 1024:
                                         try: os.remove(temp_uploaded_path)
