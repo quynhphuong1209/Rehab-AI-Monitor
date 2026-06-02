@@ -4449,12 +4449,30 @@ def get_progress_file(video_path):
     return os.path.join(PROCESSED_DIR, f"progress_{h}.json")
 
 def read_progress(video_path):
-    """Đọc thông tin tiến trình từ đĩa"""
+    """Đọc thông tin tiến trình từ đĩa với cơ chế tự động dọn dẹp nếu bị treo/crashed"""
     p_file = get_progress_file(video_path)
     if os.path.exists(p_file):
         try:
             with open(p_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+            
+            # Tự động dọn dẹp nếu trạng thái là đang xử lý nhưng thread thực tế đã chết hoặc server khởi động lại
+            if data and data.get("status") == "processing":
+                is_alive = False
+                if '_running_threads' in globals():
+                    is_alive = (video_path in _running_threads and _running_threads[video_path].is_alive())
+                
+                # Nếu không có thread nào đang chạy và file đã hơn 30 giây không cập nhật
+                if not is_alive:
+                    import time
+                    mtime = os.path.getmtime(p_file)
+                    if time.time() - mtime > 30:
+                        try:
+                            os.remove(p_file)
+                        except:
+                            pass
+                        return None
+            return data
         except:
             pass
     return None
