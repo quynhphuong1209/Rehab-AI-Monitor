@@ -4739,6 +4739,33 @@ def hien_thi_tien_trinh_background_home_fragment(video_path):
                 pass
             st.rerun()
 
+@st.fragment(run_every=1)
+def hien_thi_tien_trinh_phan_tich_fragment(video_path, key_suffix):
+    prog_data = read_progress(video_path)
+    if prog_data:
+        status = prog_data.get("status")
+        if status == "processing":
+            p_val = prog_data.get("progress", 0.0)
+            elapsed = prog_data.get("elapsed", 0.0)
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+            st.progress(p_val)
+            st.info(f"🔄 Đang xử lý... {p_val*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
+        elif status == "success":
+            st.rerun()
+        elif status == "error":
+            err_msg = prog_data.get("error_msg", "Lỗi không xác định")
+            st.error(f"❌ Phân tích thất bại: {err_msg}")
+            if st.button("🔄 THỬ LẠI PHÂN TÍCH", width="stretch", type="primary", key=f"btn_retry_bg_{key_suffix}"):
+                p_file = get_progress_file(video_path)
+                try:
+                    if os.path.exists(p_file):
+                        os.remove(p_file)
+                except:
+                    pass
+                st.rerun()
+    else:
+        st.rerun()
+
 def bat_dau_phan_tich_background(
     video_path,
     username,
@@ -6626,20 +6653,9 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         time.sleep(0.5)
                         st.rerun()
                     
-                    if is_processing:
-                        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-                        st.progress(p_val)
-                        st.info(f"🔄 Đang xử lý... {p_val*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
-                    elif is_error:
-                        st.error(f"❌ Phân tích thất bại: {err_msg}")
-                        if st.button("🔄 THỬ LẠI PHÂN TÍCH", width="stretch", type="primary", key=f"btn_retry_bg_{key_suffix}"):
-                            p_file = get_progress_file(v['video_path'])
-                            try:
-                                if os.path.exists(p_file):
-                                    os.remove(p_file)
-                            except:
-                                pass
-                            st.rerun()
+                    # Gọi fragment tự động cập nhật tiến trình mỗi 1 giây
+                    if prog_data:
+                        hien_thi_tien_trinh_phan_tich_fragment(v['video_path'], key_suffix)
                 return
             else:
                 st.info("ℹ️ Chưa có video nào để phân tích. Vui lòng chọn một video ở trang chủ hoặc upload video mới.")
