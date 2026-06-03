@@ -1715,18 +1715,22 @@ st.markdown("""
     /* Tối ưu hóa giao diện st.segmented_control thành tab bar */
     .st-key-active_tab_widget,
     div[data-testid="stSegmentedControl"] {
+        position: relative !important;
         background: transparent !important; /* Xóa nền container */
         border: none !important; /* Xóa viền bao ngoài container */
+        border-bottom: none !important;
+        box-shadow: none !important;
         margin-bottom: 25px !important;
-        padding: 5px 0px 10px 0px !important;
+        padding: 5px 30px 10px 30px !important; /* Thêm padding chừa chỗ cho mũi tên */
         width: 100% !important;
+        overflow: visible !important;
     }
 
-    /* Thiết lập flexbox không xuống dòng và cho phép cuộn ngang cho container bên trong */
-    .st-key-active_tab_widget div,
+    /* Thiết lập flexbox không xuống dòng và cho phép cuộn ngang cho container thực sự chứa nút */
     .st-key-active_tab_widget [role="radiogroup"],
     .st-key-active_tab_widget [role="group"],
-    div[data-testid="stSegmentedControl"] > div {
+    div[data-testid="stSegmentedControl"] [role="radiogroup"],
+    div[data-testid="stSegmentedControl"] [role="group"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
@@ -1735,32 +1739,37 @@ st.markdown("""
         overflow-x: auto !important;
         overflow-y: hidden !important;
         width: 100% !important;
+        scrollbar-width: none !important; /* Firefox */
+        -ms-overflow-style: none !important; /* IE 10+ */
+        border: none !important;
+        border-bottom: none !important;
+        box-shadow: none !important;
     }
 
-    /* Tối ưu thanh cuộn ngang cực kỳ mảnh và đẹp mắt */
-    .st-key-active_tab_widget div::-webkit-scrollbar,
+    /* Ẩn hoàn toàn thanh cuộn ngang của segmented control */
     .st-key-active_tab_widget [role="radiogroup"]::-webkit-scrollbar,
     .st-key-active_tab_widget [role="group"]::-webkit-scrollbar,
-    div[data-testid="stSegmentedControl"] > div::-webkit-scrollbar {
-        height: 5px !important;
-    }
-    .st-key-active_tab_widget div::-webkit-scrollbar-thumb,
-    .st-key-active_tab_widget [role="radiogroup"]::-webkit-scrollbar-thumb,
-    .st-key-active_tab_widget [role="group"]::-webkit-scrollbar-thumb,
-    div[data-testid="stSegmentedControl"] > div::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2) !important;
-        border-radius: 4px !important;
+    div[data-testid="stSegmentedControl"] [role="radiogroup"]::-webkit-scrollbar,
+    div[data-testid="stSegmentedControl"] [role="group"]::-webkit-scrollbar {
+        display: none !important;
     }
 
     .st-key-active_tab_widget button,
     div[data-testid="stSegmentedControl"] button {
         border-radius: 10px 10px 0 0 !important; /* Bo góc trên, dưới phẳng để giống tab thật */
-        font-weight: bold !important;
-        font-size: 0.95rem !important;
+        font-weight: 800 !important;
         transition: all 0.3s ease !important;
-        padding: 10px 20px !important;
+        padding: 14px 28px !important; /* Tăng padding cực lớn giống ảnh số 3 */
+        min-height: 52px !important;
         margin-right: 5px !important;
-        border-bottom: 3px solid transparent !important; /* Viền chân mặc định trong suốt */
+        border-bottom: 4px solid transparent !important; /* Viền chân mặc định trong suốt */
+        min-width: max-content !important;
+        max-width: none !important;
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     .st-key-active_tab_widget button p,
     div[data-testid="stSegmentedControl"] button p,
@@ -1768,23 +1777,30 @@ st.markdown("""
     div[data-testid="stSegmentedControl"] button div,
     .st-key-active_tab_widget button span,
     div[data-testid="stSegmentedControl"] button span {
-        font-size: 0.95rem !important;
-        font-weight: bold !important;
+        font-size: 1.15rem !important; /* Tăng kích thước chữ giống ảnh số 3 */
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
     }
+    
+    /* Trạng thái được chọn (Active) */
     .st-key-active_tab_widget [aria-pressed="true"],
     .st-key-active_tab_widget [aria-checked="true"],
     .st-key-active_tab_widget [aria-selected="true"],
     .st-key-active_tab_widget [data-checked="true"],
     .st-key-active_tab_widget [class*="selected"],
     .st-key-active_tab_widget [class*="active"],
+    .st-key-active_tab_widget button[data-testid*="Active"],
+    .st-key-active_tab_widget button[kind*="Active"],
     div[data-testid="stSegmentedControl"] [aria-pressed="true"],
     div[data-testid="stSegmentedControl"] [aria-checked="true"],
     div[data-testid="stSegmentedControl"] [aria-selected="true"],
-    div[data-testid="stSegmentedControl"] [data-checked="true"] {
+    div[data-testid="stSegmentedControl"] [data-checked="true"],
+    div[data-testid="stSegmentedControl"] button[data-testid*="Active"],
+    div[data-testid="stSegmentedControl"] button[kind*="Active"] {
         background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
         color: white !important;
         border: 1px solid #00c6ff !important;
-        border-bottom: 3px solid #ff4b4b !important; /* Gạch đỏ dưới chân tab được chọn */
+        border-bottom: 4px solid #ff4b4b !important; /* Gạch đỏ dày hơn dưới chân tab được chọn */
         box-shadow: 0 4px 15px rgba(0, 198, 255, 0.4) !important;
     }
     
@@ -2412,14 +2428,16 @@ if st.session_state.get('theme') == 'dark':
         /* Phong cách st.segmented_control trong chế độ tối giống tab ảnh 2 */
         .st-key-active_tab_widget,
         div[data-testid="stSegmentedControl"] {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; /* Đường gạch xám nhạt dưới tab bar */
+            border-bottom: none !important; /* Xóa đường gạch xám nhạt dưới tab bar */
         }
         .st-key-active_tab_widget button,
         div[data-testid="stSegmentedControl"] button {
             background-color: rgba(255, 255, 255, 0.05) !important;
-            color: #ffffff !important;
+            color: rgba(255, 255, 255, 0.8) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-bottom: 3px solid transparent !important;
+            border-bottom: 4px solid transparent !important;
+            padding: 14px 28px !important;
+            min-height: 52px !important;
         }
         .st-key-active_tab_widget button:hover,
         div[data-testid="stSegmentedControl"] button:hover {
@@ -2433,14 +2451,18 @@ if st.session_state.get('theme') == 'dark':
         .st-key-active_tab_widget [data-checked="true"],
         .st-key-active_tab_widget [class*="selected"],
         .st-key-active_tab_widget [class*="active"],
+        .st-key-active_tab_widget button[data-testid*="Active"],
+        .st-key-active_tab_widget button[kind*="Active"],
         div[data-testid="stSegmentedControl"] [aria-pressed="true"],
         div[data-testid="stSegmentedControl"] [aria-checked="true"],
         div[data-testid="stSegmentedControl"] [aria-selected="true"],
-        div[data-testid="stSegmentedControl"] [data-checked="true"] {
+        div[data-testid="stSegmentedControl"] [data-checked="true"],
+        div[data-testid="stSegmentedControl"] button[data-testid*="Active"],
+        div[data-testid="stSegmentedControl"] button[kind*="Active"] {
             background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
             color: #ffffff !important;
             border: 1px solid #00c6ff !important;
-            border-bottom: 3px solid #ff4b4b !important; /* Gạch đỏ dưới chân tab được chọn */
+            border-bottom: 4px solid #ff4b4b !important; /* Gạch đỏ dưới chân tab được chọn */
         }
     </style>
     """, unsafe_allow_html=True)
@@ -2713,14 +2735,16 @@ if st.session_state.get('theme') == 'light':
         /* Phong cách st.segmented_control trong chế độ sáng giống tab ảnh 2 */
         .st-key-active_tab_widget,
         div[data-testid="stSegmentedControl"] {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important; /* Đường gạch xám nhạt dưới tab bar */
+            border-bottom: none !important; /* Xóa đường gạch dưới chân tab bar */
         }
         .st-key-active_tab_widget button,
         div[data-testid="stSegmentedControl"] button {
             background-color: #f1f3f5 !important;
             color: #495057 !important;
             border: 1px solid #ced4da !important;
-            border-bottom: 3px solid transparent !important;
+            border-bottom: 4px solid transparent !important;
+            padding: 14px 28px !important;
+            min-height: 52px !important;
         }
         .st-key-active_tab_widget button:hover,
         div[data-testid="stSegmentedControl"] button:hover {
@@ -2734,14 +2758,18 @@ if st.session_state.get('theme') == 'light':
         .st-key-active_tab_widget [data-checked="true"],
         .st-key-active_tab_widget [class*="selected"],
         .st-key-active_tab_widget [class*="active"],
+        .st-key-active_tab_widget button[data-testid*="Active"],
+        .st-key-active_tab_widget button[kind*="Active"],
         div[data-testid="stSegmentedControl"] [aria-pressed="true"],
         div[data-testid="stSegmentedControl"] [aria-checked="true"],
         div[data-testid="stSegmentedControl"] [aria-selected="true"],
-        div[data-testid="stSegmentedControl"] [data-checked="true"] {
+        div[data-testid="stSegmentedControl"] [data-checked="true"],
+        div[data-testid="stSegmentedControl"] button[data-testid*="Active"],
+        div[data-testid="stSegmentedControl"] button[kind*="Active"] {
             background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
             color: #ffffff !important;
             border: 1px solid #00c6ff !important;
-            border-bottom: 3px solid #ff4b4b !important; /* Gạch đỏ dưới chân tab được chọn */
+            border-bottom: 4px solid #ff4b4b !important; /* Gạch đỏ dưới chân tab được chọn */
         }
     </style>
     """, unsafe_allow_html=True)
@@ -3427,30 +3455,32 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
             for e in evals
         )
     
-    tab_list = ["📝 ĐÁNH GIÁ PHCN", "📄 PHIẾU NCKH"]
-    if has_ai:
-        tab_list.extend(["🔬 KẾT QUẢ TỪ NCV (AI)", "🎬 VIDEO & HÌNH ẢNH"])
-        
+    tab_list = ["📝 ĐÁNH GIÁ PHCN", "📄 PHIẾU NCKH", "🔬 KẾT QUẢ TỪ NCV (AI)", "🎬 VIDEO & HÌNH ẢNH"]
     sub_tabs = st.tabs(tab_list)
     
     with sub_tabs[0]:
         hien_thi_form_danh_gia_bac_si()
     with sub_tabs[1]:
         hien_thi_tab_phieu_nckh()
-    if has_ai:
-        # Load dữ liệu AI để hiển thị cho Bác sĩ
-        v_list_db = load_data(VIDEOS_FILE)
-        v_ai = next((v for v in v_list_db if v['username'] == selected_video['username'] and v['video_name'] == selected_video['video_name']), None)
         
-        if v_ai:
-            # Đồng bộ session_state để các hàm hiển thị dùng chung
-            st.session_state.stats = v_ai.get('metrics')
-            st.session_state.processed_video_path = v_ai.get('processed_path')
-            st.session_state.all_frames_data_path = v_ai.get('all_frames_data_path')
-            st.session_state.uploaded_file_name = v_ai.get('video_name')
-            st.session_state.frames_zip = v_ai.get('frames_zip')
+    with sub_tabs[2]:
+        if not selected_video:
+            st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
+        elif not has_ai:
+            st.warning("🕒 Nghiên cứu viên chưa thực hiện phân tích AI hoặc chưa gửi báo cáo cho video này.")
+        else:
+            # Load dữ liệu AI để hiển thị cho Bác sĩ
+            v_list_db = load_data(VIDEOS_FILE)
+            v_ai = next((v for v in v_list_db if v['username'] == selected_video['username'] and v['video_name'] == selected_video['video_name']), None)
             
-            with sub_tabs[2]:
+            if v_ai:
+                # Đồng bộ session_state để các hàm hiển thị dùng chung
+                st.session_state.stats = v_ai.get('metrics')
+                st.session_state.processed_video_path = v_ai.get('processed_path')
+                st.session_state.all_frames_data_path = v_ai.get('all_frames_data_path')
+                st.session_state.uploaded_file_name = v_ai.get('video_name')
+                st.session_state.frames_zip = v_ai.get('frames_zip')
+                
                 if v_ai.get('metrics'):
                     df_ncv = None
                     df_path_ncv = v_ai.get('df_path')
@@ -3464,11 +3494,25 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
                     hien_thi_tab_phan_tich(key_suffix="doc_view_ncv_sub", stats_ext=v_ai['metrics'], df_ext=df_ncv, exercise_ext=ex_ai)
                 else:
                     st.warning("⚠️ NCV đã gửi báo cáo nhưng dữ liệu biểu đồ chi tiết chưa được đồng bộ hoặc bị lỗi file.")
-            
-            with sub_tabs[3]:
-                hien_thi_frames_day_du(key_suffix="doc_view_ncv_vid")
+            else:
+                st.warning("⚠️ Không tìm thấy dữ liệu video AI tương ứng.")
+                
+    with sub_tabs[3]:
+        if not selected_video:
+            st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem video trích xuất.")
+        elif not has_ai:
+            st.warning("🕒 Nghiên cứu viên chưa thực hiện phân tích AI hoặc chưa gửi báo cáo cho video này.")
         else:
-            with sub_tabs[2]:
+            v_list_db = load_data(VIDEOS_FILE)
+            v_ai = next((v for v in v_list_db if v['username'] == selected_video['username'] and v['video_name'] == selected_video['video_name']), None)
+            if v_ai:
+                st.session_state.stats = v_ai.get('metrics')
+                st.session_state.processed_video_path = v_ai.get('processed_path')
+                st.session_state.all_frames_data_path = v_ai.get('all_frames_data_path')
+                st.session_state.uploaded_file_name = v_ai.get('video_name')
+                st.session_state.frames_zip = v_ai.get('frames_zip')
+                hien_thi_frames_day_du(key_suffix="doc_view_ncv_vid")
+            else:
                 st.warning("⚠️ Không tìm thấy dữ liệu video AI tương ứng.")
 
 
@@ -10820,6 +10864,126 @@ def main():
         st.session_state.active_tab = selected_tab
     else:
         selected_tab = st.session_state.active_tab
+
+    import streamlit.components.v1 as components
+    components.html("""
+    <script>
+        (function() {
+            function setupScrollArrows() {
+                const doc = window.parent.document;
+                // Chỉ nhắm vào phần tử stSegmentedControl bên trong active_tab_widget để tránh trùng lặp
+                const containers = doc.querySelectorAll('.st-key-active_tab_widget div[data-testid="stSegmentedControl"]');
+                
+                containers.forEach(container => {
+                    // Tìm phần tử cuộn thực sự (div có role=radiogroup hoặc role=group chứa nút bấm)
+                    let scrollChild = container.querySelector('[role="radiogroup"]') || container.querySelector('[role="group"]');
+                    if (!scrollChild) return;
+                    
+                    // Nếu đã thêm nút cuộn thì không thêm lại
+                    if (container.querySelector('.custom-scroll-arrow-left')) return;
+                    
+                    container.style.position = 'relative';
+                    
+                    // Mũi tên trái
+                    const leftArrow = doc.createElement('div');
+                    leftArrow.className = 'custom-scroll-arrow-left';
+                    leftArrow.innerHTML = '◀';
+                    leftArrow.style.cssText = `
+                        position: absolute !important;
+                        left: 5px !important;
+                        top: 50% !important;
+                        transform: translateY(-50%) !important;
+                        color: #00c6ff !important;
+                        font-size: 1.3rem !important;
+                        font-weight: bold !important;
+                        cursor: pointer !important;
+                        z-index: 999 !important;
+                        background: rgba(26, 26, 46, 0.95) !important;
+                        border-radius: 50% !important;
+                        width: 36px !important;
+                        height: 36px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        border: 1px solid rgba(0, 198, 255, 0.5) !important;
+                        user-select: none !important;
+                        transition: all 0.2s ease !important;
+                        box-shadow: 0 4px 10px rgba(0,0,0,0.4) !important;
+                    `;
+                    
+                    // Mũi tên phải
+                    const rightArrow = doc.createElement('div');
+                    rightArrow.className = 'custom-scroll-arrow-right';
+                    rightArrow.innerHTML = '▶';
+                    rightArrow.style.cssText = `
+                        position: absolute !important;
+                        right: 5px !important;
+                        top: 50% !important;
+                        transform: translateY(-50%) !important;
+                        color: #00c6ff !important;
+                        font-size: 1.3rem !important;
+                        font-weight: bold !important;
+                        cursor: pointer !important;
+                        z-index: 999 !important;
+                        background: rgba(26, 26, 46, 0.95) !important;
+                        border-radius: 50% !important;
+                        width: 36px !important;
+                        height: 36px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        border: 1px solid rgba(0, 198, 255, 0.5) !important;
+                        user-select: none !important;
+                        transition: all 0.2s ease !important;
+                        box-shadow: 0 4px 10px rgba(0,0,0,0.4) !important;
+                    `;
+                    
+                    // Hiệu ứng hover
+                    leftArrow.onmouseover = () => {
+                        leftArrow.style.background = '#00c6ff';
+                        leftArrow.style.color = '#fff';
+                        leftArrow.style.transform = 'translateY(-50%) scale(1.15)';
+                    };
+                    leftArrow.onmouseout = () => {
+                        leftArrow.style.background = 'rgba(26, 26, 46, 0.95)';
+                        leftArrow.style.color = '#00c6ff';
+                        leftArrow.style.transform = 'translateY(-50%) scale(1)';
+                    };
+                    
+                    rightArrow.onmouseover = () => {
+                        rightArrow.style.background = '#00c6ff';
+                        rightArrow.style.color = '#fff';
+                        rightArrow.style.transform = 'translateY(-50%) scale(1.15)';
+                    };
+                    rightArrow.onmouseout = () => {
+                        rightArrow.style.background = 'rgba(26, 26, 46, 0.95)';
+                        rightArrow.style.color = '#00c6ff';
+                        rightArrow.style.transform = 'translateY(-50%) scale(1)';
+                    };
+                    
+                    // Sự kiện click cuộn mượt mà
+                    leftArrow.onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        scrollChild.scrollBy({ left: -280, behavior: 'smooth' });
+                    };
+                    
+                    rightArrow.onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        scrollChild.scrollBy({ left: 280, behavior: 'smooth' });
+                    };
+                    
+                    container.appendChild(leftArrow);
+                    container.appendChild(rightArrow);
+                });
+            }
+            
+            // Cài đặt lặp để kiểm tra và áp dụng
+            setInterval(setupScrollArrows, 500);
+        })();
+    </script>
+    """, height=0, width=0)
     
     # ==================== TAB 1: TRANG CHỦ ====================
     if selected_tab == "🏠 TRANG CHỦ":
