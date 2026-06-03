@@ -8589,12 +8589,54 @@ def hien_thi_lich_nhac_nho():
     cols = [col1, col2, col3, col4]
     for i, (label, val) in enumerate(metrics_data):
         with cols[i]:
+            if "Hiện tại" in label:
+                val_html = f'<div id="vietnam-live-time">{val}</div>'
+            else:
+                val_html = f'<div>{val}</div>'
             st.markdown(f"""
                 <div style="background: {m_bg}; border: {m_border}; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                     <div style="color: {m_label}; font-size: 0.9rem; font-weight: 500; margin-bottom: 5px;">{label}</div>
-                    <div style="color: {m_text}; font-size: 1.8rem; font-weight: 800;">{val}</div>
+                    <div style="color: {m_text}; font-size: 1.8rem; font-weight: 800;">{val_html}</div>
                 </div>
             """, unsafe_allow_html=True)
+
+    # Inject JavaScript clock updater
+    js_clock = """
+    <script>
+        (function() {
+            function updateClock() {
+                var roots = [document];
+                try { if (window.parent && window.parent.document) roots.push(window.parent.document); } catch(e) {}
+                
+                for (var r = 0; r < roots.length; r++) {
+                    var doc = roots[r];
+                    var el = doc.getElementById("vietnam-live-time");
+                    if (el) {
+                        try {
+                            var formatter = new Intl.DateTimeFormat('en-US', {
+                                timeZone: 'Asia/Ho_Chi_Minh',
+                                hour12: false,
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            });
+                            el.innerText = formatter.format(new Date());
+                        } catch(e) {
+                            console.error(e);
+                        }
+                        break;
+                    }
+                }
+            }
+            updateClock();
+            if (window.vnClockInterval) {
+                clearInterval(window.vnClockInterval);
+            }
+            window.vnClockInterval = setInterval(updateClock, 1000);
+        })();
+    </script>
+    """
+    st.markdown(js_clock, unsafe_allow_html=True)
     
     st.markdown("---")
     if user_role == "Bệnh nhân":
