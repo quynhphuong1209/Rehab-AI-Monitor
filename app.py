@@ -722,7 +722,7 @@ def render_video(video_path):
             path_hash = hashlib.md5(target_path.encode()).hexdigest()[:10]
             safe_name = f"stream_{path_hash}.mp4"
             static_path = os.path.join(static_dir, safe_name)
-            video_key = f"st_vid_{path_hash}"
+            video_key = f"st_vid_comp_{path_hash}"
             
             # Đồng bộ file từ /data hoặc local sang thư mục static bằng hard link (tốc độ ánh sáng, 0ms)
             if not os.path.exists(static_path):
@@ -736,20 +736,45 @@ def render_video(video_path):
                     os.link(target_path, static_path)
                 except:
                     shutil.copy2(target_path, static_path)
-                
-            # Phát bằng URL tĩnh của Streamlit (bắt buộc cấu hình enableStaticServing = true)
-            # Sử dụng stable key để không bị reload lại khi user click form
-            st.video(f"static/{safe_name}", format="video/mp4", key=video_key)
+            
+            # Lấy kích thước video để cấu hình chiều cao iframe phù hợp
+            iframe_height = 400
+            try:
+                import cv2
+                cap_info = cv2.VideoCapture(target_path)
+                if cap_info.isOpened():
+                    v_w = cap_info.get(cv2.CAP_PROP_FRAME_WIDTH)
+                    v_h = cap_info.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                    cap_info.release()
+                    if v_w > 0 and v_h > 0:
+                        iframe_height = int((v_h / v_w) * 640)
+                        # Giới hạn chiều cao an toàn để giao diện cân đối
+                        iframe_height = max(200, min(iframe_height, 650))
+            except:
+                pass
+
+            import streamlit.components.v1 as _stcomp
+            _stcomp.html(f"""
+<!DOCTYPE html><html><head>
+<style>
+  body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
+  video{{width:100%;height:100%;border-radius:8px;display:block;background:#000;box-shadow:0 4px 15px rgba(0,0,0,0.3);object-fit:contain;}}
+</style>
+</head><body>
+<video id="vp" controls preload="auto" playsinline style="width:100%; height:calc({iframe_height}px - 10px);">
+  <source src="static/{safe_name}" type="video/mp4">
+  Trình duyệt không hỗ trợ video HTML5.
+</video>
+</body></html>
+""", height=iframe_height, key=video_key)
             return
         except Exception as _ve:
-            # Fallback dự phòng nếu static serving gặp trục trặc: phát qua bytes
+            # Fallback dự phòng nếu static serving gặp trục trặc: phát qua bytes (không truyền key cho st.video để tránh lỗi)
             try:
-                path_hash = hashlib.md5(target_path.encode()).hexdigest()[:10]
-                video_key = f"st_bytes_vid_{path_hash}"
                 with open(target_path, 'rb') as _vf:
                     _vbytes = _vf.read()
                 if _vbytes:
-                    st.video(_vbytes, format="video/mp4", key=video_key)
+                    st.video(_vbytes, format="video/mp4")
                     return
             except Exception as _ve2:
                 st.error(f"❌ Không thể phát video: {_ve2}")
