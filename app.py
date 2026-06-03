@@ -2164,6 +2164,20 @@ if st.session_state.get('theme') == 'dark':
             border-radius: 10px !important;
             color: white !important;
         }
+        
+        /* Đảm bảo chữ gõ vào ô nhập liệu luôn là màu trắng sạch sẽ trong chế độ tối */
+        div[data-baseweb="input"] input, 
+        div[data-baseweb="base-input"] input,
+        div[data-baseweb="textarea"] textarea,
+        .stTextInput input,
+        .stTextArea textarea,
+        .stNumberInput input,
+        input,
+        textarea,
+        select {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
 
         /* KHỬ HOÀN TOÀN VIỀN/NỀN TRÊN CÁC CHỮ TIÊU ĐỀ (LABELS) */
         [data-testid="stWidgetLabel"], 
@@ -2642,9 +2656,16 @@ if st.session_state.get('theme') == 'light':
         .stTextArea textarea,
         .stNumberInput input,
         .stNumberInput div[data-baseweb="input"],
-        .stNumberInput div[data-baseweb="input"] * {
+        .stNumberInput div[data-baseweb="input"] *,
+        div[data-baseweb="input"] input, 
+        div[data-baseweb="base-input"] input,
+        div[data-baseweb="textarea"] textarea,
+        input,
+        textarea,
+        select {
             background-color: #ffffff !important;
             color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
             border-color: #ced4da !important;
         }
 
