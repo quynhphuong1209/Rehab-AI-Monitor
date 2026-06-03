@@ -5758,7 +5758,7 @@ def gui_bao_cao_tong_hop_3_giai_doan():
             "username": target_u,
             "full_name": target_fn,
             "video_name": st.session_state.get('uploaded_file_name', 'N/A'),
-            "exercise": st.session_state.get('exercise', {}).get('ten', 'codman'),
+            "exercise": st.session_state.get('exercise').get('ten', 'codman') if isinstance(st.session_state.get('exercise'), dict) else 'codman',
             "video_path": st.session_state.get('processed_video_path', '')
         }
         
@@ -9527,7 +9527,8 @@ def load_all_frames_data_cached(path):
 def hien_thi_frames_day_du(key_suffix=""):
     """Hiển thị frames với Streamlit Fragment (Chỉ load lại vùng này, cực nhanh)"""
     user_role = st.session_state.user_info.get('role')
-    exercise_name = st.session_state.get('exercise', {}).get('ten', '')
+    ex_obj = st.session_state.get('exercise')
+    exercise_name = ex_obj.get('ten', '') if isinstance(ex_obj, dict) else ''
     is_gay_ex = any(kw in str(exercise_name).lower() or kw in str(st.session_state.get('current_eval_video', {}).get('exercise', '')).lower() for kw in ["gậy", "gay", "pulley", "stick"])
 
     all_frames_data_path = get_local_frame_path(st.session_state.get('all_frames_data_path'))
