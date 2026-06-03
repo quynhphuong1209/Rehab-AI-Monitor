@@ -9331,62 +9331,81 @@ def hien_thi_frames_day_du(key_suffix=""):
         if page_key not in st.session_state:
             st.session_state[page_key] = 1
 
+        # Cấu hình màu sắc động thích ứng theo chế độ Sáng/Tối (Light/Dark Mode)
+        is_light = st.session_state.get('theme') == 'light'
+        card_bg = "#ffffff"
+        card_border = "#00c6ff"
+        card_hover_border = "#0072ff"
+        card_text = "#1a1a2e"
+        card_text_muted = "#555555"
+        img_bg = "#f1f3f5"
+        card_shadow = "0 6px 16px rgba(0, 198, 255, 0.15)"
+        
+        if not is_light:
+            card_bg = "#1a1a2e"
+            card_border = "#2d2d44"
+            card_text = "#ffffff"
+            card_text_muted = "#aaa"
+            img_bg = "#0a0a16"
+            card_shadow = "0 4px 6px rgba(0, 0, 0, 0.15)"
+
         # Inject custom CSS styles for clean frame cards and interactive hover zoom
-        st.markdown("""
+        st.markdown(f"""
         <style>
         /* Đảm bảo các cột và block trong Streamlit có thể hiển thị ảnh phóng to tràn viền mà không bị che khuất */
-        div[data-testid="column"] {
+        div[data-testid="column"] {{
             overflow: visible !important;
-        }
-        div[data-testid="stVerticalBlock"] {
+        }}
+        div[data-testid="stVerticalBlock"] {{
             overflow: visible !important;
-        }
-        div[data-testid="stVerticalBlockBorderOnly"] {
+        }}
+        div[data-testid="stVerticalBlockBorderOnly"] {{
             overflow: visible !important;
             padding: 0.3rem !important; /* Thu nhỏ padding ngoài để ảnh to hơn */
-        }
+        }}
         
-        .frame-card {
-            background-color: #1a1a2e;
-            border: 1px solid #2d2d44;
+        .frame-card {{
+            background-color: {card_bg} !important;
+            border: 1.5px solid {card_border} !important;
             border-radius: 8px;
             padding: 8px;
             margin-bottom: 12px;
             transition: all 0.2s ease-in-out;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            box-shadow: {card_shadow} !important;
             position: relative;
-        }
-        .frame-card:hover {
-            border-color: #0072ff;
-            box-shadow: 0 6px 12px rgba(0, 114, 255, 0.25);
-        }
-        .frame-card-header {
+            color: {card_text} !important;
+        }}
+        .frame-card:hover {{
+            border-color: {card_hover_border} !important;
+            box-shadow: 0 6px 12px rgba(0, 114, 255, 0.25) !important;
+        }}
+        .frame-card-header {{
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 6px;
-        }
-        .frame-card-index {
-            color: #aaa;
+        }}
+        .frame-card-index {{
+            color: {card_text_muted} !important;
             font-size: 0.75rem;
             font-weight: bold;
-        }
-        .frame-card-badge {
+        }}
+        .frame-card-badge {{
             font-size: 0.65rem;
             font-weight: bold;
             padding: 1px 6px;
             border-radius: 10px;
             border: 1px solid;
-        }
-        .frame-card-img-wrapper {
+        }}
+        .frame-card-img-wrapper {{
             width: 100%;
             overflow: visible;
             position: relative;
             text-align: center;
-            background-color: #0a0a16;
+            background-color: {img_bg} !important;
             border-radius: 4px;
-        }
-        .frame-card-img {
+        }}
+        .frame-card-img {{
             max-width: 100%;
             height: auto;
             max-height: 200px;
@@ -9396,24 +9415,28 @@ def hien_thi_frames_day_du(key_suffix=""):
             cursor: zoom-in;
             display: block;
             margin: 0 auto;
-        }
+        }}
         /* Phóng to cực đại ảnh lên 2.2 lần khi hover chuột vào mà không lệch bố cục */
-        .frame-card-img:hover {
+        .frame-card-img:hover {{
             transform: scale(2.2);
             z-index: 99999 !important;
             position: relative;
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
             border: 2px solid #0072ff;
-        }
-        .frame-card-footer {
+        }}
+        .frame-card-footer {{
             font-size: 0.72rem;
             line-height: 1.4;
             margin-top: 6px;
-        }
-        .frame-card-row {
+            color: {card_text} !important;
+        }}
+        .frame-card-footer span {{
+            color: {card_text} !important;
+        }}
+        .frame-card-row {{
             display: flex;
             justify-content: space-between;
-        }
+        }}
         </style>
         """, unsafe_allow_html=True)
 
