@@ -1323,7 +1323,7 @@ def check_and_extract_frames_zip(processed_video_path):
     # Nếu thư mục frames đã tồn tại cục bộ và chứa ảnh, không cần làm gì thêm
     if os.path.exists(frames_dir) and os.path.isdir(frames_dir):
         try:
-            if len(os.listdir(frames_dir)) > 5:
+            if sum(1 for _ in zip(range(6), os.scandir(frames_dir))) > 5:
                 return
         except:
             pass
@@ -1370,7 +1370,8 @@ def save_data(file_path, data):
     # Tự động đẩy file dữ liệu lên Hugging Face Dataset
     push_file_to_hf_async(file_path)
 
-def load_users():
+@st.cache_data(show_spinner=False)
+def _get_cached_users_dict(mtime):
     users = load_data(USER_DATA_FILE)
     
     # DANH SÁCH TÀI KHOẢN CỐ ĐỊNH (NCKH)
@@ -1434,6 +1435,12 @@ def load_users():
             
     return users
 
+def load_users():
+    mtime = 0.0
+    if os.path.exists(USER_DATA_FILE):
+        mtime = os.path.getmtime(USER_DATA_FILE)
+    return _get_cached_users_dict(mtime)
+
 def save_users(users):
     save_data(USER_DATA_FILE, users)
 
@@ -1471,9 +1478,9 @@ def don_dep_file_tam():
                     pass
         
         if deleted_count > 0:
-            print(f"[Cleanup] Đã xóa {deleted_count} file tạm cũ khỏi {tmp_dir}")
+            print(f"[Cleanup] Da xoa {deleted_count} file tam cu khoi {tmp_dir}")
     except Exception as e:
-        print(f"[Cleanup] Lỗi dọn file tạm: {e}")
+        print(f"[Cleanup] Loi don file tam: {e}")
 
 # Khởi động đồng bộ dữ liệu từ Hugging Face Dataset và dọn dẹp file tạm duy nhất MỘT LẦN khi app khởi chạy toàn cục (chống ghi đè khi F5)
 @st.cache_resource(show_spinner=False)
@@ -1491,7 +1498,7 @@ def thuc_hien_khoi_tao_he_thong_mot_lan():
         time.sleep(15)  # Chờ HF dataset sync xong trước
         try:
             video_list = load_data(VIDEOS_FILE)
-            print(f"[AutoTranscode] Bắt đầu scan {len(video_list)} video...")
+            print(f"[AutoTranscode] Bat dau scan {len(video_list)} video...")
             for vid in video_list:
                 vpath = vid.get('processed_path') or vid.get('video_path', '')
                 if not vpath:
@@ -1515,13 +1522,13 @@ def thuc_hien_khoi_tao_he_thong_mot_lan():
                 try:
                     v_codec, _ = get_video_codec(vpath)
                     if v_codec and v_codec != 'h264':
-                        print(f"[AutoTranscode] Kích hoạt transcode: {os.path.basename(vpath)} ({v_codec})")
+                        print(f"[AutoTranscode] Kich hoat transcode: {os.path.basename(vpath)} ({v_codec})")
                         ensure_playable_video(vpath)
                         time.sleep(2)  # Tránh chạy song song quá nhiều
                 except Exception as e:
-                    print(f"[AutoTranscode] Lỗi: {e}")
+                    print(f"[AutoTranscode] Loi: {e}")
         except Exception as e:
-            print(f"[AutoTranscode] Lỗi toàn cục: {e}")
+            print(f"[AutoTranscode] Loi toan cuc: {e}")
 
     threading.Thread(target=_auto_transcode_all_hevc, daemon=True).start()
     return True
@@ -1705,6 +1712,32 @@ st.markdown("""
         padding-top: 4rem !important;
     }
 
+    /* Tối ưu hóa giao diện st.segmented_control thành tab bar */
+    div[data-testid="stSegmentedControl"] {
+        display: flex !important;
+        justify-content: center !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-radius: 12px !important;
+        padding: 5px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        gap: 5px !important;
+        margin-bottom: 25px !important;
+    }
+    div[data-testid="stSegmentedControl"] button {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 8px !important;
+        color: #aaa !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease !important;
+        padding: 8px 16px !important;
+    }
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 15px rgba(0, 198, 255, 0.3) !important;
+    }
+    
     /* === STYLE HEADER & NÚT BẤM THÍCH ỨNG THEO CHỦ ĐỀ (THEME-AWARE) === */
     [data-testid="stHeader"] {
         background-color: var(--background-color) !important;
@@ -10634,7 +10667,7 @@ def main():
             # Giả định nếu có folder frames tương ứng thì coi là đã có output
             video_folder = selected_video_main.get('video_name', '').split('.')[0]
             frames_path = os.path.join(EXTRACTED_FRAMES_DIR, video_folder)
-            has_video_output = os.path.exists(frames_path) and len(os.listdir(frames_path)) > 0 if os.path.exists(frames_path) else False
+            has_video_output = os.path.exists(frames_path) and (next(os.scandir(frames_path), None) is not None) if os.path.exists(frames_path) else False
             
         tab_titles = ["🏠 TRANG CHỦ", "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"]
         if has_video_output:
@@ -10645,18 +10678,34 @@ def main():
     else: # Nghiên cứu viên
         tab_titles = ["🏠 TRANG CHỦ", "📊 KẾT QUẢ ĐÁNH GIÁ", "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
         
-    all_tabs = st.tabs(tab_titles)
-    
-    # === HỖ TRỢ CHUYỂN TAB TỰ ĐỘNG QUA SESSION STATE ===
+    # Khởi tạo hoặc khôi phục active_tab
+    if 'active_tab' not in st.session_state or st.session_state.active_tab not in tab_titles:
+        st.session_state.active_tab = tab_titles[0]
+        
     if st.session_state.get('trigger_tab_switch'):
-        chuyen_tab_bang_js(st.session_state.trigger_tab_switch)
+        if st.session_state.trigger_tab_switch in tab_titles:
+            st.session_state.active_tab = st.session_state.trigger_tab_switch
         st.session_state.trigger_tab_switch = None
-    # Tạo mapping để truy cập tab theo tên, tránh lỗi index khi số lượng tab thay đổi theo vai trò
-    tab_map = {title: all_tabs[i] for i, title in enumerate(tab_titles)}
+        st.rerun()
+
+    # Hiển thị Menu segmented control dạng Tab Bar
+    selected_tab = st.segmented_control(
+        label="Menu điều hướng",
+        options=tab_titles,
+        selection_mode="single",
+        default=st.session_state.active_tab,
+        key="active_tab_widget",
+        label_visibility="collapsed"
+    )
+    
+    if selected_tab:
+        st.session_state.active_tab = selected_tab
+    else:
+        selected_tab = st.session_state.active_tab
     
     # ==================== TAB 1: TRANG CHỦ ====================
-    if "🏠 TRANG CHỦ" in tab_map:
-        with tab_map["🏠 TRANG CHỦ"]:
+    if selected_tab == "🏠 TRANG CHỦ":
+        if True:
             if user_role == "Quản trị viên":
                 hien_thi_home_quan_tri_vien()
             else:
@@ -11182,16 +11231,16 @@ def main():
                     st.markdown("<br>", unsafe_allow_html=True)
     
     # ==================== TAB: PHÂN TÍCH / ĐÁNH GIÁ ====================
-    if "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH" in tab_map:
-        with tab_map["📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"]:
+    if selected_tab == "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH":
+        if True:
             hien_thi_tab_danh_gia_va_nckh_bac_si()
 
-    if "📝 ĐÁNH GIÁ PHCN" in tab_map:
-        with tab_map["📝 ĐÁNH GIÁ PHCN"]:
+    if selected_tab == "📝 ĐÁNH GIÁ PHCN":
+        if True:
             hien_thi_form_danh_gia_bac_si()
             
-    if "📊 KẾT QUẢ AI" in tab_map:
-        with tab_map["📊 KẾT QUẢ AI"]:
+    if selected_tab == "📊 KẾT QUẢ AI":
+        if True:
             selected_video = st.session_state.get('current_eval_video')
             if not selected_video:
                 st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
@@ -11233,84 +11282,84 @@ def main():
                 else:
                     st.warning("🕒 Nghiên cứu viên chưa thực hiện phân tích AI cho video này.")
 
-    if "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU" in tab_map:
-        with tab_map["🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"]:
+    if selected_tab == "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU":
+        if True:
             hien_thi_tab_phan_tich_va_video_ncv()
 
-    if "📊 KẾT QUẢ" in tab_map:
-        with tab_map["📊 KẾT QUẢ"]:
+    if selected_tab == "📊 KẾT QUẢ":
+        if True:
             hien_thi_ket_qua_cho_benh_nhan()
-    elif "📊 KẾT QUẢ ĐÁNH GIÁ" in tab_map:
-        with tab_map["📊 KẾT QUẢ ĐÁNH GIÁ"]:
+    if selected_tab == "📊 KẾT QUẢ ĐÁNH GIÁ":
+        if True:
             hien_thi_ket_qua_cho_benh_nhan()
 
     # ==================== TAB: KHAI BÁO TRIỆU CHỨNG ====================
-    if "🩺 KHAI BÁO TRIỆU CHỨNG" in tab_map:
-        with tab_map["🩺 KHAI BÁO TRIỆU CHỨNG"]:
+    if selected_tab == "🩺 KHAI BÁO TRIỆU CHỨNG":
+        if True:
             hien_thi_tab_khai_bao_trieu_chung()
 
     # ==================== TAB: LỊCH NHẮC NHỞ ====================
-    if "⏰ LỊCH NHẮC NHỞ" in tab_map:
-        with tab_map["⏰ LỊCH NHẮC NHỞ"]:
+    if selected_tab == "⏰ LỊCH NHẮC NHỞ":
+        if True:
             hien_thi_lich_nhac_nho()
     # ==================== TAB: VIDEO & ẢNH ====================
     # Tab Video & Ảnh đã được gộp vào Phân tích & Video cho NCV
 
-    if "📖 HƯỚNG DẪN" in tab_map:
-        with tab_map["📖 HƯỚNG DẪN"]:
+    if selected_tab == "📖 HƯỚNG DẪN":
+        if True:
             hien_thi_tab_huong_dan(role=user_role)
         
-    if "🏥 KIẾN THỨC PHCN" in tab_map:
-        with tab_map["🏥 KIẾN THỨC PHCN"]:
+    if selected_tab == "🏥 KIẾN THỨC PHCN":
+        if True:
             hien_thi_tab_kien_thuc_phcn()
 
-    if "🛠️ QUẢN TRỊ VIÊN" in tab_map:
-        with tab_map["🛠️ QUẢN TRỊ VIÊN"]:
+    if selected_tab == "🛠️ QUẢN TRỊ VIÊN":
+        if True:
             hien_thi_tab_quan_tri_vien()
             
-    if "🔑 ĐỔI MẬT KHẨU" in tab_map:
-        with tab_map["🔑 ĐỔI MẬT KHẨU"]:
+    if selected_tab == "🔑 ĐỔI MẬT KHẨU":
+        if True:
             hien_thi_tab_doi_mat_khau()
         
-    if "🌐 CÔNG NGHỆ" in tab_map:
-        with tab_map["🌐 CÔNG NGHỆ"]:
+    if selected_tab == "🌐 CÔNG NGHỆ":
+        if True:
             hien_thi_tab_cong_nghe()
             
-    if "📚 THÔNG TIN TỔNG HỢP" in tab_map:
-        with tab_map["📚 THÔNG TIN TỔNG HỢP"]:
+    if selected_tab == "📚 THÔNG TIN TỔNG HỢP":
+        if True:
             if user_role == "Bệnh nhân":
                 hien_thi_tab_thong_tin_tong_hop_benh_nhan()
             else:
                 hien_thi_tab_thong_tin_tong_hop(user_role)
         
-    if "📞 THÔNG TIN LIÊN HỆ" in tab_map:
-        with tab_map["📞 THÔNG TIN LIÊN HỆ"]:
+    if selected_tab == "📞 THÔNG TIN LIÊN HỆ":
+        if True:
             hien_thi_tab_lien_he()
             
-    if "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA" in tab_map:
-        with tab_map["👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA"]:
+    if selected_tab == "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA":
+        if True:
             hien_thi_tab_nckh_va_thanh_vien_ncv()
             
-    if "📚 ĐỀ TÀI NCKH" in tab_map:
-        with tab_map["📚 ĐỀ TÀI NCKH"]:
+    if selected_tab == "📚 ĐỀ TÀI NCKH":
+        if True:
             hien_thi_tab_nckh()
             
-    if "📄 THÔNG TIN NGHIÊN CỨU" in tab_map:
-        with tab_map["📄 THÔNG TIN NGHIÊN CỨU"]:
+    if selected_tab == "📄 THÔNG TIN NGHIÊN CỨU":
+        if True:
             hien_thi_tab_thong_tin_nghien_cuu()
         
-    if "👥 THÀNH VIÊN" in tab_map:
-        with tab_map["👥 THÀNH VIÊN"]:
+    if selected_tab == "👥 THÀNH VIÊN":
+        if True:
             hien_thi_tab_thanh_vien()
         
-    if "💬 PHẢN HỒI" in tab_map:
-        with tab_map["💬 PHẢN HỒI"]:
+    if selected_tab == "💬 PHẢN HỒI":
+        if True:
             hien_thi_tab_phan_hoi()
 
 
 
-    if "📄 PHIẾU NCKH" in tab_map:
-        with tab_map["📄 PHIẾU NCKH"]:
+    if selected_tab == "📄 PHIẾU NCKH":
+        if True:
             hien_thi_tab_phieu_nckh()
 
 
