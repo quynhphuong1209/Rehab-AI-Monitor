@@ -23,7 +23,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import plotly.figure_factory as ff
 from plotly.subplots import make_subplots
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import warnings
 import zipfile
 from io import BytesIO
@@ -976,8 +976,8 @@ warnings.filterwarnings("ignore")
 # HỖ TRỢ MÚI GIỜ VIỆT NAM (ICT - UTC+7)
 # ============================================
 def get_vn_now():
-    """Lấy thời gian hiện tại theo múi giờ Việt Nam"""
-    return datetime.now() + timedelta(hours=7)
+    """Lấy thời gian hiện tại theo múi giờ Việt Nam (ICT - UTC+7)"""
+    return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=7)))
 
 # ============================================
 # QUẢN LÝ NGƯỜI DÙNG & BẢO MẬT
@@ -8046,7 +8046,7 @@ def hien_thi_form_danh_gia_bac_si():
                     "comments": n_xet,
                     "comments_ncv": n_xet_ncv,
                     "plan": k_hoach,
-                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    "time": get_vn_now().strftime("%Y-%m-%d %H:%M:%S")
                 }
                 evals = [e for e in evals if not (e.get('patient_username') == new_e['patient_username'] and e.get('video_name') == new_e['video_name'] and e.get('exercise') == new_e['exercise'] and e.get('doctor_username') == new_e['doctor_username'])]
                 evals.append(new_e)
@@ -8717,7 +8717,7 @@ def hien_thi_lich_nhac_nho():
             
             col1, col2 = st.columns(2)
             with col1:
-                date = st.date_input("Ngày", min_value=datetime.now().date())
+                date = st.date_input("Ngày", min_value=get_vn_now().date())
             with col2:
                 time_input = st.time_input("Giờ")
             
