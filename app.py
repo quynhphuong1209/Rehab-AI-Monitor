@@ -1713,6 +1713,7 @@ st.markdown("""
     }
 
     /* Tối ưu hóa giao diện st.segmented_control thành tab bar */
+    .st-key-active_tab_widget,
     div[data-testid="stSegmentedControl"] {
         display: flex !important;
         justify-content: flex-start !important; /* Căn trái như tab hệ thống */
@@ -1724,6 +1725,7 @@ st.markdown("""
         overflow-x: auto !important; /* Cuộn ngang nếu màn hình nhỏ */
         width: 100% !important;
     }
+    .st-key-active_tab_widget button,
     div[data-testid="stSegmentedControl"] button {
         border-radius: 10px !important; /* Bo góc dạng pill */
         font-weight: bold !important;
@@ -1731,6 +1733,14 @@ st.markdown("""
         padding: 8px 16px !important;
         margin-right: 5px !important;
     }
+    .st-key-active_tab_widget button[aria-checked="true"],
+    .st-key-active_tab_widget button[aria-pressed="true"],
+    .st-key-active_tab_widget button[aria-selected="true"],
+    .st-key-active_tab_widget button[data-checked="true"],
+    .st-key-active_tab_widget [data-baseweb="button"][aria-checked="true"],
+    .st-key-active_tab_widget [data-baseweb="button"][aria-pressed="true"],
+    .st-key-active_tab_widget [data-baseweb="button"][aria-selected="true"],
+    .st-key-active_tab_widget [data-baseweb="button"][data-checked="true"],
     div[data-testid="stSegmentedControl"] button[aria-checked="true"],
     div[data-testid="stSegmentedControl"] button[aria-pressed="true"],
     div[data-testid="stSegmentedControl"] button[aria-selected="true"],
@@ -2367,19 +2377,30 @@ if st.session_state.get('theme') == 'dark':
         }
 
         /* Phong cách st.segmented_control trong chế độ tối giống tab ảnh 2 */
+        .st-key-active_tab_widget,
         div[data-testid="stSegmentedControl"] {
             border-bottom: 2px solid #ff4b4b !important; /* Đường gạch đỏ dưới tab bar */
         }
+        .st-key-active_tab_widget button,
         div[data-testid="stSegmentedControl"] button {
             background-color: rgba(255, 255, 255, 0.05) !important;
             color: #ffffff !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
+        .st-key-active_tab_widget button:hover,
         div[data-testid="stSegmentedControl"] button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
             color: #ffffff !important;
             border-color: rgba(255, 255, 255, 0.2) !important;
         }
+        .st-key-active_tab_widget button[aria-checked="true"],
+        .st-key-active_tab_widget button[aria-pressed="true"],
+        .st-key-active_tab_widget button[aria-selected="true"],
+        .st-key-active_tab_widget button[data-checked="true"],
+        .st-key-active_tab_widget [data-baseweb="button"][aria-checked="true"],
+        .st-key-active_tab_widget [data-baseweb="button"][aria-pressed="true"],
+        .st-key-active_tab_widget [data-baseweb="button"][aria-selected="true"],
+        .st-key-active_tab_widget [data-baseweb="button"][data-checked="true"],
         div[data-testid="stSegmentedControl"] button[aria-checked="true"],
         div[data-testid="stSegmentedControl"] button[aria-pressed="true"],
         div[data-testid="stSegmentedControl"] button[aria-selected="true"],
@@ -2661,19 +2682,30 @@ if st.session_state.get('theme') == 'light':
         }
 
         /* Phong cách st.segmented_control trong chế độ sáng giống tab ảnh 2 */
+        .st-key-active_tab_widget,
         div[data-testid="stSegmentedControl"] {
             border-bottom: 2px solid #ff4b4b !important; /* Đường gạch đỏ dưới tab bar */
         }
+        .st-key-active_tab_widget button,
         div[data-testid="stSegmentedControl"] button {
             background-color: #f1f3f5 !important;
             color: #495057 !important;
             border: 1px solid #ced4da !important;
         }
+        .st-key-active_tab_widget button:hover,
         div[data-testid="stSegmentedControl"] button:hover {
             background-color: #e9ecef !important;
             color: #0072ff !important;
             border-color: #0072ff !important;
         }
+        .st-key-active_tab_widget button[aria-checked="true"],
+        .st-key-active_tab_widget button[aria-pressed="true"],
+        .st-key-active_tab_widget button[aria-selected="true"],
+        .st-key-active_tab_widget button[data-checked="true"],
+        .st-key-active_tab_widget [data-baseweb="button"][aria-checked="true"],
+        .st-key-active_tab_widget [data-baseweb="button"][aria-pressed="true"],
+        .st-key-active_tab_widget [data-baseweb="button"][aria-selected="true"],
+        .st-key-active_tab_widget [data-baseweb="button"][data-checked="true"],
         div[data-testid="stSegmentedControl"] button[aria-checked="true"],
         div[data-testid="stSegmentedControl"] button[aria-pressed="true"],
         div[data-testid="stSegmentedControl"] button[aria-selected="true"],
