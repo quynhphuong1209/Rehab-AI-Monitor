@@ -7269,7 +7269,11 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
     # Tính toán chỉ số cho cả 3 giai đoạn
     if df is not None and len(df) > 0:
         if is_gay_ex:
-            metrics_overall = recalc_metrics(df, tk.get('sai_so', bt['chuan']['sai_so']), bt.get('ten', ''))
+            metrics_overall = recalc_metrics(df, tk.get('sai_so', bt['chuan']['sai_so']) if isinstance(tk, dict) else bt['chuan']['sai_so'], bt.get('ten', ''))
+            v_meta = st.session_state.get('current_eval_video') or {}
+            stored_acc = v_meta.get('accuracy') or (tk.get('do_chinh_xac') if isinstance(tk, dict) else None)
+            if stored_acc is not None:
+                metrics_overall['do_chinh_xac'] = stored_acc
             metrics_g1 = metrics_overall
             metrics_g2 = metrics_overall
             metrics_g3 = metrics_overall
@@ -8436,6 +8440,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
 
         # NẠP DỮ LIỆU CỦA VIDEO ĐƯỢC CHỌN VÀO SESSION ĐỂ CÁC TAB SỬ DỤNG
         if selected_v:
+            st.session_state.current_eval_video = selected_v
             st.session_state.stats = selected_v.get('metrics')
             st.session_state.processed_video_path = selected_v.get('processed_path')
             st.session_state.all_frames_data_path = selected_v.get('all_frames_data_path')
@@ -8481,6 +8486,18 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
 
 def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
     """Hàm phụ hiển thị các nhận xét và kết quả NCKH (Dùng chung cho cả Tab và View trực tiếp)"""
+    def _acc_color(v):
+        if v is None: return "#888"
+        if v >= 80: return "#00e676"
+        if v >= 60: return "#ffd700"
+        return "#ff5252"
+
+    def _acc_label(v):
+        if v is None: return "N/A"
+        if v >= 80: return "✅ Đạt"
+        if v >= 60: return "⚠️ Gần đạt"
+        return "❌ Cần tập thêm"
+
     if selected_v:
         # CHỈ hiển thị nhận xét của video được chọn
         v_evals = [e for e in reversed(my_evals) if e.get('video_name') == selected_v.get('video_name') and e.get('exercise') == selected_v.get('exercise')]
@@ -8532,7 +8549,7 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                         _ag3_str = f"{_ag3:.1f}%" if _ag3 is not None else "N/A"
 
                         if is_gay_ex:
-                            _overall_acc = e.get('ai_accuracy') or _ag1 or 0.0
+                            _overall_acc = (selected_v.get('accuracy') if selected_v else None) or e.get('ai_accuracy') or _ag1 or 0.0
                             _avg_clr = _c(_overall_acc)
                             _overall = "Đúng" if _overall_acc >= 80 else ("Gần đúng" if _overall_acc >= 50 else "Sai")
                             _overall_color = {"Đúng": "#00e676", "Gần đúng": "#ffd700", "Sai": "#ff5252"}[_overall]
@@ -8628,7 +8645,7 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                     
                     if is_ai:
                         if is_gay_ex:
-                            acc_overall = e.get('ai_accuracy') or e.get('ai_accuracy_g1') or 0.0
+                            acc_overall = (selected_v.get('accuracy') if selected_v else None) or e.get('ai_accuracy') or e.get('ai_accuracy_g1') or 0.0
                             clr = _acc_color(acc_overall)
                             lbl = _acc_label(acc_overall)
                             
@@ -8668,18 +8685,6 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                                 acc_g1 = acc_g1 or _parse_acc(raw_comments, r'GĐ 1|GD1|Giai đoạn 1')
                                 acc_g2 = acc_g2 or _parse_acc(raw_comments, r'GĐ 2|GD2|Giai đoạn 2')
                                 acc_g3 = acc_g3 or _parse_acc(raw_comments, r'GĐ 3|GD3|Giai đoạn 3')
-
-                            def _acc_color(v):
-                                if v is None: return "#888"
-                                if v >= 80: return "#00e676"
-                                if v >= 60: return "#ffd700"
-                                return "#ff5252"
-
-                            def _acc_label(v):
-                                if v is None: return "N/A"
-                                if v >= 80: return "✅ Đạt"
-                                if v >= 60: return "⚠️ Gần đạt"
-                                return "❌ Cần tập thêm"
 
                             # Tách phần kế hoạch từ plan
                             plan_raw = e.get('plan', '')
@@ -9529,7 +9534,8 @@ def hien_thi_frames_day_du(key_suffix=""):
     fail_count = total_frames - pass_count - nearly_count
     tk = st.session_state.get('stats') or {}
     filename = st.session_state.get('uploaded_file_name') or os.path.basename(st.session_state.get('processed_video_path', '') or 'Video hệ thống')
-    ai_acc = tk.get('do_chinh_xac', 0.0) if isinstance(tk, dict) else 0.0
+    v_meta = st.session_state.get('current_eval_video') or {}
+    ai_acc = v_meta.get('accuracy') or (tk.get('do_chinh_xac', 0.0) if isinstance(tk, dict) else 0.0)
     
     # Lấy thông số 3 giai đoạn để hiển thị chi tiết
     metrics_g1 = tk.get('metrics_g1', {}) if isinstance(tk, dict) else {}
