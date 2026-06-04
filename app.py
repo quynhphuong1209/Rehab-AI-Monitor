@@ -619,6 +619,18 @@ def get_playable_local_copy(target_path):
         return None
 
 
+@st.cache_data(ttl=300, show_spinner=False)
+def check_cloud_file_exists(url):
+    """Kiểm tra nhanh xem file có tồn tại trên Cloud (Hugging Face) không bằng HTTP HEAD request (có cache)"""
+    if not url:
+        return False
+    try:
+        import requests
+        res = requests.head(url, timeout=3.0)
+        return res.status_code == 200
+    except:
+        return False
+
 def render_video(video_path, check_h264=True):
     """Hiển thị video: ưu tiên HTTP Range Request server (local) để phát ngay lập tức.
     Tự động đảm bảo H.264 trước khi phát, hỗ trợ stream trực tiếp từ Cloud nếu chưa tải về local."""
@@ -843,15 +855,23 @@ def render_video(video_path, check_h264=True):
                 except:
                     pass
 
+            # Tối ưu: Nếu chưa có file local, kiểm tra nhanh xem file _f.mp4 đã có sẵn trên Cloud chưa
+            rel_path_encoded_f = urllib.parse.quote(rel_path_f, safe='/')
+            cloud_url_f = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_f}?token={HF_TOKEN}"
+            if not h264_cloud_valid:
+                try:
+                    if check_cloud_file_exists(cloud_url_f):
+                        h264_cloud_valid = True
+                except:
+                    pass
+
             # Thông báo nếu đang transcode dưới nền
             is_transcoding = '_transcoding_jobs' in globals() and h264_local in _transcoding_jobs
             if is_transcoding or not h264_cloud_valid:
                 st.info("⏳ Hệ thống đang nén video sang H.264 dưới nền. Video đang phát thử từ Cloud (có thể không play được trên 1 số trình duyệt). Vui lòng đợi 2-5 phút rồi tải lại trang (F5).")
 
             if h264_cloud_valid:
-                rel_path_encoded_f = urllib.parse.quote(rel_path_f, safe='/')
-                cloud_url_f = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded_f}?token={HF_TOKEN}"
-                sources_html = f'<source src="{cloud_url_f}">\n  <source src="{cloud_url_raw}">'
+                sources_html = f'<source src="{cloud_url_f}" type="video/mp4">\n  <source src="{cloud_url_raw}">'
             else:
                 # _f.mp4 chưa valid trên cloud, chỉ stream raw
                 sources_html = f'<source src="{cloud_url_raw}">'
