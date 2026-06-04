@@ -340,10 +340,10 @@ def ensure_playable_video(video_path):
                 '-vcodec', 'libx264',
                 '-pix_fmt', 'yuv420p',
                 '-preset', 'ultrafast',
-                '-vf', 'scale=-2:min(720\\,ih)',
-                '-crf', '28',
-                '-maxrate', '800k',
-                '-bufsize', '1600k',
+                '-vf', 'scale=-2:min(480\\,ih)',
+                '-crf', '30',
+                '-maxrate', '500k',
+                '-bufsize', '1000k',
                 '-movflags', '+faststart',
                 '-threads', '0',
                 '-map', '0:v:0', '-map', '0:a?',
@@ -367,6 +367,7 @@ def ensure_playable_video(video_path):
                         f_err.write(f"Cmd: {' '.join(cmd)}\n")
                         f_err.write(f"Exit Code: {result.returncode}\n")
                         f_err.write(f"Stderr:\n{result.stderr}\n")
+                    push_file_to_hf_async(error_log_path)
                 except:
                     pass
                 # Xóa file tạm nếu ffmpeg fail
@@ -386,6 +387,7 @@ def ensure_playable_video(video_path):
                         with open(error_log_path, "w", encoding="utf-8") as f_err:
                             f_err.write(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                             f_err.write("Error: Output file failed integrity check after ffmpeg.\n")
+                        push_file_to_hf_async(error_log_path)
                     except:
                         pass
                     try: os.remove(tmp_h264)
@@ -438,6 +440,7 @@ def ensure_playable_video(video_path):
                 with open(error_log_path, "w", encoding="utf-8") as f_err:
                     f_err.write(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                     f_err.write(f"Exception: {str(err)}\n")
+                push_file_to_hf_async(error_log_path)
             except:
                 pass
             # Xóa cả file tạm và file đích nếu có
