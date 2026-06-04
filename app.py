@@ -5283,13 +5283,15 @@ def bat_dau_phan_tich_background(
         return
         
     def thread_target():
+        nonlocal video_path
+        progress_video_path = video_path
         start_t = time.time()
-        write_progress(video_path, "processing", username=username, video_name=video_name, progress=0.01, elapsed=0.0, start_time=start_t)
+        write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.01, elapsed=0.0, start_time=start_t)
         
         try:
             # Bước A: Nếu có tệp tải lên tạm thời, thực hiện nén/FFmpeg trong background trước
             if temp_uploaded_path:
-                write_progress(video_path, "processing", username=username, video_name=video_name, progress=0.05, elapsed=0.0, start_time=start_t)
+                write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.05, elapsed=0.0, start_time=start_t)
                 try:
                     v_codec = None
                     try: v_codec, _ = get_video_codec(temp_uploaded_path)
@@ -5303,6 +5305,7 @@ def bat_dau_phan_tich_background(
                         os.rename(temp_uploaded_path, video_path)
                     else:
                         # Đổi mã hóa sang H.264
+                        video_path_mp4 = video_path.rsplit('.', 1)[0] + ".mp4"
                         cmd = [
                             'ffmpeg', '-y', '-i', temp_uploaded_path,
                             '-vcodec', 'libx264',
@@ -5314,22 +5317,26 @@ def bat_dau_phan_tich_background(
                             '-vf', 'scale=-2:720',
                             '-threads', '0',
                             '-map', '0:v:0', '-map', '0:a?', '-c:a', 'aac',
-                            video_path
+                            video_path_mp4
                         ]
                         result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
                         
                         is_compress_ok = False
-                        if result_compress.returncode == 0 and os.path.exists(video_path) and os.path.getsize(video_path) > 5 * 1024:
+                        if result_compress.returncode == 0 and os.path.exists(video_path_mp4) and os.path.getsize(video_path_mp4) > 5 * 1024:
                             try:
-                                mtime_c = os.path.getmtime(video_path)
-                                size_c = os.path.getsize(video_path)
-                                is_compress_ok = _check_video_valid_cached(video_path, mtime_c, size_c)
+                                mtime_c = os.path.getmtime(video_path_mp4)
+                                size_c = os.path.getsize(video_path_mp4)
+                                is_compress_ok = _check_video_valid_cached(video_path_mp4, mtime_c, size_c)
                             except: pass
                             
                         if is_compress_ok:
                             try: os.remove(temp_uploaded_path)
                             except: pass
+                            video_path = video_path_mp4
                         else:
+                            if os.path.exists(video_path_mp4):
+                                try: os.remove(video_path_mp4)
+                                except: pass
                             if os.path.exists(video_path):
                                 try: os.remove(video_path)
                                 except: pass
@@ -5342,7 +5349,7 @@ def bat_dau_phan_tich_background(
                             except: pass
                         os.rename(temp_uploaded_path, video_path)
             
-            write_progress(video_path, "processing", username=username, video_name=video_name, progress=0.10, elapsed=time.time()-start_t, start_time=start_t)
+            write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.10, elapsed=time.time()-start_t, start_time=start_t)
             
             # Bước B: Nạp cấu hình bài tập chuẩn
             ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == exercise_name), 'codman')
@@ -5376,7 +5383,7 @@ def bat_dau_phan_tich_background(
                 percent = int(prog_val * 100)
                 # Chỉ ghi tiến độ xuống đĩa nếu phần trăm thay đổi HOẶC trôi qua ít nhất 1.5 giây để tránh thắt nút cổ chai I/O đĩa
                 if percent != last_prog_percent[0] or (now - last_write_time[0] >= 1.5):
-                    write_progress(video_path, "processing", username=username, video_name=video_name, progress=prog_val, elapsed=elap, start_time=start_t)
+                    write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=prog_val, elapsed=elap, start_time=start_t)
                     last_write_time[0] = now
                     last_prog_percent[0] = percent
                 
@@ -5533,14 +5540,14 @@ def bat_dau_phan_tich_background(
                     "frames_zip": zip_data,
                     "temp_frames_dir": temp_folder
                 }
-                write_progress(video_path, "success", username=username, video_name=video_name, progress=1.0, elapsed=elap, start_time=start_t, result=result_data)
+                write_progress(progress_video_path, "success", username=username, video_name=video_name, progress=1.0, elapsed=elap, start_time=start_t, result=result_data)
             else:
-                write_progress(video_path, "error", username=username, video_name=video_name, progress=1.0, elapsed=elap, start_time=start_t, error_msg="Không thể trích xuất khung xương từ video (0 frame hợp lệ).")
+                write_progress(progress_video_path, "error", username=username, video_name=video_name, progress=1.0, elapsed=elap, start_time=start_t, error_msg="Không thể trích xuất khung xương từ video (0 frame hợp lệ).")
         except Exception as e:
             tb = traceback.format_exc()
             print(f"[BG Process] Lỗi trong background thread: {e}\n{tb}")
             elap = time.time() - start_t
-            write_progress(video_path, "error", username=username, video_name=video_name, progress=1.0, elapsed=elap, start_time=start_t, error_msg=str(e))
+            write_progress(progress_video_path, "error", username=username, video_name=video_name, progress=1.0, elapsed=elap, start_time=start_t, error_msg=str(e))
             
     t = threading.Thread(target=thread_target, daemon=True)
     _running_threads[video_path] = t
@@ -11834,10 +11841,11 @@ def main():
                                     
                                     timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
                                     base_name, _ = os.path.splitext(file_upload.name)
-                                    filename = f"{target_u}_{timestamp}_{base_name}.mp4"
+                                    orig_ext = os.path.splitext(file_upload.name)[1].lower() or ".mp4"
+                                    filename = f"{target_u}_{timestamp}_{base_name}{orig_ext}"
                                     video_path = os.path.join(save_dir, filename)
                                     
-                                    temp_uploaded_path = video_path + "_temp" + os.path.splitext(file_upload.name)[1]
+                                    temp_uploaded_path = video_path + "_temp" + orig_ext
                                     with open(temp_uploaded_path, "wb") as f_temp:
                                         f_temp.write(file_upload.getbuffer())
                                         
@@ -11881,18 +11889,21 @@ def main():
                                 except:
                                     pass
                             
-                            # Tạo tên file duy nhất với đuôi .mp4 cố định để tương thích tốt nhất với trình duyệt
+                            # Tạo tên file duy nhất giữ nguyên phần mở rộng gốc của video để biết định dạng thực tế
                             timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
                             base_name, _ = os.path.splitext(file_upload.name)
-                            filename = f"{st.session_state.user_info['username']}_{timestamp}_{base_name}.mp4"
+                            orig_ext = os.path.splitext(file_upload.name)[1].lower() or ".mp4"
+                            
+                            # file_path gốc có đuôi mở rộng thực tế (ví dụ: .mov)
+                            filename = f"{st.session_state.user_info['username']}_{timestamp}_{base_name}{orig_ext}"
                             file_path = os.path.join(save_dir, filename)
                             
                             # Lưu file video tạm
-                            temp_uploaded_path = file_path + "_temp" + os.path.splitext(file_upload.name)[1]
+                            temp_uploaded_path = file_path + "_temp" + orig_ext
                             with open(temp_uploaded_path, "wb") as f:
                                 f.write(file_upload.getbuffer())
                             
-                            # Kiểm tra xem video tải lên có thể phát trực tiếp (đã là H.264 MP4) không để lưu luôn tránh nén tốn CPU gây treo lag
+                            # Kiểm tra xem video tải lên có thể phát trực tiếp (đã là H.264 MP4) không
                             v_codec = None
                             a_codec = None
                             try:
@@ -11900,7 +11911,7 @@ def main():
                             except:
                                 pass
                                 
-                            is_h264_mp4 = (v_codec == 'h264' and os.path.splitext(file_upload.name)[1].lower() == '.mp4')
+                            is_h264_mp4 = (v_codec == 'h264' and orig_ext == '.mp4')
                             
                             if is_h264_mp4:
                                 # Copy hoặc đổi tên trực tiếp, không cần chạy ffmpeg nén tốn thời gian
@@ -11910,7 +11921,9 @@ def main():
                                 os.rename(temp_uploaded_path, file_path)
                                 print(f"[Upload Optimization] Video {file_upload.name} đã là H.264 MP4, lưu trực tiếp không cần convert.")
                             else:
-                                # Nén tối ưu hóa video sang H.264 (chỉ chạy khi không phải H.264 MP4)
+                                # Nén tối ưu hóa video sang H.264 MP4 (chỉ chạy khi không phải H.264 MP4)
+                                # Đường dẫn đích sau khi convert thành công sẽ là đuôi .mp4
+                                file_path_mp4 = file_path.rsplit('.', 1)[0] + ".mp4"
                                 try:
                                     import subprocess
                                     cmd = [
@@ -11928,20 +11941,25 @@ def main():
                                         cmd.extend(['-c:a', 'aac'])
                                     else:
                                         cmd.extend(['-an'])
-                                    cmd.append(file_path)
+                                    cmd.append(file_path_mp4)
                                     result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
-                                    if result_compress.returncode == 0 and os.path.exists(file_path) and os.path.getsize(file_path) > 1024:
+                                    if result_compress.returncode == 0 and os.path.exists(file_path_mp4) and os.path.getsize(file_path_mp4) > 1024:
                                         try: os.remove(temp_uploaded_path)
                                         except: pass
+                                        file_path = file_path_mp4
+                                        print(f"[Upload Optimization] Đã convert thành công {file_upload.name} sang H.264 MP4.")
                                     else:
-                                        # Fallback nếu ffmpeg fail hoặc file ra bị lỗi
+                                        # Fallback nếu ffmpeg fail hoặc file ra bị lỗi: dùng file gốc với extension thật
+                                        if os.path.exists(file_path_mp4):
+                                            try: os.remove(file_path_mp4)
+                                            except: pass
                                         if os.path.exists(file_path):
                                             try: os.remove(file_path)
                                             except: pass
                                         os.rename(temp_uploaded_path, file_path)
                                 except Exception as compress_err:
                                     print(f"[Compress Upload] Lỗi nén video: {compress_err}")
-                                    # Fallback nếu không có ffmpeg
+                                    # Fallback nếu không có ffmpeg: dùng file gốc với extension thật
                                     if os.path.exists(temp_uploaded_path):
                                         if os.path.exists(file_path):
                                             try: os.remove(file_path)
