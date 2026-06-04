@@ -5061,7 +5061,7 @@ def read_progress(video_path):
             pass
     return None
 
-def write_progress(video_path, status, username="", video_name="", progress=0.0, elapsed=0.0, start_time=None, error_msg="", result=None):
+def write_progress(video_path, status, username="", video_name="", progress=0.0, elapsed=0.0, start_time=None, error_msg="", result=None, status_msg=""):
     """Ghi thông tin tiến trình xuống đĩa"""
     p_file = get_progress_file(video_path)
     if not p_file:
@@ -5075,7 +5075,8 @@ def write_progress(video_path, status, username="", video_name="", progress=0.0,
         "elapsed": elapsed,
         "start_time": start_time or time.time(),
         "error_msg": error_msg,
-        "result": result
+        "result": result,
+        "status_msg": status_msg
     }
     try:
         with open(p_file, 'w', encoding='utf-8') as f:
@@ -5317,9 +5318,11 @@ def hien_thi_tien_trinh_phan_tich_fragment(video_path, key_suffix):
         if status == "processing":
             p_val = prog_data.get("progress", 0.0)
             elapsed = prog_data.get("elapsed", 0.0)
+            status_msg = prog_data.get("status_msg", "")
             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             st.progress(p_val)
-            st.info(f"🔄 Đang xử lý... {p_val*100:.0f}% | ⏱️ Đang chạy: {elapsed:.1f}s")
+            detail = f" — {status_msg}" if status_msg else ""
+            st.info(f"🔄 Đang xử lý... **{p_val*100:.0f}%** | ⏱️ {elapsed:.1f}s{detail}")
         elif status == "success":
             st.rerun()
         elif status == "error":
@@ -5424,7 +5427,24 @@ def bat_dau_phan_tich_background(
                             except: pass
                         os.rename(temp_uploaded_path, video_path)
             
-            write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.10, elapsed=time.time()-start_t, start_time=start_t)
+            write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.10, elapsed=time.time()-start_t, start_time=start_t, status_msg="⬇️ Đang kiểm tra video cục bộ...")
+            
+            # Bước A2: Đảm bảo video tồn tại cục bộ (tải từ HF Dataset nếu chưa có)
+            if not os.path.exists(video_path) or os.path.getsize(video_path) < 5 * 1024:
+                write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.12, elapsed=time.time()-start_t, start_time=start_t, status_msg="⬇️ Đang tải video từ Cloud về server (lần đầu)...")
+                try:
+                    dl_ok = ensure_local_file(video_path)
+                    if dl_ok:
+                        write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.18, elapsed=time.time()-start_t, start_time=start_t, status_msg="✅ Đã tải video xong, đang chuẩn bị phân tích...")
+                    else:
+                        write_progress(progress_video_path, "error", username=username, video_name=video_name, progress=0.0, elapsed=time.time()-start_t, start_time=start_t, error_msg="❌ Không thể tải video từ Cloud về server. Vui lòng thử lại.")
+                        return
+                except Exception as dl_err:
+                    print(f"[BG Download] Lỗi tải video: {dl_err}")
+                    write_progress(progress_video_path, "error", username=username, video_name=video_name, progress=0.0, elapsed=time.time()-start_t, start_time=start_t, error_msg=f"❌ Lỗi tải video: {dl_err}")
+                    return
+            else:
+                write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.18, elapsed=time.time()-start_t, start_time=start_t, status_msg="✅ Video đã có sẵn, đang khởi động AI...")
             
             # Bước B: Nạp cấu hình bài tập chuẩn
             ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == exercise_name), 'codman')
