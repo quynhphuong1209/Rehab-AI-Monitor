@@ -1212,7 +1212,7 @@ import threading
 
 HF_TOKEN = os.environ.get("HF_TOKEN", "").strip() or None
 HF_SPACE_ID = (os.environ.get("HF_SPACE_ID") or os.environ.get("SPACE_ID", "")).strip() or None
-HF_DATASET_ID = (os.environ.get("HF_DATASET_ID", "").strip() or None) or (f"{HF_SPACE_ID}-data" if HF_SPACE_ID else None)
+HF_DATASET_ID = (os.environ.get("HF_DATASET_ID", "").strip() or None) or (f"{HF_SPACE_ID}-data" if HF_SPACE_ID else "quynhphuong1209/Rehab-AI-Monitor-2026-data")
 
 def khoi_tao_dong_bo_hf():
     """Tải tất cả dữ liệu từ Hugging Face Dataset về đĩa khi khởi động (chạy trong background thread - an toàn với hf-mount)"""
