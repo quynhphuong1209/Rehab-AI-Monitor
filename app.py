@@ -3072,7 +3072,7 @@ if 'ncv_model_type' not in st.session_state:
 if 'ncv_resize_width' not in st.session_state:
     st.session_state.ncv_resize_width = 480
 if 'ncv_skip_frames' not in st.session_state:
-    st.session_state.ncv_skip_frames = 0
+    st.session_state.ncv_skip_frames = 1
 if 'view_old_analysis' not in st.session_state:
     st.session_state.view_old_analysis = False
 if 'angle_df' not in st.session_state:
@@ -11520,7 +11520,7 @@ def main():
             st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.5, key="ncv_confidence", help="Ngưỡng để AI chấp nhận một điểm khớp xương.")
             st.selectbox("Tốc độ xử lý", 
                          options=[0, 1, 2, 4], 
-                         index=0, # Mặc định là Mọi frame (0 frame skipping) để hiển thị đầy đủ
+                         index=1, # Mặc định là Bỏ qua 1 frame để tăng tốc xử lý gấp đôi trên CPU
                          format_func=lambda x: "Mặc định (Mọi frame)" if x==0 else f"Nhanh (Bỏ qua {x} frame)",
                          key="ncv_skip_frames",
                          help="Bỏ qua một số khung hình để tăng tốc độ xử lý video dài.")
