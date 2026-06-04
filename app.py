@@ -4502,6 +4502,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     last_state = None
     last_audio_time = -10.0
     last_pose_landmarks = None
+    last_known_center = None
+    has_multiple_people_warning = False
     
     # Lấy giá trị skip và resolution từ tham số hoặc session_state
     if skip_step is None:
@@ -4551,8 +4553,34 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             
             current_landmarks = None
             if ket_qua and ket_qua.pose_landmarks:
-                current_landmarks = ket_qua.pose_landmarks
-                last_pose_landmarks = current_landmarks
+                # Trích xuất trọng tâm thân người (Torso center) để theo dõi và lọc người lạ
+                lm = ket_qua.pose_landmarks.landmark
+                # Dùng trung bình cộng các điểm vai (11, 12) và hông (23, 24) làm trọng tâm đại diện
+                torso_idx = [11, 12, 23, 24]
+                torso_x = [lm[i].x for i in torso_idx]
+                torso_y = [lm[i].y for i in torso_idx]
+                current_center = (sum(torso_x) / 4.0, sum(torso_y) / 4.0)
+                
+                if last_known_center is None:
+                    # Lần đầu tiên phát hiện -> Khóa vị trí bệnh nhân
+                    last_known_center = current_center
+                    current_landmarks = ket_qua.pose_landmarks
+                    last_pose_landmarks = current_landmarks
+                else:
+                    # Tính khoảng cách dịch chuyển trọng tâm
+                    dist = math.sqrt((current_center[0] - last_known_center[0])**2 + (current_center[1] - last_known_center[1])**2)
+                    # Nếu khoảng cách nhảy quá lớn (> 0.18 trong hệ tọa độ chuẩn hóa),
+                    # chứng tỏ có người khác xuất hiện ở vị trí khác và bị nhận dạng thay thế bệnh nhân
+                    if dist <= 0.18:
+                        last_known_center = current_center
+                        current_landmarks = ket_qua.pose_landmarks
+                        last_pose_landmarks = current_landmarks
+                    else:
+                        # Bỏ qua không nhận dạng người lạ nhảy vào khung hình
+                        print(f"[AI Tracking Filter] Lọc bỏ người lạ/nhảy vị trí đột ngột (Khoảng cách: {dist:.3f})")
+                        if not has_multiple_people_warning:
+                            all_warnings.append("⚠️ Phát hiện có người thứ hai xuất hiện hoặc thay đổi góc camera đột ngột trong video. AI đã tự động lọc bỏ và chỉ nhận dạng/theo dõi người tập đầu tiên.")
+                            has_multiple_people_warning = True
             elif last_pose_landmarks:
                 current_landmarks = last_pose_landmarks
                 
