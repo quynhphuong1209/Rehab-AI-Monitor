@@ -2333,6 +2333,20 @@ if st.session_state.get('theme') == 'dark':
             box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
         }
 
+        /* === CHẶN OVERLAY MỜ KHI FRAGMENT TỰ REFRESH (run_every) === */
+        /* Streamlit thêm opacity: 0.3 vào stale elements khi rerun - ta reset về 1 */
+        [data-testid="stMainBlockContainer"] [aria-busy="true"],
+        .stApp[data-test-script-state="running"] > div,
+        .stApp[data-test-script-state="running"] section,
+        .stApp[data-test-script-state="running"] [data-testid="stVerticalBlock"],
+        .stApp[data-test-script-state="running"] [data-testid="stColumn"],
+        .stApp[data-test-script-state="running"] [data-testid="stHorizontalBlock"] {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        /* Ẩn spinner chạy vòng tròn ở góc trên phải */
+        [data-testid="stStatusWidget"] { display: none !important; }
+
         .metric-value {
             font-size: 1.8rem !important;
             font-weight: 800 !important;
@@ -5310,7 +5324,7 @@ def hien_thi_tien_trinh_background_home_fragment(video_path):
                 pass
             st.rerun()
 
-@st.fragment(run_every=1)
+@st.fragment(run_every=3)
 def hien_thi_tien_trinh_phan_tich_fragment(video_path, key_suffix):
     prog_data = read_progress(video_path)
     if prog_data:
