@@ -619,7 +619,7 @@ def get_playable_local_copy(target_path):
         return None
 
 
-def render_video(video_path):
+def render_video(video_path, check_h264=True):
     """Hiển thị video: ưu tiên HTTP Range Request server (local) để phát ngay lập tức.
     Tự động đảm bảo H.264 trước khi phát, hỗ trợ stream trực tiếp từ Cloud nếu chưa tải về local."""
     if not video_path:
@@ -660,7 +660,7 @@ def render_video(video_path):
     # Bước 1: Kiểm tra xem file H264 có sẵn local và hợp lệ không
     final_h264 = get_final_h264_path(video_path)
     # Thử tải _f.mp4 từ HF Dataset nếu chưa có local (file chỉ ~10MB, tải rất nhanh)
-    if not os.path.exists(final_h264) or os.path.getsize(final_h264) < 5 * 1024:
+    if check_h264 and (not os.path.exists(final_h264) or os.path.getsize(final_h264) < 5 * 1024):
         try:
             ensure_local_file(final_h264)
         except:
@@ -2335,6 +2335,8 @@ if st.session_state.get('theme') == 'dark':
 
         /* === CHẶN OVERLAY MỜ KHI FRAGMENT TỰ REFRESH (run_every) === */
         /* Streamlit thêm opacity: 0.3 vào stale elements khi rerun - ta reset về 1 */
+        div[data-stale="true"],
+        [data-stale="true"],
         [data-testid="stMainBlockContainer"] [aria-busy="true"],
         .stApp[data-test-script-state="running"] > div,
         .stApp[data-test-script-state="running"] section,
@@ -2342,6 +2344,8 @@ if st.session_state.get('theme') == 'dark':
         .stApp[data-test-script-state="running"] [data-testid="stColumn"],
         .stApp[data-test-script-state="running"] [data-testid="stHorizontalBlock"] {
             opacity: 1 !important;
+            filter: none !important;
+            transition: none !important;
             pointer-events: auto !important;
         }
         /* Ẩn spinner chạy vòng tròn ở góc trên phải */
@@ -5001,9 +5005,23 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             final_h264
         ])
         
-        # TỐI ƯU RAM: Xả log ffmpeg ra DEVNULL thay vì buffer vào RAM Python
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=600)
-        if os.path.exists(final_h264): final_video_path = final_h264
+        # Chạy FFmpeg non-blocking để cập nhật tiến trình
+        if callback:
+            try: callback(0.96)
+            except: pass
+            
+        process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        start_transcode_time = time.time()
+        while process.poll() is None:
+            time.sleep(1.0)
+            elapsed_t = time.time() - start_transcode_time
+            # Nhích nhẹ tiến độ từ 96% đến 99% để người dùng biết hệ thống không treo
+            mock_prog = 0.96 + min(elapsed_t / 30.0, 1.0) * 0.03
+            if callback:
+                try: callback(mock_prog)
+                except: pass
+        if os.path.exists(final_h264) and os.path.getsize(final_h264) >= 5 * 1024:
+            final_video_path = final_h264
     except: pass
     
     gc.collect()
@@ -5353,6 +5371,65 @@ def hien_thi_tien_trinh_phan_tich_fragment(video_path, key_suffix):
     else:
         st.rerun()
 
+def download_file_with_progress(file_path, write_progress_fn, start_t, username, video_name):
+    """Tải file từ Hugging Face Dataset có cập nhật tiến độ (progress bar) từng chunk"""
+    if not file_path:
+        return False
+        
+    # Xóa file cũ lỗi nếu có
+    if os.path.exists(file_path):
+        try: os.remove(file_path)
+        except: pass
+        
+    if not (HF_TOKEN and HF_DATASET_ID):
+        return False
+        
+    try:
+        import requests
+        import urllib.parse
+        rel_path = get_clean_rel_path(file_path)
+        rel_path_encoded = urllib.parse.quote(rel_path, safe='/')
+        url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded}?token={HF_TOKEN}"
+        
+        # Đảm bảo thư mục cha tồn tại
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        # Gọi requests stream
+        response = requests.get(url, stream=True, timeout=30)
+        if response.status_code != 200:
+            print(f"[Download Progress] Lỗi HTTP {response.status_code} khi tải {rel_path}")
+            return False
+            
+        total_size = int(response.headers.get('content-length', 0))
+        downloaded = 0
+        
+        last_pct_update = -1
+        with open(file_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=512*1024): # 512KB chunks
+                if chunk:
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if total_size > 0:
+                        dl_pct = downloaded / total_size
+                        # Tải video chiếm tiến trình từ 12% đến 18%
+                        prog_val = 0.12 + dl_pct * 0.06
+                        percent = int(dl_pct * 100)
+                        # Giảm tần suất cập nhật I/O tiến độ xuống đĩa
+                        if percent != last_pct_update:
+                            elapsed = time.time() - start_t
+                            write_progress_fn(
+                                file_path, "processing", 
+                                username=username, video_name=video_name, 
+                                progress=prog_val, elapsed=elapsed, start_time=start_t,
+                                status_msg=f"⬇️ Đang tải video từ Cloud: {downloaded/(1024*1024):.1f}MB/{total_size/(1024*1024):.1f}MB ({percent}%)"
+                            )
+                            last_pct_update = percent
+                            
+        return os.path.exists(file_path) and os.path.getsize(file_path) >= 5 * 1024
+    except Exception as e:
+        print(f"[Download Progress] Lỗi khi tải file {file_path}: {e}")
+        return False
+
 def bat_dau_phan_tich_background(
     video_path,
     username,
@@ -5374,16 +5451,19 @@ def bat_dau_phan_tich_background(
         print(f"[BG Process] Thread cho video {video_path} đang chạy.")
         return
         
+    # Ghi tiến trình ban đầu đồng bộ để tránh race condition
+    write_progress(video_path, "processing", username=username, video_name=video_name, progress=0.01, elapsed=0.0, start_time=time.time(), status_msg="🚀 Đang chuẩn bị phân tích...")
+        
     def thread_target():
         nonlocal video_path
         progress_video_path = video_path
         start_t = time.time()
-        write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.01, elapsed=0.0, start_time=start_t)
+        write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.02, elapsed=0.0, start_time=start_t, status_msg="🚀 Đang khởi tạo luồng phân tích...")
         
         try:
             # Bước A: Nếu có tệp tải lên tạm thời, thực hiện nén/FFmpeg trong background trước
             if temp_uploaded_path:
-                write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.05, elapsed=0.0, start_time=start_t)
+                write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.05, elapsed=0.0, start_time=start_t, status_msg="⚙️ Đang tối ưu hóa định dạng video (H.264)...")
                 try:
                     v_codec = None
                     try: v_codec, _ = get_video_codec(temp_uploaded_path)
@@ -5411,10 +5491,23 @@ def bat_dau_phan_tich_background(
                             '-map', '0:v:0', '-map', '0:a?', '-c:a', 'aac',
                             video_path_mp4
                         ]
-                        result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+                        process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        start_ffmpeg_time = time.time()
+                        while process.poll() is None:
+                            time.sleep(1.0)
+                            elapsed_ffmpeg = time.time() - start_ffmpeg_time
+                            # mock_prog from 0.05 to 0.12 during first 60 seconds
+                            mock_prog = 0.05 + min(elapsed_ffmpeg / 60.0, 1.0) * 0.07
+                            write_progress(
+                                progress_video_path, "processing",
+                                username=username, video_name=video_name,
+                                progress=mock_prog, elapsed=time.time() - start_t,
+                                start_time=start_t,
+                                status_msg=f"⚙️ Đang tối ưu hóa định dạng video (H.264)... ({elapsed_ffmpeg:.0f}s)"
+                            )
                         
                         is_compress_ok = False
-                        if result_compress.returncode == 0 and os.path.exists(video_path_mp4) and os.path.getsize(video_path_mp4) > 5 * 1024:
+                        if process.returncode == 0 and os.path.exists(video_path_mp4) and os.path.getsize(video_path_mp4) > 5 * 1024:
                             try:
                                 mtime_c = os.path.getmtime(video_path_mp4)
                                 size_c = os.path.getsize(video_path_mp4)
@@ -5443,22 +5536,45 @@ def bat_dau_phan_tich_background(
             
             write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.10, elapsed=time.time()-start_t, start_time=start_t, status_msg="⬇️ Đang kiểm tra video cục bộ...")
             
-            # Bước A2: Đảm bảo video tồn tại cục bộ (tải từ HF Dataset nếu chưa có)
-            if not os.path.exists(video_path) or os.path.getsize(video_path) < 5 * 1024:
-                write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.12, elapsed=time.time()-start_t, start_time=start_t, status_msg="⬇️ Đang tải video từ Cloud về server (lần đầu)...")
+            # Tối ưu hóa: Nếu video gốc không có sẵn local và chưa có H264 (_f.mp4) local,
+            # kiểm tra xem đã có _f.mp4 trên cloud chưa để tải và phân tích trực tiếp cho nhanh!
+            analysis_input_path = video_path
+            is_raw_local = os.path.exists(video_path) and os.path.getsize(video_path) >= 5 * 1024
+            
+            if not is_raw_local:
+                final_h264 = get_final_h264_path(video_path)
+                if final_h264 != video_path:
+                    write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.10, elapsed=time.time()-start_t, start_time=start_t, status_msg="⬇️ Kiểm tra video H.264 đã tối ưu...")
+                    dl_h264_ok = download_file_with_progress(final_h264, write_progress, start_t, username, video_name)
+                    if dl_h264_ok:
+                        analysis_input_path = final_h264
+                        print(f"[BG Process] Chuyển đổi sang phân tích H264 đã tối ưu: {final_h264}")
+            
+            if analysis_input_path == video_path and not is_raw_local:
+                write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.12, elapsed=time.time()-start_t, start_time=start_t, status_msg="⬇️ Đang tải video gốc từ Cloud về server...")
                 try:
-                    dl_ok = ensure_local_file(video_path)
+                    dl_ok = download_file_with_progress(video_path, write_progress, start_t, username, video_name)
                     if dl_ok:
                         write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.18, elapsed=time.time()-start_t, start_time=start_t, status_msg="✅ Đã tải video xong, đang chuẩn bị phân tích...")
                     else:
-                        write_progress(progress_video_path, "error", username=username, video_name=video_name, progress=0.0, elapsed=time.time()-start_t, start_time=start_t, error_msg="❌ Không thể tải video từ Cloud về server. Vui lòng thử lại.")
-                        return
+                        # Thử fallback tải file H264 nếu file gốc không tải được
+                        final_h264 = get_final_h264_path(video_path)
+                        dl_h264_ok = download_file_with_progress(final_h264, write_progress, start_t, username, video_name)
+                        if dl_h264_ok:
+                            analysis_input_path = final_h264
+                            write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.18, elapsed=time.time()-start_t, start_time=start_t, status_msg="✅ Đã tải video H.264 tối ưu, đang chuẩn bị phân tích...")
+                        else:
+                            write_progress(progress_video_path, "error", username=username, video_name=video_name, progress=0.0, elapsed=time.time()-start_t, start_time=start_t, error_msg="❌ Không thể tải video từ Cloud về server.")
+                            return
                 except Exception as dl_err:
                     print(f"[BG Download] Lỗi tải video: {dl_err}")
                     write_progress(progress_video_path, "error", username=username, video_name=video_name, progress=0.0, elapsed=time.time()-start_t, start_time=start_t, error_msg=f"❌ Lỗi tải video: {dl_err}")
                     return
             else:
-                write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.18, elapsed=time.time()-start_t, start_time=start_t, status_msg="✅ Video đã có sẵn, đang khởi động AI...")
+                if analysis_input_path == final_h264:
+                    write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.18, elapsed=time.time()-start_t, start_time=start_t, status_msg="✅ Sử dụng H.264 đã tối ưu, đang khởi động AI...")
+                else:
+                    write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.18, elapsed=time.time()-start_t, start_time=start_t, status_msg="✅ Video đã có sẵn, đang khởi động AI...")
             
             # Bước B: Nạp cấu hình bài tập chuẩn
             ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == exercise_name), 'codman')
@@ -5498,7 +5614,7 @@ def bat_dau_phan_tich_background(
                 
             # Bước C: Chạy phân tích AI trích xuất xương
             output_path, ref_name_detected, _, angle_data, total_frames, valid_frames, temp_folder, zip_data, frame_paths, _, all_frames_data, all_warnings = xu_ly_video_day_du(
-                video_path, bt_chuan_ncv, bg_progress_callback,
+                analysis_input_path, bt_chuan_ncv, bg_progress_callback,
                 model_type=model_type, min_confidence=confidence,
                 exercise_name=exercise_name,
                 skip_step=skip_step, resize_width=resize_width
@@ -7296,11 +7412,8 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                     if v.get('video_path') and os.path.exists(v['video_path']) and os.path.getsize(v['video_path']) >= 5 * 1024:
                         video_exists = True
                         
-                    if video_exists:
-                        render_video(v['video_path'])
-                    else:
-                        with st.spinner("📥 Đang tải video thô từ Cloud..."):
-                            render_video(v['video_path'])
+                    # Chỉ hiển thị video player, không cần spinner block UI
+                    render_video(v['video_path'], check_h264=False)
                 with col_v2:
                     prog_data = read_progress(v['video_path'])
                     st.info("💡 Bạn có thể thực hiện phân tích ngay bây giờ để xem kết quả khung xương và chỉ số lâm sàng.")
@@ -7336,7 +7449,6 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                             resize_width=st.session_state.get('ncv_resize_width', 720)
                         )
                         st.toast("🚀 Đã khởi chạy phân tích dưới nền thành công!", icon="⚡")
-                        time.sleep(0.5)
                         st.rerun()
                     
                     # Gọi fragment tự động cập nhật tiến trình mỗi 1 giây
@@ -8381,7 +8493,7 @@ def hien_thi_form_danh_gia_bac_si():
             
             v_to_render = selected_video.get('processed_path') if (selected_video.get('status') == "Đã phân tích" and selected_video.get('processed_path')) else selected_video.get('video_path')
             if v_to_render:
-                render_video(v_to_render)
+                render_video(v_to_render, check_h264=(selected_video.get('status') == "Đã phân tích"))
             
             with st.form("doctor_eval_form_final_v_fixed"):
                 col1, col2 = st.columns(2)
@@ -11020,7 +11132,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                         show_vid_key = f"show_video_{v.get('username')}_{v.get('video_name')}_{idx}"
                         if st.session_state.get(show_vid_key):
                             if active_display_path:
-                                render_video(active_display_path)
+                                render_video(active_display_path, check_h264=(v.get('status') == "Đã phân tích"))
                             else:
                                 st.error("File video không tồn tại hoặc đường dẫn trống.")
                             if st.button("⏸️ Ẩn video", key=f"hide_vid_btn_{idx}", use_container_width=True):
@@ -11988,7 +12100,6 @@ def main():
                                         resize_width=st.session_state.get('ncv_resize_width', 720)
                                     )
                                     st.toast("🚀 Đã tải video lên và bắt đầu xử lý AI trong nền!", icon="⚡")
-                                    time.sleep(0.5)
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"❌ Lỗi khởi động xử lý nền: {str(e)}")
