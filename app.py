@@ -11972,23 +11972,49 @@ def main():
                     st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN MỚI NHẤT")
                     symptoms_data = load_data(SYMPTOMS_FILE)
                     if symptoms_data:
-                        # Hiển thị TẤT CẢ bản ghi, mới nhất lên đầu
+                        # Nhóm các khai báo triệu chứng theo bệnh nhân để gộp bài tập
+                        grouped_symptoms = {}
+                        for item in symptoms_data:
+                            key = item.get('patient_id') or item.get('full_name')
+                            if key not in grouped_symptoms:
+                                grouped_symptoms[key] = {
+                                    "full_name": item['full_name'],
+                                    "patient_id": item.get('patient_id', 'N/A'),
+                                    "age": item.get('age', 'N/A'),
+                                    "gender": item.get('gender', 'N/A'),
+                                    "symptoms": item.get('symptoms', ''),
+                                    "vas": item.get('vas', 'N/A'),
+                                    "time": item.get('time', ''),
+                                    "exercises": [item.get('exercise', 'N/A')]
+                                }
+                            else:
+                                ex = item.get('exercise', 'N/A')
+                                if ex not in grouped_symptoms[key]["exercises"]:
+                                    grouped_symptoms[key]["exercises"].append(ex)
+                                grouped_symptoms[key]["time"] = item.get('time', grouped_symptoms[key]["time"])
+                                grouped_symptoms[key]["vas"] = item.get('vas', grouped_symptoms[key]["vas"])
+                        
+                        display_list = list(reversed(list(grouped_symptoms.values())))[:4]
+                        
                         symp_cols = st.columns(3)
-                        for i, s in enumerate(reversed(symptoms_data)):
+                        for i, s in enumerate(display_list):
                             with symp_cols[i % 3]:
                                 with st.container(border=True):
                                     st.markdown(f"**👤 {s['full_name']}**")
                                     st.caption(f"🕒 {s['time']}")
-                                    st.write(f"**Đau (VAS):** {s.get('vas', 'N/A')}/10")
+                                    st.write(f"**Đau (VAS):** {s['vas']}/10")
                                     with st.expander("Chi tiết triệu chứng"):
-                                        st.write(f"**Tuổi:** {s['age']} | **Mã:** {s.get('patient_id', 'N/A')}")
-                                        st.write(f"**Bài tập:** {s.get('exercise', 'N/A')}")
+                                        st.write(f"**Tuổi:** {s['age']} | **Mã:** {s['patient_id']}")
+                                        # Hiển thị hai bài tập đã chọn
+                                        exercises_str = ", ".join(s['exercises'])
+                                        st.write(f"**Bài tập đã chọn:** {exercises_str}")
                                         st.info(s['symptoms'])
                                         if st.button("Xóa thông báo", key=f"del_symp_main_{i}"):
-                                            # Tìm index thực tế để xóa
-                                            actual_idx = len(symptoms_data) - 1 - i
-                                            symptoms_data.pop(actual_idx)
-                                            save_data(SYMPTOMS_FILE, symptoms_data)
+                                            # Xóa các bản ghi có patient_id hoặc full_name trùng khớp
+                                            s_id = s['patient_id']
+                                            s_name = s['full_name']
+                                            s_data_new = [item for item in symptoms_data if item.get('patient_id') != s_id and item.get('full_name') != s_name]
+                                            save_data(SYMPTOMS_FILE, s_data_new)
                                             st.rerun()
                     else:
                         st.info("ℹ️ Hiện chưa có thông tin khai báo triệu chứng mới từ bệnh nhân.")
