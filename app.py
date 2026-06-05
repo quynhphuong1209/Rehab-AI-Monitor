@@ -1801,8 +1801,8 @@ st.markdown("""
         border: none !important; /* Xóa viền bao ngoài container */
         border-bottom: none !important;
         box-shadow: none !important;
-        margin-bottom: 15px !important;
-        padding: 5px 15px 5px 15px !important; /* Giảm padding chừa chỗ cho mũi tên */
+        margin-bottom: -10px !important; /* Kéo nội dung bên dưới lên gần hơn */
+        padding: 0px 5px 0px 5px !important; /* Thu nhỏ padding khi không còn mũi tên */
         width: 100% !important;
         overflow: visible !important;
     }
@@ -1920,7 +1920,9 @@ st.markdown("""
         font-size: 1.55rem !important;
     }
     .stMarkdown h3 {
-        font-size: 1.3rem !important;
+        font-size: 1.48rem !important; /* Tăng kích thước chữ đề mục lên một chút */
+        margin-top: 10px !important; /* Thu hẹp khoảng cách phía trên */
+        margin-bottom: 8px !important;
     }
     .stMarkdown h4 {
         font-size: 1.15rem !important;
@@ -11911,125 +11913,7 @@ def main():
     else:
         selected_tab = st.session_state.active_tab
 
-    import streamlit.components.v1 as components
-    components.html("""
-    <script>
-        (function() {
-            function setupScrollArrows() {
-                const doc = window.parent.document;
-                // Chỉ nhắm vào phần tử stSegmentedControl hoặc stButtonGroup bên trong active_tab_widget để tránh trùng lặp
-                const containers = doc.querySelectorAll('.st-key-active_tab_widget div[data-testid="stSegmentedControl"], .st-key-active_tab_widget div[data-testid="stButtonGroup"]');
-                
-                containers.forEach(container => {
-                    // Tìm phần tử cuộn thực sự (div có role=radiogroup hoặc role=group chứa nút bấm)
-                    let scrollChild = container.querySelector('[role="radiogroup"]') || container.querySelector('[role="group"]');
-                    if (!scrollChild) return;
-                    
-                    // Nếu đã thêm nút cuộn thì không thêm lại
-                    if (container.querySelector('.custom-scroll-arrow-left')) return;
-                    
-                    container.style.position = 'relative';
-                    
-                    // Mũi tên trái
-                    const leftArrow = doc.createElement('div');
-                    leftArrow.className = 'custom-scroll-arrow-left';
-                    leftArrow.innerHTML = '◀';
-                    leftArrow.style.cssText = `
-                        position: absolute !important;
-                        left: 5px !important;
-                        top: 50% !important;
-                        transform: translateY(-50%) !important;
-                        color: #00c6ff !important;
-                        font-size: 1.3rem !important;
-                        font-weight: bold !important;
-                        cursor: pointer !important;
-                        z-index: 999 !important;
-                        background: rgba(26, 26, 46, 0.95) !important;
-                        border-radius: 50% !important;
-                        width: 36px !important;
-                        height: 36px !important;
-                        display: flex !important;
-                        align-items: center !important;
-                        justify-content: center !important;
-                        border: 1px solid rgba(0, 198, 255, 0.5) !important;
-                        user-select: none !important;
-                        transition: all 0.2s ease !important;
-                        box-shadow: 0 4px 10px rgba(0,0,0,0.4) !important;
-                    `;
-                    
-                    // Mũi tên phải
-                    const rightArrow = doc.createElement('div');
-                    rightArrow.className = 'custom-scroll-arrow-right';
-                    rightArrow.innerHTML = '▶';
-                    rightArrow.style.cssText = `
-                        position: absolute !important;
-                        right: 5px !important;
-                        top: 50% !important;
-                        transform: translateY(-50%) !important;
-                        color: #00c6ff !important;
-                        font-size: 1.3rem !important;
-                        font-weight: bold !important;
-                        cursor: pointer !important;
-                        z-index: 999 !important;
-                        background: rgba(26, 26, 46, 0.95) !important;
-                        border-radius: 50% !important;
-                        width: 36px !important;
-                        height: 36px !important;
-                        display: flex !important;
-                        align-items: center !important;
-                        justify-content: center !important;
-                        border: 1px solid rgba(0, 198, 255, 0.5) !important;
-                        user-select: none !important;
-                        transition: all 0.2s ease !important;
-                        box-shadow: 0 4px 10px rgba(0,0,0,0.4) !important;
-                    `;
-                    
-                    // Hiệu ứng hover
-                    leftArrow.onmouseover = () => {
-                        leftArrow.style.background = '#00c6ff';
-                        leftArrow.style.color = '#fff';
-                        leftArrow.style.transform = 'translateY(-50%) scale(1.15)';
-                    };
-                    leftArrow.onmouseout = () => {
-                        leftArrow.style.background = 'rgba(26, 26, 46, 0.95)';
-                        leftArrow.style.color = '#00c6ff';
-                        leftArrow.style.transform = 'translateY(-50%) scale(1)';
-                    };
-                    
-                    rightArrow.onmouseover = () => {
-                        rightArrow.style.background = '#00c6ff';
-                        rightArrow.style.color = '#fff';
-                        rightArrow.style.transform = 'translateY(-50%) scale(1.15)';
-                    };
-                    rightArrow.onmouseout = () => {
-                        rightArrow.style.background = 'rgba(26, 26, 46, 0.95)';
-                        rightArrow.style.color = '#00c6ff';
-                        rightArrow.style.transform = 'translateY(-50%) scale(1)';
-                    };
-                    
-                    // Sự kiện click cuộn mượt mà
-                    leftArrow.onclick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        scrollChild.scrollBy({ left: -280, behavior: 'smooth' });
-                    };
-                    
-                    rightArrow.onclick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        scrollChild.scrollBy({ left: 280, behavior: 'smooth' });
-                    };
-                    
-                    container.appendChild(leftArrow);
-                    container.appendChild(rightArrow);
-                });
-            }
-            
-            // Cài đặt lặp để kiểm tra và áp dụng
-            setInterval(setupScrollArrows, 500);
-        })();
-    </script>
-    """, height=0, width=0)
+    # Bỏ nút mũi tên cuộn ngang (chấm đen) theo yêu cầu của user để người dùng tự cuộn tay
     
     # ==================== TAB 1: TRANG CHỦ ====================
     if selected_tab == "🏠 TRANG CHỦ":
