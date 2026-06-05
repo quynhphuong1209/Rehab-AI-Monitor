@@ -12127,22 +12127,8 @@ def main():
                             help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
                             key=f"video_uploader_v{st.session_state.uploader_id}"
                         )
-                    elif user_role == "Nghiên cứu viên":
-                        st.markdown("### 🧪 PHÂN TÍCH VIDEO NGHIÊN CỨU")
-                        st.info("💡 NCV có quyền truy cập sâu vào tọa độ khớp và biểu đồ nghiên cứu.")
-                        ma_bai_tap = st.selectbox("🎯 Chọn bài tập nghiên cứu", list(BAI_TAP.keys()),
-                                                   format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
-                                                   key="ncv_tab_bt")
-                        bai_tap = BAI_TAP[ma_bai_tap]
-                        file_upload = st.file_uploader(
-                            "Tải lên video thô (Raw Data)", 
-                            type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
-                            help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
-                            key=f"video_uploader_ncv_v{st.session_state.uploader_id}"
-                        )
                     else:
                         file_upload = None
-                        pass # Đã cắt bỏ lời chào chuyên gia thừa theo yêu cầu
                 else:
                     file_upload = None
             
