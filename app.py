@@ -1755,6 +1755,8 @@ st.markdown("""
 <style>
     /* === TẢI FONT BIỂU TƯỢNG TRỰC TIẾP TỪ GOOGLE === */
     @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700&display=swap');
+
 
     /* Ngăn ngừa hiện tượng rung lắc trang (layout shifting) khi xuất hiện/mất thanh cuộn dọc */
     html {
@@ -1977,6 +1979,29 @@ st.markdown("""
         height: 32px !important;
     }
 
+    .stMarkdown h1.app-title,
+    .stMarkdown .main-header h1,
+    h1.app-title,
+    .main-header h1 {
+        font-size: clamp(3.8rem, 11vw, 8.5rem) !important;
+        line-height: 1.35 !important;
+        font-weight: 900 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+        word-spacing: 0.18em !important;
+        white-space: normal !important;
+        word-break: keep-all !important;
+        display: block !important;
+        text-align: center !important;
+        margin-bottom: 0.8rem !important;
+    }
+
+    /* Ẩn icon liên kết tự động của Streamlit trên tiêu đề */
+    a.header-anchor {
+        display: none !important;
+    }
+
+
     [data-testid="stToolbar"] button:hover,
     [data-testid="stSidebarCollapseButton"] button:hover,
     [data-testid="stExpandSidebarButton"] button:hover {
@@ -2078,16 +2103,7 @@ st.markdown("""
         padding-bottom: 10rem !important; /* Thêm khoảng trống cuối trang để kéo xuống hết cỡ */
     }
     
-    .stMarkdown h1.app-title,
-    .stMarkdown .main-header h1,
-    h1.app-title,
-    .main-header h1 {
-        font-size: clamp(3.2rem, 9vw, 5.8rem) !important;
-        line-height: 1.1 !important;
-        font-weight: 900 !important;
-        text-transform: uppercase !important;
-        letter-spacing: -0.02em !important;
-    }
+    /* ĐÃ LOẠI BỎ CSS OVERRIDE ĐỂ TRÁNH TRÙNG LẶP VÀ DÍU DÍU CHỮ */
     .main-header p {
         font-size: clamp(1.0rem, 2.5vw, 1.25rem) !important;
     }
@@ -7244,7 +7260,7 @@ st.markdown(f"""
         border: 1px solid {card_border};
         box-shadow: 0 4px 15px rgba(0,0,0,{"0.05" if is_light else "0.3"});
     }}
-    .main-header h1 {{ color: {header_text} !important; font-size: 1.8rem; margin: 0; }}
+    .main-header h1 {{ color: {header_text} !important; margin: 0; }}
     .main-header p {{ color: {sub_text} !important; margin: 0.5rem 0 0 0; }}
     
     /* RESEARCH BADGE */
