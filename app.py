@@ -9252,13 +9252,13 @@ def hien_thi_lich_nhac_nho():
                     st.markdown(f"""<div style="background: {card_bg}; color: {card_text}; border-radius: 16px; padding: 1.2rem; margin-bottom: 1rem; border-left: 5px solid {color_app}; border: {card_border}; border-left: 6px solid {color_app}; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
 <strong style="color: {color_app}; font-size: 1.15rem; display: block; margin-bottom: 8px;">📌 {app['title']}</strong>
 <div style="line-height: 1.6; font-size: 0.95rem;">
-    🕒 <b>Thời gian:</b> {app['datetime']}<br>
-    👨‍⚕️ <b>Bác sĩ:</b> {app.get('doctor_name', 'Hệ thống')}<br>
-    {f"👤 <b>Bệnh nhân:</b> {app.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
-    {f"📝 <b>Ghi chú:</b> {app['notes']}<br>" if app.get('notes') else ""}
+🕒 <b>Thời gian:</b> {app['datetime']}<br>
+👨‍⚕️ <b>Bác sĩ:</b> {app.get('doctor_name', 'Hệ thống')}<br>
+{"👤 <b>Bệnh nhân:</b> " + app.get('patient_name', 'Chưa rõ') + "<br>" if user_role != "Bệnh nhân" else ""}
+{"📝 <b>Ghi chú:</b> " + app['notes'] + "<br>" if app.get('notes') else ""}
 </div>
 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(128,128,128,0.1); color: {color_app}; font-size: 0.85rem; font-weight: 500;">
-    { "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }
+{"🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ"}
 </div>
 </div>""", unsafe_allow_html=True)
                 with col2:
@@ -9279,14 +9279,14 @@ def hien_thi_lich_nhac_nho():
                     st.markdown(f"""<div style="background: {card_bg}; color: {card_text}; border-radius: 16px; padding: 1.2rem; margin-bottom: 1rem; border-left: 5px solid {color_ex}; border: {card_border}; border-left: 6px solid {color_ex}; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
 <strong style="color: {color_ex}; font-size: 1.15rem; display: block; margin-bottom: 8px;">💪 {ex['exercise_name']}</strong>
 <div style="line-height: 1.6; font-size: 0.95rem;">
-    🕒 <b>Thời gian:</b> {ex['datetime']}<br>
-    🔁 <b>Tần suất:</b> {ex.get('frequency', 'Một lần')}<br>
-    👨‍⚕️ <b>Chỉ định bởi:</b> {ex.get('doctor_name', 'Hệ thống')}<br>
-    {f"👤 <b>Bệnh nhân:</b> {ex.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
-    {f"📝 <b>Ghi chú:</b> {ex['notes']}<br>" if ex.get('notes') else ""}
+🕒 <b>Thời gian:</b> {ex['datetime']}<br>
+🔁 <b>Tần suất:</b> {ex.get('frequency', 'Một lần')}<br>
+👨‍⚕️ <b>Chỉ định bởi:</b> {ex.get('doctor_name', 'Hệ thống')}<br>
+{"👤 <b>Bệnh nhân:</b> " + ex.get('patient_name', 'Chưa rõ') + "<br>" if user_role != "Bệnh nhân" else ""}
+{"📝 <b>Ghi chú:</b> " + ex['notes'] + "<br>" if ex.get('notes') else ""}
 </div>
 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(128,128,128,0.1); color: {color_ex}; font-size: 0.85rem; font-weight: 500;">
-    { "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }
+{"🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ"}
 </div>
 </div>""", unsafe_allow_html=True)
                 with col2:
@@ -9307,14 +9307,14 @@ def hien_thi_lich_nhac_nho():
                     st.markdown(f"""<div style="background: {card_bg}; color: {card_text}; border-radius: 16px; padding: 1.2rem; margin-bottom: 1rem; border-left: 5px solid {color_med}; border: {card_border}; border-left: 6px solid {color_med}; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
 <strong style="color: {color_med}; font-size: 1.15rem; display: block; margin-bottom: 8px;">💊 {med['medication_name']}</strong>
 <div style="line-height: 1.6; font-size: 0.95rem;">
-    🕒 <b>Thời gian:</b> {med['datetime']}<br>
-    💊 <b>Liều:</b> {med.get('dosage', 'Theo chỉ định')}<br>
-    👨‍⚕️ <b>Bác sĩ kê đơn:</b> {med.get('doctor_name', 'Hệ thống')}<br>
-    {f"👤 <b>Bệnh nhân:</b> {med.get('patient_name', 'Chưa rõ')}<br>" if user_role != "Bệnh nhân" else ""}
-    {f"📝 <b>Ghi chú:</b> {med['notes']}<br>" if med.get('notes') else ""}
+🕒 <b>Thời gian:</b> {med['datetime']}<br>
+💊 <b>Liều:</b> {med.get('dosage', 'Theo chỉ định')}<br>
+👨‍⚕️ <b>Bác sĩ kê đơn:</b> {med.get('doctor_name', 'Hệ thống')}<br>
+{"👤 <b>Bệnh nhân:</b> " + med.get('patient_name', 'Chưa rõ') + "<br>" if user_role != "Bệnh nhân" else ""}
+{"📝 <b>Ghi chú:</b> " + med['notes'] + "<br>" if med.get('notes') else ""}
 </div>
 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(128,128,128,0.1); color: {color_med}; font-size: 0.85rem; font-weight: 500;">
-    { "🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ" }
+{"🟢 Đã gửi đến bệnh nhân" if user_role != "Bệnh nhân" else "📩 Đã nhận từ bác sĩ"}
 </div>
 </div>""", unsafe_allow_html=True)
                 with col2:
