@@ -1983,7 +1983,7 @@ st.markdown("""
     .stMarkdown .main-header h1,
     h1.app-title,
     .main-header h1 {
-        font-size: clamp(3.5rem, 8.5vw, 5.8rem) !important; /* Tăng kích thước chữ to hơn nữa */
+        font-size: 3.5rem !important; /* Cỡ chữ to cố định cực kỳ rõ ràng */
         line-height: 1.30 !important;
         font-weight: 850 !important; /* Độ dày cân đối */
         text-transform: uppercase !important;
@@ -1993,7 +1993,7 @@ st.markdown("""
         word-break: normal !important;
         display: block !important;
         text-align: center !important;
-        margin-bottom: 0.5rem !important;
+        margin-bottom: 0.3rem !important;
     }
 
     /* Ẩn icon liên kết tự động của Streamlit trên tiêu đề */
@@ -7278,13 +7278,13 @@ st.markdown(f"""
         border: 1.5px solid {card_border} !important;
         box-shadow: 0 10px 30px rgba(0, 0, 0, {"0.05" if is_light else "0.35"}) !important;
         border-radius: 16px !important;
-        padding: 1.5rem 2.0rem !important;
+        padding: 0.6rem 1.5rem !important; /* Bó hẹp chiều cao ô vuông */
         text-align: center;
         width: 100% !important; /* Dãn chiều rộng tối đa */
         max-width: 100% !important; /* Dãn hết giao diện web */
     }}
     .main-header h1 {{ color: {header_text} !important; margin: 0; }}
-    .main-header p {{ color: {sub_text} !important; margin: 0.5rem 0 0 0; }}
+    .main-header p {{ color: {sub_text} !important; margin: 0.3rem 0 0 0; }}
     
     /* RESEARCH BADGE */
     .research-badge {{
@@ -10659,8 +10659,8 @@ def hien_thi_dang_nhap_dang_ky():
     
     st.markdown(f"""
     <div style="text-align: center; padding: 0.5rem 0 2rem 0;">
-        <h1 class="app-title" style="font-size: clamp(3.5rem, 8.5vw, 5.8rem) !important; color: {header_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem; letter-spacing: 0.05em !important; word-spacing: 0.15em !important;">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
-        <div style="width: 120px; height: 4px; background: linear-gradient(90deg, #00c6ff, #0072ff); margin: 0.8rem auto; border-radius: 2px;"></div>
+        <h1 class="app-title" style="font-size: 3.5rem !important; color: {header_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.4rem; letter-spacing: 0.05em !important; word-spacing: 0.15em !important;">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
+        <div style="width: 120px; height: 4px; background: linear-gradient(90deg, #00c6ff, #0072ff); margin: 0.4rem auto; border-radius: 2px;"></div>
         <p style="color: {sub_color}; font-family: 'Outfit', sans-serif !important; font-size: 1.3rem; font-style: italic; opacity: 0.9;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
     </div>
     """, unsafe_allow_html=True)
@@ -11618,15 +11618,15 @@ def main():
     
     st.markdown(f"""
     <div class="main-header">
-        <h1 class="app-title" style="font-size: clamp(3.5rem, 8.5vw, 5.8rem) !important; color: {header_h1_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); letter-spacing: 0.05em !important; word-spacing: 0.15em !important;">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
-        <div style="width: 120px; height: 4px; background: linear-gradient(90deg, #00c6ff, #0072ff); margin: 0.8rem auto; border-radius: 2px;"></div>
+        <h1 class="app-title" style="font-size: 3.5rem !important; color: {header_h1_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; margin-bottom: 0.4rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); letter-spacing: 0.05em !important; word-spacing: 0.15em !important;">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
+        <div style="width: 120px; height: 4px; background: linear-gradient(90deg, #00c6ff, #0072ff); margin: 0.4rem auto; border-radius: 2px;"></div>
         <p style="color: {header_p_color}; font-family: 'Outfit', sans-serif !important; font-style: italic; font-size: 1.25rem;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
-        <div class="research-badge" style="margin-top: 1rem;">
+        <div class="research-badge" style="margin-top: 0.4rem;">
             <span style="background: {badge_bg}; color: {header_h1_color}; padding: 6px 18px; border-radius: 20px; border: 1px solid {badge_border}; font-size: 0.9rem; font-weight: bold; font-family: 'Outfit', sans-serif !important;">
                 📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC CẤP TRƯỜNG - NĂM HỌC 2025-2026
             </span>
         </div>
-        <p style="font-size: 0.9rem; color: {'#ccc' if not is_light else '#666'}; margin-top: 0.8rem; font-family: 'Outfit', sans-serif !important;">
+        <p style="font-size: 0.9rem; color: {'#ccc' if not is_light else '#666'}; margin-top: 0.3rem; font-family: 'Outfit', sans-serif !important;">
             Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng
         </p>
     </div>
