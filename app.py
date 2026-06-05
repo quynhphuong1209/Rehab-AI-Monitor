@@ -7278,13 +7278,26 @@ st.markdown(f"""
         border: 1.5px solid {card_border} !important;
         box-shadow: 0 10px 30px rgba(0, 0, 0, {"0.05" if is_light else "0.35"}) !important;
         border-radius: 16px !important;
-        padding: 0.6rem 1.5rem !important; /* Bó hẹp chiều cao ô vuông */
+        padding: 0.8rem 1.5rem !important; /* Bó hẹp chiều cao ô vuông */
         text-align: center;
         width: 100% !important; /* Dãn chiều rộng tối đa */
         max-width: 100% !important; /* Dãn hết giao diện web */
     }}
-    .main-header h1 {{ color: {header_text} !important; margin: 0; }}
-    .main-header p {{ color: {sub_text} !important; margin: 0.3rem 0 0 0; }}
+    .main-header h1 {{ 
+        color: {header_text} !important; 
+        font-size: 3.8rem !important; /* Cỡ chữ to cố định cực kỳ rõ ràng */
+        margin: 0 !important;
+        line-height: 1.2 !important;
+        letter-spacing: 0.05em !important;
+        word-spacing: 0.15em !important;
+    }}
+    .app-title {{
+        font-size: 3.8rem !important; /* Cấu hình cỡ chữ cho trang đăng nhập */
+        letter-spacing: 0.05em !important;
+        word-spacing: 0.15em !important;
+        line-height: 1.2 !important;
+    }}
+    .main-header p {{ color: {sub_text} !important; margin: 0.3rem 0 0 0 !important; }}
     
     /* RESEARCH BADGE */
     .research-badge {{
