@@ -1866,7 +1866,7 @@ st.markdown("""
     .st-key-active_tab_widget button span,
     div[data-testid="stSegmentedControl"] button span,
     div[data-testid="stButtonGroup"] button span {
-        font-size: 0.88rem !important; /* Giảm kích thước chữ cho nhỏ hơn */
+        font-size: 1.0rem !important; /* Tăng kích thước chữ cho dễ đọc */
         font-weight: 600 !important;
         text-transform: uppercase !important;
     }
@@ -1899,7 +1899,7 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0, 198, 255, 0.3) !important;
     }
 
-    /* === GLOBAL TEXT RESIZING FOR COMPACT WEB AESTHETIC === */
+    /* === GLOBAL TEXT RESIZING FOR BETTER READABILITY === */
     .stMarkdown p, 
     .stMarkdown li,
     .stMarkdown span,
@@ -1909,42 +1909,42 @@ st.markdown("""
     .stMarkdown ol,
     p,
     label {
-        font-size: 0.88rem !important;
-        line-height: 1.5 !important;
+        font-size: 1.05rem !important;
+        line-height: 1.6 !important;
     }
     
     .stMarkdown h1 {
-        font-size: 1.5rem !important;
+        font-size: 1.85rem !important;
     }
     .stMarkdown h2 {
-        font-size: 1.25rem !important;
+        font-size: 1.55rem !important;
     }
     .stMarkdown h3 {
-        font-size: 1.08rem !important;
+        font-size: 1.3rem !important;
     }
     .stMarkdown h4 {
-        font-size: 0.95rem !important;
+        font-size: 1.15rem !important;
     }
     
     div[data-testid="stWidgetLabel"] p {
-        font-size: 0.85rem !important;
+        font-size: 1.02rem !important;
     }
     
     [data-testid="stTable"] th {
-        font-size: 0.82rem !important;
-        padding: 5px 10px !important;
+        font-size: 0.98rem !important;
+        padding: 6px 12px !important;
     }
     [data-testid="stTable"] td {
-        font-size: 0.82rem !important;
-        padding: 5px 10px !important;
+        font-size: 0.98rem !important;
+        padding: 6px 12px !important;
     }
     
     .stSelectbox div[role="combobox"] {
-        font-size: 0.88rem !important;
-        min-height: 38px !important;
+        font-size: 1.05rem !important;
+        min-height: 42px !important;
     }
     .stTextInput input, .stTextArea textarea, .stNumberInput input {
-        font-size: 0.88rem !important;
+        font-size: 1.05rem !important;
     }
 
     .stButton button, .stDownloadButton button, [data-testid="stBaseButton-secondary"],
@@ -1952,7 +1952,7 @@ st.markdown("""
         padding: 0.35rem 1.25rem !important;
     }
     .stButton button p, .stDownloadButton button p, [data-testid="stBaseButton-secondary"] p, [data-testid="stFormSubmitButton"] button p {
-        font-size: 0.85rem !important;
+        font-size: 1.0rem !important;
     }
     
     /* === STYLE HEADER & NÚT BẤM THÍCH ỨNG THEO CHỦ ĐỀ (THEME-AWARE) === */
