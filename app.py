@@ -2105,13 +2105,14 @@ st.markdown("""
     
     /* ĐÃ LOẠI BỎ CSS OVERRIDE ĐỂ TRÁNH TRÙNG LẶP VÀ DÍU DÍU CHỮ */
     .main-header {
-        padding: 0.8rem 1.5rem !important; /* Thu hẹp chiều cao card */
-        margin-top: -1.2rem !important;     /* Kéo card lên cao hơn */
-        margin-bottom: 1.2rem !important;   /* Giảm khoảng cách dưới card */
-        border-radius: 12px !important;     /* Bo tròn góc hẹp hơn, thanh lịch */
-        max-width: 950px !important;        /* Kéo hẹp chiều rộng card lại */
-        margin-left: auto !important;       /* Căn giữa */
-        margin-right: auto !important;      /* Căn giữa */
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0.5rem 0 !important;
+        margin-top: -1.5rem !important;
+        margin-bottom: 1.5rem !important;
+        max-width: 100% !important;
+        text-align: center !important;
     }
 
     .main-header p {
@@ -2770,7 +2771,7 @@ if st.session_state.get('theme') == 'light':
     st.markdown("""
     <style>
         .stApp { background: #f8f9fa !important; color: #333 !important; }
-        .main-header { background: #ffffff !important; border: 1px solid #ddd !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important; }
+        .main-header { background: transparent !important; border: none !important; box-shadow: none !important; }
         .main-header h1 { color: #000000 !important; }
         .main-header p { color: #333333 !important; }
         
@@ -7269,17 +7270,12 @@ st.markdown(f"""
     
     /* HEADER */
     .main-header {{
-        background: {header_bg};
-        padding: 0.8rem 1.5rem;
-        border-radius: 12px;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
         text-align: center;
-        margin-top: -1.2rem;
-        margin-bottom: 1.2rem;
-        border: 1px solid {card_border};
-        box-shadow: 0 4px 15px rgba(0,0,0,{"0.05" if is_light else "0.3"});
-        max-width: 950px;
-        margin-left: auto;
-        margin-right: auto;
+        margin-top: -1.5rem;
+        margin-bottom: 1.5rem;
     }}
     .main-header h1 {{ color: {header_text} !important; margin: 0; }}
     .main-header p {{ color: {sub_text} !important; margin: 0.5rem 0 0 0; }}
@@ -10657,7 +10653,8 @@ def hien_thi_dang_nhap_dang_ky():
     
     st.markdown(f"""
     <div style="text-align: center; padding: 0.5rem 0 2rem 0;">
-        <h1 class="app-title" style="color: {header_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem;">🏥 GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO</h1>
+        <h1 class="app-title" style="color: {header_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem;">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
+        <div style="width: 120px; height: 4px; background: linear-gradient(90deg, #00c6ff, #0072ff); margin: 0.8rem auto; border-radius: 2px;"></div>
         <p style="color: {sub_color}; font-family: 'Outfit', sans-serif !important; font-size: 1.3rem; font-style: italic; opacity: 0.9;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
     </div>
     """, unsafe_allow_html=True)
@@ -11614,8 +11611,9 @@ def main():
     badge_border = "#FFD700"
     
     st.markdown(f"""
-    <div class="main-header" style="text-align: center; margin-bottom: 2rem; background: transparent !important; border: none !important; box-shadow: none !important;">
-        <h1 class="app-title" style="color: {header_h1_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🏥 GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO</h1>
+    <div class="main-header" style="text-align: center; margin-bottom: 2rem; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
+        <h1 class="app-title" style="color: {header_h1_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
+        <div style="width: 120px; height: 4px; background: linear-gradient(90deg, #00c6ff, #0072ff); margin: 0.8rem auto; border-radius: 2px;"></div>
         <p style="color: {header_p_color}; font-family: 'Outfit', sans-serif !important; font-style: italic; font-size: 1.25rem;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
         <div class="research-badge" style="margin-top: 1rem;">
             <span style="background: {badge_bg}; color: {header_h1_color}; padding: 6px 18px; border-radius: 20px; border: 1px solid {badge_border}; font-size: 0.9rem; font-weight: bold; font-family: 'Outfit', sans-serif !important;">
