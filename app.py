@@ -11404,7 +11404,7 @@ def hien_thi_home_quan_tri_vien():
     st.markdown("### 📊 Bảng thống kê chi tiết kết quả phân tích & đánh giá")
     if v_list:
         table_rows = []
-        # Tải dữ liệu và xây dựng bảng lookup tối ưu
+        # Tải dữ liệu và xây dựng bảng lookup tối ưu cho đánh giá
         ai_evals_dict = {}
         doc_evals_dict = {}
         for e in e_list:
@@ -11414,10 +11414,37 @@ def hien_thi_home_quan_tri_vien():
             else:
                 doc_evals_dict[key] = e
 
+        # Xây dựng bảng lookup tối ưu cho triệu chứng (s_list)
+        symptoms_dict = {}
+        symptoms_by_user = {}
+        for s in s_list:
+            s_username = s.get('username')
+            s_exercise = s.get('exercise')
+            symptoms_dict[(s_username, s_exercise)] = s
+            symptoms_by_user[s_username] = s
+
         for v in v_list:
-            v_key = (v.get('username'), v.get('video_name'), v.get('exercise'))
+            v_username = v.get('username')
+            v_key = (v_username, v.get('video_name'), v.get('exercise'))
             ai_eval = ai_evals_dict.get(v_key)
             doc_eval = doc_evals_dict.get(v_key)
+
+            # Tra cứu thông tin triệu chứng lâm sàng
+            # Ưu tiên theo bài tập cụ thể, nếu không có thì lấy lần khai báo triệu chứng gần nhất của bệnh nhân đó
+            symp = symptoms_dict.get((v_username, v.get('exercise'))) or symptoms_by_user.get(v_username)
+            if symp:
+                patient_id = symp.get('patient_id', 'N/A')
+                age = symp.get('age', 'N/A')
+                gender = symp.get('gender', 'N/A')
+                desc = symp.get('symptoms', '').strip()
+                vas = symp.get('vas', 'N/A')
+                
+                demographics = f"{age} tuổi / {gender}"
+                symptom_summary = f"{desc} (VAS: {vas}/10)" if desc else f"Đau mức {vas}/10 (Không mô tả thêm)"
+            else:
+                patient_id = "N/A"
+                demographics = "Chưa khai báo"
+                symptom_summary = "Chưa khai báo"
 
             # Thống kê frame hình
             metrics = v.get('metrics', {}) if isinstance(v.get('metrics'), dict) else {}
@@ -11457,6 +11484,10 @@ def hien_thi_home_quan_tri_vien():
 
             table_rows.append({
                 "Bệnh nhân": v.get('full_name', 'N/A'),
+                "Tài khoản": v_username,
+                "Mã BN": patient_id,
+                "Tuổi/GT": demographics,
+                "Triệu chứng khai báo": symptom_summary,
                 "Bài tập": v.get('exercise', 'N/A'),
                 "Thời gian": v.get('time', 'N/A'),
                 "Tổng Frames": tong_str,
