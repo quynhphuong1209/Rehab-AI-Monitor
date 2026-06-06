@@ -127,6 +127,48 @@ Hệ thống tích hợp 3 phiên bản mô hình Pose Estimation từ **MediaPi
 * **Ngưỡng tin cậy (Confidence Threshold):**
   * Đặt mức tối thiểu (mặc định `0.5`) để lọc bỏ các khung hình bị che khuất hoặc các điểm khớp nhận diện kém tự tin, đảm bảo dữ liệu vẽ biểu đồ góc khớp sạch nhất.
 
+## 📁 Cấu trúc thư mục dự án (Directory Structure)
+
+Dưới đây là sơ đồ phân loại toàn bộ tệp tin trong dự án giúp bạn dễ dàng chủ động quản lý và bảo trì:
+
+```
+Rehab-AI-Monitor/
+│
+├── 🌐 Chương trình chạy Web chính
+│   ├── app.py                     # File chạy chính (Frontend Streamlit + Backend Python)
+│   └── .streamlit/
+│       └── config.toml            # Cấu hình cổng mạng, theme, tối ưu hóa của Streamlit
+│
+├── 📚 Tài liệu hướng dẫn & Báo cáo (.md)
+│   ├── README.md                  # Hướng dẫn chung về cách cài đặt và chạy dự án
+│   ├── README_UI.md               # Tài liệu thuyết minh chi tiết về thiết kế giao diện UI/UX
+│   ├── BAO_CAO_CHI_TIET.md        # Báo cáo chuyên sâu về mã nguồn, giải thuật lâm sàng & RAM
+│   ├── TECHNICAL_DOCUMENTATION.md # Tài liệu kỹ thuật phân tích sâu cấu trúc Front-End & Back-End
+│   └── AI_MODEL_DOCUMENTATION.md  # Tài liệu giải thích mô hình AI, công thức toán lý thuyết góc khớp
+│
+├── 💾 Cơ sở dữ liệu JSON (Local DB)
+│   ├── users.json                 # Danh sách tài khoản người dùng và mật khẩu băm bảo mật
+│   ├── patient_symptoms.json      # Triệu chứng lâm sàng và mức độ đau VAS của bệnh nhân
+│   ├── doctor_evaluations.json    # Chẩn đoán lâm sàng (Ground Truth) và nhận xét của Bác sĩ
+│   └── video_list.json            # Quản lý siêu dữ liệu video, kết quả phân tích góc và sai số AI
+│
+├── 📂 Thư mục chứa dữ liệu Media
+│   ├── patient_uploads/           # Nơi lưu trữ video gốc do bệnh nhân tải lên
+│   └── processed_results/         # Nơi lưu kết quả video/ảnh đã vẽ khung xương khớp từ AI
+│
+├── ⚙️ Cấu hình môi trường & Deploy
+│   ├── requirements.txt           # Danh sách thư viện Python cần cài đặt (numpy, mediapipe...)
+│   ├── packages.txt               # Thư viện hệ thống cài cho Linux khi deploy lên cloud (ffmpeg...)
+│   ├── Dockerfile                 # Cấu hình Container để chạy ứng dụng tự động
+│   └── runtime.txt                # Khai báo phiên bản Python chạy trên Cloud (Python 3.10)
+│
+└── 🛠️ Công cụ & Batch Scripts hỗ trợ
+    ├── reset_data.py              # Script dọn dẹp sạch sẽ video rác và reset cơ sở dữ liệu
+    ├── fix_plotly_v2.py           # Script nhỏ sửa lỗi hiển thị của biểu đồ Plotly
+    ├── push_code.bat              # Batch script trên Windows dùng để lưu nhanh code lên GitHub
+    └── push_to_git.bat            # Batch script đẩy code dự phòng lên GitHub
+```
+
 ## 🛠️ Công nghệ sử dụng
 - **AI Core:** MediaPipe (Pose), OpenCV, FFmpeg (Xử lý đa định dạng video MOV/MP4)
 - **Runtime:** Python 3.10 (Khuyến nghị để đảm bảo tương thích MediaPipe & Docker)
