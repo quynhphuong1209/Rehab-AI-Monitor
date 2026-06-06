@@ -2339,6 +2339,57 @@ st.markdown("""
     [data-testid="stAppViewContainer"] ::-webkit-scrollbar-corner {
         background: transparent !important;
     }
+
+    /* GIẢM KÍCH CỠ CHỮ TRONG SIDEBAR THEO YÊU CẦU */
+    [data-testid="stSidebar"] .stMarkdown p,
+    [data-testid="stSidebar"] .stMarkdown li,
+    [data-testid="stSidebar"] .stMarkdown span,
+    [data-testid="stSidebar"] span[data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] li,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] div[data-testid="stWidgetLabel"] p {
+        font-size: 0.88rem !important;
+        line-height: 1.5 !important;
+    }
+    [data-testid="stSidebar"] h1 {
+        font-size: 1.4rem !important;
+    }
+    [data-testid="stSidebar"] h2 {
+        font-size: 1.25rem !important;
+    }
+    [data-testid="stSidebar"] h3 {
+        font-size: 1.15rem !important;
+        margin-top: 8px !important;
+        margin-bottom: 6px !important;
+    }
+    [data-testid="stSidebar"] h4 {
+        font-size: 1.0rem !important;
+    }
+    [data-testid="stSidebar"] .stSelectbox div[role="combobox"] {
+        font-size: 0.88rem !important;
+        min-height: 36px !important;
+    }
+    [data-testid="stSidebar"] .stTextInput input, 
+    [data-testid="stSidebar"] .stTextArea textarea, 
+    [data-testid="stSidebar"] .stNumberInput input {
+        font-size: 0.88rem !important;
+    }
+    [data-testid="stSidebar"] .stButton button,
+    [data-testid="stSidebar"] .stDownloadButton button,
+    [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] {
+        padding: 0.25rem 1.0rem !important;
+    }
+    [data-testid="stSidebar"] .stButton button p,
+    [data-testid="stSidebar"] .stDownloadButton button p,
+    [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] p {
+        font-size: 0.85rem !important;
+    }
+    [data-testid="stSidebar"] div[data-testid="stAlert"] * {
+        font-size: 0.85rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
