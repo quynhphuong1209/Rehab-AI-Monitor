@@ -10858,17 +10858,55 @@ def hien_thi_dang_nhap_dang_ky():
         0%, 100% {{ box-shadow: 0 0 18px rgba(0,212,170,0.45), 0 0 40px rgba(0,212,170,0.18); border-color: rgba(0,212,170,0.75); }}
         50%       {{ box-shadow: 0 0 32px rgba(0,255,200,0.75), 0 0 65px rgba(0,255,200,0.30); border-color: rgba(0,255,200,0.95); }}
     }}
+    .logo-container {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 28px;
+        margin: 0 auto 16px auto;
+        flex-wrap: nowrap;
+    }}
+    .logo-wrapper {{
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }}
+    .logo-wrapper img {{
+        width: 78px;
+        height: 78px;
+        object-fit: contain;
+        border-radius: 50%;
+    }}
+    @media (max-width: 480px) {{
+        .logo-container {{
+            gap: 12px;
+            margin-bottom: 12px;
+        }}
+        .logo-wrapper {{
+            width: 70px;
+            height: 70px;
+            border-width: 1.5px !important;
+        }}
+        .logo-wrapper img {{
+            width: 54px;
+            height: 54px;
+        }}
+    }}
     </style>
     <div style="text-align: center; padding: 0.5rem 0 2rem 0;">
-        <div style="display:flex;justify-content:center;gap:28px;align-items:center;margin:0 auto 16px auto;flex-wrap:wrap;">
-            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;">
-                <img src="{logo_src_login}" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo HUPH">
+        <div class="logo-container">
+            <div class="logo-wrapper" style="border:2.5px solid rgba(0,198,255,0.75);background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;">
+                <img src="{logo_src_login}" alt="Logo HUPH">
             </div>
-            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,212,170,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,212,170,0.06);animation:logo-glow-mint 3s ease-in-out infinite;animation-delay:1s;">
-                <img src="{logo_ds_src_login}" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo Data Science">
+            <div class="logo-wrapper" style="border:2.5px solid rgba(0,212,170,0.75);background:rgba(0,212,170,0.06);animation:logo-glow-mint 3s ease-in-out infinite;animation-delay:1s;">
+                <img src="{logo_ds_src_login}" alt="Logo Data Science">
             </div>
-            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;animation-delay:2s;">
-                <img src="https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo BV PNT">
+            <div class="logo-wrapper" style="border:2.5px solid rgba(0,198,255,0.75);background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;animation-delay:2s;">
+                <img src="https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg" alt="Logo BV PNT">
             </div>
         </div>
         <h1 class="app-title" style="color: {header_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.4rem; letter-spacing: -0.01em !important; word-spacing: normal !important; line-height: 1.15 !important;">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
@@ -11840,17 +11878,55 @@ def main():
         0%, 100% {{ box-shadow: 0 0 18px rgba(0,212,170,0.45), 0 0 40px rgba(0,212,170,0.18); border-color: rgba(0,212,170,0.75); }}
         50%       {{ box-shadow: 0 0 32px rgba(0,255,200,0.75), 0 0 65px rgba(0,255,200,0.30); border-color: rgba(0,255,200,0.95); }}
     }}
+    .logo-container {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 28px;
+        margin: 0 auto 12px auto;
+        flex-wrap: nowrap;
+    }}
+    .logo-wrapper {{
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }}
+    .logo-wrapper img {{
+        width: 78px;
+        height: 78px;
+        object-fit: contain;
+        border-radius: 50%;
+    }}
+    @media (max-width: 480px) {{
+        .logo-container {{
+            gap: 12px;
+            margin-bottom: 12px;
+        }}
+        .logo-wrapper {{
+            width: 70px;
+            height: 70px;
+            border-width: 1.5px !important;
+        }}
+        .logo-wrapper img {{
+            width: 54px;
+            height: 54px;
+        }}
+    }}
     </style>
     <div class="main-header">
-        <div style="display:flex;justify-content:center;gap:28px;align-items:center;margin:0 auto 12px auto;flex-wrap:wrap;">
-            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;">
-                <img src="{logo_src_main}" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo HUPH">
+        <div class="logo-container">
+            <div class="logo-wrapper" style="border:2.5px solid rgba(0,198,255,0.75);background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;">
+                <img src="{logo_src_main}" alt="Logo HUPH">
             </div>
-            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,212,170,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,212,170,0.06);animation:logo-glow-mint 3s ease-in-out infinite;animation-delay:1s;">
-                <img src="{logo_ds_src_main}" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo Data Science">
+            <div class="logo-wrapper" style="border:2.5px solid rgba(0,212,170,0.75);background:rgba(0,212,170,0.06);animation:logo-glow-mint 3s ease-in-out infinite;animation-delay:1s;">
+                <img src="{logo_ds_src_main}" alt="Logo Data Science">
             </div>
-            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;animation-delay:2s;">
-                <img src="https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo BV PNT">
+            <div class="logo-wrapper" style="border:2.5px solid rgba(0,198,255,0.75);background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;animation-delay:2s;">
+                <img src="https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg" alt="Logo BV PNT">
             </div>
         </div>
         <h1 class="app-title" style="color: {header_h1_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; margin-bottom: 0.4rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); letter-spacing: -0.01em !important; word-spacing: normal !important; line-height: 1.15 !important;">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
