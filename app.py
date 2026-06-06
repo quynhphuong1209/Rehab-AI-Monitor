@@ -70,6 +70,34 @@ def get_school_logo_base64():
     return "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
 
+def get_data_science_logo_base64():
+    """Lay logo Khoa Khoa hoc du lieu de nhung vao HTML duoi dang base64."""
+    import pathlib as _pl, base64 as _b64, re as _re
+    script_dir = _pl.Path(__file__).resolve().parent
+    
+    # 1. Thu doc tu file anh JPG truc tiep
+    for p in [script_dir / "logo_data_science_huph.jpg", _pl.Path.cwd() / "logo_data_science_huph.jpg"]:
+        if p.exists():
+            try:
+                with open(p, "rb") as _f:
+                    return f"data:image/jpeg;base64,{_b64.b64encode(_f.read()).decode()}"
+            except Exception:
+                pass
+                
+    # 2. Du phong: doc chuoi base64 tu file logo_html.txt
+    for p in [script_dir / "scratch" / "logo_html.txt", _pl.Path.cwd() / "scratch" / "logo_html.txt"]:
+        if p.exists():
+            try:
+                txt = p.read_text(encoding="utf-8")
+                m = _re.search(r'src=["\'](data:image/[^"\'\s]+)["\']', txt)
+                if m:
+                    return m.group(1)
+            except Exception:
+                pass
+                
+    return ""
+
+
 # --- OPTIMIZED CACHING FOR FASTER PAGE LOADS ---
 @st.cache_data(show_spinner=False)
 def _check_video_valid_cached(path, mtime, size):
@@ -3828,6 +3856,58 @@ def hien_thi_tab_lien_he():
             <div style="margin-top: 30px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 12px; border-left: 5px solid #ffd700;">
                 <p style="color: #888; font-size: 1rem; margin-bottom: 5px;">Đường dây nóng</p>
                 <p style="font-size: 1.6rem; font-weight: bold; color: #ffd700; margin: 0;">024 62663024</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Thêm mục Bản đồ & Địa chỉ Bệnh viện
+    st.markdown("""
+        <style>
+            .map-container {
+                transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            }
+            .map-container:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 40px rgba(0, 198, 255, 0.15) !important;
+                border-color: rgba(0, 198, 255, 0.6) !important;
+            }
+            .map-btn {
+                display: inline-block;
+                background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+                color: white !important;
+                padding: 12px 24px;
+                border-radius: 12px;
+                text-decoration: none !important;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(0, 198, 255, 0.3);
+            }
+            .map-btn:hover {
+                background: linear-gradient(135deg, #00d2ff 0%, #0080ff 100%);
+                box-shadow: 0 6px 20px rgba(0, 198, 255, 0.5);
+                transform: scale(1.02);
+            }
+        </style>
+        
+        <div class="map-container" style="margin-top: 35px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 198, 255, 0.3); border-radius: 20px; padding: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); backdrop-filter: blur(10px);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 25px; border-bottom: 3px solid #00c6ff; padding-bottom: 15px;">
+                <h2 style="color: #00c6ff; margin: 0; display: flex; align-items: center; font-family: 'Outfit', sans-serif;">
+                    <span style="margin-right: 15px; font-size: 2rem;">📍</span> VỊ TRÍ BỆNH VIỆN ĐA KHOA PHẠM NGỌC THẠCH
+                </h2>
+                <a class="map-btn" href="https://www.google.com/maps/place/B%E1%BB%87nh+vi%E1%BB%87n+%C4%91a+khoa+Ph%E1%BA%A1m+Ng%E1%BB%8Dc+Th%E1%BA%A1ch/@21.0821035,105.7766556,17z/data=!3m1!4b1!4m6!3m5!1s0x313455002cadccfd:0xf42e13275632d6dc!8m2!3d21.0820985!4d105.7792305!16s%2Fg%2F11wbfdswkr?entry=ttu" target="_blank">
+                    🗺️ Xem trên Google Maps
+                </a>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <p style="color: #888; font-size: 0.95rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Địa chỉ bệnh viện</p>
+                <p style="font-size: 1.25rem; color: #fff; font-weight: 500; font-family: 'Outfit', sans-serif; margin: 0;">
+                    Số 1A, Đường Đức Thắng, Phường Đông Ngạc, Quận Bắc Từ Liêm, Hà Nội
+                </p>
+            </div>
+            
+            <div style="width: 100%; border-radius: 15px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                <iframe src="https://maps.google.com/maps?q=21.0820985,105.7792305&z=16&output=embed" width="100%" height="400" style="border:0; display: block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -10720,6 +10800,7 @@ def hien_thi_dang_nhap_dang_ky():
     header_color = "#ffffff" if not is_light else "#1a1a2e"
     sub_color = "#ffffff" if not is_light else "#333333"
     logo_src_login = get_school_logo_base64()
+    logo_ds_src_login = get_data_science_logo_base64()
     
     st.markdown(f"""
     <style>
@@ -10727,13 +10808,20 @@ def hien_thi_dang_nhap_dang_ky():
         0%, 100% {{ box-shadow: 0 0 18px rgba(0,198,255,0.45), 0 0 40px rgba(0,198,255,0.18); border-color: rgba(0,198,255,0.75); }}
         50%       {{ box-shadow: 0 0 32px rgba(0,198,255,0.75), 0 0 65px rgba(0,198,255,0.30); border-color: rgba(0,230,255,0.95); }}
     }}
+    @keyframes logo-glow-mint {{
+        0%, 100% {{ box-shadow: 0 0 18px rgba(0,212,170,0.45), 0 0 40px rgba(0,212,170,0.18); border-color: rgba(0,212,170,0.75); }}
+        50%       {{ box-shadow: 0 0 32px rgba(0,255,200,0.75), 0 0 65px rgba(0,255,200,0.30); border-color: rgba(0,255,200,0.95); }}
+    }}
     </style>
     <div style="text-align: center; padding: 0.5rem 0 2rem 0;">
         <div style="display:flex;justify-content:center;gap:28px;align-items:center;margin:0 auto 16px auto;flex-wrap:wrap;">
             <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;">
                 <img src="{logo_src_login}" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo HUPH">
             </div>
-            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;animation-delay:1.5s;">
+            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,212,170,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,212,170,0.06);animation:logo-glow-mint 3s ease-in-out infinite;animation-delay:1s;">
+                <img src="{logo_ds_src_login}" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo Data Science">
+            </div>
+            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;animation-delay:2s;">
                 <img src="https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo BV PNT">
             </div>
         </div>
@@ -11694,6 +11782,7 @@ def main():
     badge_bg = "rgba(0, 198, 255, 0.1)" if not is_light else "rgba(0, 114, 255, 0.08)"
     badge_border = "#00c6ff" if not is_light else "#0072ff"
     logo_src_main = get_school_logo_base64()
+    logo_ds_src_main = get_data_science_logo_base64()
     
     st.markdown(f"""
     <style>
@@ -11701,13 +11790,20 @@ def main():
         0%, 100% {{ box-shadow: 0 0 18px rgba(0,198,255,0.45), 0 0 40px rgba(0,198,255,0.18); border-color: rgba(0,198,255,0.75); }}
         50%       {{ box-shadow: 0 0 32px rgba(0,198,255,0.75), 0 0 65px rgba(0,198,255,0.30); border-color: rgba(0,230,255,0.95); }}
     }}
+    @keyframes logo-glow-mint {{
+        0%, 100% {{ box-shadow: 0 0 18px rgba(0,212,170,0.45), 0 0 40px rgba(0,212,170,0.18); border-color: rgba(0,212,170,0.75); }}
+        50%       {{ box-shadow: 0 0 32px rgba(0,255,200,0.75), 0 0 65px rgba(0,255,200,0.30); border-color: rgba(0,255,200,0.95); }}
+    }}
     </style>
     <div class="main-header">
         <div style="display:flex;justify-content:center;gap:28px;align-items:center;margin:0 auto 12px auto;flex-wrap:wrap;">
             <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;">
                 <img src="{logo_src_main}" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo HUPH">
             </div>
-            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;animation-delay:1.5s;">
+            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,212,170,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,212,170,0.06);animation:logo-glow-mint 3s ease-in-out infinite;animation-delay:1s;">
+                <img src="{logo_ds_src_main}" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo Data Science">
+            </div>
+            <div style="width:100px;height:100px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:logo-glow-pulse 3s ease-in-out infinite;animation-delay:2s;">
                 <img src="https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg" style="width:78px;height:78px;object-fit:contain;border-radius:50%;" alt="Logo BV PNT">
             </div>
         </div>
