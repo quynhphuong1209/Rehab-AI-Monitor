@@ -60,7 +60,13 @@ def get_school_logo_base64():
     """Lay logo truong (abc1.png) de nhung vao HTML duoi dang base64."""
     import pathlib as _pl, base64 as _b64
     script_dir = _pl.Path(__file__).resolve().parent
-    for p in [script_dir / "abc1.png", _pl.Path.cwd() / "abc1.png"]:
+    search_paths = [
+        script_dir / "assets" / "abc1.png",
+        script_dir / "abc1.png",
+        _pl.Path.cwd() / "assets" / "abc1.png",
+        _pl.Path.cwd() / "abc1.png"
+    ]
+    for p in search_paths:
         if p.exists():
             try:
                 with open(p, "rb") as _f:
@@ -76,7 +82,13 @@ def get_data_science_logo_base64():
     script_dir = _pl.Path(__file__).resolve().parent
     
     # 1. Thu doc tu file anh JPG truc tiep
-    for p in [script_dir / "logo_data_science_huph.jpg", _pl.Path.cwd() / "logo_data_science_huph.jpg"]:
+    search_paths = [
+        script_dir / "assets" / "logo_data_science_huph.jpg",
+        script_dir / "logo_data_science_huph.jpg",
+        _pl.Path.cwd() / "assets" / "logo_data_science_huph.jpg",
+        _pl.Path.cwd() / "logo_data_science_huph.jpg"
+    ]
+    for p in search_paths:
         if p.exists():
             try:
                 with open(p, "rb") as _f:
@@ -1103,15 +1115,22 @@ try:
 except Exception:
     _data_ok = False
 
+DB_DIR = "database" if DATA_DIR == "." else DATA_DIR
+if DB_DIR == "database" and not os.path.exists(DB_DIR):
+    try:
+        os.makedirs(DB_DIR, exist_ok=True)
+    except:
+        pass
 
-USER_DATA_FILE = os.path.join(DATA_DIR, "users.json")
-SYMPTOMS_FILE = os.path.join(DATA_DIR, "patient_symptoms.json")
-EVALUATIONS_FILE = os.path.join(DATA_DIR, "doctor_evaluations.json")
-REMINDERS_FILE = os.path.join(DATA_DIR, "schedules.json")
-VIDEOS_FILE = os.path.join(DATA_DIR, "video_list.json")
-RESEARCH_DATA_FILE = os.path.join(DATA_DIR, "research_data.json")
-HISTORY_FILE = os.path.join(DATA_DIR, "lich_su_tap_luyen.json")
-FEEDBACK_FILE = os.path.join(DATA_DIR, "phan_hoi.json")
+
+USER_DATA_FILE = os.path.join(DB_DIR, "users.json")
+SYMPTOMS_FILE = os.path.join(DB_DIR, "patient_symptoms.json")
+EVALUATIONS_FILE = os.path.join(DB_DIR, "doctor_evaluations.json")
+REMINDERS_FILE = os.path.join(DB_DIR, "schedules.json")
+VIDEOS_FILE = os.path.join(DB_DIR, "video_list.json")
+RESEARCH_DATA_FILE = os.path.join(DB_DIR, "research_data.json")
+HISTORY_FILE = os.path.join(DB_DIR, "lich_su_tap_luyen.json")
+FEEDBACK_FILE = os.path.join(DB_DIR, "phan_hoi.json")
 UPLOAD_DIR = os.path.join(DATA_DIR, "patient_uploads")
 PROCESSED_DIR = os.path.join(DATA_DIR, "processed_results")
 
@@ -1277,7 +1296,7 @@ def khoi_tao_dong_bo_hf():
             ]
             for _f in _files_to_persist:
                 _dst = os.path.join(DATA_DIR, _f)
-                _src = os.path.join(".", _f)
+                _src = os.path.join("database", _f)
                 if not os.path.exists(_dst) and os.path.exists(_src):
                     try:
                         shutil.copy2(_src, _dst)
@@ -4799,6 +4818,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         
         # CHIẾN LƯỢC TÌM KIẾM FILE ĐA TẦNG (ROBUST PATH RESOLUTION)
         search_paths = [
+            os.path.join(DB_DIR, f"reference_{ref_name}.json"), # Thử trong thư mục DB_DIR
+            os.path.join("database", f"reference_{ref_name}.json"), # Thử trong thư mục database mặc định
             f"reference_{ref_name}.json", # Thử ở root (Thường dùng cho Cloud)
             os.path.join(os.path.dirname(os.path.abspath(__file__)), f"reference_{ref_name}.json"), # Thử cùng thư mục app.py
             os.path.join(os.getcwd(), f"reference_{ref_name}.json") # Thử thư mục làm việc hiện tại
@@ -8118,7 +8139,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
     ex_key_ui = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == bt['ten']), 'codman')
     mapping_ui = {"codman": "codman", "gay": "gay", "khang_luc": "day"}
     ref_name_ui = mapping_ui.get(ex_key_ui, ex_key_ui)
-    has_dynamic_ref = os.path.exists(f"reference_{ref_name_ui}.json")
+    has_dynamic_ref = os.path.exists(os.path.join(DB_DIR, f"reference_{ref_name_ui}.json")) or os.path.exists(f"reference_{ref_name_ui}.json")
     
     is_light = st.session_state.theme == 'light'
     banner_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"

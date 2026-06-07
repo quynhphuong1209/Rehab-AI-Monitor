@@ -139,6 +139,11 @@ Rehab-AI-Monitor/
 │   └── .streamlit/
 │       └── config.toml            # Cấu hình cổng mạng, theme, tối ưu hóa của Streamlit
 │
+├── 🖼️ Tài nguyên hình ảnh & Logo (Thư mục assets/)
+│   └── assets/
+│       ├── abc1.png                   # Logo Đại học Y tế Công cộng (HUPH)
+│       └── logo_data_science_huph.jpg # Logo khoa Khoa học dữ liệu HUPH
+│
 ├── 📂 Thư mục tài liệu hướng dẫn & Báo cáo (docs/)
 │   ├── README_UI.md               # Tài liệu thuyết minh chi tiết về thiết kế giao diện UI/UX
 │   ├── BAO_CAO_CHI_TIET.md        # Báo cáo chuyên sâu về mã nguồn, giải thuật lâm sàng & RAM
@@ -148,12 +153,17 @@ Rehab-AI-Monitor/
 ├── 📝 Hướng dẫn khởi chạy chính
 │   └── README.md                  # Hướng dẫn chung về cách cài đặt và chạy dự án
 │
-│
-├── 💾 Cơ sở dữ liệu JSON (Local DB)
-│   ├── users.json                 # Danh sách tài khoản người dùng và mật khẩu băm bảo mật
-│   ├── patient_symptoms.json      # Triệu chứng lâm sàng và mức độ đau VAS của bệnh nhân
-│   ├── doctor_evaluations.json    # Chẩn đoán lâm sàng (Ground Truth) và nhận xét của Bác sĩ
-│   └── video_list.json            # Quản lý siêu dữ liệu video, kết quả phân tích góc và sai số AI
+├── 💾 Cơ sở dữ liệu JSON (Thư mục database/)
+│   └── database/
+│       ├── users.json                 # Danh sách tài khoản người dùng và mật khẩu băm bảo mật
+│       ├── patient_symptoms.json      # Triệu chứng lâm sàng và mức độ đau VAS của bệnh nhân
+│       ├── doctor_evaluations.json    # Chẩn đoán lâm sàng (Ground Truth) và nhận xét của Bác sĩ
+│       ├── schedules.json             # Lịch nhắc nhở luyện tập của bệnh nhân
+│       ├── video_list.json            # Quản lý siêu dữ liệu video, kết quả phân tích góc và sai số AI
+│       ├── lich_su_tap_luyen.json     # Lịch sử và tiến trình tập luyện của bệnh nhân
+│       ├── reference_codman.json      # Dữ liệu góc chuẩn cho bài tập Codman Pendulum
+│       ├── reference_gay.json         # Dữ liệu góc chuẩn cho bài tập gậy khớp vai
+│       └── reference_day.json         # Dữ liệu góc chuẩn cho bài tập dây kháng lực
 │
 ├── 📂 Thư mục chứa dữ liệu Media
 │   ├── patient_uploads/           # Nơi lưu trữ video gốc do bệnh nhân tải lên
@@ -165,11 +175,12 @@ Rehab-AI-Monitor/
 │   ├── Dockerfile                 # Cấu hình Container để chạy ứng dụng tự động
 │   └── runtime.txt                # Khai báo phiên bản Python chạy trên Cloud (Python 3.10)
 │
-└── 🛠️ Công cụ & Batch Scripts hỗ trợ
-    ├── reset_data.py              # Script dọn dẹp sạch sẽ video rác và reset cơ sở dữ liệu
-    ├── fix_plotly_v2.py           # Script nhỏ sửa lỗi hiển thị của biểu đồ Plotly
-    ├── push_code.bat              # Batch script trên Windows dùng để lưu nhanh code lên GitHub
-    └── push_to_git.bat            # Batch script đẩy code dự phòng lên GitHub
+└── 🛠️ Công cụ & Batch Scripts hỗ trợ (Thư mục scripts/)
+    └── scripts/
+        ├── reset_data.py              # Script dọn dẹp sạch sẽ video rác và reset cơ sở dữ liệu
+        ├── fix_plotly_v2.py           # Script nhỏ sửa lỗi hiển thị của biểu đồ Plotly
+        ├── push_code.bat              # Batch script trên Windows dùng để lưu nhanh code lên GitHub
+        └── push_to_git.bat            # Batch script đẩy code dự phòng lên GitHub
 ```
 
 ## 🛠️ Công nghệ sử dụng

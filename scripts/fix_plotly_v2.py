@@ -1,7 +1,13 @@
 import re
 import os
 
-file_path = 'app.py'
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if os.path.basename(script_dir) == "scripts":
+    root_dir = os.path.dirname(script_dir)
+else:
+    root_dir = script_dir
+
+file_path = os.path.join(root_dir, 'app.py')
 
 with open(file_path, 'r', encoding='utf-8') as f:
     content = f.read()
@@ -30,4 +36,4 @@ content = re.sub(
 with open(file_path, 'w', encoding='utf-8') as f:
     f.write(content)
 
-print("Successfully updated app.py with Plotly 6.0 compatible schema.")
+print(f"Successfully updated {file_path} with Plotly 6.0 compatible schema.")
