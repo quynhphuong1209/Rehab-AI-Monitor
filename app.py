@@ -1152,14 +1152,8 @@ OUTPUT_VIDEOS_DIR = "output_videos"
 
 def hien_thi_footer_chung():
     """Hiển thị chân trang (footer) chuyên nghiệp cho dự án Rehab-AI-Monitor"""
-    import base64
     try:
-        if os.path.exists("abc1.png"):
-            with open("abc1.png", "rb") as img_file:
-                logo_b64 = base64.b64encode(img_file.read()).decode()
-                logo_src = f"data:image/png;base64,{logo_b64}"
-        else:
-            logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
+        logo_src = get_school_logo_base64()
     except:
         logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
@@ -8890,6 +8884,7 @@ def hien_thi_form_danh_gia_bac_si():
                 new_e = {
                     "patient_username": selected_video['username'],
                     "doctor_username": st.session_state.user_info['username'],
+                    "doctor_name": st.session_state.user_info.get('full_name', st.session_state.user_info['username']),
                     "video_name": selected_video['video_name'],
                     "exercise": selected_video['exercise'],
                     "doctor_result": k_qua,
@@ -8908,34 +8903,89 @@ def hien_thi_form_danh_gia_bac_si():
 
 
     # 2. PHẦN NHẬT KÝ LỊCH SỬ (DƯỚI CÙNG - LUÔN HIỆN)
+    # Hiển thị TẤT CẢ đánh giá từ bác sĩ/KTV (không phải AI_Researcher)
     st.markdown("---")
     st.markdown("### 📜 NHẬT KÝ ĐÁNH GIÁ LÂM SÀNG")
-    if not my_history:
-        st.info("📭 Bạn chưa có bản ghi đánh giá lâm sàng nào.")
+
+    all_doctor_history = [
+        e for e in evals
+        if e.get('doctor_username') not in (None, "", "AI_Researcher")
+    ]
+    all_doctor_history = list(reversed(all_doctor_history))  # Mới nhất lên đầu
+
+    if not all_doctor_history:
+        st.info("📭 Chưa có bản ghi đánh giá lâm sàng nào từ Bác sĩ / KTV PHCN.")
     else:
-        for i, h in enumerate(reversed(my_history)):
+        # --- Bộ lọc nhanh ---
+        filter_col1, filter_col2, filter_col3 = st.columns([2, 2, 1])
+        with filter_col1:
+            all_patients_hist = sorted(set(h.get('patient_username', '') for h in all_doctor_history if h.get('patient_username')))
+            filter_patient = st.selectbox("🔍 Lọc theo bệnh nhân:", ["-- Tất cả --"] + all_patients_hist, key="filter_doc_hist_patient")
+        with filter_col2:
+            filter_result = st.selectbox("📊 Lọc theo kết quả:", ["-- Tất cả --", "Đúng", "Gần đúng", "Sai"], key="filter_doc_hist_result")
+        with filter_col3:
+            st.markdown("<br>", unsafe_allow_html=True)
+            show_only_mine = st.toggle("👤 Chỉ của tôi", value=False, key="filter_doc_hist_mine")
+
+        # Áp dụng bộ lọc
+        filtered_history = all_doctor_history
+        if show_only_mine:
+            filtered_history = [h for h in filtered_history if h.get('doctor_username') == st.session_state.user_info['username']]
+        if filter_patient != "-- Tất cả --":
+            filtered_history = [h for h in filtered_history if h.get('patient_username') == filter_patient]
+        if filter_result != "-- Tất cả --":
+            filtered_history = [h for h in filtered_history if h.get('doctor_result') == filter_result]
+
+        # Badge màu theo kết quả
+        def result_badge_doc(result):
+            color_map = {"Đúng": "#2ecc71", "Gần đúng": "#f39c12", "Sai": "#e74c3c"}
+            color = color_map.get(result, "#95a5a6")
+            return f'<span style="background:{color};color:#fff;padding:2px 10px;border-radius:20px;font-size:0.78rem;font-weight:bold;">{result}</span>'
+
+        st.caption(f"Hiển thị **{len(filtered_history)}** / {len(all_doctor_history)} bản ghi đánh giá lâm sàng")
+
+        for i, h in enumerate(filtered_history):
+            is_mine = h.get('doctor_username') == st.session_state.user_info['username']
+            doc_label = h.get('doctor_name') or h.get('doctor_username', 'N/A')
+            mine_tag = " 👤" if is_mine else ""
+
             col_main_h, col_del_h = st.columns([12, 1])
             with col_main_h:
-                with st.expander(f"🕒 {h['time']} - BN: {h['patient_username']} - KQ: {h['doctor_result']}"):
+                expander_label = f"🕒 {h.get('time', 'N/A')} | BN: {h.get('patient_username', 'N/A')} | BS: {doc_label}{mine_tag} | KQ: {h.get('doctor_result', '')}"
+                with st.expander(expander_label):
+                    st.markdown(
+                        f"**Kết quả:** {result_badge_doc(h.get('doctor_result', ''))} &nbsp;&nbsp;"
+                        f"**Bác sĩ/KTV:** `{doc_label}` &nbsp;&nbsp;"
+                        f"**Thời gian:** `{h.get('time', 'N/A')}`",
+                        unsafe_allow_html=True
+                    )
                     col_h1, col_h2 = st.columns(2)
                     with col_h1:
-                        st.write(f"**Bài tập:** {h['exercise']}")
-                        st.write(f"**Kết quả:** {h['doctor_result']}")
+                        st.write(f"**Bài tập:** {h.get('exercise', 'N/A')}")
+                        st.write(f"**Bệnh nhân:** {h.get('patient_username', 'N/A')}")
                         if h.get('errors'):
                             st.write(f"**Lỗi:** {', '.join(h['errors'])}")
+                        st.write(f"**Chỉ định:** {h.get('plan', 'N/A')}")
                     with col_h2:
-                        st.success(f"**Nhận xét BN:** {h['comments']}")
-                        st.info(f"**Ghi chú NCV:** {h.get('comments_ncv', 'Không có')}")
-                        st.write(f"**Chỉ định:** {h['plan']}")
+                        if h.get('comments'):
+                            st.success(f"**Nhận xét BN:** {h['comments']}")
+                        if h.get('comments_ncv'):
+                            st.info(f"**Ghi chú NCV:** {h['comments_ncv']}")
             with col_del_h:
-                st.write("") # Căn chỉnh nút xóa xuống một chút
-                if st.button("❌", key=f"del_doc_h_{i}", help="Xóa bản ghi đánh giá này"):
-                    all_evals = load_data(EVALUATIONS_FILE)
-                    # Lọc bỏ bản ghi khớp với thời gian và BN
-                    all_evals = [e for e in all_evals if not (e.get('time') == h['time'] and e.get('patient_username') == h['patient_username'] and e.get('doctor_username') == st.session_state.user_info['username'])]
-                    save_data(EVALUATIONS_FILE, all_evals)
-                    st.success("Đã xóa bản ghi!")
-                    st.rerun()
+                st.write("")  # Căn chỉnh nút
+                if is_mine:
+                    if st.button("❌", key=f"del_doc_h_{i}", help="Xóa bản ghi đánh giá này (chỉ đánh giá của bạn)"):
+                        all_evals = load_data(EVALUATIONS_FILE)
+                        all_evals = [e for e in all_evals if not (
+                            e.get('time') == h['time'] and
+                            e.get('patient_username') == h['patient_username'] and
+                            e.get('doctor_username') == st.session_state.user_info['username']
+                        )]
+                        save_data(EVALUATIONS_FILE, all_evals)
+                        st.success("Đã xóa bản ghi!")
+                        st.rerun()
+                else:
+                    st.markdown("<span title='Bạn không thể xóa đánh giá của bác sĩ khác' style='color:#555;font-size:1.1rem;cursor:default;'>🔒</span>", unsafe_allow_html=True)
 def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỔNG HỢP")
     
@@ -9385,6 +9435,10 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                         st.write(f"• Đau (VAS): {r.get('pain_level')}")
                     with rc3:
                         st.write(f"• Kết quả: {r.get('general_result')}")
+                        if r.get('errors'):
+                            st.write(f"• Lỗi sai: {', '.join(r.get('errors'))}")
+                        if r.get('plan'):
+                            st.write(f"• Chỉ định: {r.get('plan')}")
                         st.info(f"**Nhận xét:** {r.get('specialist_comment')}")
     else:
         st.info("👆 Hãy chọn một phiên tập từ danh sách bên trên để xem nhận xét chi tiết.")
@@ -9847,11 +9901,12 @@ def hien_thi_tab_phieu_nckh():
         with col2:
             job = st.selectbox("Nghề nghiệp:", [
                 "Nông dân (1)", "Công nhân (2)", "Cán bộ - viên chức (3)", 
-                "Buôn bán (4)", "Nội trợ (5)", "Lao động tự do (6)", "Nghỉ hưu (7)"
+                "Buôn bán (4)", "Nội trợ (5)", "Lao động tự do (6)", "Nghỉ hưu (7)",
+                "Không có nghề nghiệp cụ thể (8)"
             ])
             education = st.selectbox("Trình độ học vấn:", [
                 "Mù chữ (1)", "Tiểu học (2)", "Trung học cơ sở (3)", 
-                "Trung học phổ thông (4)", "Cao đẳng – đại học (5)"
+                "Trung học phổ thông (4)", "Cao đẳng – đại học (5)", "Không rõ (6)"
             ])
             department = st.radio("Khoa điều trị:", ["Khoa PHCN – Y học cổ truyền (1)", "Khác (99)"], horizontal=True)
             treatment_type = st.radio("Hình thức điều trị:", ["Nội trú (1)", "Ngoại trú (2)"], horizontal=True)
@@ -9860,7 +9915,8 @@ def hien_thi_tab_phieu_nckh():
                 "Viêm quanh khớp vai thể giả liệt (ICD-10: M75.1)", 
                 "Viêm quanh khớp vai thể đông cứng (ICD-10: M75.0)", 
                 "Viêm quanh khớp vai thể đơn thuần (ICD-10: M75.8)", 
-                "Viêm quanh khớp cấp (ICD-10: M75.3 / M75.5)"
+                "Viêm quanh khớp cấp (ICD-10: M75.3 / M75.5)",
+                "Viêm quanh khớp vai (P) (ICD-10: M75)"
             ])
             lesion_side = st.radio("Vị trí vai tổn thương:", ["Vai trái (1)", "Vai phải (2)"], horizontal=True)
             duration = st.radio("Thời gian mắc bệnh:", ["< 1 tháng (1)", "1 – 3 tháng (2)", ">= 3 tháng (3)"], horizontal=True)
@@ -9876,9 +9932,9 @@ def hien_thi_tab_phieu_nckh():
 
         # III. NỘI DUNG TẬP LUYỆN
         st.markdown("### III. NỘI DUNG TẬP LUYỆN ĐƯỢC GHI HÌNH")
-        ex_options = [BAI_TAP[k]['ten'] for k in BAI_TAP]
-        default_ex = [selected_video['exercise']] if selected_video and selected_video['exercise'] in ex_options else []
-        exercise_list = st.multiselect("Bài tập được ghi hình:", options=ex_options, default=default_ex)
+        exercise = selected_video['exercise'] if selected_video else "Bài tập con lắc Codman"
+        st.markdown(f"**Bài tập được ghi hình:** {exercise}")
+        exercise_list = [exercise]
 
         # IV. ĐÁNH GIÁ KỸ THUẬT (GROUND TRUTH)
         st.markdown("### IV. ĐÁNH GIÁ KỸ THUẬT ĐỘNG TÁC (GROUND TRUTH)")
@@ -9887,10 +9943,10 @@ def hien_thi_tab_phieu_nckh():
         
         col5, col6 = st.columns(2)
         with col5:
-            general_result = st.radio("Kết quả tổng quát:", ["Đúng (1)", "Gần đúng (2)", "Sai (3)"], horizontal=True)
-            total_reps = st.number_input("Tổng số lần thực hiện:", min_value=0, value=0)
+            general_result = st.radio("Kết quả:", ["Đúng", "Sai", "Gần đúng"], index=0, horizontal=True)
+            plan = st.radio("Chỉ định:", ["Tiếp tục", "Chuyển bài", "Khám lại"], index=0, horizontal=True)
         with col6:
-            correct_reps = st.number_input("Số lần thực hiện đúng kỹ thuật:", min_value=0, value=0)
+            errors = st.multiselect("Lỗi sai:", ["Vị trí tay chưa đúng", "Biên độ chưa đạt", "Tốc độ quá nhanh/chậm", "Sai tư thế thân người"])
         specialist_comment = st.text_area("Nhận xét chuyên môn của Bác sĩ/KTV PHCN:")
 
         # V. THÔNG TIN VIDEO
@@ -9935,8 +9991,8 @@ def hien_thi_tab_phieu_nckh():
                     "disease_severity": disease_severity,
                     "exercises": exercise_list,
                     "general_result": general_result,
-                    "total_reps": total_reps,
-                    "correct_reps": correct_reps,
+                    "errors": errors,
+                    "plan": plan,
                     "specialist_comment": specialist_comment,
                     "video_code": video_code,
                     "recording_device": recording_device,
@@ -10007,7 +10063,12 @@ def hien_thi_tab_phieu_nckh():
                     with col_i3:
                         st.markdown("**📊 Đánh giá chuyên môn**")
                         st.write(f"- Kết quả: {item.get('general_result')}")
-                        st.write(f"- Số lần Đúng/Tổng: {item.get('correct_reps')}/{item.get('total_reps')}")
+                        if item.get('errors'):
+                            st.write(f"- Lỗi sai: {', '.join(item.get('errors'))}")
+                        if item.get('plan'):
+                            st.write(f"- Chỉ định: {item.get('plan')}")
+                        if item.get('correct_reps') is not None and item.get('total_reps') is not None:
+                            st.write(f"- Số lần Đúng/Tổng: {item.get('correct_reps')}/{item.get('total_reps')}")
                         st.info(f"**Nhận xét:** {item.get('specialist_comment')}")
                     
                     if item.get('video_code'):
