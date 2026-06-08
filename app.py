@@ -8916,6 +8916,20 @@ def hien_thi_form_danh_gia_bac_si():
     if not all_doctor_history:
         st.info("📭 Chưa có bản ghi đánh giá lâm sàng nào từ Bác sĩ / KTV PHCN.")
     else:
+        user_role = st.session_state.user_info.get('role', 'Bác sĩ / KTV PHCN')
+        if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên", "Quản trị viên"]:
+            c_exp_doc1, c_exp_doc2 = st.columns([1, 4])
+            with c_exp_doc1:
+                df_export_doc = pd.DataFrame(all_doctor_history)
+                csv_doc = df_export_doc.to_csv(index=False).encode('utf-8-sig')
+                st.download_button(
+                    label="📊 Xuất Excel (CSV)",
+                    data=csv_doc,
+                    file_name=f"clinical_evaluations_{get_vn_now().strftime('%Y%m%d')}.csv",
+                    mime="text/csv",
+                    key="btn_export_clinical_evals",
+                    width="stretch"
+                )
         # --- Bộ lọc nhanh ---
         filter_col1, filter_col2, filter_col3 = st.columns([2, 2, 1])
         with filter_col1:
