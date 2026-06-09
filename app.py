@@ -5674,6 +5674,24 @@ def clear_analysis_progress(video_path):
     except Exception as exc:
         print(f"[Progress] Khong xoa duoc progress file: {exc}")
 
+def clear_all_progress_files():
+    """Xóa toàn bộ file tiến trình (progress_*.json) để làm mới — không còn job nào hiển thị 'đang tải'.
+    Trả về số file đã xóa."""
+    removed = 0
+    if not os.path.exists(PROCESSED_DIR):
+        return 0
+    try:
+        for fn in os.listdir(PROCESSED_DIR):
+            if fn.startswith("progress_") and fn.endswith(".json"):
+                try:
+                    os.remove(os.path.join(PROCESSED_DIR, fn))
+                    removed += 1
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"[Reset] Loi xoa progress files: {e}")
+    return removed
+
 def khoi_dong_phan_tich_lai_video(v, auto_start=True):
     """
     Chuẩn bị và khởi chạy phân tích lại: MediaPipe 33 điểm + REF YouTube + ML Classifier.
@@ -12942,8 +12960,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
 # ============================================
 # MAIN - GIỮ NGUYÊN CẤU TRÚC TAB
 # ============================================
-@st.fragment
 def _render_main_tab_content(tab_titles, user_role):
+        # KHÔNG để là @st.fragment: các fragment tiến trình (run_every) bên trong cần ở top-level,
+        # tránh lỗi trùng key widget do fragment lồng trong fragment.
         if st.session_state.get('trigger_tab_switch'):
             if st.session_state.trigger_tab_switch in tab_titles:
                 st.session_state.active_tab = st.session_state.trigger_tab_switch
@@ -13929,7 +13948,17 @@ def main():
                             )
                         st.success(f"Cập nhật {_ap.get('updated', 0)} video") if _ap.get("success") else st.error(_ap.get("message", "Lỗi"))
                         st.rerun()
-            
+
+            st.markdown("### 🧹 LÀM MỚI TIẾN TRÌNH")
+            st.caption("Hủy tất cả tiến trình đang chạy/đang chờ để bắt đầu phân tích lại từ đầu.")
+            if st.button("🧹 HỦY TẤT CẢ & LÀM MỚI", key="sidebar_reset_progress", use_container_width=True, type="secondary"):
+                n_removed = clear_all_progress_files()
+                # Reset trạng thái phân tích trong phiên hiện tại
+                for _k in ("reanalyze_triggered", "view_old_analysis", "has_data", "stats", "angle_df", "current_eval_video"):
+                    st.session_state.pop(_k, None)
+                st.toast(f"🧹 Đã làm mới — xóa {n_removed} tiến trình. Bạn có thể tải/phân tích lại từ đầu.", icon="✅")
+                st.rerun()
+
             # st.markdown("### 🎯 CHỌN BÀI TẬP") # Cắt bỏ chọn bài tập ở sidebar cho NCV
             # ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
             # bai_tap = BAI_TAP[ma_bai_tap]
