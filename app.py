@@ -8343,10 +8343,6 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
     """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
     user_role = st.session_state.user_info.get('role')
 
-    # Panel theo dõi các video đang trích xuất (dùng chung mọi thiết bị) — chỉ cho NCV
-    if user_role == "Nghiên cứu viên":
-        hien_thi_jobs_dang_chay_fragment(key_suffix=key_suffix)
-
     # Kiểm tra tiến trình background trước tiên nếu đang chọn một video.
     # Chỉ nạp khi KHÔNG ở chế độ chạy lại (tránh ghi đè trạng thái cấu hình phân tích mới).
     if st.session_state.get('current_eval_video') and not st.session_state.get('reanalyze_triggered', False):
