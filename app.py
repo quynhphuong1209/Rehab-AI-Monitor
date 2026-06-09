@@ -1023,6 +1023,8 @@ def nap_phien_benh_nhan_vao_session(selected_v):
     st.session_state.uploaded_file_name = selected_v.get('video_name')
     st.session_state.frames_zip = selected_v.get('frames_zip')
     st.session_state.has_data = True
+    st.session_state.view_old_analysis = True
+    st.session_state.reanalyze_triggered = False
     ex_name = selected_v.get('exercise', 'codman')
     ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
     st.session_state.exercise = ex_base.copy()
@@ -1980,20 +1982,8 @@ def khoi_phuc_video_list_tu_tep():
                     break
             if matched:
                 continue
-            vname_guess = f"video_processed_{ts}.mp4"
-            _add({
-                "username": "unknown",
-                "full_name": "Bệnh nhân (khôi phục)",
-                "video_name": vname_guess,
-                "exercise": _exercise_tu_ten_file(vname_guess),
-                "accuracy": 0,
-                "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
-                "video_path": None,
-                "processed_path": proc_path if os.path.exists(proc_path) else None,
-                "df_path": csv_f,
-                "all_frames_data_path": json_f if os.path.exists(json_f) else None,
-                "status": "Đã phân tích",
-            })
+            # Không tạo bản ghi mồ côi — dong_bo_video_list_tu_processed sẽ gắn path cho bản ghi thật
+            continue
 
     if os.path.isdir(UPLOAD_DIR):
         for fn in os.listdir(UPLOAD_DIR):
@@ -2037,19 +2027,248 @@ def _parse_upload_time_from_filename(path_or_name):
 
 
 def _lich_su_entry_key(entry):
+    """Khóa duy nhất theo BN + video + bài tập + thời gian — giữ mọi lần phân tích."""
     return (
         entry.get("username") or "",
         entry.get("video_name") or "",
         entry.get("bai_tap") or entry.get("exercise") or "",
+        entry.get("ngay") or "",
     )
+
+
+def _parse_vn_datetime(time_str):
+    """Parse thời gian VN: 'HH:MM - dd/mm/YYYY' hoặc 'YYYY-MM-DD HH:MM:SS'."""
+    if not time_str:
+        return None
+    s = str(time_str).strip()
+    for fmt in ("%H:%M - %d/%m/%Y", "%Y-%m-%d %H:%M:%S", "%d/%m/%Y %H:%M", "%d/%m/%Y %H:%M:%S"):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _ngay_trong_lich_su(time_str):
+    """Trả về phần ngày dd/mm/YYYY để so khớp giữa các định dạng."""
+    dt = _parse_vn_datetime(time_str)
+    if dt:
+        return dt.strftime("%d/%m/%Y")
+    import re
+    m = re.search(r"(\d{2}/\d{2}/\d{4})", str(time_str or ""))
+    return m.group(1) if m else ""
+
+
+def lay_danh_gia_ai_benh_nhan(username, video_name=None, exercise=None):
+    """Lấy tất cả báo cáo AI của BN, mới nhất trước."""
+    if not username:
+        return []
+    evals = load_data(EVALUATIONS_FILE) or []
+    ai = [
+        e for e in evals
+        if e.get("doctor_username") == "AI_Researcher"
+        and e.get("patient_username") == username
+    ]
+    if video_name:
+        ai = [
+            e for e in ai
+            if e.get("video_name") == video_name
+            or video_name in (e.get("video_name") or "")
+        ]
+    if exercise:
+        ai = [e for e in ai if e.get("exercise") == exercise]
+    ai.sort(
+        key=lambda e: _parse_vn_datetime(e.get("time")) or datetime.min,
+        reverse=True,
+    )
+    return ai
+
+
+def khoi_phuc_lich_su_tu_danh_gia(history=None):
+    """Khôi phục lịch sử từ doctor_evaluations + điền username còn thiếu."""
+    if history is None:
+        history = load_data(HISTORY_FILE) or []
+    evals = load_data(EVALUATIONS_FILE) or []
+    ai_evals = [e for e in evals if e.get("doctor_username") == "AI_Researcher"]
+    users_db = load_users()
+    by_key = {_lich_su_entry_key(h): h for h in history if isinstance(h, dict)}
+    changed = False
+
+    for h in history:
+        if not isinstance(h, dict) or h.get("username"):
+            continue
+        h_acc = round(float(h.get("accuracy") or 0), 1)
+        h_bt = h.get("bai_tap") or h.get("exercise") or ""
+        h_ngay = h.get("ngay") or ""
+        h_day = _ngay_trong_lich_su(h_ngay)
+        best_e = None
+        for e in ai_evals:
+            e_acc = round(float(e.get("ai_accuracy") or 0), 1)
+            e_day = _ngay_trong_lich_su(e.get("time"))
+            if e.get("exercise") != h_bt:
+                continue
+            if abs(e_acc - h_acc) > 0.5:
+                continue
+            if h_day and e_day and h_day != e_day:
+                continue
+            best_e = e
+            break
+        if best_e:
+            uname = best_e.get("patient_username") or ""
+            h["username"] = uname
+            h["full_name"] = users_db.get(uname, {}).get("full_name", uname)
+            h["video_name"] = best_e.get("video_name") or h.get("video_name") or ""
+            h["bai_tap"] = best_e.get("exercise") or h_bt
+            if best_e.get("time"):
+                h["ngay"] = best_e.get("time")
+            changed = True
+
+    for e in ai_evals:
+        uname = e.get("patient_username") or ""
+        ngay = e.get("time") or ""
+        if not uname or not ngay:
+            continue
+        entry = {
+            "ngay": ngay,
+            "username": uname,
+            "full_name": users_db.get(uname, {}).get("full_name", uname),
+            "video_name": e.get("video_name") or "",
+            "bai_tap": e.get("exercise") or "",
+            "accuracy": round(float(e.get("ai_accuracy") or 0), 1),
+            "f1": None,
+            "thoi_gian_tap": None,
+            "source": "ai_eval",
+        }
+        key = _lich_su_entry_key(entry)
+        if key not in by_key:
+            history.append(entry)
+            by_key[key] = entry
+            changed = True
+
+    if changed:
+        save_data(HISTORY_FILE, history)
+        print(f"[LichSu] Khoi phuc {len(history)} buoi tap tu danh gia AI")
+    return history
+
+
+def sap_xep_lich_su_theo_thoi_gian(history):
+    """Sắp xếp lịch sử — mới nhất lên đầu."""
+    return sorted(
+        [h for h in history if isinstance(h, dict)],
+        key=lambda h: _parse_vn_datetime(h.get("ngay")) or datetime.min,
+        reverse=True,
+    )
+
+
+def nap_ket_qua_ai_vao_session(ai_eval):
+    """Nạp phiên phân tích cũ từ bản ghi AI evaluation vào session."""
+    if not ai_eval:
+        return False
+    all_vids = load_data(VIDEOS_FILE) or []
+    v = next(
+        (
+            x for x in all_vids
+            if x.get("username") == ai_eval.get("patient_username")
+            and (
+                x.get("video_name") == ai_eval.get("video_name")
+                or ai_eval.get("video_name", "") in (x.get("video_name") or "")
+            )
+        ),
+        None,
+    )
+    if v:
+        nap_phien_benh_nhan_vao_session(v)
+        st.session_state.view_old_analysis = True
+        st.session_state.reanalyze_triggered = False
+        df_path = v.get("df_path")
+        if df_path:
+            ensure_local_file(df_path)
+            if os.path.exists(df_path):
+                try:
+                    st.session_state.angle_df = read_display_csv_fast(df_path)
+                except Exception:
+                    pass
+        return True
+
+    st.session_state.current_eval_video = {
+        "username": ai_eval.get("patient_username"),
+        "full_name": ai_eval.get("patient_username"),
+        "video_name": ai_eval.get("video_name"),
+        "exercise": ai_eval.get("exercise"),
+    }
+    st.session_state.view_old_analysis = True
+    st.session_state.reanalyze_triggered = False
+    st.session_state.has_data = False
+    st.session_state.stats = None
+    st.session_state.angle_df = None
+    return False
+
+
+def hien_thi_ket_qua_gan_nhat_va_lich_su(username, video_name=None, key_suffix=""):
+    """Hiển thị kết quả gần nhất + dropdown xem lại các lần phân tích trước."""
+    ai_history = lay_danh_gia_ai_benh_nhan(username, video_name)
+    if not ai_history:
+        return
+
+    latest = ai_history[0]
+    acc = latest.get("ai_accuracy", 0)
+    verdict = latest.get("doctor_result", "N/A")
+    t_latest = latest.get("time", "N/A")
+    ex_latest = latest.get("exercise", "N/A")
+
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, rgba(0,198,255,0.12) 0%, rgba(0,114,255,0.08) 100%);
+        border: 1px solid rgba(0,198,255,0.35); border-left: 5px solid #00c6ff; border-radius: 14px;
+        padding: 18px 20px; margin-bottom: 16px;">
+        <p style="margin:0 0 6px 0; font-size:0.8rem; color:#888; text-transform:uppercase; letter-spacing:1px;">
+            📌 Kết quả gần đây nhất
+        </p>
+        <p style="margin:0; font-size:1.05rem; color:#fff; font-weight:600;">
+            🕒 {t_latest} — {ex_latest}
+        </p>
+        <p style="margin:6px 0 0; font-size:0.95rem; color:#00c6ff;">
+            {verdict} · Độ chính xác AI: <b>{acc}%</b>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if len(ai_history) <= 1:
+        return
+
+    st.markdown("#### 📜 XEM LẠI KẾT QUẢ PHÂN TÍCH TRƯỚC ĐÓ")
+
+    def _eval_label(e):
+        acc_e = e.get("ai_accuracy", 0)
+        return (
+            f"🕒 {e.get('time', 'N/A')} — {e.get('exercise', 'N/A')} "
+            f"({e.get('doctor_result', 'N/A')}: {acc_e}%)"
+        )
+
+    hist_opts = [{"label": _eval_label(e), "val": e} for e in ai_history]
+    picked = st.selectbox(
+        "Chọn phiên phân tích:",
+        hist_opts,
+        format_func=lambda x: x["label"],
+        key=f"ncv_ai_history_{key_suffix}_{username}",
+    )
+    if st.button(
+        "📂 TẢI KẾT QUẢ ĐÃ CHỌN",
+        key=f"btn_load_ai_hist_{key_suffix}_{username}",
+        type="secondary",
+        use_container_width=True,
+    ):
+        nap_ket_qua_ai_vao_session(picked["val"])
+        st.toast("✅ Đã tải kết quả phân tích đã chọn!", icon="📂")
+        st.rerun()
 
 
 def dong_bo_lich_su_tu_video_list(video_list=None):
     """Đồng bộ lich_su_tap_luyen.json từ video_list — mỗi BN + thời gian phân tích xong."""
     vlist = video_list if video_list is not None else load_data(VIDEOS_FILE)
-    if not vlist:
-        return []
     history = load_data(HISTORY_FILE) or []
+    if not vlist:
+        history = khoi_phuc_lich_su_tu_danh_gia(history)
+        return sap_xep_lich_su_theo_thoi_gian(history)
     by_key = {_lich_su_entry_key(h): h for h in history if isinstance(h, dict)}
     changed = False
     for v in vlist:
@@ -2078,7 +2297,7 @@ def dong_bo_lich_su_tu_video_list(video_list=None):
         if key in by_key:
             existing = by_key[key]
             for fld, val in entry.items():
-                if val is not None and (not existing.get(fld) or fld == "ngay"):
+                if val is not None and (not existing.get(fld) or fld in ("ngay", "accuracy", "f1")):
                     existing[fld] = val
             changed = True
         else:
@@ -2088,7 +2307,8 @@ def dong_bo_lich_su_tu_video_list(video_list=None):
     if changed:
         save_data(HISTORY_FILE, history)
         print(f"[LichSu] Dong bo {len(history)} buoi tap tu video_list")
-    return history
+    history = khoi_phuc_lich_su_tu_danh_gia(history)
+    return sap_xep_lich_su_theo_thoi_gian(history)
 
 
 def _ensure_videos_file_exists():
@@ -2212,6 +2432,7 @@ def tai_lai_video_list_tu_cloud():
     if recovered:
         lst = _merge_video_lists_union(lst, _merge_video_list_with_evals(recovered))
     lst = _merge_missing_from_progress(lst)
+    lst = dong_bo_video_list_tu_processed(lst or [])
     if lst:
         save_data(VIDEOS_FILE, lst)
         print(f"[VideoList] Tai lai tu Cloud: {len(lst)} video")
@@ -2276,9 +2497,21 @@ def _merge_video_list_with_evals(video_list):
     return base
 
 
-def _resolve_video_display_path(raw_path, processed_path):
-    """Chuẩn hóa đường dẫn video để hiển thị — không trả về None khi gọi os.path."""
-    for p in (raw_path, processed_path):
+def _resolve_video_display_path(raw_path, processed_path, prefer_processed=False):
+    """Chuẩn hóa đường dẫn video để hiển thị — ưu tiên processed khi đã phân tích."""
+    candidates = []
+    if prefer_processed:
+        candidates = [processed_path, raw_path]
+    else:
+        raw_lp = get_local_frame_path(raw_path) if raw_path else None
+        proc_lp = get_local_frame_path(processed_path) if processed_path else None
+        raw_ok = raw_lp and find_ready_local_video(raw_lp)
+        proc_ok = proc_lp and find_ready_local_video(proc_lp)
+        if processed_path and (proc_ok or not raw_ok):
+            candidates = [processed_path, raw_path]
+        else:
+            candidates = [raw_path, processed_path]
+    for p in candidates:
         if not p:
             continue
         lp = get_local_frame_path(p) or p
@@ -2287,19 +2520,147 @@ def _resolve_video_display_path(raw_path, processed_path):
     return None
 
 
+def _lay_duong_dan_video_hien_thi(v):
+    """Đường dẫn phát video — ưu tiên bản processed nếu video đã phân tích."""
+    prefer = v.get("status") == "Đã phân tích"
+    return _resolve_video_display_path(
+        v.get("video_path"),
+        v.get("processed_path"),
+        prefer_processed=prefer,
+    )
+
+
+def _dam_bao_video_san_sang_play(path):
+    """Tự động tải video từ Cloud/local — không cần nút thủ công."""
+    if not path:
+        return None
+    ready = find_ready_local_video(path)
+    if ready:
+        pb = resolve_playback_video_path(ready)
+        return pb if pb and is_local_file_ready(pb) else ready
+    for candidate in video_fallback_paths(path):
+        ensure_local_file(candidate, quiet=True, try_fallbacks=True)
+    ready = find_ready_local_video(path)
+    if ready:
+        pb = resolve_playback_video_path(ready, sync_transcode=True)
+        return pb if pb and is_local_file_ready(pb) else ready
+    return path
+
+
+def _la_ban_ghi_video_mo_co(v):
+    """Bản ghi khôi phục tạm — ẩn khỏi danh sách chính."""
+    if v.get("full_name") == "Bệnh nhân (khôi phục)":
+        return True
+    vn = str(v.get("video_name") or "")
+    if v.get("username") in (None, "", "unknown") and vn.startswith("video_processed_"):
+        return True
+    return False
+
+
+def dong_bo_video_list_tu_processed(video_list):
+    """Tự cập nhật video_list.json từ processed_results, progress và patient_uploads."""
+    import glob
+    import re
+
+    if video_list is None:
+        video_list = []
+    changed = False
+
+    progress_index = {}
+    if os.path.isdir(PROCESSED_DIR):
+        for prog_fn in glob.glob(os.path.join(PROCESSED_DIR, "progress_*.json")):
+            try:
+                with open(prog_fn, "r", encoding="utf-8") as pf:
+                    pdata = json.load(pf)
+            except Exception:
+                continue
+            if pdata.get("status") != "success":
+                continue
+            uname = pdata.get("username") or ""
+            vname = pdata.get("video_name") or ""
+            if vname:
+                progress_index[(uname, vname)] = pdata
+
+    for v in video_list:
+        uname = v.get("username") or ""
+        vname = v.get("video_name") or ""
+
+        vp = _tim_upload_theo_video_name(uname, vname)
+        if vp and v.get("video_path") != vp:
+            v["video_path"] = vp
+            changed = True
+
+        pdata = progress_index.get((uname, vname))
+        if pdata:
+            rec = _video_entry_from_progress(pdata)
+            if rec:
+                for fld in (
+                    "processed_path", "df_path", "all_frames_data_path",
+                    "metrics", "frames_zip", "accuracy", "status", "video_path",
+                ):
+                    new_val = rec.get(fld)
+                    if new_val and v.get(fld) != new_val:
+                        if fld == "video_path" and v.get("video_path"):
+                            continue
+                        v[fld] = new_val
+                        changed = True
+
+        if v.get("status") == "Đã phân tích" and not v.get("processed_path"):
+            pp = v.get("df_path") or ""
+            m = re.search(r"processed_(\d+)_f_data\.csv$", os.path.basename(str(pp)))
+            if m:
+                ts = m.group(1)
+                proc_f = os.path.join(PROCESSED_DIR, f"processed_{ts}_f.mp4")
+                proc_raw = os.path.join(PROCESSED_DIR, f"processed_{ts}.mp4")
+                proc_path = proc_f if os.path.exists(proc_f) else proc_raw
+                if os.path.exists(proc_path):
+                    v["processed_path"] = proc_path
+                    changed = True
+
+    proper_sigs = set()
+    for v in video_list:
+        if not _la_ban_ghi_video_mo_co(v):
+            proper_sigs.add((
+                v.get("video_name"),
+                v.get("exercise"),
+                v.get("processed_path") or v.get("df_path"),
+            ))
+
+    cleaned = []
+    for v in video_list:
+        if _la_ban_ghi_video_mo_co(v):
+            sig = (
+                v.get("video_name"),
+                v.get("exercise"),
+                v.get("processed_path") or v.get("df_path"),
+            )
+            if sig in proper_sigs or str(v.get("video_name", "")).startswith("video_processed_"):
+                changed = True
+                continue
+        cleaned.append(v)
+
+    if len(cleaned) != len(video_list):
+        changed = True
+        video_list = cleaned
+
+    if changed:
+        save_data(VIDEOS_FILE, video_list)
+        print(f"[VideoList] Dong bo tu processed — {len(video_list)} muc")
+    return video_list
+
+
 def load_video_list_an_toan():
     """Nạp video_list.json — cache theo mtime, gộp eval/progress; không tải HF mỗi lần render."""
     lst = _merge_video_list_with_evals(load_data(VIDEOS_FILE))
     if lst:
         merged = _merge_missing_from_progress(lst)
-        if len(merged) > len(lst):
-            save_data(VIDEOS_FILE, merged)
-            return merged
-        return lst
+        merged = dong_bo_video_list_tu_processed(merged)
+        return merged
     recovered = khoi_phuc_video_list_tu_tep()
     if recovered:
         recovered = _merge_video_list_with_evals(recovered)
         recovered = _merge_missing_from_progress(recovered)
+        recovered = dong_bo_video_list_tu_processed(recovered)
         save_data(VIDEOS_FILE, recovered)
         print(f"[VideoList] Da khoi phuc {len(recovered)} video vao video_list.json")
     return recovered or []
@@ -2448,8 +2809,8 @@ def thuc_hien_khoi_tao_he_thong_mot_lan():
     lst = load_video_list_an_toan()
     if lst:
         merged = _merge_missing_from_progress(lst)
+        merged = dong_bo_video_list_tu_processed(merged)
         if len(merged) > len(lst):
-            save_data(VIDEOS_FILE, merged)
             lst = merged
     try:
         dong_bo_lich_su_tu_video_list(lst)
@@ -4704,6 +5065,15 @@ def hien_thi_tab_thong_tin_tong_hop(role):
 def hien_thi_tab_phan_tich_va_video_ncv():
     """Gộp tab Phân tích và Video cho Nghiên cứu viên"""
     st.markdown("## 🔬 PHÂN TÍCH CHUYÊN SÂU & DỮ LIỆU KHUNG XƯƠNG")
+
+    v_cur = st.session_state.get("current_eval_video")
+    if v_cur and v_cur.get("username"):
+        hien_thi_ket_qua_gan_nhat_va_lich_su(
+            v_cur.get("username"),
+            v_cur.get("video_name"),
+            key_suffix="ncv_combined",
+        )
+        st.markdown("---")
     
     # Tạo sub-tabs bên trong
     sub_tabs = st.tabs(["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & ẢNH FRAME"])
@@ -11125,6 +11495,17 @@ def hien_thi_tab_ket_qua_da_chon(my_history_vids, my_evals, has_ai_eval, user_ro
     """Fragment: chọn phiên tập + tab kết quả — chỉ reload vùng này (nhanh cho bệnh nhân)."""
     selected_v = None
 
+    p_username_hist = None
+    if my_history_vids:
+        p_username_hist = my_history_vids[0].get("username")
+    elif my_evals:
+        p_username_hist = my_evals[0].get("patient_username")
+    if p_username_hist and user_role in ("Bệnh nhân", "Bác sĩ / KTV PHCN", "Nghiên cứu viên"):
+        hien_thi_ket_qua_gan_nhat_va_lich_su(
+            p_username_hist,
+            key_suffix=f"pat_hist_{user_role}",
+        )
+
     if my_history_vids:
         if is_fresh_session:
             current_selection = st.session_state.get('patient_history_selector_global')
@@ -13916,6 +14297,8 @@ def hien_thi_danh_sach_video_fragment(user_role):
         # Tiến hành lọc danh sách video
         filtered_videos = []
         for v in video_list:
+            if _la_ban_ghi_video_mo_co(v):
+                continue
             # Lọc theo bệnh nhân
             if selected_patient_opt != "-- Tất cả bệnh nhân --":
                 target_username = patient_lookup.get(selected_patient_opt)
@@ -14025,7 +14408,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
             with col_list1:
                 processed_path = v.get('processed_path')
                 raw_path = v.get('video_path')
-                
+                active_display_path = _lay_duong_dan_video_hien_thi(v)
+                final_h264 = get_final_h264_path(active_display_path) if active_display_path else ""
+
                 def is_valid_local_file(path):
                     if path and os.path.exists(path):
                         try:
@@ -14036,13 +14421,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             pass
                     return False
 
-                v_display_path = _resolve_video_display_path(raw_path, processed_path)
-                final_h264 = get_final_h264_path(v_display_path) if v_display_path else ""
-
-                local_exists = is_valid_local_file(v_display_path) or is_valid_local_file(
-                    _resolve_video_display_path(None, processed_path)
-                )
-                active_display_path = v_display_path or _resolve_video_display_path(None, processed_path)
+                local_exists = bool(active_display_path and is_valid_local_file(
+                    find_ready_local_video(active_display_path) or active_display_path
+                ))
                 
                 # Tra cứu O(1) từ dict đã build sẵn
                 ev_key = (v.get('username'), v.get('video_name'), v.get('exercise'))
@@ -14068,63 +14449,22 @@ def hien_thi_danh_sach_video_fragment(user_role):
                         show_vid_key = f"show_video_{v.get('username')}_{v.get('video_name')}_{idx}"
                         if st.session_state.get(show_vid_key):
                             if active_display_path:
-                                render_video(active_display_path, check_h264=(v.get('status') == "Đã phân tích"))
+                                with st.spinner("📥 Đang tải video..."):
+                                    play_path = _dam_bao_video_san_sang_play(active_display_path)
+                                    if play_path:
+                                        render_video(play_path, check_h264=(v.get('status') == "Đã phân tích"))
+                                    else:
+                                        st.error("❌ Không tìm thấy file video. Vui lòng thử lại sau vài giây.")
                             else:
-                                st.error("File video không tồn tại hoặc đường dẫn trống.")
+                                st.error("❌ Chưa có đường dẫn video cho mục này.")
                             if st.button("⏸️ Ẩn video", key=f"hide_vid_btn_{idx}", use_container_width=True):
                                 st.session_state[show_vid_key] = False
                                 st.rerun()
                         else:
-                            st.info("ℹ️ Nhấp vào nút bên dưới để tải và xem video.")
+                            st.info("ℹ️ Nhấp vào nút bên dưới để xem video (hệ thống tự tải từ Cloud nếu cần).")
                             if st.button("▶️ Xem video", key=f"play_vid_btn_{idx}", type="primary", use_container_width=True):
                                 st.session_state[show_vid_key] = True
                                 st.rerun()
-                            
-                        if not local_exists:
-                            st.warning("⚠️ File video không tồn tại cục bộ trên máy chủ (có thể do môi trường bị reset).")
-                            
-                            c_down1, c_down2 = st.columns(2)
-                            with c_down1:
-                                if st.button("📥 Tải từ Cloud", key=f"download_vid_{idx}", use_container_width=True):
-                                    with st.spinner("Đang tải..."):
-                                        success = False
-                                        if v_display_path:
-                                            success = ensure_local_file(v_display_path)
-                                        if not success and processed_path:
-                                            success = ensure_local_file(processed_path)
-                                        if success:
-                                            st.success("✅ Tải video thành công!")
-                                            st.rerun()
-                                        else:
-                                            st.error("❌ Không tìm thấy video trên Cloud.")
-                                            
-                            with c_down2:
-                                restore_key = f"restore_uploader_{v.get('username')}_{v.get('video_name')}_{idx}"
-                                uploaded_restore = st.file_uploader(
-                                    "📂 Upload khôi phục video", 
-                                    type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"], 
-                                    key=restore_key
-                                )
-                                if uploaded_restore is not None:
-                                    restore_path = v_display_path
-                                    if not restore_path:
-                                        os.makedirs(UPLOAD_DIR, exist_ok=True)
-                                        safe_name = f"{v.get('username', 'unknown')}_{uploaded_restore.name}"
-                                        restore_path = os.path.join(UPLOAD_DIR, safe_name)
-                                    target_dir = os.path.dirname(restore_path)
-                                    if target_dir:
-                                        os.makedirs(target_dir, exist_ok=True)
-                                    try:
-                                        with open(restore_path, "wb") as f_out:
-                                            f_out.write(uploaded_restore.getbuffer())
-                                        ensure_playable_video(restore_path)
-                                        push_file_to_hf_async(restore_path)
-                                        
-                                        st.success("🎉 Khôi phục video thành công!")
-                                        st.session_state[show_vid_key] = True
-                                        st.rerun()
-                                    except Exception as e:
-                                        st.error(f"❌ Lỗi ghi file: {e}")
                         with col_v2:
                             st.write(f"**Người tập:** {v['full_name']}")
                             is_gay_ex = any(kw in str(v.get('exercise', '')).lower() for kw in ["gậy", "gay", "pulley", "stick"])
@@ -14165,15 +14505,17 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             # Khối chẩn đoán thông tin file (chỉ hiển thị cho bác sĩ/NCV để debug)
                             if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
                                 with st.popover("🔍 Kiểm tra tệp tin (Debug)"):
-                                    st.markdown(f"**Tệp hiển thị:** `{v_display_path or '(chưa có — chỉ có metadata đánh giá)'}`")
-                                    st.write(f"- Tồn tại cục bộ: {'✅ Có' if local_exists else '❌ Không'}")
-                                    if v_display_path and os.path.exists(v_display_path):
-                                        st.write(f"- Kích thước tệp: `{os.path.getsize(v_display_path)/(1024*1024):.2f} MB`")
+                                    st.markdown(f"**Tệp hiển thị:** `{active_display_path or '(chưa có — chỉ có metadata đánh giá)'}`")
+                                    st.write(f"- Video gốc BN: `{raw_path or '(n/a)'}`")
+                                    st.write(f"- Video processed: `{processed_path or '(n/a)'}`")
+                                    st.write(f"- Tồn tại cục bộ: {'✅ Có' if local_exists else '☁️ Sẽ stream/tải từ Cloud khi xem'}")
+                                    if active_display_path and os.path.exists(active_display_path):
+                                        st.write(f"- Kích thước tệp: `{os.path.getsize(active_display_path)/(1024*1024):.2f} MB`")
                                         try:
-                                            v_codec, a_codec = get_video_codec(v_display_path)
+                                            v_codec, a_codec = get_video_codec(active_display_path)
                                             st.write(f"- Codec: `{v_codec} / {a_codec}`")
                                             import subprocess
-                                            cmd = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', v_display_path]
+                                            cmd = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', active_display_path]
                                             res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3)
                                             dur = res.stdout.strip()
                                             st.write(f"- Thời lượng ffprobe: `{dur if dur else 'Không xác định'} giây`")
@@ -14219,8 +14561,8 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                             st.write(f"Không thể đọc log lỗi: {e_log}")
                                         
                                     st.markdown("**Trạng thái Cloud:**")
-                                    if HF_TOKEN and HF_DATASET_ID and v_display_path:
-                                        rel_path = get_clean_rel_path(v_display_path)
+                                    if HF_TOKEN and HF_DATASET_ID and active_display_path:
+                                        rel_path = get_clean_rel_path(active_display_path)
                                         import urllib.parse
                                         rel_path_encoded = urllib.parse.quote(rel_path, safe='/')
                                         cloud_url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded}?token={HF_TOKEN}"
