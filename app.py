@@ -5873,9 +5873,9 @@ def liet_ke_jobs_dang_chay():
         print(f"[Jobs] Loi quet progress: {scan_err}")
     return jobs
 
-@st.fragment(run_every=2)
 def hien_thi_jobs_dang_chay_fragment(key_suffix=""):
-    """Panel theo dõi các video đang trích xuất khung xương — dùng chung cho mọi thiết bị/phiên."""
+    """Panel theo dõi các video đang trích xuất khung xương — dùng chung cho mọi thiết bị/phiên.
+    Là hàm thường (không phải fragment lồng nhau) để tránh lỗi trùng key widget."""
     jobs = liet_ke_jobs_dang_chay()
     if not jobs:
         return
