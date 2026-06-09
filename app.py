@@ -31,6 +31,23 @@ import subprocess
 import hashlib
 import gc
 
+try:
+    from pose_classifier_utils import (
+        apply_classifier_to_dataframe,
+        get_pose_classifier_status,
+        merge_ml_metrics,
+        reprocess_videos_with_classifier,
+        train_pose_classifier,
+    )
+    POSE_CLASSIFIER_IMPORT_ERROR = None
+except Exception as _pose_classifier_import_error:
+    apply_classifier_to_dataframe = None
+    get_pose_classifier_status = None
+    merge_ml_metrics = None
+    reprocess_videos_with_classifier = None
+    train_pose_classifier = None
+    POSE_CLASSIFIER_IMPORT_ERROR = _pose_classifier_import_error
+
 
 def get_clean_rel_path(path):
     """Lấy đường dẫn tương đối sạch của file đối với DATA_DIR, 
@@ -6002,6 +6019,7 @@ def bat_dau_phan_tich_background(
             if valid_frames > 0 and len(angle_data) > 0:
                 df = pd.DataFrame(angle_data)
                 metrics = tinh_metrics_chi_tiet(df, bt_ncv)
+                phase_bounds_for_ml = None
                 
                 is_gay_ex = any(kw in str(exercise_name or '').lower() for kw in ["gậy", "gay", "pulley", "stick"])
                 if is_gay_ex:
@@ -6013,6 +6031,7 @@ def bat_dau_phan_tich_background(
                 else:
                     bounds = segment_frames(df)
                     n0, n1, n2, n3 = bounds
+                    phase_bounds_for_ml = bounds
                     df_g1 = df.iloc[n0:n1]
                     df_g2 = df.iloc[n1:n2]
                     df_g3 = df.iloc[n2:n3]
@@ -6052,6 +6071,21 @@ def bat_dau_phan_tich_background(
                 }
                 
                 # Lưu DataFrame ra CSV và giải phóng RAM
+                if apply_classifier_to_dataframe and get_pose_classifier_status:
+                    try:
+                        if get_pose_classifier_status(DB_DIR).get("ready"):
+                            df, ml_result = apply_classifier_to_dataframe(
+                                df,
+                                db_dir=DB_DIR,
+                                phase_bounds=phase_bounds_for_ml,
+                                exercise_name=exercise_name
+                            )
+                            stats_data = merge_ml_metrics(stats_data, ml_result)
+                    except FileNotFoundError:
+                        pass
+                    except Exception as ml_err:
+                        print(f"[Pose Classifier] Bo qua du doan ML cho video hien tai: {ml_err}")
+
                 df_csv_path = output_path.replace('.mp4', '_data.csv')
                 df.to_csv(df_csv_path, index=False)
                 
@@ -7902,6 +7936,24 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
         metrics_g2 = tk.get("metrics_g2", tk)
         metrics_g3 = tk.get("metrics_g3", tk)
 
+    stored_metrics_for_ml = tk if isinstance(tk, dict) else {}
+
+    def _merge_stored_ml_fields(metric_block, stored_block):
+        if not isinstance(metric_block, dict) or not isinstance(stored_block, dict):
+            return metric_block
+        for ml_key, ml_value in stored_block.items():
+            if str(ml_key).startswith("ml_"):
+                metric_block[ml_key] = ml_value
+        return metric_block
+
+    metrics_g1 = _merge_stored_ml_fields(metrics_g1, stored_metrics_for_ml.get("metrics_g1", {}))
+    metrics_g2 = _merge_stored_ml_fields(metrics_g2, stored_metrics_for_ml.get("metrics_g2", {}))
+    metrics_g3 = _merge_stored_ml_fields(metrics_g3, stored_metrics_for_ml.get("metrics_g3", {}))
+    if is_gay_ex:
+        metrics_g1 = _merge_stored_ml_fields(metrics_g1, stored_metrics_for_ml)
+        metrics_g2 = _merge_stored_ml_fields(metrics_g2, stored_metrics_for_ml)
+        metrics_g3 = _merge_stored_ml_fields(metrics_g3, stored_metrics_for_ml)
+
     if is_gay_ex:
         v_meta = st.session_state.get('current_eval_video') or {}
         stored_acc = lay_do_chinh_xac_ai_chuan(v_meta) or (tk.get('do_chinh_xac') if isinstance(tk, dict) else None)
@@ -8182,6 +8234,59 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 "text/csv",
                 key=f"dl_heavy_csv_{key_suffix}"
             )
+
+            st.markdown("---")
+            st.markdown("#### 🤖 Huấn luyện model học máy từ dữ liệu khung xương")
+            if POSE_CLASSIFIER_IMPORT_ERROR:
+                st.warning(f"Không thể nạp pose classifier utils: {POSE_CLASSIFIER_IMPORT_ERROR}")
+            elif train_pose_classifier and get_pose_classifier_status:
+                classifier_state = get_pose_classifier_status(DB_DIR)
+                if classifier_state.get("ready"):
+                    st.success(f"Đã có model ML: `{classifier_state.get('model_path')}`")
+                else:
+                    st.info("Chưa có model ML. Hãy train từ các file CSV đã trích xuất trong `processed_results`.")
+
+                train_col, apply_col = st.columns(2)
+                with train_col:
+                    if st.button("🧠 TRAIN / CẬP NHẬT MODEL", key=f"btn_train_pose_classifier_{key_suffix}", use_container_width=True):
+                        with st.spinner("Đang huấn luyện RandomForest từ dữ liệu keypoints..."):
+                            train_result = train_pose_classifier(PROCESSED_DIR, DB_DIR)
+                        if train_result.get("success"):
+                            for artifact_path in [train_result.get("model_path"), train_result.get("features_path")]:
+                                if artifact_path and os.path.exists(artifact_path):
+                                    push_file_to_hf_async(artifact_path)
+                            st.success(
+                                f"Train xong: {train_result.get('samples', 0)} mẫu, "
+                                f"test accuracy {train_result.get('accuracy', 0):.2f}%."
+                            )
+                            st.json({
+                                "valid_files": train_result.get("valid_files"),
+                                "label_distribution": train_result.get("label_distribution"),
+                                "model_path": train_result.get("model_path"),
+                            })
+                        else:
+                            st.error(train_result.get("message", "Train model thất bại."))
+                            if train_result.get("skipped_files"):
+                                st.json({"skipped_files": train_result.get("skipped_files")[:10]})
+
+                with apply_col:
+                    if st.button("📌 ÁP DỤNG ML CHO VIDEO ĐÃ PHÂN TÍCH", key=f"btn_apply_pose_classifier_{key_suffix}", use_container_width=True):
+                        with st.spinner("Đang dự đoán lại dung_ml và cập nhật ml_accuracy..."):
+                            apply_result = reprocess_videos_with_classifier(
+                                VIDEOS_FILE,
+                                EVALUATIONS_FILE,
+                                processed_dir=PROCESSED_DIR,
+                                db_dir=DB_DIR,
+                                data_dir=DATA_DIR,
+                                phase_bounds_fn=segment_frames,
+                            )
+                        if apply_result.get("success"):
+                            push_file_to_hf_async(VIDEOS_FILE)
+                            push_file_to_hf_async(EVALUATIONS_FILE)
+                            st.success(f"Đã cập nhật ML cho {apply_result.get('updated', 0)} video.")
+                            st.dataframe(pd.DataFrame(apply_result.get("results", [])).head(20), use_container_width=True)
+                        else:
+                            st.error(apply_result.get("message", "Chưa thể áp dụng model ML."))
 
     # 2. HÀNG THỐNG KÊ TỔNG QUAN (4 THẺ)
     st.markdown(f"### 📈 THỐNG KÊ TỔNG QUAN ({giai_doan_label})")

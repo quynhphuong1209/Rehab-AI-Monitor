@@ -20,4 +20,7 @@ frames/
 outputs/
 patient_uploads/
 scratch/
-processed_results/
+!processed_results/
+processed_results/**/*
+!processed_results/**/*.json
+!processed_results/**/*.csv
