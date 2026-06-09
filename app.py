@@ -652,7 +652,16 @@ def ensure_playable_video(video_path):
             if not os.path.exists(video_path) or os.path.getsize(video_path) < 5 * 1024:
                 print(f"[Async Video] Không thể tải/phát hiện video gốc hợp lệ {video_path}")
                 return
-                
+            try:
+                mtime_src = os.path.getmtime(video_path)
+                size_src = os.path.getsize(video_path)
+                if not _check_video_valid_cached(video_path, mtime_src, size_src):
+                    print(f"[Async Video] Bo qua transcode — file loi/moov atom: {video_path}")
+                    return
+            except Exception:
+                print(f"[Async Video] Bo qua transcode — khong kiem tra duoc file: {video_path}")
+                return
+
             # 2. XÓA CẢ FILE TẠM, FILE H264 CŨ VÀ LOG LỖI CŨ
             # Dùng đuôi _ftmp.mp4 (không phải .mp4.tmp) để ffmpeg nhận đúng container MP4
             tmp_h264 = final_h264.replace('_f.mp4', '_ftmp.mp4')
@@ -2014,6 +2023,74 @@ def khoi_phuc_video_list_tu_tep():
     return out
 
 
+def _parse_upload_time_from_filename(path_or_name):
+    """Trích thời gian upload từ tên file dạng ..._YYYYMMDD_HHMMSS_..."""
+    import re
+    m = re.search(r"_(\d{8})_(\d{6})_", str(path_or_name or ""))
+    if not m:
+        return None
+    try:
+        dt = datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S")
+        return dt.strftime("%H:%M - %d/%m/%Y")
+    except Exception:
+        return None
+
+
+def _lich_su_entry_key(entry):
+    return (
+        entry.get("username") or "",
+        entry.get("video_name") or "",
+        entry.get("bai_tap") or entry.get("exercise") or "",
+    )
+
+
+def dong_bo_lich_su_tu_video_list(video_list=None):
+    """Đồng bộ lich_su_tap_luyen.json từ video_list — mỗi BN + thời gian phân tích xong."""
+    vlist = video_list if video_list is not None else load_data(VIDEOS_FILE)
+    if not vlist:
+        return []
+    history = load_data(HISTORY_FILE) or []
+    by_key = {_lich_su_entry_key(h): h for h in history if isinstance(h, dict)}
+    changed = False
+    for v in vlist:
+        if v.get("status") != "Đã phân tích":
+            continue
+        uname = v.get("username") or ""
+        vname = v.get("video_name") or ""
+        ex = v.get("exercise") or ""
+        if not vname or not ex:
+            continue
+        metrics = v.get("metrics") if isinstance(v.get("metrics"), dict) else {}
+        ngay = v.get("time") or _parse_upload_time_from_filename(v.get("video_path") or vname)
+        if not ngay:
+            continue
+        entry = {
+            "ngay": ngay,
+            "username": uname,
+            "full_name": v.get("full_name") or uname,
+            "video_name": vname,
+            "bai_tap": ex,
+            "accuracy": round(float(v.get("accuracy") or metrics.get("do_chinh_xac") or metrics.get("ty_le_tong_the") or 0), 1),
+            "f1": round(float(metrics.get("f1_score") or 0), 2),
+            "thoi_gian_tap": round(float(metrics.get("thoi_gian_xu_ly") or 0), 1) if metrics.get("thoi_gian_xu_ly") else None,
+        }
+        key = _lich_su_entry_key(entry)
+        if key in by_key:
+            existing = by_key[key]
+            for fld, val in entry.items():
+                if val is not None and (not existing.get(fld) or fld == "ngay"):
+                    existing[fld] = val
+            changed = True
+        else:
+            history.append(entry)
+            by_key[key] = entry
+            changed = True
+    if changed:
+        save_data(HISTORY_FILE, history)
+        print(f"[LichSu] Dong bo {len(history)} buoi tap tu video_list")
+    return history
+
+
 def _ensure_videos_file_exists():
     """Đảm bảo video_list.json tồn tại — fallback từ repo root hoặc database/."""
     if os.path.exists(VIDEOS_FILE) and os.path.getsize(VIDEOS_FILE) > 2:
@@ -2138,6 +2215,10 @@ def tai_lai_video_list_tu_cloud():
     if lst:
         save_data(VIDEOS_FILE, lst)
         print(f"[VideoList] Tai lai tu Cloud: {len(lst)} video")
+        try:
+            dong_bo_lich_su_tu_video_list(lst)
+        except Exception:
+            pass
     return lst or []
 
 
@@ -2369,43 +2450,60 @@ def thuc_hien_khoi_tao_he_thong_mot_lan():
         merged = _merge_missing_from_progress(lst)
         if len(merged) > len(lst):
             save_data(VIDEOS_FILE, merged)
+            lst = merged
+    try:
+        dong_bo_lich_su_tu_video_list(lst)
+    except Exception as hist_sync_err:
+        print(f"[LichSu] Loi dong bo khoi dong: {hist_sync_err}")
     threading.Thread(target=khoi_tao_dong_bo_hf, daemon=True).start()
     don_dep_file_tam()
 
-    # ── AUTO-TRANSCODE: Tự động nén tất cả video HEVC sang H.264 khi Space khởi động ──
+    # ── AUTO-TRANSCODE: Chỉ xử lý video ĐÃ PHÂN TÍCH (processed_results), tối đa 2 file/lần khởi động ──
     def _auto_transcode_all_hevc():
-        """Scan tất cả video trong database, tự động transcode HEVC → H.264 nền."""
+        """Transcode HEVC → H.264 nền — không quét patient_uploads (tránh đơ CPU + lỗi moov)."""
         import time
-        time.sleep(15)  # Chờ HF dataset sync xong trước
+        time.sleep(20)
         try:
+            if _scan_progress_by_status("processing"):
+                print("[AutoTranscode] Co job phan tich dang chay — bo qua transcode khoi dong")
+                return
             video_list = load_data(VIDEOS_FILE)
-            print(f"[AutoTranscode] Bat dau scan {len(video_list)} video...")
+            print(f"[AutoTranscode] Scan {len(video_list)} muc — chi processed_results, toi da 2 file")
+            done = 0
             for vid in video_list:
-                vpath = vid.get('processed_path') or vid.get('video_path', '')
-                if not vpath:
+                if done >= 2:
+                    break
+                vpath = vid.get("processed_path") or ""
+                if not vpath or "patient_uploads" in vpath.replace("\\", "/"):
                     continue
-                # Đảm bảo file tồn tại local
                 if not os.path.exists(vpath):
-                    ensure_local_file(vpath)
+                    ensure_local_file(vpath, quiet=True)
                 if not os.path.exists(vpath) or os.path.getsize(vpath) < 5 * 1024:
                     continue
-                # Kiểm tra đã có H.264 hợp lệ chưa
+                try:
+                    mtime = os.path.getmtime(vpath)
+                    size = os.path.getsize(vpath)
+                    if not _check_video_valid_cached(vpath, mtime, size):
+                        print(f"[AutoTranscode] Bo qua file loi/moov: {os.path.basename(vpath)}")
+                        continue
+                except Exception:
+                    continue
                 final_h264 = get_final_h264_path(vpath)
                 if os.path.exists(final_h264) and os.path.getsize(final_h264) > 5 * 1024:
                     try:
                         mtime = os.path.getmtime(final_h264)
                         size = os.path.getsize(final_h264)
                         if _check_video_valid_cached(final_h264, mtime, size):
-                            continue  # Đã có H.264 hợp lệ, bỏ qua
-                    except:
+                            continue
+                    except Exception:
                         pass
-                # Chưa có H.264 hợp lệ → kích hoạt transcode nền
                 try:
                     v_codec, _ = get_video_codec(vpath)
-                    if v_codec and v_codec != 'h264':
-                        print(f"[AutoTranscode] Kich hoat transcode: {os.path.basename(vpath)} ({v_codec})")
+                    if v_codec and v_codec != "h264":
+                        print(f"[AutoTranscode] Transcode: {os.path.basename(vpath)} ({v_codec})")
                         ensure_playable_video(vpath)
-                        time.sleep(2)  # Tránh chạy song song quá nhiều
+                        done += 1
+                        time.sleep(3)
                 except Exception as e:
                     print(f"[AutoTranscode] Loi: {e}")
         except Exception as e:
@@ -4140,14 +4238,7 @@ def hien_thi_tab_tien_trien():
     """Thiết kế Tab Tiến triển sử dụng DỮ LIỆU THẬT từ lịch sử tập luyện"""
     st.markdown("### 📈 THEO DÕI TIẾN TRIỂN THỜI GIAN THỰC")
     
-    history_file = HISTORY_FILE
-    history_data = []
-    
-    if os.path.exists(history_file):
-        try:
-            with open(history_file, 'r', encoding='utf-8') as f:
-                history_data = json.load(f)
-        except: pass
+    history_data = dong_bo_lich_su_tu_video_list()
 
     if not history_data:
         st.info("ℹ️ Hiện chưa có dữ liệu thực tế. Hãy tải video và phân tích để bắt đầu theo dõi tiến triển.")
@@ -4162,6 +4253,26 @@ def hien_thi_tab_tien_trien():
         st.plotly_chart(fig_heat, use_container_width=True, theme=None)
     else:
         # CHẾ ĐỘ DỮ LIỆU THẬT
+        patient_opts = {}
+        for h in history_data:
+            u = h.get("username") or ""
+            fn = h.get("full_name") or u or "Không rõ"
+            if u or fn:
+                patient_opts[u or fn] = f"👤 {fn}" + (f" ({u})" if u else "")
+        filter_patient = st.selectbox(
+            "Lọc theo bệnh nhân:",
+            ["-- Tất cả --"] + sorted(patient_opts.values(), key=str.lower),
+            key="filter_tien_trien_patient",
+        )
+        if filter_patient != "-- Tất cả --":
+            sel_u = next((k for k, v in patient_opts.items() if v == filter_patient), None)
+            history_data = [
+                h for h in history_data
+                if h.get("username") == sel_u
+                or h.get("full_name") == sel_u
+                or patient_opts.get(h.get("username"), "") == filter_patient
+            ]
+
         df_hist = pd.DataFrame(history_data)
         
         # 1. Chỉ số tổng hợp thực tế
@@ -4188,15 +4299,18 @@ def hien_thi_tab_tien_trien():
         
         # 3. Bảng lịch sử chi tiết
         st.markdown("#### 📑 NHẬT KÝ TẬP LUYỆN CHI TIẾT")
-        df_show = df_hist[['ngay', 'bai_tap', 'accuracy', 'f1']].copy()
-        df_show['accuracy'] = df_show['accuracy'].apply(lambda x: f"{x:.1f}%")
+        show_cols = [c for c in ['ngay', 'full_name', 'bai_tap', 'accuracy', 'f1', 'thoi_gian_tap'] if c in df_hist.columns]
+        df_show = df_hist[show_cols].copy()
+        if 'full_name' in df_show.columns:
+            df_show.rename(columns={'full_name': 'Bệnh nhân', 'ngay': 'Thời gian tập xong', 'bai_tap': 'Bài tập'}, inplace=True)
+        if 'accuracy' in df_show.columns:
+            df_show['accuracy'] = df_show['accuracy'].apply(lambda x: f"{x:.1f}%")
         st.dataframe(df_show, width="stretch")
         
         # 4. Nút xóa lịch sử (để làm mới nếu cần)
         if st.button("🗑️ Xóa toàn bộ lịch sử", type="secondary"):
-            if os.path.exists(history_file):
-                os.remove(history_file)
-                st.rerun()
+            save_data(HISTORY_FILE, [])
+            st.rerun()
 
 # ============================================
 # HÀM HIỂN THỊ TAB: HƯỚNG DẪN SỬ DỤNG (MỚI)
@@ -7930,17 +8044,26 @@ def bat_dau_phan_tich_background(
                 except Exception as sync_err:
                     print(f"[BG Process] Lỗi đồng bộ exercise: {sync_err}")
                 
-                # Ghi lịch sử tập luyện an toàn đa luồng
+                # Ghi lịch sử tập luyện an toàn đa luồng (theo BN + thời gian phân tích xong)
                 history_file = HISTORY_FILE
+                hoan_tat_luc = get_vn_now().strftime("%H:%M - %d/%m/%Y")
                 new_entry = {
-                    "ngay": get_vn_now().strftime("%d/%m/%Y %H:%M"),
+                    "ngay": hoan_tat_luc,
+                    "username": username,
+                    "full_name": full_name,
+                    "video_name": video_name,
                     "bai_tap": bt['ten'],
                     "accuracy": round(metrics["ty_le_tong_the"], 1),
                     "f1": round(metrics["f1_score"], 2),
-                    "thoi_gian_tap": round(elap, 1)
+                    "thoi_gian_tap": round(elap, 1),
                 }
                 
                 def cap_nhat_lich_su(history_data):
+                    key = _lich_su_entry_key(new_entry)
+                    for h in history_data:
+                        if _lich_su_entry_key(h) == key:
+                            h.update(new_entry)
+                            return history_data
                     history_data.append(new_entry)
                     return history_data
                     
@@ -13346,15 +13469,25 @@ def hien_thi_tab_quan_tri_vien():
         # Tạo danh sách hoạt động tổng hợp
         all_activities = []
         
-        # 1. Bệnh nhân Upload Video
+        # 1. Bệnh nhân Upload / Phân tích xong
         for v in v_list:
-            all_activities.append({
-                "Thời gian": v.get('time', 'N/A'),
-                "Người thực hiện": v.get('full_name', v.get('username', 'N/A')),
-                "Vai trò": "Bệnh nhân",
-                "Hành động": "📤 Upload Video",
-                "Chi tiết": f"Bài tập: {v.get('exercise')} | File: {v.get('video_name')}"
-            })
+            upload_t = _parse_upload_time_from_filename(v.get("video_path") or v.get("video_name"))
+            if upload_t:
+                all_activities.append({
+                    "Thời gian": upload_t,
+                    "Người thực hiện": v.get('full_name', v.get('username', 'N/A')),
+                    "Vai trò": "Bệnh nhân",
+                    "Hành động": "📤 Upload Video",
+                    "Chi tiết": f"Bài tập: {v.get('exercise')} | File: {v.get('video_name')}"
+                })
+            if v.get("status") == "Đã phân tích" and v.get("time"):
+                all_activities.append({
+                    "Thời gian": v.get("time"),
+                    "Người thực hiện": v.get('full_name', v.get('username', 'N/A')),
+                    "Vai trò": "Nghiên cứu viên",
+                    "Hành động": "✅ Phân tích AI xong",
+                    "Chi tiết": f"BN: {v.get('username')} | {v.get('exercise')} | Acc: {v.get('accuracy', 0)}%"
+                })
             
         # 2. Bác sĩ & NCV Đánh giá
         for e in e_list:
