@@ -72,10 +72,10 @@ def get_phase_error_for_segment(frame_index: int, n0: int, n1: int, n2: int, n3:
 
 
 def phase_frame_label(phase_key: str, status: str) -> str:
-    """Nhãn vẽ trên frame: G1(ss±45°): PASS"""
+    """Nhan ve tren frame (ASCII — cv2.putText khong ho tro Unicode)."""
     key = str(phase_key).lower()
     ss = get_phase_error(key)
-    return f"G{key[-1]}(ss±{ss}°): {status}"
+    return f"G{key[-1]}(ss+/-{ss}): {status}"
 
 
 def _exercise_family(exercise_name: str | None) -> str | None:

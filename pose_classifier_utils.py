@@ -112,6 +112,26 @@ def _resolve_ml_confidence(ml_info: Mapping[str, Any]) -> float | None:
     return None
 
 
+def _ml_label_ascii(ml_info: Mapping[str, Any] | None) -> str:
+    """Chuyen nhan ML sang ASCII de cv2.putText hien thi dung."""
+    if not ml_info:
+        return "N/A"
+    ml_label = ml_info.get("ml_label")
+    if ml_label is not None:
+        try:
+            return {0: "SAI", 1: "GAN DUNG", 2: "DUNG"}.get(int(ml_label), "N/A")
+        except (TypeError, ValueError):
+            pass
+    text = str(ml_info.get("ml_label_text") or "").strip().lower()
+    if "gan" in text:
+        return "GAN DUNG"
+    if text in {"dung", "đúng", "pass"}:
+        return "DUNG"
+    if text in {"sai", "fail"}:
+        return "SAI"
+    return "N/A"
+
+
 def format_ml_display(ml_info: Mapping[str, Any] | None) -> dict[str, Any]:
     """Chuan hoa text hien thi ML de nguoi xem hieu ro nhan va % tin cay."""
     if not ml_info:
@@ -142,16 +162,17 @@ def format_ml_display(ml_info: Mapping[str, Any] | None) -> dict[str, Any]:
                 pass
     prob_text = " · ".join(prob_parts)
 
+    label_ascii = _ml_label_ascii(ml_info)
     if confidence is not None:
         badge_text = f"{label_vi} · tin cậy {confidence:.0f}%"
         footer_text = f"ML: {label_vi} · tin cậy {confidence:.0f}%"
         if tier:
             footer_text += f" · {tier}"
-        overlay_text = f"{label_vi.upper()} {confidence:.0f}%"
+        overlay_text = f"{label_ascii} {confidence:.0f}%"
     else:
         badge_text = label_vi
         footer_text = f"ML: {label_vi}"
-        overlay_text = label_vi.upper()
+        overlay_text = label_ascii
 
     return {
         "label_vi": label_vi,
@@ -715,7 +736,7 @@ def draw_ml_badge(frame_output, ml_info: Mapping[str, Any] | None, scale_factor:
     import cv2
 
     display = format_ml_display(ml_info)
-    label = display.get("overlay_text") or str(ml_info.get("ml_label_text") or "N/A").upper()
+    label = display.get("overlay_text") or _ml_label_ascii(ml_info)
     text = f"ML: {label}"
     color = _badge_color_for_ml(ml_info.get("ml_label_text"))
 

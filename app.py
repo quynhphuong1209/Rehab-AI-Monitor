@@ -4687,7 +4687,7 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     cv2.line(frame_output, (box_x + int(8 * scale_factor), sep_y), (box_x + box_w - int(8 * scale_factor), sep_y), (80, 80, 100), text_thick_thin)
     
     if not is_gay:
-        cv2.putText(frame_output, "3 GIAI DOAN (ss±45/30/15°):", (box_x + int(15 * scale_factor), sep_y + int(17 * scale_factor)), font, font_scale_mini, (150, 200, 255), text_thick_thin)
+        cv2.putText(frame_output, "3 GIAI DOAN (ss+/-45/30/15):", (box_x + int(15 * scale_factor), sep_y + int(17 * scale_factor)), font, font_scale_mini, (150, 200, 255), text_thick_thin)
         
         g1_label = phase_frame_label("g1", g1_text)
         cv2.putText(frame_output, g1_label, (box_x + int(15 * scale_factor), sep_y + int(40 * scale_factor)), font, font_scale_g, g1_color, text_thick)
