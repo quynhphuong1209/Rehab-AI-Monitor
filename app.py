@@ -201,6 +201,41 @@ def read_analysis_csv_fast(path):
         except Exception:
             return None
 
+# Các cột cần cho hiển thị biểu đồ/chỉ số (BỎ 132 cột tọa độ pt0..pt32 để đọc nhanh hơn nhiều)
+DISPLAY_CSV_COLS = [
+    "frame", "timestamp", "timestamp_seconds",
+    "goc_vai", "goc_khuyu",
+    "goc_vai_trai", "goc_khuyu_trai", "goc_vai_phai", "goc_khuyu_phai",
+    "dung", "gan_dung", "vai_dung", "khuyu_dung", "vai_chuan", "khuyu_chuan",
+    "ml_label", "ml_label_text", "ml_score", "dung_ml", "ml_dung", "ml_gan_dung",
+]
+
+@st.cache_data(max_entries=80, show_spinner=False)
+def read_display_csv_cached(path, mtime, size):
+    """Chỉ đọc các cột cần để hiển thị (bỏ cột tọa độ landmark) -> nhanh hơn nhiều với CSV lớn."""
+    try:
+        header = pd.read_csv(path, nrows=0)
+        cols = [c for c in DISPLAY_CSV_COLS if c in header.columns]
+        if not cols:
+            return pd.read_csv(path)
+        return pd.read_csv(path, usecols=cols)
+    except Exception:
+        return pd.read_csv(path)
+
+def read_display_csv_fast(path):
+    """Đọc CSV cho phần XEM kết quả: chỉ cột cần thiết, có cache theo mtime/size."""
+    if not path or not os.path.exists(path):
+        return None
+    try:
+        mtime = os.path.getmtime(path)
+        size = os.path.getsize(path)
+        return read_display_csv_cached(path, mtime, size)
+    except Exception:
+        try:
+            return read_analysis_csv_fast(path)
+        except Exception:
+            return None
+
 
 # --- THUMBNAIL GENERATOR ---
 def get_thumbnail(path, width=320):
@@ -4065,7 +4100,7 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
                     if df_path_ncv:
                         ensure_local_file(df_path_ncv)
                         if os.path.exists(df_path_ncv):
-                            try: df_ncv = pd.read_csv(df_path_ncv)
+                            try: df_ncv = read_display_csv_fast(df_path_ncv)
                             except: pass
                     
                     ex_ai = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == v_ai['exercise']), BAI_TAP['codman'])
@@ -5712,7 +5747,7 @@ def check_and_populate_background_result(video_path):
             df_path = result.get("df_path")
             if df_path and os.path.exists(df_path):
                 try:
-                    st.session_state.angle_df = read_analysis_csv_fast(df_path)
+                    st.session_state.angle_df = read_display_csv_fast(df_path)
                 except Exception as e:
                     print("Lỗi đọc CSV trong check_and_populate:", e)
                     st.session_state.angle_df = None
@@ -5931,7 +5966,7 @@ def hien_thi_tien_trinh_background(video_path):
                     ensure_local_file(v_re.get('df_path'))
                     
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
-                        st.session_state.angle_df = read_analysis_csv_fast(v_re['df_path'])
+                        st.session_state.angle_df = read_display_csv_fast(v_re['df_path'])
                     st.toast("✅ Đã quay lại kết quả phân tích cũ!", icon="📊")
                     st.rerun()
         except:
@@ -5981,7 +6016,7 @@ def finalize_and_refresh_analysis(video_path):
                     st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
                     st.session_state.exercise['chuan']['sai_so'] = v_re['sai_so']
                 if v_re.get('df_path') and os.path.exists(v_re['df_path']):
-                    st.session_state.angle_df = read_analysis_csv_fast(v_re['df_path'])
+                    st.session_state.angle_df = read_display_csv_fast(v_re['df_path'])
                 st.session_state.reanalyze_triggered = False
                 st.toast("✅ Phân tích hoàn tất! Đang hiển thị kết quả...", icon="🎉")
                 st.rerun()
@@ -6021,7 +6056,7 @@ def finalize_and_refresh_analysis(video_path):
     # Đọc DataFrame góc nếu có
     if df_path and os.path.exists(df_path):
         try:
-                            st.session_state.angle_df = read_analysis_csv_fast(df_path)
+                            st.session_state.angle_df = read_display_csv_fast(df_path)
         except Exception as e:
             print(f"[finalize_and_refresh] Lỗi đọc CSV: {e}")
 
@@ -6101,7 +6136,7 @@ def hien_thi_tien_trinh_background_small(video_path):
                     ensure_local_file(v_re.get('df_path'))
                     
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
-                        st.session_state.angle_df = read_analysis_csv_fast(v_re['df_path'])
+                        st.session_state.angle_df = read_display_csv_fast(v_re['df_path'])
                     st.toast("✅ Đã quay lại kết quả phân tích cũ!", icon="📊")
                     st.rerun()
         except:
@@ -6191,7 +6226,7 @@ def hien_thi_tien_trinh_background_home_fragment(video_path):
                     ensure_local_file(v_re.get('df_path'))
                     
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
-                        st.session_state.angle_df = read_analysis_csv_fast(v_re['df_path'])
+                        st.session_state.angle_df = read_display_csv_fast(v_re['df_path'])
                     st.toast("✅ Đã quay lại kết quả phân tích cũ!", icon="📊")
                     st.rerun()
         except:
@@ -6286,7 +6321,7 @@ def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
                     ensure_local_file(v_re.get('df_path'))
                     
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
-                        st.session_state.angle_df = read_analysis_csv_fast(v_re['df_path'])
+                        st.session_state.angle_df = read_display_csv_fast(v_re['df_path'])
                     st.toast("✅ Đã quay lại kết quả phân tích cũ!", icon="📊")
                     st.rerun()
         except:
@@ -7024,12 +7059,12 @@ def gui_bao_cao_tong_hop_3_giai_doan():
     # Nếu không có df trong session state, thử đọc từ file csv của video
     if df is None and v_meta.get('df_path') and os.path.exists(v_meta.get('df_path')):
         try:
-            df = pd.read_csv(v_meta['df_path'])
+            df = read_display_csv_fast(v_meta['df_path'])
         except:
             pass
     elif df is None and st.session_state.get('current_df_csv_path') and os.path.exists(st.session_state.get('current_df_csv_path')):
         try:
-            df = pd.read_csv(st.session_state.get('current_df_csv_path'))
+            df = read_display_csv_fast(st.session_state.get('current_df_csv_path'))
         except:
             pass
 
@@ -8398,7 +8433,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                             st.session_state.has_data = True
                             if v.get('df_path') and os.path.exists(v['df_path']):
                                 try:
-                                    st.session_state.angle_df = read_analysis_csv_fast(v['df_path'])
+                                    st.session_state.angle_df = read_display_csv_fast(v['df_path'])
                                 except:
                                     pass
                             st.toast(f"✅ Tải thành công kết quả phân tích của bệnh nhân {v.get('full_name')}!", icon="📊")
@@ -8418,7 +8453,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                             st.session_state.has_data = True
                             if v.get('df_path') and os.path.exists(v['df_path']):
                                 try:
-                                    st.session_state.angle_df = read_analysis_csv_fast(v['df_path'])
+                                    st.session_state.angle_df = read_display_csv_fast(v['df_path'])
                                 except:
                                     pass
                             st.toast(f"✅ Tải thành công kết quả phân tích cũ của bệnh nhân {v.get('full_name')}!", icon="📊")
@@ -8490,7 +8525,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             ensure_local_file(csv_path)
             if os.path.exists(csv_path):
                 try:
-                    df = read_analysis_csv_fast(csv_path)
+                    df = read_display_csv_fast(csv_path)
                 except:
                     pass
     
@@ -8521,7 +8556,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
                         try:
-                            st.session_state.angle_df = read_analysis_csv_fast(v_re['df_path'])
+                            st.session_state.angle_df = read_display_csv_fast(v_re['df_path'])
                         except:
                             pass
                     st.toast("✅ Đã khôi phục kết quả phân tích cũ thành công!", icon="📊")
@@ -9899,7 +9934,7 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
             if df_path:
                 ensure_local_file(df_path)
                 if os.path.exists(df_path):
-                    try: st.session_state.angle_df = pd.read_csv(df_path)
+                    try: st.session_state.angle_df = read_display_csv_fast(df_path)
                     except: pass
     
     # 4. HIỂN THỊ CÁC TAB (HOẶC NỘI DUNG TRỰC TIẾP CHO NCV)
@@ -13546,7 +13581,7 @@ def _render_main_tab_content(tab_titles, user_role):
                                 st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
                                 st.session_state.exercise['chuan']['sai_so'] = v_data['sai_so']
                             if v_data.get('df_path') and os.path.exists(v_data['df_path']):
-                                try: st.session_state.angle_df = pd.read_csv(v_data['df_path'])
+                                try: st.session_state.angle_df = read_display_csv_fast(v_data['df_path'])
                                 except: pass
                             st.markdown("## 📊 KẾT QUẢ PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
                             t1, t2 = st.tabs(["📊 BIỂU ĐỒ CHI TIẾT", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"])
