@@ -11390,7 +11390,7 @@ def hien_thi_frames_day_du(key_suffix=""):
 
 | Nhãn | Cách chấm | Ý nghĩa |
 |------|-----------|---------|
-| **PASS / NEAR / FAIL** (REF) | So góc vai & khuỷu với video chuẩn YouTube | **PASS**: sai số Δ vai **và** Δ khuỷu ≤ ngưỡng giai đoạn (G1 **45°**, G2 **30°**, G3 **15°**) · **NEAR**: Δ ≤ ngưỡng × **1.5** (chưa đạt PASS) · **FAIL**: vượt NEAR |
+| **PASS / NEAR / FAIL** (REF) | So góc vai & khuỷu với **tư thế gần nhất** trong video mẫu YouTube (không khớp từng giây) | **PASS**: Δ vai **và** Δ khuỷu ≤ **sai số cho phép** (G1 **±45°**, G2 **±30°**, G3 **±15°**) · **NEAR**: Δ ≤ sai số × **1.5** · **FAIL**: vượt NEAR |
 | **ML · Đúng / Gần đúng / Sai** | Mô hình RandomForest học từ dữ liệu các video đã phân tích | Chọn **1 trong 3 lớp** có xác suất cao nhất (không dùng ngưỡng % cố định kiểu 80/60) |
 
 **Con số % bên cạnh ML** = **độ tin cậy vào đúng nhãn ML đang hiển thị** (ví dụ *Gần đúng · tin cậy 42%* = mô hình 42% chắc frame thuộc lớp *Gần đúng*).
