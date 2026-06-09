@@ -1,6 +1,12 @@
-*.whl filter=lfs diff=lfs merge=lfs -text
+# Khong dung LFS — tranh vuot quota GitHub (du lieu video/CSV luu tren HF Dataset)
+*.whl -text
+*.jpg -text
+*.csv -text
+*.mp4 -text
+*.zip -text
 *.jpg filter=lfs diff=lfs merge=lfs -text
 *.jpeg filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
 *.gif filter=lfs diff=lfs merge=lfs -text
+*.whl filter=lfs diff=lfs merge=lfs -text
 *.zip filter=lfs diff=lfs merge=lfs -text

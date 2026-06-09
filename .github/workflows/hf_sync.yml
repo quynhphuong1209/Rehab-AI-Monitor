@@ -10,20 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          lfs: true
+          # Khong tai Git LFS — tranh loi "exceeded its LFS budget" (CSV/video da luu tren HF Dataset)
+          lfs: false
 
       - name: Push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GIT_LFS_SKIP_SMUDGE: "1"
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
-          
-          # Khoi tao va kich hoat Git LFS trong runner
-          git lfs install
           
           # Tao mot nhanh doc lap khong co lich su cu de loai bo file whl lon khoi lich su git
           git checkout --orphan temp-hf-branch
