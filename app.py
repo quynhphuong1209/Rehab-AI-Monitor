@@ -60,6 +60,21 @@ except Exception as _pose_classifier_import_error:
     train_pose_classifier = None
     POSE_CLASSIFIER_IMPORT_ERROR = _pose_classifier_import_error
 
+from reference_utils import (
+    NEAR_ERROR_MULTIPLIER,
+    PHASE_ERROR,
+    PHASE_ERROR_DEFAULT,
+    PHASE_UI_LABELS,
+    PHASE_UI_SHORT,
+    detect_motion_subtype,
+    find_closest_reference_pose,
+    get_phase_error_for_segment,
+    load_reference_poses,
+    normalize_phase_selection,
+    phase_frame_label,
+    resolve_reference_file,
+)
+
 
 def get_clean_rel_path(path):
     """Lấy đường dẫn tương đối sạch của file đối với DATA_DIR, 
@@ -4418,27 +4433,44 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     chuan_vai = chuan.get("vai", 90)
     chuan_khuyu = chuan.get("khuyu", 170)
     
-    # NẾU CÓ DỮ LIỆU DYNAMIC (BẢN CHUẨN YOUTUBE) -> TỰ ĐỘNG ĐỐI CHIẾU THEO TƯ THẾ TƯƠNG ĐỒNG NHẤT
+    # NẾU CÓ DỮ LIỆU DYNAMIC (BẢN CHUẨN YOUTUBE) -> KHỚP TƯ THẾ GẦN NHẤT (KHÔNG THEO TỪNG GIÂY)
+    chuan_vai_t, chuan_khuyu_t = chuan_vai, chuan_khuyu
+    chuan_vai_p, chuan_khuyu_p = chuan_vai, chuan_khuyu
+    motion_subtype_detected = None
     if dynamic_chuan:
         is_gay_ex = any(kw in str(exercise_name or '').lower() for kw in ["gậy", "gay", "pulley", "stick"])
-        is_day_ex = any(kw in str(exercise_name or '').lower() for kw in ["dây", "day", "kháng lực", "khang", "theraband", "band"])
-        is_codman_ex = any(kw in str(exercise_name or '').lower() for kw in ["codman"])
         
         current_vai = (goc_vai_t + goc_vai_p) / 2 if is_gay_ex else goc_vai
         current_khuyu = (goc_khuyu_t + goc_khuyu_p) / 2 if is_gay_ex else goc_khuyu
+        motion_subtype_detected = detect_motion_subtype(
+            exercise_name,
+            current_vai,
+            current_khuyu,
+            vai_trai=goc_vai_t,
+            vai_phai=goc_vai_p,
+            khuyu_trai=goc_khuyu_t,
+            khuyu_phai=goc_khuyu_p,
+        )
         
-        if is_gay_ex or is_codman_ex:
-            # Đối chiếu góc vai tương tự trong video mẫu
-            closest_ref = min(dynamic_chuan, key=lambda x: abs(x.get('vai', 90) - current_vai), default=None)
-        elif is_day_ex:
-            # Đối chiếu góc khuỷu tương tự trong video mẫu
-            closest_ref = min(dynamic_chuan, key=lambda x: abs(x.get('khuyu', 170) - current_khuyu), default=None)
-        else:
-            closest_ref = min(dynamic_chuan, key=lambda x: abs(x.get('vai', 90) - current_vai), default=None)
+        closest_ref = find_closest_reference_pose(
+            dynamic_chuan,
+            current_vai,
+            current_khuyu,
+            exercise_name,
+            vai_trai=goc_vai_t,
+            vai_phai=goc_vai_p,
+            khuyu_trai=goc_khuyu_t,
+            khuyu_phai=goc_khuyu_p,
+            motion_subtype=motion_subtype_detected,
+        )
             
         if closest_ref:
             chuan_vai = closest_ref.get('vai', chuan_vai)
             chuan_khuyu = closest_ref.get('khuyu', chuan_khuyu)
+            chuan_vai_t = closest_ref.get('vai_trai', chuan_vai)
+            chuan_khuyu_t = closest_ref.get('khuyu_trai', chuan_khuyu)
+            chuan_vai_p = closest_ref.get('vai_phai', chuan_vai)
+            chuan_khuyu_p = closest_ref.get('khuyu_phai', chuan_khuyu)
 
     ss = chuan["sai_so"]
     
@@ -4447,10 +4479,10 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     is_codman = any(kw in ex_clean for kw in ["codman"])
     
     if is_gay:
-        vai_diff_t = abs(goc_vai_t - chuan_vai)
-        vai_diff_p = abs(goc_vai_p - chuan_vai)
-        khuyu_diff_t = abs(goc_khuyu_t - chuan_khuyu)
-        khuyu_diff_p = abs(goc_khuyu_p - chuan_khuyu)
+        vai_diff_t = abs(goc_vai_t - chuan_vai_t)
+        vai_diff_p = abs(goc_vai_p - chuan_vai_p)
+        khuyu_diff_t = abs(goc_khuyu_t - chuan_khuyu_t)
+        khuyu_diff_p = abs(goc_khuyu_p - chuan_khuyu_p)
         
         vai_diff = max(vai_diff_t, vai_diff_p)
         khuyu_diff = max(khuyu_diff_t, khuyu_diff_p)
@@ -4484,12 +4516,12 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     tong_the = vai_dung and khuyu_dung
     gan_dung_tong_the = (vai_gan_dung and khuyu_gan_dung) and not tong_the
     
-    # TÍNH TOÁN 3 GIAI ĐOẠN (G1=45°, G2=30°, G3=15°) CHO HIỂN THỊ TRÊN FRAME
+    # TÍNH TOÁN 3 GIAI ĐOẠN (sai số cho phép G1±45°, G2±30°, G3±15°) CHO HIỂN THỊ TRÊN FRAME
     def _phase_status(v_diff, k_diff, threshold):
         v_ok = v_diff <= threshold
         k_ok = k_diff <= threshold
-        v_near = v_diff <= (threshold * 1.5)
-        k_near = k_diff <= (threshold * 1.5)
+        v_near = v_diff <= (threshold * NEAR_ERROR_MULTIPLIER)
+        k_near = k_diff <= (threshold * NEAR_ERROR_MULTIPLIER)
         if v_ok and k_ok:
             return "PASS", (0, 200, 80)
         elif v_near and k_near:
@@ -4497,9 +4529,9 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
         else:
             return "FAIL", (0, 0, 220)
     
-    g1_text, g1_color = _phase_status(vai_diff, khuyu_diff, 45)
-    g2_text, g2_color = _phase_status(vai_diff, khuyu_diff, 30)
-    g3_text, g3_color = _phase_status(vai_diff, khuyu_diff, 15)
+    g1_text, g1_color = _phase_status(vai_diff, khuyu_diff, PHASE_ERROR["g1"])
+    g2_text, g2_color = _phase_status(vai_diff, khuyu_diff, PHASE_ERROR["g2"])
+    g3_text, g3_color = _phase_status(vai_diff, khuyu_diff, PHASE_ERROR["g3"])
     
     # MÀU SẮC: Xanh (Đúng), Cam (Gần đúng), Đỏ (Sai)
     ORANGE_BGR = (0, 165, 255)
@@ -4507,9 +4539,9 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     mau_khuyu = (0, 255, 0) if khuyu_dung else (ORANGE_BGR if khuyu_gan_dung else (0, 0, 255))
     mau_tong = (0, 255, 0) if tong_the else (ORANGE_BGR if gan_dung_tong_the else (0, 0, 255))
     
-    # Tính riêng cho Trái/Phải phục vụ vẽ góc
-    vai_diff_t = abs(goc_vai_t - chuan_vai)
-    khuyu_diff_t = abs(goc_khuyu_t - chuan_khuyu)
+    # Tính riêng cho Trái/Phải phục vụ vẽ góc (chuẩn YouTube từng bên khi có)
+    vai_diff_t = abs(goc_vai_t - chuan_vai_t)
+    khuyu_diff_t = abs(goc_khuyu_t - chuan_khuyu_t)
     vai_dung_t = vai_diff_t <= ss
     khuyu_dung_t = khuyu_diff_t <= ss
     vai_gan_dung_t = vai_diff_t <= (ss * 1.5)
@@ -4517,8 +4549,8 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     mau_vai_t = (0, 255, 0) if vai_dung_t else (ORANGE_BGR if vai_gan_dung_t else (0, 0, 255))
     mau_khuyu_t = (0, 255, 0) if khuyu_dung_t else (ORANGE_BGR if khuyu_gan_dung_t else (0, 0, 255))
     
-    vai_diff_p = abs(goc_vai_p - chuan_vai)
-    khuyu_diff_p = abs(goc_khuyu_p - chuan_khuyu)
+    vai_diff_p = abs(goc_vai_p - chuan_vai_p)
+    khuyu_diff_p = abs(goc_khuyu_p - chuan_khuyu_p)
     vai_dung_p = vai_diff_p <= ss
     khuyu_dung_p = khuyu_diff_p <= ss
     vai_gan_dung_p = vai_diff_p <= (ss * 1.5)
@@ -4652,18 +4684,15 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     cv2.line(frame_output, (box_x + int(8 * scale_factor), sep_y), (box_x + box_w - int(8 * scale_factor), sep_y), (80, 80, 100), text_thick_thin)
     
     if not is_gay:
-        cv2.putText(frame_output, "3 GIAI DOAN (45/30/15):", (box_x + int(15 * scale_factor), sep_y + int(17 * scale_factor)), font, font_scale_mini, (150, 200, 255), text_thick_thin)
+        cv2.putText(frame_output, "3 GIAI DOAN (ss±45/30/15°):", (box_x + int(15 * scale_factor), sep_y + int(17 * scale_factor)), font, font_scale_mini, (150, 200, 255), text_thick_thin)
         
-        # === G1 (45°) ===
-        g1_label = f"G1(45): {g1_text}"
+        g1_label = phase_frame_label("g1", g1_text)
         cv2.putText(frame_output, g1_label, (box_x + int(15 * scale_factor), sep_y + int(40 * scale_factor)), font, font_scale_g, g1_color, text_thick)
         
-        # === G2 (30°) ===
-        g2_label = f"G2(30): {g2_text}"
+        g2_label = phase_frame_label("g2", g2_text)
         cv2.putText(frame_output, g2_label, (box_x + int(15 * scale_factor), sep_y + int(63 * scale_factor)), font, font_scale_g, g2_color, text_thick)
         
-        # === G3 (15°) ===
-        g3_label = f"G3(15): {g3_text}"
+        g3_label = phase_frame_label("g3", g3_text)
         cv2.putText(frame_output, g3_label, (box_x + int(15 * scale_factor), sep_y + int(86 * scale_factor)), font, font_scale_g, g3_color, text_thick)
         
         warnings_list = get_warning_message(goc_vai, goc_khuyu, chuan_vai, chuan_khuyu, ss)
@@ -4900,28 +4929,16 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         current_dir = os.path.dirname(os.path.abspath(__file__))
         ref_file = os.path.join(current_dir, f"reference_{ref_name}.json")
         
-        # CHIẾN LƯỢC TÌM KIẾM FILE ĐA TẦNG (ROBUST PATH RESOLUTION)
-        search_paths = [
-            os.path.join(DB_DIR, f"reference_{ref_name}.json"), # Thử trong thư mục DB_DIR
-            os.path.join("database", f"reference_{ref_name}.json"), # Thử trong thư mục database mặc định
-            f"reference_{ref_name}.json", # Thử ở root (Thường dùng cho Cloud)
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), f"reference_{ref_name}.json"), # Thử cùng thư mục app.py
-            os.path.join(os.getcwd(), f"reference_{ref_name}.json") # Thử thư mục làm việc hiện tại
-        ]
-        
-        ref_file_found = None
-        for p in search_paths:
-            if os.path.exists(p):
-                ref_file_found = p
-                break
-                
+        ref_file_found = resolve_reference_file(ref_name, DB_DIR, current_dir)
         if ref_file_found:
-            with open(ref_file_found, 'r', encoding='utf-8') as f:
-                dynamic_chuan = json.load(f)
+            dynamic_chuan = load_reference_poses(ref_file_found, ref_name)
             if callback: callback(0.01)
-            st.toast(f"✅ Đã nạp chuẩn: {ref_name}", icon="📊")
+            st.toast(
+                f"✅ Đã nạp {len(dynamic_chuan)} tư thế chuẩn ({ref_name}) — khớp theo góc, không theo giây",
+                icon="📊",
+            )
         else:
-            st.error(f"⚠️ Không tìm thấy file chuẩn: reference_{ref_name}.json ở bất kỳ thư mục nào ({search_paths})")
+            st.error(f"⚠️ Không tìm thấy file chuẩn: reference_{ref_name}.json")
     except Exception as e:
         st.error(f"⚠️ Lỗi nạp chuẩn: {e}")
 
@@ -5198,19 +5215,12 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 if new_h % 2 != 0: new_h -= 1
                 frame = cv2.resize(frame, (resize_width, new_h), interpolation=cv2.INTER_LINEAR)
                     
-            # Xác định sai số theo giai đoạn hiện tại (G1=45, G2=30, G3=15)
-            # Riêng bài tập gậy, không chia 3 giai đoạn nên giữ nguyên sai số chuẩn
+            # Sai số cho phép theo giai đoạn PHCN (G1±45°, G2±30°, G3±15°)
             is_gay_ex = any(kw in str(ref_name or '').lower() for kw in ["gậy", "gay", "pulley", "stick"])
             if is_gay_ex:
-                ss_dynamic = chuan.get("sai_so", 30)
+                ss_dynamic = chuan.get("sai_so", PHASE_ERROR_DEFAULT)
             else:
-                idx_in_list = processed_count - 1
-                if idx_in_list < n1:
-                    ss_dynamic = 45
-                elif idx_in_list < n2:
-                    ss_dynamic = 30
-                else:
-                    ss_dynamic = 15
+                ss_dynamic = get_phase_error_for_segment(processed_count - 1, n0, n1, n2, n3)
                 
             chuan_dynamic = chuan.copy()
             chuan_dynamic['sai_so'] = ss_dynamic
@@ -5719,7 +5729,7 @@ def khoi_dong_phan_tich_lai_video(v, auto_start=True):
     if not os.path.exists(video_path) or os.path.getsize(video_path) < 1024:
         return False
 
-    ncv_gd = st.session_state.get("ncv_giai_doan", "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)")
+    ncv_gd = st.session_state.get("ncv_giai_doan", PHASE_UI_LABELS["g2"])
     bat_dau_phan_tich_background(
         video_path=video_path,
         username=v.get("username"),
@@ -6324,7 +6334,7 @@ def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
     **Luồng phân tích tích hợp (4 bước):**
     1. **Input video bệnh nhân** — MediaPipe Pose trích xuất **33 landmarks**. Chọn ở sidebar:
        **Heavy** (đủ frame + video + chỉ số nghiên cứu đầy đủ), **Full** (đủ frame + video, chỉ số cơ bản), **Lite** (tự bỏ frame cho nhanh).
-    2. **Đối chiếu YouTube mẫu (RULE)** — Codman: góc vai/khuỷu **tay phải**, 3 giai đoạn (45°/30°/15°); Gậy: **cả hai bên** → nhãn REF: PASS / NEARLY / FAIL
+    2. **Đối chiếu YouTube mẫu (RULE)** — Codman: góc vai/khuỷu **tay phải**, khớp **tư thế gần nhất** (đoạn xoay vòng); Gậy: **cả hai bên** → nhãn REF: PASS / NEARLY / FAIL
     3. **Huấn luyện / nạp ML Classifier** — Random Forest trên tọa độ khớp + góc (tự train nếu chưa có model)
     4. **Đầu ra** — Video + tất cả ảnh frame có khung xương, nhãn **REF** (theo góc) và **ML** (model đã train) + CSV 33 điểm
     """)
@@ -6376,7 +6386,7 @@ def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
             pass
     else:
         if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
-            ncv_gd = st.session_state.get('ncv_giai_doan', 'Giai đoạn 2: Hồi phục (Sai số vừa - 30°)')
+            ncv_gd = st.session_state.get('ncv_giai_doan', PHASE_UI_LABELS["g2"])
             bat_dau_phan_tich_background(
                 video_path=video_path,
                 username=v['username'],
@@ -6635,11 +6645,11 @@ def bat_dau_phan_tich_background(
             ex_key = next((k for k in BAI_TAP if BAI_TAP[k]['ten'] == exercise_name), 'codman')
             bt = BAI_TAP[ex_key]
             
-            ss_override = 30
+            ss_override = PHASE_ERROR_DEFAULT
             if "Giai đoạn 1" in giai_doan:
-                ss_override = 45
+                ss_override = PHASE_ERROR["g1"]
             elif "Giai đoạn 3" in giai_doan:
-                ss_override = 15
+                ss_override = PHASE_ERROR["g3"]
                 
             bt_chuan_ncv = bt['chuan'].copy()
             bt_chuan_ncv['sai_so'] = ss_override
@@ -6715,9 +6725,9 @@ def bat_dau_phan_tich_background(
                     df_g1 = df.iloc[n0:n1]
                     df_g2 = df.iloc[n1:n2]
                     df_g3 = df.iloc[n2:n3]
-                    metrics_g1 = recalc_metrics(df_g1, 45, bt_ncv.get('ten', ''))
-                    metrics_g2 = recalc_metrics(df_g2, 30, bt_ncv.get('ten', ''))
-                    metrics_g3 = recalc_metrics(df_g3, 15, bt_ncv.get('ten', ''))
+                    metrics_g1 = recalc_metrics(df_g1, PHASE_ERROR["g1"], bt_ncv.get('ten', ''))
+                    metrics_g2 = recalc_metrics(df_g2, PHASE_ERROR["g2"], bt_ncv.get('ten', ''))
+                    metrics_g3 = recalc_metrics(df_g3, PHASE_ERROR["g3"], bt_ncv.get('ten', ''))
                 
                 stats_data = {
                     "do_chinh_xac": metrics["ty_le_tong_the"],
@@ -7195,9 +7205,9 @@ def gui_bao_cao_tong_hop_3_giai_doan():
     df_g2 = df.iloc[n1:n2]
     df_g3 = df.iloc[n2:n3]
     
-    metrics_g1 = recalc_metrics(df_g1, 45, correct_ex_name)
-    metrics_g2 = recalc_metrics(df_g2, 30, correct_ex_name)
-    metrics_g3 = recalc_metrics(df_g3, 15, correct_ex_name)
+    metrics_g1 = recalc_metrics(df_g1, PHASE_ERROR["g1"], correct_ex_name)
+    metrics_g2 = recalc_metrics(df_g2, PHASE_ERROR["g2"], correct_ex_name)
+    metrics_g3 = recalc_metrics(df_g3, PHASE_ERROR["g3"], correct_ex_name)
 
     acc_g1 = metrics_g1['do_chinh_xac']
     acc_g2 = metrics_g2['do_chinh_xac']
@@ -7223,25 +7233,25 @@ def gui_bao_cao_tong_hop_3_giai_doan():
         "errors": metrics_g2.get('warnings', []),
         "comments": (
             f"BÁO CÁO TỔNG HỢP NCV - ĐẦY ĐỦ 3 GIAI ĐOẠN:\n"
-            f"🌱 GĐ 1 (Khởi đầu - Sai số 45°): {acc_g1:.1f}% | Đúng: {metrics_g1['frame_dung']}/{metrics_g1['tong_frame_hop_le']} frames\n"
-            f"📈 GĐ 2 (Hồi phục - Sai số 30°): {acc_g2:.1f}% | Đúng: {metrics_g2['frame_dung']}/{metrics_g2['tong_frame_hop_le']} frames\n"
-            f"🎯 GĐ 3 (Chuẩn xác - Sai số 15°): {acc_g3:.1f}% | Đúng: {metrics_g3['frame_dung']}/{metrics_g3['tong_frame_hop_le']} frames\n"
+            f"🌱 GĐ 1 (Khởi đầu - Sai số ±{PHASE_ERROR['g1']}°): {acc_g1:.1f}% | Đúng: {metrics_g1['frame_dung']}/{metrics_g1['tong_frame_hop_le']} frames\n"
+            f"📈 GĐ 2 (Hồi phục - Sai số ±{PHASE_ERROR['g2']}°): {acc_g2:.1f}% | Đúng: {metrics_g2['frame_dung']}/{metrics_g2['tong_frame_hop_le']} frames\n"
+            f"🎯 GĐ 3 (Chuẩn xác - Sai số ±{PHASE_ERROR['g3']}°): {acc_g3:.1f}% | Đúng: {metrics_g3['frame_dung']}/{metrics_g3['tong_frame_hop_le']} frames\n"
             f"🤖 AI đề xuất: Phù hợp tập luyện ở giai đoạn " + 
             ("3" if acc_g3 >= 80 or acc_g2 >= 75 else ("2" if acc_g2 >= 50 else "1"))
         ),
         "plan": (
             f"Kế hoạch luyện tập đề xuất:\n"
-            f"- GĐ1 (Sai số 45°): Đạt {acc_g1:.1f}% - " + ("Đạt yêu cầu chuyển giai đoạn." if acc_g1 >= 75 else "Cần rèn luyện thêm.") + "\n"
-            f"- GĐ2 (Sai số 30°): Đạt {acc_g2:.1f}% - " + ("Đạt yêu cầu chuyển giai đoạn." if acc_g2 >= 70 else "Cần rèn luyện thêm.") + "\n"
-            f"- GĐ3 (Sai số 15°): Đạt {acc_g3:.1f}% - " + ("Ổn định khớp hoàn toàn." if acc_g3 >= 80 else "Khớp còn cứng hoặc lệch biên độ.")
+            f"- GĐ1 (Sai số ±{PHASE_ERROR['g1']}°): Đạt {acc_g1:.1f}% - " + ("Đạt yêu cầu chuyển giai đoạn." if acc_g1 >= 75 else "Cần rèn luyện thêm.") + "\n"
+            f"- GĐ2 (Sai số ±{PHASE_ERROR['g2']}°): Đạt {acc_g2:.1f}% - " + ("Đạt yêu cầu chuyển giai đoạn." if acc_g2 >= 70 else "Cần rèn luyện thêm.") + "\n"
+            f"- GĐ3 (Sai số ±{PHASE_ERROR['g3']}°): Đạt {acc_g3:.1f}% - " + ("Ổn định khớp hoàn toàn." if acc_g3 >= 80 else "Khớp còn cứng hoặc lệch biên độ.")
         ),
         "doctor_name": f"NCV: {st.session_state.user_info.get('full_name', 'Nghiên cứu viên')}",
         "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
         "giai_doan": "Phân tích 3 Giai đoạn",
         "sai_so": {
-            "giai_doan_1": 45,
-            "giai_doan_2": 30,
-            "giai_doan_3": 15
+            "giai_doan_1": PHASE_ERROR["g1"],
+            "giai_doan_2": PHASE_ERROR["g2"],
+            "giai_doan_3": PHASE_ERROR["g3"],
         }
     })
     save_data(EVALUATIONS_FILE, evals)
@@ -8625,9 +8635,9 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             df_g1 = df.iloc[n0:n1]
             df_g2 = df.iloc[n1:n2]
             df_g3 = df.iloc[n2:n3]
-            metrics_g1 = recalc_metrics(df_g1, 45, bt.get('ten', ''))
-            metrics_g2 = recalc_metrics(df_g2, 30, bt.get('ten', ''))
-            metrics_g3 = recalc_metrics(df_g3, 15, bt.get('ten', ''))
+            metrics_g1 = recalc_metrics(df_g1, PHASE_ERROR["g1"], bt.get('ten', ''))
+            metrics_g2 = recalc_metrics(df_g2, PHASE_ERROR["g2"], bt.get('ten', ''))
+            metrics_g3 = recalc_metrics(df_g3, PHASE_ERROR["g3"], bt.get('ten', ''))
     else:
         metrics_g1 = tk.get("metrics_g1", tk)
         metrics_g2 = tk.get("metrics_g2", tk)
@@ -8820,24 +8830,24 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
     else:
         # 2. BỘ CHỌN CHI TIẾT TẬP TRỰC QUAN
         gd_selected = st.radio("🔍 Chọn Giai đoạn hiển thị chi tiết biểu đồ & Nhận định lâm sàng:",
-                               ["Giai đoạn 1 (Khởi đầu - Sai số 45°)", 
-                                "Giai đoạn 2 (Hồi phục - Sai số 30°)", 
-                                "Giai đoạn 3 (Chuẩn xác - Sai số 15°)"],
+                               [PHASE_UI_LABELS["g1"],
+                                PHASE_UI_LABELS["g2"],
+                                PHASE_UI_LABELS["g3"]],
                                index=1,
                                horizontal=True,
                                key=f"analysis_stage_sel_{key_suffix}")
         
         if "Giai đoạn 1" in gd_selected:
             tk_selected = metrics_g1
-            sai_so_selected = 45
+            sai_so_selected = PHASE_ERROR["g1"]
             giai_doan_label = "Giai đoạn 1"
         elif "Giai đoạn 3" in gd_selected:
             tk_selected = metrics_g3
-            sai_so_selected = 15
+            sai_so_selected = PHASE_ERROR["g3"]
             giai_doan_label = "Giai đoạn 3"
         else:
             tk_selected = metrics_g2
-            sai_so_selected = 30
+            sai_so_selected = PHASE_ERROR["g2"]
             giai_doan_label = "Giai đoạn 2"
 
     # Chuẩn bị dữ liệu thống kê tổng hợp (Mở rộng cho NCV)
@@ -9248,9 +9258,9 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                             <tr style="border-bottom: 2px solid #38bdf8; text-align: left;">
                                 <th style="padding: 12px;">Chỉ số nghiên cứu</th>
                                 <th style="padding: 12px; text-align: center;">Ký hiệu</th>
-                                <th style="padding: 12px; text-align: center;">Giai đoạn 1 (Sai số 45°)</th>
-                                <th style="padding: 12px; text-align: center;">Giai đoạn 2 (Sai số 30°)</th>
-                                <th style="padding: 12px; text-align: center;">Giai đoạn 3 (Sai số 15°)</th>
+                                <th style="padding: 12px; text-align: center;">Giai đoạn 1 (Sai số ±{PHASE_ERROR['g1']}°)</th>
+                                <th style="padding: 12px; text-align: center;">Giai đoạn 2 (Sai số ±{PHASE_ERROR['g2']}°)</th>
+                                <th style="padding: 12px; text-align: center;">Giai đoạn 3 (Sai số ±{PHASE_ERROR['g3']}°)</th>
                                 <th style="padding: 12px;">Phân loại / Chuyên môn</th>
                             </tr>
                         </thead>
@@ -10203,11 +10213,11 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                             plan_lines = [l.strip() for l in plan_raw.split('\n') if l.strip() and l.strip().startswith('-')]
 
                             gd_configs = [
-                                {"idx": 1, "label": "GIAI ĐOẠN 1", "sub": "Khởi đầu · Sai số 45°", "icon": "🌱",
+                                {"idx": 1, "label": "GIAI ĐOẠN 1", "sub": f"Khởi đầu · Sai số ±{PHASE_ERROR['g1']}°", "icon": "🌱",
                                  "acc": acc_g1, "bg": "rgba(0,230,118,0.06)", "border": "#00e676"},
-                                {"idx": 2, "label": "GIAI ĐOẠN 2", "sub": "Hồi phục · Sai số 30°", "icon": "📈",
+                                {"idx": 2, "label": "GIAI ĐOẠN 2", "sub": f"Hồi phục · Sai số ±{PHASE_ERROR['g2']}°", "icon": "📈",
                                  "acc": acc_g2, "bg": "rgba(255,215,0,0.06)", "border": "#ffd700"},
-                                {"idx": 3, "label": "GIAI ĐOẠN 3", "sub": "Chuẩn xác · Sai số 15°", "icon": "🎯",
+                                {"idx": 3, "label": "GIAI ĐOẠN 3", "sub": f"Chuẩn xác · Sai số ±{PHASE_ERROR['g3']}°", "icon": "🎯",
                                  "acc": acc_g3, "bg": "rgba(0,198,255,0.06)", "border": "#00c6ff"},
                             ]
 
@@ -11328,9 +11338,9 @@ def hien_thi_frames_day_du(key_suffix=""):
                 f"<div style='margin-bottom:10px;'>"
                 f"<b>Độ chính xác 3 giai đoạn:</b>"
                 f"<ul style='margin: 5px 0 0 10px; padding: 0; list-style-type: none;'>"
-                f"<li style='margin-bottom:3px;'>🌱 GĐ 1 (45°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>"
-                f"<li style='margin-bottom:3px;'>📈 GĐ 2 (30°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>"
-                f"<li style='margin-bottom:3px;'>🎯 GĐ 3 (15°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>"
+                f"<li style='margin-bottom:3px;'>🌱 GĐ 1 (ss±{PHASE_ERROR['g1']}°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>"
+                f"<li style='margin-bottom:3px;'>📈 GĐ 2 (ss±{PHASE_ERROR['g2']}°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>"
+                f"<li style='margin-bottom:3px;'>🎯 GĐ 3 (ss±{PHASE_ERROR['g3']}°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>"
                 f"</ul>"
                 f"</div>"
             )
@@ -11415,15 +11425,15 @@ Dòng **Xác suất 3 lớp** (nếu có): tổng ~100%, cho biết mô hình ph
             if 'segment_bounds' in st.session_state and st.session_state.segment_bounds:
                 n0, n1, n2, n3 = st.session_state.segment_bounds
                 if n0 <= idx < n1:
-                    threshold = 45
+                    threshold = PHASE_ERROR["g1"]
                 elif n1 <= idx < n2:
-                    threshold = 30
+                    threshold = PHASE_ERROR["g2"]
                 elif n2 <= idx < n3:
-                    threshold = 15
+                    threshold = PHASE_ERROR["g3"]
                 else:
-                    threshold = 30
+                    threshold = PHASE_ERROR["g2"]
             else:
-                threshold = 30
+                threshold = PHASE_ERROR["g2"]
         
         eval_info = f_data.get('eval_info', {})
         cv = eval_info.get('shoulder_ref', 90)
@@ -11829,16 +11839,16 @@ Dòng **Xác suất 3 lớp** (nếu có): tổng ~100%, cho biết mô hình ph
             _render_frame_grid(all_indices, all_frames_data, None, None, "all", key_suffix)
 
         with tab_g1:
-            st.info("🟢 **Giai đoạn 1 — Khởi đầu (Sai số 45°):** Chỉ hiển thị các khung hình thuộc **Lượt tập 1**. Badge **PASS** = lệch chuẩn ≤ 45°.")
-            _render_frame_grid(g1_indices, all_frames_data, None, 45, "g1", key_suffix)
+            st.info(f"🟢 **Giai đoạn 1 — Khởi đầu (Sai số ±{PHASE_ERROR['g1']}°):** Chỉ hiển thị các khung hình thuộc **Lượt tập 1**. Badge **PASS** = lệch chuẩn ≤ {PHASE_ERROR['g1']}°.")
+            _render_frame_grid(g1_indices, all_frames_data, None, PHASE_ERROR["g1"], "g1", key_suffix)
 
         with tab_g2:
-            st.info("🟡 **Giai đoạn 2 — Hồi phục (Sai số 30°):** Chỉ hiển thị các khung hình thuộc **Lượt lặp lại lần 2**. Badge **PASS** = lệch chuẩn ≤ 30°.")
-            _render_frame_grid(g2_indices, all_frames_data, None, 30, "g2", key_suffix)
+            st.info(f"🟡 **Giai đoạn 2 — Hồi phục (Sai số ±{PHASE_ERROR['g2']}°):** Chỉ hiển thị các khung hình thuộc **Lượt lặp lại lần 2**. Badge **PASS** = lệch chuẩn ≤ {PHASE_ERROR['g2']}°.")
+            _render_frame_grid(g2_indices, all_frames_data, None, PHASE_ERROR["g2"], "g2", key_suffix)
 
         with tab_g3:
-            st.info("🔴 **Giai đoạn 3 — Chuẩn xác (Sai số 15°):** Chỉ hiển thị các khung hình thuộc **Lượt lặp lại lần 3**. Badge **PASS** = lệch chuẩn ≤ 15°.")
-            _render_frame_grid(g3_indices, all_frames_data, None, 15, "g3", key_suffix)
+            st.info(f"🔴 **Giai đoạn 3 — Chuẩn xác (Sai số ±{PHASE_ERROR['g3']}°):** Chỉ hiển thị các khung hình thuộc **Lượt lặp lại lần 3**. Badge **PASS** = lệch chuẩn ≤ {PHASE_ERROR['g3']}°.")
+            _render_frame_grid(g3_indices, all_frames_data, None, PHASE_ERROR["g3"], "g3", key_suffix)
 
     st.write("")  # Final spacer
 
@@ -12860,9 +12870,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                     st.write("**Độ chính xác AI theo 3 giai đoạn:**")
                                     st.markdown(
                                         f"<ul style='margin: 0 0 10px 10px; padding: 0; list-style-type: none;'>"
-                                        f"<li style='margin-bottom:3px;'>🌱 Giai đoạn 1 (45°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>"
-                                        f"<li style='margin-bottom:3px;'>📈 Giai đoạn 2 (30°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>"
-                                        f"<li style='margin-bottom:3px;'>🎯 Giai đoạn 3 (15°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>"
+                                        f"<li style='margin-bottom:3px;'>🌱 Giai đoạn 1 (ss±{PHASE_ERROR['g1']}°): <b style='color:#22c55e;'>{acc_g1:.1f}%</b></li>"
+                                        f"<li style='margin-bottom:3px;'>📈 Giai đoạn 2 (ss±{PHASE_ERROR['g2']}°): <b style='color:#eab308;'>{acc_g2:.1f}%</b></li>"
+                                        f"<li style='margin-bottom:3px;'>🎯 Giai đoạn 3 (ss±{PHASE_ERROR['g3']}°): <b style='color:#ef4444;'>{acc_g3:.1f}%</b></li>"
                                         f"</ul>",
                                         unsafe_allow_html=True
                                     )
@@ -13340,7 +13350,7 @@ def _render_main_tab_content(tab_titles, user_role):
                                     
                                         model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Heavy')
                                         conf_ncv = st.session_state.get('ncv_confidence', 0.5)
-                                        ncv_gd = st.session_state.get('ncv_giai_doan', 'Giai đoạn 2: Hồi phục (Sai số vừa - 30°)')
+                                        ncv_gd = st.session_state.get('ncv_giai_doan', PHASE_UI_LABELS["g2"])
                                     
                                         # Khởi chạy background thread
                                         bat_dau_phan_tich_background(
@@ -13911,10 +13921,12 @@ def main():
                          key="ncv_resize_width",
                          help="Độ phân giải càng cao thì vẽ khung xương càng sắc nét và bám sát khớp bệnh nhân hơn.")
             st.slider("Độ nhạy chuyển động (Sensitivity)", 0.0, 1.0, 0.7, key="ncv_sensitivity", help="Ảnh hưởng đến việc tính toán vận tốc khớp.")
+            if "ncv_giai_doan" in st.session_state:
+                st.session_state.ncv_giai_doan = normalize_phase_selection(st.session_state.ncv_giai_doan)
             st.selectbox("🌱 Giai đoạn tập bệnh nhân (Mặc định video):",
-                         options=["Giai đoạn 1: Khởi đầu (Sai số lớn - 45°)",
-                                  "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)",
-                                  "Giai đoạn 3: Chuẩn xác (Sai số nhỏ - 15°)"],
+                         options=[PHASE_UI_LABELS["g1"],
+                                  PHASE_UI_LABELS["g2"],
+                                  PHASE_UI_LABELS["g3"]],
                          index=1,
                          key="ncv_giai_doan",
                          help="Điều chỉnh ngưỡng sai số để vẽ khung xương và phát âm thanh phản hồi trực tiếp khi xử lý video.")
