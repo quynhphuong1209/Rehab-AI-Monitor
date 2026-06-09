@@ -6269,6 +6269,28 @@ def hien_thi_tien_trinh_background_home_fragment(video_path):
                 pass
             st.rerun()
 
+@st.fragment
+def hien_thi_video_goc_fragment(video_path, key_suffix, video_name=""):
+    """Hiển thị/ẩn video gốc trong fragment riêng -> bấm nút không làm rerun cả trang,
+    nhờ vậy phần trích xuất khung xương bên cạnh KHÔNG bị tải lại từ đầu."""
+    show_key = f"show_src_video_{key_suffix}"
+    if st.session_state.get(show_key):
+        render_video(video_path, check_h264=False)
+        if st.button("🙈 Ẩn video gốc", key=f"btn_hide_src_video_{key_suffix}", use_container_width=True):
+            st.session_state[show_key] = False
+            st.rerun(scope="fragment")
+    else:
+        st.markdown(f"""
+        <div style="background: rgba(30, 41, 59, 0.35); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 12px; padding: 18px;">
+            <div style="font-weight: 700; color: #e2e8f0; margin-bottom: 6px;">🎬 Video gốc đã chọn</div>
+            <div style="color: #94a3b8; font-size: 0.88rem;">{video_name or 'Video bệnh nhân'}</div>
+            <div style="color: #64748b; font-size: 0.82rem; margin-top: 8px;">Bấm để xem video gốc — không ảnh hưởng tiến trình trích xuất.</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("👁️ Xem video gốc", key=f"btn_show_src_video_{key_suffix}", use_container_width=True):
+            st.session_state[show_key] = True
+            st.rerun(scope="fragment")
+
 @st.fragment(run_every=1)
 def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
     video_path = v['video_path']
@@ -8504,25 +8526,8 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 col_v1, col_v2 = st.columns([1.3, 1.0])
                 with col_v1:
                     if is_processing:
-                        st.markdown(f"""
-                        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 30px; text-align: center; height: 270px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <div style="font-size: 2.5rem; margin-bottom: 12px; animation: pulse 2s infinite;">🎬</div>
-                            <h4 style="color: #00c6ff; margin: 0 0 8px 0; font-weight: bold;">Đang chuẩn bị dữ liệu video</h4>
-                            <p style="color: #aaa; font-size: 0.85rem; margin: 0;">Video gốc đang được tải về máy chủ và phân tích khung xương.</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"""
-                        <div style="background: rgba(30, 41, 59, 0.35); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 12px; padding: 18px;">
-                            <div style="font-weight: 700; color: #e2e8f0; margin-bottom: 6px;">🎬 Video gốc đã chọn</div>
-                            <div style="color: #94a3b8; font-size: 0.88rem;">{v.get('video_name', 'Video bệnh nhân')}</div>
-                            <div style="color: #64748b; font-size: 0.82rem; margin-top: 8px;">Đã ẩn trình phát video để mở panel phân tích nhanh hơn.</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        if st.button("👁️ Xem video gốc", key=f"btn_show_src_video_{key_suffix}", use_container_width=True):
-                            st.session_state[f"show_src_video_{key_suffix}"] = True
-                        if st.session_state.get(f"show_src_video_{key_suffix}"):
-                            render_video(v['video_path'], check_h264=False)
+                        st.caption("🔬 Đang trích xuất khung xương ở bên phải. Bạn có thể xem video gốc bên dưới — tiến trình vẫn chạy bình thường.")
+                    hien_thi_video_goc_fragment(v['video_path'], key_suffix, v.get('video_name', ''))
                 with col_v2:
                     hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix)
                 return
