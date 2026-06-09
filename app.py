@@ -1914,10 +1914,11 @@ def khoi_phuc_video_list_tu_tep():
         out.append(rec)
 
     for e in evals:
-        if e.get("doctor_username") != "AI_Researcher":
-            continue
         uname = e.get("patient_username") or ""
         vname = e.get("video_name") or ""
+        if not vname:
+            continue
+        is_ai = e.get("doctor_username") == "AI_Researcher"
         ex = e.get("exercise") or _exercise_tu_ten_file(vname)
         fn = users.get(uname, {}).get("full_name", uname) if isinstance(users, dict) else uname
         vp = _tim_upload_theo_video_name(uname, vname)
@@ -1926,11 +1927,11 @@ def khoi_phuc_video_list_tu_tep():
             "full_name": fn or uname,
             "video_name": vname,
             "exercise": ex,
-            "accuracy": e.get("ai_accuracy") or 0,
+            "accuracy": (e.get("ai_accuracy") or 0) if is_ai else 0,
             "time": e.get("time", "N/A"),
             "video_path": vp,
             "processed_path": None,
-            "status": "Đã phân tích" if e.get("ai_accuracy") else "Chờ NCV phân tích",
+            "status": "Đã phân tích" if is_ai else "Đã đánh giá (bác sĩ)",
             "df_path": None,
             "all_frames_data_path": None,
         })
@@ -2033,30 +2034,90 @@ def khoi_phuc_video_list_tu_tep():
     return out
 
 
+def _merge_video_list_with_evals(video_list):
+    """Bổ sung video từ doctor_evaluations (bác sĩ + NCV) — giữ cả đánh giá cũ và cập nhật AI mới."""
+    base = list(video_list or [])
+    seen = {(x.get("username"), x.get("video_name"), x.get("exercise")) for x in base}
+    users = load_users()
+    evals = load_data(EVALUATIONS_FILE)
+    by_key = {}
+    for x in base:
+        by_key[(x.get("username"), x.get("video_name"), x.get("exercise"))] = x
+
+    def _upsert(rec):
+        key = (rec.get("username"), rec.get("video_name"), rec.get("exercise"))
+        if not rec.get("video_name"):
+            return
+        if key in by_key:
+            existing = by_key[key]
+            for fld in ("video_path", "processed_path", "df_path", "all_frames_data_path", "metrics", "frames_zip"):
+                if not existing.get(fld) and rec.get(fld):
+                    existing[fld] = rec[fld]
+            if rec.get("accuracy") and (not existing.get("accuracy") or float(rec.get("accuracy") or 0) > float(existing.get("accuracy") or 0)):
+                existing["accuracy"] = rec["accuracy"]
+            if rec.get("status") == "Đã phân tích":
+                existing["status"] = "Đã phân tích"
+        else:
+            base.append(rec)
+            by_key[key] = rec
+            seen.add(key)
+
+    for e in evals:
+        uname = e.get("patient_username") or ""
+        vname = e.get("video_name") or ""
+        ex = e.get("exercise") or _exercise_tu_ten_file(vname)
+        if not vname:
+            continue
+        fn = users.get(uname, {}).get("full_name", uname) if isinstance(users, dict) else uname
+        is_ai = e.get("doctor_username") == "AI_Researcher"
+        vp = _tim_upload_theo_video_name(uname, vname)
+        _upsert({
+            "username": uname,
+            "full_name": fn or uname,
+            "video_name": vname,
+            "exercise": ex,
+            "accuracy": e.get("ai_accuracy") if is_ai else 0,
+            "time": e.get("time", "N/A"),
+            "video_path": vp,
+            "processed_path": None,
+            "status": "Đã phân tích" if is_ai else "Đã đánh giá (bác sĩ)",
+            "df_path": None,
+            "all_frames_data_path": None,
+        })
+
+    return base
+
+
+def _resolve_video_display_path(raw_path, processed_path):
+    """Chuẩn hóa đường dẫn video để hiển thị — không trả về None khi gọi os.path."""
+    for p in (raw_path, processed_path):
+        if not p:
+            continue
+        lp = get_local_frame_path(p) or p
+        if lp:
+            return lp
+    return None
+
+
 def load_video_list_an_toan():
-    """Nạp video_list.json — đồng bộ HF + khôi phục từ CSV/eval nếu file trống sau deploy."""
-    lst = load_data(VIDEOS_FILE)
-    if lst:
-        return lst
+    """Nạp video_list.json — đồng bộ HF + khôi phục + gộp đánh giá bác sĩ/NCV."""
     dong_bo_json_cau_hinh_tu_hf()
     try:
         _load_data_cached.clear()
     except Exception:
         pass
-    lst = load_data(VIDEOS_FILE)
+    lst = _merge_video_list_with_evals(load_data(VIDEOS_FILE))
     if lst:
+        current = load_data(VIDEOS_FILE)
+        if len(lst) > len(current or []):
+            save_data(VIDEOS_FILE, lst)
         return lst
     recovered = khoi_phuc_video_list_tu_tep()
     if recovered:
-        with open(VIDEOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(recovered, f, ensure_ascii=False, indent=4)
-        push_file_to_hf_async(VIDEOS_FILE)
-        try:
-            _load_data_cached.clear()
-        except Exception:
-            pass
+        recovered = _merge_video_list_with_evals(recovered)
+        save_data(VIDEOS_FILE, recovered)
         print(f"[VideoList] Da khoi phuc {len(recovered)} video vao video_list.json")
-    return recovered
+    return recovered or []
 
 
 def lay_do_chinh_xac_ai_chuan(selected_v):
@@ -13739,13 +13800,13 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             pass
                     return False
 
-                # Luôn hiển thị video thô bệnh nhân upload ở trang chủ theo yêu cầu của người dùng
-                v_display_path = raw_path
-                final_h264 = get_final_h264_path(v_display_path)
+                v_display_path = _resolve_video_display_path(raw_path, processed_path)
+                final_h264 = get_final_h264_path(v_display_path) if v_display_path else ""
 
-                # Kiểm tra sự tồn tại của file hiển thị cục bộ
-                local_exists = is_valid_local_file(v_display_path)
-                active_display_path = v_display_path
+                local_exists = is_valid_local_file(v_display_path) or is_valid_local_file(
+                    _resolve_video_display_path(None, processed_path)
+                )
+                active_display_path = v_display_path or _resolve_video_display_path(None, processed_path)
                 
                 # Tra cứu O(1) từ dict đã build sẵn
                 ev_key = (v.get('username'), v.get('video_name'), v.get('exercise'))
@@ -13783,8 +13844,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                 st.session_state[show_vid_key] = True
                                 st.rerun()
                             
-                        # Nếu không có local, hiển thị cảnh báo và các tùy chọn khôi phục
-                        if not local_exists and active_display_path:
+                        if not local_exists:
                             st.warning("⚠️ File video không tồn tại cục bộ trên máy chủ (có thể do môi trường bị reset).")
                             
                             c_down1, c_down2 = st.columns(2)
@@ -13810,18 +13870,19 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                     key=restore_key
                                 )
                                 if uploaded_restore is not None:
-                                    target_dir = os.path.dirname(v_display_path)
+                                    restore_path = v_display_path
+                                    if not restore_path:
+                                        os.makedirs(UPLOAD_DIR, exist_ok=True)
+                                        safe_name = f"{v.get('username', 'unknown')}_{uploaded_restore.name}"
+                                        restore_path = os.path.join(UPLOAD_DIR, safe_name)
+                                    target_dir = os.path.dirname(restore_path)
                                     if target_dir:
                                         os.makedirs(target_dir, exist_ok=True)
                                     try:
-                                        with open(v_display_path, "wb") as f_out:
+                                        with open(restore_path, "wb") as f_out:
                                             f_out.write(uploaded_restore.getbuffer())
-                                        
-                                        # Kích hoạt convert H264 dưới nền
-                                        ensure_playable_video(v_display_path)
-                                        
-                                        # Đồng bộ lên HF Cloud Dataset
-                                        push_file_to_hf_async(v_display_path)
+                                        ensure_playable_video(restore_path)
+                                        push_file_to_hf_async(restore_path)
                                         
                                         st.success("🎉 Khôi phục video thành công!")
                                         st.session_state[show_vid_key] = True
@@ -13868,9 +13929,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             # Khối chẩn đoán thông tin file (chỉ hiển thị cho bác sĩ/NCV để debug)
                             if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
                                 with st.popover("🔍 Kiểm tra tệp tin (Debug)"):
-                                    st.markdown(f"**Tệp hiển thị:** `{v_display_path}`")
+                                    st.markdown(f"**Tệp hiển thị:** `{v_display_path or '(chưa có — chỉ có metadata đánh giá)'}`")
                                     st.write(f"- Tồn tại cục bộ: {'✅ Có' if local_exists else '❌ Không'}")
-                                    if os.path.exists(v_display_path):
+                                    if v_display_path and os.path.exists(v_display_path):
                                         st.write(f"- Kích thước tệp: `{os.path.getsize(v_display_path)/(1024*1024):.2f} MB`")
                                         try:
                                             v_codec, a_codec = get_video_codec(v_display_path)
@@ -13885,9 +13946,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                         except Exception as e:
                                             st.write(f"- Lỗi quét ffprobe: `{e}`")
                                     
-                                    st.markdown(f"**Tệp nén H.264:** `{final_h264}`")
+                                    st.markdown(f"**Tệp nén H.264:** `{final_h264 or '(n/a)'}`")
                                     h264_exists = False
-                                    if os.path.exists(final_h264) and os.path.getsize(final_h264) >= 5 * 1024:
+                                    if final_h264 and os.path.exists(final_h264) and os.path.getsize(final_h264) >= 5 * 1024:
                                         try:
                                             mtime = os.path.getmtime(final_h264)
                                             size = os.path.getsize(final_h264)
@@ -13895,7 +13956,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                         except:
                                             pass
                                     st.write(f"- Tồn tại cục bộ và hợp lệ: {'✅ Có' if h264_exists else '❌ Không'}")
-                                    if os.path.exists(final_h264):
+                                    if final_h264 and os.path.exists(final_h264):
                                         st.write(f"- Kích thước tệp: `{os.path.getsize(final_h264)/(1024*1024):.2f} MB`")
                                         try:
                                             v_codec_h, a_codec_h = get_video_codec(final_h264)
@@ -13910,9 +13971,8 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                         except Exception as e_h:
                                             st.write(f"- Lỗi quét ffprobe H264: `{e_h}`")
                                             
-                                    # Hiển thị log lỗi nén nếu có để bác sĩ dễ dàng debug
-                                    error_log_path = os.path.join(os.path.dirname(final_h264), "transcode_error.txt")
-                                    if os.path.exists(error_log_path):
+                                    error_log_path = os.path.join(os.path.dirname(final_h264 or PROCESSED_DIR), "transcode_error.txt")
+                                    if final_h264 and os.path.exists(error_log_path):
                                         st.warning("⚠️ Phát hiện log lỗi nén gần nhất:")
                                         try:
                                             import hashlib as _hl_log
@@ -13923,7 +13983,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                             st.write(f"Không thể đọc log lỗi: {e_log}")
                                         
                                     st.markdown("**Trạng thái Cloud:**")
-                                    if HF_TOKEN and HF_DATASET_ID:
+                                    if HF_TOKEN and HF_DATASET_ID and v_display_path:
                                         rel_path = get_clean_rel_path(v_display_path)
                                         import urllib.parse
                                         rel_path_encoded = urllib.parse.quote(rel_path, safe='/')
