@@ -34,16 +34,26 @@ import gc
 try:
     from pose_classifier_utils import (
         apply_classifier_to_dataframe,
+        create_pose_classifier_predictor,
+        draw_ml_badge,
+        draw_rule_badge,
+        ensure_classifier_ready,
         get_pose_classifier_status,
         merge_ml_metrics,
+        refresh_saved_frame_labels,
         reprocess_videos_with_classifier,
         train_pose_classifier,
     )
     POSE_CLASSIFIER_IMPORT_ERROR = None
 except Exception as _pose_classifier_import_error:
     apply_classifier_to_dataframe = None
+    create_pose_classifier_predictor = None
+    draw_ml_badge = None
+    draw_rule_badge = None
+    ensure_classifier_ready = None
     get_pose_classifier_status = None
     merge_ml_metrics = None
+    refresh_saved_frame_labels = None
     reprocess_videos_with_classifier = None
     train_pose_classifier = None
     POSE_CLASSIFIER_IMPORT_ERROR = _pose_classifier_import_error
@@ -1766,42 +1776,35 @@ if not st.session_state.get('logged_in'):
 # HÀM HỖ TRỢ ĐIỀU HƯỚNG TAB BẰNG JS
 # ============================================
 def chuyen_tab_bang_js(ten_tab):
-    """Sử dụng JavaScript mạnh mẽ nhất (Multi-Root + Deep Search) để chuyển Tab"""
+    """Chuyen tab bang JS — thu gon thoi gian cho (MutationObserver + polling 25ms)."""
     import re
-    # Dọn dẹp tên tab để tìm kiếm mờ
     search_text = re.sub(r'[^\w\s]', '', ten_tab).strip().upper()
     
     js_code = f"""
     <script>
         (function() {{
             var target = "{search_text}";
-            console.log("Tab Switcher: Tìm kiếm -> " + target);
-            
             function clean(str) {{
                 return str ? str.replace(/[^\\w\\s]/gi, '').replace(/\\s+/g, '').toUpperCase() : "";
             }}
-            
             function tryClick() {{
-                // Danh sách các "gốc" tài liệu để tìm kiếm (đề phòng iframe)
                 var roots = [document];
                 try {{ if (window.parent && window.parent.document) roots.push(window.parent.document); }} catch(e) {{}}
-                
                 for (var r = 0; r < roots.length; r++) {{
                     var doc = roots[r];
-                    // Tìm tất cả các loại phần tử có thể là Tab
                     var selectors = [
                         'button[data-baseweb="tab"]',
                         'button[role="tab"]',
                         '[data-testid="stTab"] button',
+                        '[data-testid="stSegmentedControl"] button',
+                        '[data-testid="stButtonGroup"] button',
                         'button'
                     ];
-                    
                     for (var s = 0; s < selectors.length; s++) {{
                         var elements = doc.querySelectorAll(selectors[s]);
                         for (var i = 0; i < elements.length; i++) {{
                             var txt = clean(elements[i].textContent);
                             if (txt && (txt === target || (txt.length > 3 && txt.includes(target)))) {{
-                                console.log("Tab Switcher: Tìm thấy mục tiêu tại [" + selectors[s] + "] -> Click!");
                                 elements[i].click();
                                 return true;
                             }}
@@ -1810,20 +1813,23 @@ def chuyen_tab_bang_js(ten_tab):
                 }}
                 return false;
             }}
-            
+            if (tryClick()) return;
             var attempts = 0;
+            var observer = new MutationObserver(function() {{
+                if (tryClick()) observer.disconnect();
+            }});
+            try {{ observer.observe(document.body, {{ childList: true, subtree: true }}); }} catch(e) {{}}
             var interval = setInterval(function() {{
                 attempts++;
-                if (tryClick() || attempts > 60) {{
+                if (tryClick() || attempts > 24) {{
                     clearInterval(interval);
-                    console.log("Tab Switcher: Kết thúc sau " + attempts + " lần thử.");
+                    try {{ observer.disconnect(); }} catch(e) {{}}
                 }}
-            }}, 150);
+            }}, 25);
         }})();
     </script>
     """
     st.markdown(js_code, unsafe_allow_html=True)
-    st.toast(f"🔄 Đang chuyển sang: {ten_tab}", icon="🚀")
 
 # ============================================
 # CẤU HÌNH TRANG
@@ -2188,6 +2194,15 @@ st.markdown("""
         gap: 8px;
         background-color: transparent;
         overflow-x: auto;
+        scroll-behavior: auto !important;
+    }
+
+    .stTabs [data-baseweb="tab"],
+    .stTabs [data-baseweb="tab-panel"],
+    [data-testid="stSegmentedControl"] button,
+    [data-testid="stButtonGroup"] button {
+        transition: none !important;
+        animation: none !important;
     }
 
     /* Đã chuyển styling tab vào các block theme-aware phía dưới để tránh lỗi tàng hình chữ trong Light Mode */
@@ -4626,6 +4641,20 @@ def xu_ly_frame(frame, model, chuan, frame_idx, fps=30, dynamic_chuan=None, acti
     gan_dung_tong_the = bool(gan_dung_tong_the)
     
     return frame_output, goc_vai, goc_khuyu, tong_the, {"nearly_correct": gan_dung_tong_the, "shoulder_correct": vai_dung, "elbow_correct": khuyu_dung, "shoulder_ref": float(chuan_vai), "elbow_ref": float(chuan_khuyu)}, warnings_list, current_landmarks
+
+
+def ve_nhan_ml_classifier(frame_output, ml_info, scale_factor=1.0):
+    """Draw the trained classifier output on a processed frame."""
+    if draw_ml_badge:
+        return draw_ml_badge(frame_output, ml_info, scale_factor=scale_factor)
+    return frame_output
+
+
+def ve_nhan_rule_classifier(frame_output, dung, gan_dung, scale_factor=1.0):
+    """Draw YouTube reference comparison label (PASS / NEARLY / FAIL) on frame."""
+    if draw_rule_badge:
+        return draw_rule_badge(frame_output, dung, gan_dung, scale_factor=scale_factor)
+    return frame_output
     
 def ensure_voice_files():
     import os
@@ -5054,6 +5083,24 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     st.session_state.segment_bounds = segment_bounds
     st.session_state.last_processed_video_for_bounds = out_path
     n0, n1, n2, n3 = segment_bounds
+
+    ml_predict_row = None
+    if create_pose_classifier_predictor and ensure_classifier_ready:
+        try:
+            clf_state = ensure_classifier_ready(PROCESSED_DIR, DB_DIR, auto_train=True)
+            if clf_state.get("ready"):
+                ml_predict_row = create_pose_classifier_predictor(DB_DIR)
+                if clf_state.get("trained"):
+                    try:
+                        st.toast("Da tu dong train pose classifier tu CSV da trich xuat.", icon="ML")
+                    except Exception:
+                        pass
+                try:
+                    st.toast("Da nap model ML classifier cho video hien tai.", icon="ML")
+                except Exception:
+                    pass
+        except Exception as ml_load_err:
+            print(f"[Pose Classifier] Khong the nap/train model truoc Pass 2: {ml_load_err}")
     
     # PASS 2: Reset video capture và vẽ đè/ghi video với sai số động theo giai đoạn
     if cap: cap.release()
@@ -5139,19 +5186,8 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 print(f"Lỗi vẽ đè frame {frame_count}: {e}")
                 continue
                 
-            if writer is None:
-                curr_h, curr_w = xu_ly.shape[:2]
-                writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps_export, (curr_w, curr_h))
-                
-            writer.write(xu_ly)
-            
             persistent_frame_path = os.path.join(thu_muc_frame, f"f_{processed_count:06d}.jpg")
             local_frame_path = os.path.join(local_temp_dir, f"f_{processed_count:06d}.jpg")
-            # Ghi ảnh bất đồng bộ vào thư mục tạm cục bộ (cực nhanh)
-            try:
-                img_writer_executor.submit(cv2.imwrite, local_frame_path, xu_ly.copy(), [cv2.IMWRITE_JPEG_QUALITY, 85])
-            except Exception as write_err:
-                print("Lỗi submit ghi ảnh:", write_err)
             danh_sach_frame_paths.append(persistent_frame_path)
             
             ts_frame_goc = frame_count / fps
@@ -5197,7 +5233,45 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                     row_data[f"pt{idx}_y"] = None
                     row_data[f"pt{idx}_z"] = None
                     row_data[f"pt{idx}_vis"] = None
-                    
+
+            ml_info = None
+            if ml_predict_row and goc_v is not None:
+                try:
+                    ml_info = ml_predict_row(row_data)
+                    row_data.update(ml_info)
+                    d_frame.update(ml_info)
+                except Exception as ml_pred_err:
+                    print(f"[Pose Classifier] Khong the du doan ML frame {frame_count}: {ml_pred_err}")
+
+            if ml_info:
+                try:
+                    scale_lbl = xu_ly.shape[1] / 640.0
+                    rule_dung = bool(dung) if goc_v is not None else False
+                    rule_gan = bool(eval_info.get("nearly_correct")) if eval_info else False
+                    ve_nhan_rule_classifier(xu_ly, rule_dung, rule_gan, scale_factor=scale_lbl)
+                    ve_nhan_ml_classifier(xu_ly, ml_info, scale_factor=scale_lbl)
+                except Exception as ml_draw_err:
+                    print(f"[Pose Classifier] Khong the ve nhan frame {frame_count}: {ml_draw_err}")
+            elif goc_v is not None:
+                try:
+                    scale_lbl = xu_ly.shape[1] / 640.0
+                    rule_gan = bool(eval_info.get("nearly_correct")) if eval_info else False
+                    ve_nhan_rule_classifier(xu_ly, bool(dung), rule_gan, scale_factor=scale_lbl)
+                except Exception as rule_draw_err:
+                    print(f"[Rule Classifier] Khong the ve nhan REF frame {frame_count}: {rule_draw_err}")
+
+            if writer is None:
+                curr_h, curr_w = xu_ly.shape[:2]
+                writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps_export, (curr_w, curr_h))
+
+            writer.write(xu_ly)
+
+            # Save extracted frames after all overlays have been drawn.
+            try:
+                img_writer_executor.submit(cv2.imwrite, local_frame_path, xu_ly.copy(), [cv2.IMWRITE_JPEG_QUALITY, 85])
+            except Exception as write_err:
+                print("Loi submit ghi anh:", write_err)
+
             du_lieu_goc.append(row_data)
             
             if callback and tong_frame > 0:
@@ -5723,6 +5797,14 @@ def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
             st.rerun()
             
     st.info("💡 Bạn có thể thực hiện phân tích ngay bây giờ để xem kết quả khung xương và chỉ số lâm sàng.")
+
+    st.markdown("""
+    **Luồng phân tích tích hợp (4 bước):**
+    1. **Input video bệnh nhân** — MediaPipe Heavy trích xuất **33 landmarks**
+    2. **Đối chiếu YouTube mẫu** — Codman: góc vai/khuỷu **tay phải**, 3 giai đoạn (45°/30°/15°); Gậy: **cả hai bên** → nhãn REF: PASS / NEARLY / FAIL
+    3. **Huấn luyện / nạp ML Classifier** — Random Forest trên tọa độ khớp (tự train nếu chưa có model)
+    4. **Đầu ra** — Video + ảnh frame có khung xương, nhãn **REF** (góc) và **ML** (model đã train)
+    """)
     
     if is_error:
         st.error(f"❌ Phân tích thất bại: {err_msg}")
@@ -8283,8 +8365,12 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         if apply_result.get("success"):
                             push_file_to_hf_async(VIDEOS_FILE)
                             push_file_to_hf_async(EVALUATIONS_FILE)
-                            st.success(f"Đã cập nhật ML cho {apply_result.get('updated', 0)} video.")
+                            st.success(
+                                f"Đã cập nhật ML cho {apply_result.get('updated', 0)} video "
+                                f"(CSV + JSON frame + nhãn REF/ML trên ảnh JPG)."
+                            )
                             st.dataframe(pd.DataFrame(apply_result.get("results", [])).head(20), use_container_width=True)
+                            st.rerun()
                         else:
                             st.error(apply_result.get("message", "Chưa thể áp dụng model ML."))
 
@@ -10786,6 +10872,13 @@ def hien_thi_frames_day_du(key_suffix=""):
             align-items: center;
             margin-bottom: 6px;
         }}
+        .frame-card-badges {{
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }}
         .frame-card-index {{
             color: {card_text_muted} !important;
             font-size: 0.75rem;
@@ -10965,6 +11058,25 @@ def hien_thi_frames_day_du(key_suffix=""):
             color = "#22c55e" if phase_st == "PASS" else ("#f59e0b" if phase_st == "NEAR" else "#ef4444")
             bg_alpha = "rgba(34,197,94,0.12)" if phase_st == "PASS" else ("rgba(245,158,11,0.12)" if phase_st == "NEAR" else "rgba(239,68,68,0.12)")
 
+            ml_label = f_data.get('ml_label_text')
+            ml_score = f_data.get('ml_score')
+            if ml_score is None:
+                ml_score = f_data.get('ml_confidence')
+            ml_badge_html = ""
+            ml_footer_html = ""
+            if ml_label:
+                ml_label_text = str(ml_label)
+                ml_key = ml_label_text.strip().lower()
+                ml_color = "#22c55e" if ("dung" in ml_key and "gan" not in ml_key) else ("#f59e0b" if "gan" in ml_key else "#ef4444")
+                ml_score_text = ""
+                if ml_score is not None:
+                    try:
+                        ml_score_text = f" {float(ml_score):.0f}%"
+                    except (TypeError, ValueError):
+                        ml_score_text = ""
+                ml_badge_html = f'<span class="frame-card-badge" style="background: {ml_color}1f; color: {ml_color}; border-color: {ml_color}40;">ML {ml_label_text}{ml_score_text}</span>'
+                ml_footer_html = f'<div class="frame-card-row"><span>Model ML:</span><span style="color: {ml_color}; font-weight: bold;">{ml_label_text}{ml_score_text}</span></div>'
+
             gv = f_data.get('goc_vai', 0) or 0
             gk = f_data.get('goc_khuyu', 0) or 0
             eval_inf = f_data.get('eval_info', {})
@@ -11001,7 +11113,10 @@ def hien_thi_frames_day_du(key_suffix=""):
                     <div class="frame-card">
                         <div class="frame-card-header">
                             <span class="frame-card-index">#{f_data.get('index')}</span>
-                            <span class="frame-card-badge" style="background: {bg_alpha}; color: {color}; border-color: {color}40;">{phase_st}</span>
+                            <span class="frame-card-badges">
+                                <span class="frame-card-badge" style="background: {bg_alpha}; color: {color}; border-color: {color}40;">{phase_st}</span>
+                                {ml_badge_html}
+                            </span>
                         </div>
                         <div class="frame-card-img-wrapper">
                             <img class="frame-card-img" src="data:image/jpeg;base64,{b64_data}" />
@@ -11015,6 +11130,7 @@ def hien_thi_frames_day_du(key_suffix=""):
                                 <span>Khuỷu: <b>{gk:.0f}°</b> / {ck_ref:.0f}°</span>
                                 <span style="color: {color}; font-weight: bold;">Δ {diff_k:.1f}°</span>
                             </div>
+                            {ml_footer_html}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -12224,6 +12340,741 @@ def hien_thi_danh_sach_video_fragment(user_role):
 # ============================================
 # MAIN - GIỮ NGUYÊN CẤU TRÚC TAB
 # ============================================
+@st.fragment
+def _render_main_tab_content(tab_titles, user_role):
+        if st.session_state.get('trigger_tab_switch'):
+            if st.session_state.trigger_tab_switch in tab_titles:
+                st.session_state.active_tab = st.session_state.trigger_tab_switch
+                st.session_state.active_tab_widget = st.session_state.trigger_tab_switch
+            st.session_state.trigger_tab_switch = None
+            chuyen_tab_bang_js(st.session_state.active_tab)
+
+        # Hiển thị Menu segmented control dạng Tab Bar
+        selected_tab = st.segmented_control(
+            label="Menu điều hướng",
+            options=tab_titles,
+            selection_mode="single",
+            default=st.session_state.active_tab,
+            key="active_tab_widget",
+            label_visibility="collapsed"
+        )
+    
+        if selected_tab:
+            st.session_state.active_tab = selected_tab
+        else:
+            selected_tab = st.session_state.active_tab
+            st.session_state.active_tab_widget = selected_tab
+
+        import streamlit.components.v1 as components
+        components.html("""
+        <script>
+            (function() {
+                function setupTabWheelScroll() {
+                    const doc = window.parent.document;
+                    const containers = doc.querySelectorAll('.st-key-active_tab_widget div[data-testid="stSegmentedControl"], .st-key-active_tab_widget div[data-testid="stButtonGroup"]');
+                    containers.forEach(container => {
+                        let scrollChild = container.querySelector('[role="radiogroup"]') || container.querySelector('[role="group"]');
+                        if (!scrollChild || scrollChild.dataset.wheelListenerAdded) return;
+                        scrollChild.dataset.wheelListenerAdded = "true";
+                        scrollChild.addEventListener('wheel', function(e) {
+                            if (e.deltaY !== 0) {
+                                e.preventDefault();
+                                scrollChild.scrollLeft += e.deltaY * 2.2;
+                            }
+                        }, { passive: false });
+                    });
+                }
+                setupTabWheelScroll();
+                try {
+                    const obs = new MutationObserver(setupTabWheelScroll);
+                    obs.observe(window.parent.document.body, { childList: true, subtree: true });
+                    setTimeout(function() { obs.disconnect(); }, 8000);
+                } catch(e) {}
+            })();
+        </script>
+        """, height=0, width=0)
+    
+        # ==================== TAB 1: TRANG CHỦ ====================
+        if selected_tab == "🏠 TRANG CHỦ":
+            if True:
+                if user_role == "Quản trị viên":
+                    hien_thi_home_quan_tri_vien()
+                else:
+                    # Nếu là Bác sĩ hoặc NCV, hiển thị danh sách triệu chứng
+                    if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
+                        # --- DANH SÁCH TRIỆU CHỨNG BN (CHUYỂN TỪ SIDEBAR SANG ĐÂY) ---
+                        st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN MỚI NHẤT")
+                        symptoms_data = load_data(SYMPTOMS_FILE)
+                        if symptoms_data:
+                            # Nhóm các khai báo triệu chứng theo bệnh nhân để gộp bài tập
+                            grouped_symptoms = {}
+                            for item in symptoms_data:
+                                key = item.get('patient_id') or item.get('full_name')
+                                if key not in grouped_symptoms:
+                                    grouped_symptoms[key] = {
+                                        "full_name": item['full_name'],
+                                        "patient_id": item.get('patient_id', 'N/A'),
+                                        "age": item.get('age', 'N/A'),
+                                        "gender": item.get('gender', 'N/A'),
+                                        "symptoms": item.get('symptoms', ''),
+                                        "vas": item.get('vas', 'N/A'),
+                                        "time": item.get('time', ''),
+                                        "exercises": [item.get('exercise', 'N/A')]
+                                    }
+                                else:
+                                    ex = item.get('exercise', 'N/A')
+                                    if ex not in grouped_symptoms[key]["exercises"]:
+                                        grouped_symptoms[key]["exercises"].append(ex)
+                                    grouped_symptoms[key]["time"] = item.get('time', grouped_symptoms[key]["time"])
+                                    grouped_symptoms[key]["vas"] = item.get('vas', grouped_symptoms[key]["vas"])
+                        
+                            display_list = list(reversed(list(grouped_symptoms.values())))[:4]
+                        
+                            symp_cols = st.columns(3)
+                            for i, s in enumerate(display_list):
+                                with symp_cols[i % 3]:
+                                    with st.container(border=True):
+                                        st.markdown(f"**👤 {s['full_name']}**")
+                                        st.caption(f"🕒 {s['time']}")
+                                        st.write(f"**Đau (VAS):** {s['vas']}/10")
+                                        with st.expander("Chi tiết triệu chứng"):
+                                            st.write(f"**Tuổi:** {s['age']} | **Mã:** {s['patient_id']}")
+                                            # Hiển thị hai bài tập đã chọn
+                                            exercises_str = ", ".join(s['exercises'])
+                                            st.write(f"**Bài tập đã chọn:** {exercises_str}")
+                                            st.info(s['symptoms'])
+                                            if st.button("Xóa thông báo", key=f"del_symp_main_{i}"):
+                                                # Xóa các bản ghi có patient_id hoặc full_name trùng khớp
+                                                s_id = s['patient_id']
+                                                s_name = s['full_name']
+                                                s_data_new = [item for item in symptoms_data if item.get('patient_id') != s_id and item.get('full_name') != s_name]
+                                                save_data(SYMPTOMS_FILE, s_data_new)
+                                                st.rerun()
+                        else:
+                            st.info("ℹ️ Hiện chưa có thông tin khai báo triệu chứng mới từ bệnh nhân.")
+                    
+                        pass # Đã cắt bỏ chọn bài tập ở trang chủ cho Bác sĩ theo yêu cầu
+
+                    # HIỂN THỊ THÔNG TIN BÀI TẬP (CHỈ HIỆN CHO BN - BS/NCV ĐÃ BIẾT NÊN CẮT BỎ ĐỂ TRÁNH RỐI)
+                    if user_role == "Bệnh nhân":
+                        # --- KHAI BÁO THÔNG TIN NGƯỚI DÙNG + TRIỆU CHỨNG + CHỌN BÀI TẬP ---
+                        st.markdown("## 📝 THÔNG TIN KHÁM & TẬP LUYỆN")
+                    
+                        with st.container(border=True):
+                            st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
+                            bn_col1, bn_col2 = st.columns(2)
+                            with bn_col1:
+                                ten_nguoi_dung = st.text_input("Họ và tên (*)", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A", key="bn_tab_ten")
+                                tuoi = st.number_input("Tuổi (*)", 0, 120, 22, key="bn_tab_tuoi")
+                            with bn_col2:
+                                ma_nguoi_dung = st.text_input("Mã số định danh (*)", placeholder="VD: BN0001", key="bn_tab_ma")
+                                gioi_tinh = st.selectbox("Giới tính (*)", ["", "Nam", "Nữ"], key="bn_tab_gt")
+                    
+                        st.markdown("---")
+                        with st.container(border=True):
+                            st.markdown("### 🩺 KHAI BÁO TRIỆU CHỨNG")
+                            s_desc = st.text_area("Mô tả cảm giác đau:",
+                                                  placeholder="VD: Đau nhói ở khớp vai khi nâng tay lên cao...",
+                                                  height=100, key="bn_tab_desc")
+                            s_vas = st.select_slider("📊 Mức độ đau (VAS 0-10):",
+                                                      options=list(range(11)),
+                                                      value=3, key="bn_tab_vas")
+                            vas_labels = {
+                                0: "Đ 0: Không đau", 1: "Đ 1-3: Đau nhẹ", 4: "Đ 4-6: Đau vừa", 7: "Đ 7-9: Đau nặng", 10: "Đ 10: Đau dữ dội"
+                            }
+                            closest = min(vas_labels, key=lambda x: abs(x - s_vas))
+                            st.caption(f"💡 {vas_labels[closest]}")
+                    
+                        st.markdown("---")
+                        with st.container(border=True):
+                            st.markdown("### 🎯 CHỌN BÀI TẬP VÀ XEM HƯỚNG DẪN")
+                            ma_bai_tap = st.selectbox("🎯 Chọn bài tập", list(BAI_TAP.keys()),
+                                                       format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
+                                                       key="bn_tab_bt")
+                            bai_tap = BAI_TAP[ma_bai_tap]
+                        
+                            is_light = st.session_state.theme == 'light'
+                            info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
+                            info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
+                            info_text = "#000" if is_light else "#fff"
+                        
+                            ex_col1, ex_col2 = st.columns([3, 2])
+                            with ex_col1:
+                                st.markdown(f"""
+                                <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text}; padding: 15px; border-radius: 10px;">
+                                    <h3 style="margin-top:0;">{bai_tap['icon']} {bai_tap['ten']}</h3>
+                                    <p>{bai_tap['mo_ta']}</p>
+                                    <div style="display: flex; gap: 20px; font-size: 0.9rem; opacity: 0.8;">
+                                        <span>⏱️ <b>Thời gian:</b> {bai_tap['thoi_gian']}s/lần</span>
+                                        <span>🔄 <b>Số lần:</b> {bai_tap['lan']} lần/ngày</span>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                with st.expander("📖 HƯỚNG DẪN TẬP LUYỆN", expanded=True):
+                                    st.markdown(bai_tap['huong_dan'])
+                                with st.expander("✨ LỢI ÍCH CỦA BÀI TẬP", expanded=False):
+                                    for loi_ich in bai_tap['loi_ich']:
+                                        st.markdown(f"- {loi_ich}")
+                        
+                            with ex_col2:
+                                card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
+                                st.markdown(f"""
+                                <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
+                                    <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 ĐỐI CHIẾU VIDEO CHUẨN</h4>
+                                    <p style="color:#00CED1; margin-bottom:8px; font-size:0.9rem;">⚡ Hệ thống tự động so sánh chuyển động của bạn với <b>Video chuẩn</b>.</p>
+                                    <p style="color:#FF6B6B; margin-bottom:10px; font-size:0.9rem;">📊 Độ chính xác dựa trên sai số Euclidean và biên độ khớp.</p>
+                                    <div style="font-size:0.85rem; border-top:1px solid {info_border}; padding-top:10px;">
+                                        <p style="margin-bottom:5px;">✅ <b>Đạt:</b> Chuyển động khớp với video mẫu.</p>
+                                        <p style="margin-bottom:0;">❌ <b>Cần cải thiện:</b> Động tác sai lệch.</p>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                if 'video_guide' in bai_tap:
+                                    st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
+                                    render_video(bai_tap['video_guide'])
+                                elif bai_tap.get('youtube'):
+                                    st.markdown("### 📺 VIDEO YOUTUBE THAM KHẢO")
+                                    st.video(bai_tap['youtube'])
+                                # Luôn hiện YouTube nếu có, kể cả khi đã có video_guide
+                                if 'video_guide' in bai_tap and bai_tap.get('youtube'):
+                                    st.markdown("### 📺 VIDEO YOUTUBE THAM KHẢO")
+                                    st.video(bai_tap['youtube'])
+                    
+                        st.markdown("---")
+                        if st.button("📤 GỬi THÔNG TIN CHO BÁC SĨ/KTV VÀ NCV", type="primary", width="stretch"):
+                            if ten_nguoi_dung and ma_nguoi_dung and gioi_tinh != "" and s_desc and ma_bai_tap:
+                                s_data = load_data(SYMPTOMS_FILE)
+                                s_data.append({
+                                    "username": st.session_state.user_info['username'],
+                                    "full_name": ten_nguoi_dung,
+                                    "patient_id": ma_nguoi_dung,
+                                    "age": tuoi,
+                                    "gender": gioi_tinh,
+                                    "exercise": BAI_TAP[ma_bai_tap]['ten'],
+                                    "symptoms": s_desc,
+                                    "vas": s_vas,
+                                    "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
+                                })
+                                save_data(SYMPTOMS_FILE, s_data)
+                                st.success("✅ Đã gửi thông tin đầy đủ cho BÁC SĨ - KTV và NCV thành công!")
+                                st.balloons()
+                            else:
+                                st.warning("⚠️ Vui lòng điền đầy đủ các thông tin: Họ tên, Mã định danh, Giới tính, Bài tập và Mô tả triệu chứng.")
+                    
+
+                    # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
+                    if user_role == "Bệnh nhân":
+                        st.markdown("---")
+                
+                    # BIẾN KIỂM TRA ĐIỀU KIỆN HIỆN UPLOADER
+                    show_uploader = not st.session_state.get('has_data')
+                    # Nếu là Bệnh nhân, luôn hiện uploader ở trang chủ để họ nộp bài mới
+                    if user_role == "Bệnh nhân":
+                        show_uploader = True
+                    
+                    if show_uploader:
+                        if 'uploader_id' not in st.session_state:
+                            st.session_state.uploader_id = 0
+
+                        if user_role == "Bệnh nhân":
+                            st.markdown("### 📤 TẢI LÊN VIDEO TẬP LUYỆN")
+                            st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
+                            file_upload = st.file_uploader(
+                                "Tải lên video của bạn để gửi cho Bác sĩ/NCV", 
+                                type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
+                                help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
+                                key=f"video_uploader_v{st.session_state.uploader_id}"
+                            )
+                        else:
+                            file_upload = None
+                    else:
+                        file_upload = None
+            
+                    # XỬ LÝ VIDEO
+                    if file_upload is not None and not st.session_state.processing:
+                        # NẾU FILE MỚI KHÁC FILE CŨ -> RESET DATA ĐỂ PHÂN TÍCH MỚI
+                        if st.session_state.get('uploaded_file_name') != file_upload.name:
+                            # === GIẢI PHÓNG BỘ NHỚ TOÀN DIỆN TRƯỚC KHI PHÂN TÍCH MỚI (CHỐNG OOM) ===
+                            import gc
+
+                            # 1. Xóa file tạm cũ trên đĩa để giải phóng RAM của OS
+                            old_video_path = st.session_state.get('processed_video_path')
+                            if old_video_path and os.path.exists(old_video_path):
+                                try:
+                                    os.unlink(old_video_path)
+                                    # Xóa cả bản H264 nếu có
+                                    old_h264 = old_video_path.replace('_f.mp4', '.mp4') if old_video_path.endswith('_f.mp4') else old_video_path.replace('.mp4', '_f.mp4')
+                                    if os.path.exists(old_h264):
+                                        os.unlink(old_h264)
+                                except:
+                                    pass
+
+                            old_csv_path = st.session_state.get('current_df_csv_path')
+                            if old_csv_path and os.path.exists(old_csv_path):
+                                try:
+                                    os.unlink(old_csv_path)
+                                except:
+                                    pass
+
+                            old_frames_dir = st.session_state.get('temp_frames_dir')
+                            if old_frames_dir and os.path.exists(old_frames_dir):
+                                try:
+                                    import shutil
+                                    shutil.rmtree(old_frames_dir, ignore_errors=True)
+                                except:
+                                    pass
+
+                            # 2. Xóa toàn bộ dữ liệu lớn trong session_state
+                            keys_to_clear = [
+                                'has_data', 'stats', 'angle_df', 'processed_video_path',
+                                'all_frames_paths', 'all_frames_data', 'all_frames_data_path',
+                                'output_video_bytes', 'processed_video_bytes', 'frames_zip',
+                                'current_df_csv_path', 'temp_frames_dir', 'temp_video_file',
+                                'video_ready', 'frames_ready', 'frames_loaded',
+                                'current_page', 'processing_result', 'processing_progress',
+                                'processing_status', 'exercise'
+                            ]
+                            for k in keys_to_clear:
+                                if k in st.session_state:
+                                    st.session_state[k] = None if k not in ('all_frames_paths', 'all_frames_data') else []
+
+                            st.session_state.has_data = False
+                            st.session_state.video_ready = False
+                            st.session_state.frames_ready = False
+                            st.session_state.frames_loaded = False
+                            st.session_state.current_page = 1
+                            st.session_state.processing_progress = 0
+                            st.session_state.processing_status = ""
+
+                            # 3. Dọn rác Python ngay lập tức
+                            gc.collect()
+                            st.toast("🧹 Đã giải phóng bộ nhớ từ phân tích trước.", icon="💾")
+                    
+                        st.success(f"✅ Đã chọn file: {file_upload.name} ({file_upload.size / (1024*1024):.2f} MB)")
+                    
+                        if user_role == "Nghiên cứu viên":
+                            target_u = st.session_state.get('last_uploaded_patient_username', st.session_state.user_info['username'])
+                            active_video_path, active_prog = find_progress_by_video_info(target_u, file_upload.name)
+                        
+                            if active_prog:
+                                check_and_populate_background_result(active_video_path)
+                                hien_thi_tien_trinh_background_home_fragment(active_video_path)
+                            else:
+                                btn_text = "🚀 BẮT ĐẦU XỬ LÝ AI"
+                                if st.button(btn_text, width="stretch", type="primary"):
+                                    st.session_state.processing = True
+                                    st.session_state.has_data = True
+                                    st.session_state.view_old_analysis = False
+                                
+                                    try:
+                                        save_dir = UPLOAD_DIR
+                                        if not os.path.exists(save_dir):
+                                            try: os.makedirs(save_dir, exist_ok=True)
+                                            except: pass
+                                    
+                                        timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
+                                        base_name, _ = os.path.splitext(file_upload.name)
+                                        orig_ext = os.path.splitext(file_upload.name)[1].lower() or ".mp4"
+                                        filename = f"{target_u}_{timestamp}_{base_name}{orig_ext}"
+                                        video_path = os.path.join(save_dir, filename)
+                                    
+                                        temp_uploaded_path = video_path + "_temp" + orig_ext
+                                        with open(temp_uploaded_path, "wb") as f_temp:
+                                            f_temp.write(file_upload.getbuffer())
+                                        
+                                        users_db = load_users()
+                                        target_fn = users_db.get(target_u, {}).get('full_name', target_u)
+                                    
+                                        model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Heavy')
+                                        conf_ncv = st.session_state.get('ncv_confidence', 0.5)
+                                        ncv_gd = st.session_state.get('ncv_giai_doan', 'Giai đoạn 2: Hồi phục (Sai số vừa - 30°)')
+                                    
+                                        # Khởi chạy background thread
+                                        bat_dau_phan_tich_background(
+                                            video_path=video_path,
+                                            username=target_u,
+                                            full_name=target_fn,
+                                            video_name=file_upload.name,
+                                            exercise_name=bai_tap['ten'],
+                                            giai_doan=ncv_gd,
+                                            model_type=model_type_ncv,
+                                            confidence=conf_ncv,
+                                            temp_uploaded_path=temp_uploaded_path,
+                                            skip_step=st.session_state.get('ncv_skip_frames', 0),
+                                            resize_width=st.session_state.get('ncv_resize_width', 720)
+                                        )
+                                        st.toast("🚀 Đã tải video lên và bắt đầu xử lý AI trong nền!", icon="⚡")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"❌ Lỗi khởi động xử lý nền: {str(e)}")
+                                        st.session_state.processing = False
+                    if user_role == "Bệnh nhân":
+                        if st.button("📤 GỬI VIDEO CHO BÁC SĨ - KTV VÀ NCV", width="stretch", type="primary"):
+                            if file_upload is None:
+                                st.error("🚨 Bạn chưa chọn video hoặc file video không hợp lệ. Vui lòng tải lên video trước khi gửi!")
+                            else:
+                                # Tạo thư mục lưu trữ nếu chưa có
+                                save_dir = UPLOAD_DIR
+                                if not os.path.exists(save_dir):
+                                    try:
+                                        os.makedirs(save_dir, exist_ok=True)
+                                    except:
+                                        pass
+                            
+                                # Tạo tên file duy nhất giữ nguyên phần mở rộng gốc của video để biết định dạng thực tế
+                                timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
+                                base_name, _ = os.path.splitext(file_upload.name)
+                                orig_ext = os.path.splitext(file_upload.name)[1].lower() or ".mp4"
+                            
+                                # file_path gốc có đuôi mở rộng thực tế (ví dụ: .mov)
+                                filename = f"{st.session_state.user_info['username']}_{timestamp}_{base_name}{orig_ext}"
+                                file_path = os.path.join(save_dir, filename)
+                            
+                                # Lưu file video tạm
+                                temp_uploaded_path = file_path + "_temp" + orig_ext
+                                with open(temp_uploaded_path, "wb") as f:
+                                    f.write(file_upload.getbuffer())
+                            
+                                # Kiểm tra xem video tải lên có thể phát trực tiếp (đã là H.264 MP4) không
+                                v_codec = None
+                                a_codec = None
+                                try:
+                                    v_codec, a_codec = get_video_codec(temp_uploaded_path)
+                                except:
+                                    pass
+                                
+                                is_h264_mp4 = (v_codec == 'h264' and orig_ext == '.mp4')
+                            
+                                if is_h264_mp4:
+                                    # Copy hoặc đổi tên trực tiếp, không cần chạy ffmpeg nén tốn thời gian
+                                    if os.path.exists(file_path):
+                                        try: os.remove(file_path)
+                                        except: pass
+                                    os.rename(temp_uploaded_path, file_path)
+                                    print(f"[Upload Optimization] Video {file_upload.name} đã là H.264 MP4, lưu trực tiếp không cần convert.")
+                                else:
+                                    # Nén tối ưu hóa video sang H.264 MP4 (chỉ chạy khi không phải H.264 MP4)
+                                    # Đường dẫn đích sau khi convert thành công sẽ là đuôi .mp4
+                                    file_path_mp4 = file_path.rsplit('.', 1)[0] + ".mp4"
+                                    try:
+                                        import subprocess
+                                        cmd = [
+                                            'ffmpeg', '-y', '-i', temp_uploaded_path,
+                                            '-vcodec', 'libx264',
+                                            '-pix_fmt', 'yuv420p',
+                                            '-preset', 'ultrafast',
+                                            '-crf', '28',
+                                            '-maxrate', '800k',
+                                            '-bufsize', '1600k',
+                                            '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+                                            '-threads', '0',
+                                        ]
+                                        if a_codec:
+                                            cmd.extend(['-c:a', 'aac'])
+                                        else:
+                                            cmd.extend(['-an'])
+                                        cmd.append(file_path_mp4)
+                                        result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+                                        if result_compress.returncode == 0 and os.path.exists(file_path_mp4) and os.path.getsize(file_path_mp4) > 1024:
+                                            try: os.remove(temp_uploaded_path)
+                                            except: pass
+                                            file_path = file_path_mp4
+                                            print(f"[Upload Optimization] Đã convert thành công {file_upload.name} sang H.264 MP4.")
+                                        else:
+                                            # Fallback nếu ffmpeg fail hoặc file ra bị lỗi: dùng file gốc với extension thật
+                                            if os.path.exists(file_path_mp4):
+                                                try: os.remove(file_path_mp4)
+                                                except: pass
+                                            if os.path.exists(file_path):
+                                                try: os.remove(file_path)
+                                                except: pass
+                                            os.rename(temp_uploaded_path, file_path)
+                                    except Exception as compress_err:
+                                        print(f"[Compress Upload] Lỗi nén video: {compress_err}")
+                                        # Fallback nếu không có ffmpeg: dùng file gốc với extension thật
+                                        if os.path.exists(temp_uploaded_path):
+                                            if os.path.exists(file_path):
+                                                try: os.remove(file_path)
+                                                except: pass
+                                            os.rename(temp_uploaded_path, file_path)
+                            
+                                # Tự động đẩy file video lên Hugging Face Dataset dưới dạng nền
+                                push_file_to_hf_async(file_path)
+                            
+                                # Lưu thông tin vào database
+                                video_list = load_data(VIDEOS_FILE)
+                                video_list.append({
+                                    "username": st.session_state.user_info['username'],
+                                    "full_name": ten_nguoi_dung,
+                                    "video_name": file_upload.name,
+                                    "exercise": bai_tap['ten'],
+                                    "accuracy": 0,
+                                    "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
+                                    "video_path": file_path,        # Video gốc
+                                    "processed_path": None,        # Video có khung xương (sau khi NCV gửi)
+                                    "status": "Chờ NCV phân tích"
+                                })
+                                save_data(VIDEOS_FILE, video_list)
+                                st.success("✅ Đã gửi video cho BÁC SĨ - KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
+                                st.balloons()
+                            
+                                # RESET VỀ CHẾ ĐỘ TỰ ĐỘNG (khi NCV gửi kết quả sẽ hiện ngay)
+                                st.session_state.active_video_name = file_upload.name
+                                st.session_state.fresh_session = True  # <-- QUAN TRỌNG: Phải = True để hiện màn hình "Đang chờ NCV..."
+                                st.session_state.has_data = False
+                                time.sleep(2)
+                                st.rerun()
+
+                    # === HIỆN TRẠNG THÁI ĐANG XỬ LÝ HOẶC ĐÃ CÓ KẾT QUẢ ===
+                    if st.session_state.processing:
+                        st.warning("⏳ Đang xử lý video, vui lòng chờ...")
+                        if st.button("❌ Hủy xử lý", width='stretch'):
+                            st.session_state.processing = False
+                            st.rerun()
+                
+                    elif st.session_state.has_data:
+                        st.success("✅ Đã có kết quả phân tích! Hãy xem các tab PHÂN TÍCH và VIDEO & ẢNH.")
+                        st.session_state.processing = False
+
+                    # HIỂN THỊ DANH SÁCH VIDEO CHO BÁC SĨ & NGHIÊN CỨU VIÊN
+                    if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
+                        st.markdown("---")
+                        st.markdown("### 🎬 DANH SÁCH VIDEO BỆNH NHÂN ĐÃ QUAY")
+                        hien_thi_danh_sach_video_fragment(user_role)
+
+                    # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC (CHỈ HIỆN CHO BỆNH NHÂN) ===
+                    if user_role == "Bệnh nhân":
+                        st.markdown("---")
+                        st.markdown("<h3 style='color: #00c6ff; text-align: center; margin-bottom: 25px;'>⚙️ QUY TRÌNH XỬ LÝ DỮ LIỆU NCKH</h3>", unsafe_allow_html=True)
+                
+                        # CSS cho các thẻ Quy trình
+                        st.markdown("""
+                        <style>
+                        .step-container {
+                            display: flex;
+                            gap: 15px;
+                            margin-bottom: 20px;
+                            flex-wrap: wrap;
+                        }
+                        .step-box {
+                            flex: 1;
+                            min-width: 200px;
+                            background: rgba(255, 255, 255, 0.03);
+                            border: 1px solid rgba(0, 198, 255, 0.3);
+                            border-radius: 12px;
+                            padding: 18px;
+                            text-align: center;
+                            transition: all 0.3s;
+                            border-top: 3px solid #00c6ff;
+                        }
+                        .step-box:hover {
+                            transform: translateY(-5px);
+                            background: rgba(0, 198, 255, 0.08);
+                            border-color: #00c6ff;
+                            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+                        }
+                        .step-num {
+                            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+                            color: white;
+                            width: 30px;
+                            height: 30px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin: 0 auto 10px;
+                            font-weight: bold;
+                            font-size: 0.9rem;
+                        }
+                        .step-txt-title {
+                            color: #00c6ff;
+                            font-weight: bold;
+                            font-size: 1rem;
+                            margin-bottom: 8px;
+                            display: block;
+                        }
+                        .step-txt-desc {
+                            color: #aaa;
+                            font-size: 0.8rem;
+                            line-height: 1.4;
+                        }
+                        </style>
+                        """, unsafe_allow_html=True)
+
+                        c1, c2, c3, c4 = st.columns(4)
+                    
+                        with c1:
+                            st.markdown("""
+                            <div class="step-box">
+                                <div class="step-num">1</div>
+                                <span class="step-txt-title">📸 GHI HÌNH</span>
+                                <p class="step-txt-desc">Camera đặt ngang vai (90°), tối thiểu 30 FPS, đủ ánh sáng.</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        with c2:
+                            st.markdown("""
+                            <div class="step-box">
+                                <div class="step-num">2</div>
+                                <span class="step-txt-title">⚙️ TRÍCH XUẤT</span>
+                                <p class="step-txt-desc">Sử dụng MediaPipe Heavy trích xuất 33 điểm Landmarks.</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        with c3:
+                            st.markdown("""
+                            <div class="step-box">
+                                <div class="step-num">3</div>
+                                <span class="step-txt-title">📊 PHÂN TÍCH</span>
+                                <p class="step-txt-desc">Tính toán Vector góc Vai/Khuỷu và làm mượt dữ liệu.</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        with c4:
+                            st.markdown("""
+                            <div class="step-box">
+                                <div class="step-num">4</div>
+                                <span class="step-txt-title">💾 LƯU TRỮ</span>
+                                <p class="step-txt-desc">Số hóa dữ liệu sang JSON/CSV phục vụ báo cáo NCKH.</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    
+                        st.markdown("<br>", unsafe_allow_html=True)
+    
+        # ==================== TAB: PHÂN TÍCH / ĐÁNH GIÁ ====================
+        if selected_tab == "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH":
+            if True:
+                hien_thi_tab_danh_gia_va_nckh_bac_si()
+
+        if selected_tab == "📝 ĐÁNH GIÁ PHCN":
+            if True:
+                hien_thi_form_danh_gia_bac_si()
+            
+        if selected_tab == "📊 KẾT QUẢ AI":
+            if True:
+                selected_video = st.session_state.get('current_eval_video')
+                if not selected_video:
+                    st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
+                else:
+                    all_vids = load_data(VIDEOS_FILE)
+                    v_data = next((v for v in all_vids if v.get('username') == selected_video.get('username') and 
+                                   (v.get('video_name') == selected_video.get('video_name') or 
+                                    selected_video.get('video_name', '') in v.get('video_name', ''))), None)
+                    if v_data and v_data.get('metrics'):
+                        # KIỂM TRA XEM NCV ĐÃ BẤM GỬI BÁO CÁO CHƯA
+                        evals = load_data(EVALUATIONS_FILE)
+                        has_sent = any(e.get('doctor_username') == "AI_Researcher" and 
+                                       e.get('patient_username') == v_data.get('username') and
+                                       (e.get('video_name') == v_data.get('video_name') or v_data.get('video_name', '') in e.get('video_name', ''))
+                                       for e in evals)
+                    
+                        if has_sent:
+                            st.session_state.stats = v_data['metrics']
+                            st.session_state.processed_video_path = v_data.get('processed_path')
+                            st.session_state.all_frames_data_path = v_data.get('all_frames_data_path')
+                            st.session_state.uploaded_file_name = v_data.get('video_name')
+                            st.session_state.has_data = True
+                            # Load bài tập để tránh lỗi NoneType khi hiển thị biểu đồ
+                            ex_name = v_data.get('exercise', 'codman')
+                            ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
+                            st.session_state.exercise = ex_base.copy()
+                            if 'sai_so' in v_data:
+                                st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
+                                st.session_state.exercise['chuan']['sai_so'] = v_data['sai_so']
+                            if v_data.get('df_path') and os.path.exists(v_data['df_path']):
+                                try: st.session_state.angle_df = pd.read_csv(v_data['df_path'])
+                                except: pass
+                            st.markdown("## 📊 KẾT QUẢ PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
+                            t1, t2 = st.tabs(["📊 BIỂU ĐỒ CHI TIẾT", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"])
+                            with t1: hien_thi_tab_phan_tich(key_suffix="doc_ai_tab")
+                            with t2: hien_thi_frames_day_du(key_suffix="doc_ai_tab")
+                        else:
+                            st.warning("🕒 Nghiên cứu viên đã thực hiện phân tích nhưng CHƯA BẤM GỬI báo cáo chính thức.")
+                    else:
+                        st.warning("🕒 Nghiên cứu viên chưa thực hiện phân tích AI cho video này.")
+
+        if selected_tab == "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU":
+            if True:
+                hien_thi_tab_phan_tich_va_video_ncv()
+
+        if selected_tab == "📊 KẾT QUẢ":
+            if True:
+                hien_thi_ket_qua_cho_benh_nhan()
+        if selected_tab == "📊 KẾT QUẢ ĐÁNH GIÁ":
+            if True:
+                hien_thi_ket_qua_cho_benh_nhan()
+
+        # ==================== TAB: KHAI BÁO TRIỆU CHỨNG ====================
+        if selected_tab == "🩺 KHAI BÁO TRIỆU CHỨNG":
+            if True:
+                hien_thi_tab_khai_bao_trieu_chung()
+
+        # ==================== TAB: LỊCH NHẮC NHỞ ====================
+        if selected_tab == "⏰ LỊCH NHẮC NHỞ":
+            if True:
+                hien_thi_lich_nhac_nho()
+        # ==================== TAB: VIDEO & ẢNH ====================
+        # Tab Video & Ảnh đã được gộp vào Phân tích & Video cho NCV
+
+        if selected_tab == "📖 HƯỚNG DẪN":
+            if True:
+                hien_thi_tab_huong_dan(role=user_role)
+        
+        if selected_tab == "🏥 KIẾN THỨC PHCN":
+            if True:
+                hien_thi_tab_kien_thuc_phcn()
+
+        if selected_tab == "🛠️ QUẢN TRỊ VIÊN":
+            if True:
+                hien_thi_tab_quan_tri_vien()
+            
+        if selected_tab == "🔑 ĐỔI MẬT KHẨU":
+            if True:
+                hien_thi_tab_doi_mat_khau()
+        
+        if selected_tab == "🌐 CÔNG NGHỆ":
+            if True:
+                hien_thi_tab_cong_nghe()
+            
+        if selected_tab == "📚 THÔNG TIN TỔNG HỢP":
+            if True:
+                if user_role == "Bệnh nhân":
+                    hien_thi_tab_thong_tin_tong_hop_benh_nhan()
+                else:
+                    hien_thi_tab_thong_tin_tong_hop(user_role)
+        
+        if selected_tab == "📞 THÔNG TIN LIÊN HỆ":
+            if True:
+                hien_thi_tab_lien_he()
+            
+        if selected_tab == "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA":
+            if True:
+                hien_thi_tab_nckh_va_thanh_vien_ncv()
+            
+        if selected_tab == "📚 ĐỀ TÀI NCKH":
+            if True:
+                hien_thi_tab_nckh()
+            
+        if selected_tab == "📄 THÔNG TIN NGHIÊN CỨU":
+            if True:
+                hien_thi_tab_thong_tin_nghien_cuu()
+        
+        if selected_tab == "👥 THÀNH VIÊN":
+            if True:
+                hien_thi_tab_thanh_vien()
+        
+        if selected_tab == "💬 PHẢN HỒI":
+            if True:
+                hien_thi_tab_phan_hoi()
+
+
+
+        if selected_tab == "📄 PHIẾU NCKH":
+            if True:
+                hien_thi_tab_phieu_nckh()
+
+
+
 def main():
     # Kiểm tra trạng thái đăng nhập ngay đầu hàm main
     if not st.session_state.logged_in:
@@ -12441,6 +13292,34 @@ def main():
                          index=0, # Mặc định là Heavy để đảm bảo trích xuất chính xác 33 điểm nhất
                          key="ncv_model_type",
                          help="Mô hình Heavy có độ chính xác cao nhất (Complexity 2), chuyên dụng cho nghiên cứu lâm sàng.")
+
+            st.markdown("### 🤖 POSE CLASSIFIER")
+            st.caption("Sau khi upload video: trích xuất 33 điểm → đối chiếu YouTube (REF) → train/nạp ML → frame có nhãn REF + ML.")
+            if POSE_CLASSIFIER_IMPORT_ERROR:
+                st.warning("Không tải được pose_classifier_utils.")
+            elif train_pose_classifier and get_pose_classifier_status:
+                _clf = get_pose_classifier_status(DB_DIR)
+                if _clf.get("ready"):
+                    st.success("✅ Model ML sẵn sàng")
+                else:
+                    st.info("Chưa có model — sẽ tự train khi phân tích video (cần CSV trong processed_results/).")
+                _sb1, _sb2 = st.columns(2)
+                with _sb1:
+                    if st.button("🎓 Train", key="sidebar_train_clf", use_container_width=True):
+                        with st.spinner("Huấn luyện..."):
+                            _tr = train_pose_classifier(PROCESSED_DIR, DB_DIR)
+                        st.success(_tr.get("message", "Xong")) if _tr.get("success") else st.error(_tr.get("message", "Lỗi"))
+                        st.rerun()
+                with _sb2:
+                    if st.button("🔄 Apply ML", key="sidebar_apply_clf", use_container_width=True):
+                        with st.spinner("Áp dụng ML + cập nhật ảnh frame..."):
+                            _ap = reprocess_videos_with_classifier(
+                                VIDEOS_FILE, EVALUATIONS_FILE,
+                                processed_dir=PROCESSED_DIR, db_dir=DB_DIR, data_dir=DATA_DIR,
+                                phase_bounds_fn=segment_frames,
+                            )
+                        st.success(f"Cập nhật {_ap.get('updated', 0)} video") if _ap.get("success") else st.error(_ap.get("message", "Lỗi"))
+                        st.rerun()
             
             # st.markdown("### 🎯 CHỌN BÀI TẬP") # Cắt bỏ chọn bài tập ở sidebar cho NCV
             # ma_bai_tap = st.selectbox("Bài tập nghiên cứu", list(BAI_TAP.keys()), format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}")
@@ -12607,737 +13486,7 @@ def main():
         st.session_state.active_tab = tab_titles[0]
         st.session_state.active_tab_widget = tab_titles[0]
         
-    if st.session_state.get('trigger_tab_switch'):
-        if st.session_state.trigger_tab_switch in tab_titles:
-            st.session_state.active_tab = st.session_state.trigger_tab_switch
-            st.session_state.active_tab_widget = st.session_state.trigger_tab_switch
-        st.session_state.trigger_tab_switch = None
-        st.rerun()
-
-    # Hiển thị Menu segmented control dạng Tab Bar
-    selected_tab = st.segmented_control(
-        label="Menu điều hướng",
-        options=tab_titles,
-        selection_mode="single",
-        default=st.session_state.active_tab,
-        key="active_tab_widget",
-        label_visibility="collapsed"
-    )
-    
-    if selected_tab:
-        st.session_state.active_tab = selected_tab
-    else:
-        selected_tab = st.session_state.active_tab
-        st.session_state.active_tab_widget = selected_tab
-
-    import streamlit.components.v1 as components
-    components.html("""
-    <script>
-        (function() {
-            function setupTabWheelScroll() {
-                const doc = window.parent.document;
-                const containers = doc.querySelectorAll('.st-key-active_tab_widget div[data-testid="stSegmentedControl"], .st-key-active_tab_widget div[data-testid="stButtonGroup"]');
-                
-                containers.forEach(container => {
-                    let scrollChild = container.querySelector('[role="radiogroup"]') || container.querySelector('[role="group"]');
-                    if (!scrollChild) return;
-                    
-                    // Tránh gán sự kiện nhiều lần
-                    if (scrollChild.dataset.wheelListenerAdded) return;
-                    scrollChild.dataset.wheelListenerAdded = "true";
-                    
-                    scrollChild.addEventListener('wheel', function(e) {
-                        if (e.deltaY !== 0) {
-                            e.preventDefault();
-                            scrollChild.scrollLeft += e.deltaY * 1.5; // Nhân thêm 1.5 để cuộn mượt và nhanh hơn
-                        }
-                    }, { passive: false });
-                });
-            }
-            setInterval(setupTabWheelScroll, 500);
-        })();
-    </script>
-    """, height=0, width=0)
-    
-    # ==================== TAB 1: TRANG CHỦ ====================
-    if selected_tab == "🏠 TRANG CHỦ":
-        if True:
-            if user_role == "Quản trị viên":
-                hien_thi_home_quan_tri_vien()
-            else:
-                # Nếu là Bác sĩ hoặc NCV, hiển thị danh sách triệu chứng
-                if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
-                    # --- DANH SÁCH TRIỆU CHỨNG BN (CHUYỂN TỪ SIDEBAR SANG ĐÂY) ---
-                    st.markdown("### 👥 DANH SÁCH TRIỆU CHỨNG BN MỚI NHẤT")
-                    symptoms_data = load_data(SYMPTOMS_FILE)
-                    if symptoms_data:
-                        # Nhóm các khai báo triệu chứng theo bệnh nhân để gộp bài tập
-                        grouped_symptoms = {}
-                        for item in symptoms_data:
-                            key = item.get('patient_id') or item.get('full_name')
-                            if key not in grouped_symptoms:
-                                grouped_symptoms[key] = {
-                                    "full_name": item['full_name'],
-                                    "patient_id": item.get('patient_id', 'N/A'),
-                                    "age": item.get('age', 'N/A'),
-                                    "gender": item.get('gender', 'N/A'),
-                                    "symptoms": item.get('symptoms', ''),
-                                    "vas": item.get('vas', 'N/A'),
-                                    "time": item.get('time', ''),
-                                    "exercises": [item.get('exercise', 'N/A')]
-                                }
-                            else:
-                                ex = item.get('exercise', 'N/A')
-                                if ex not in grouped_symptoms[key]["exercises"]:
-                                    grouped_symptoms[key]["exercises"].append(ex)
-                                grouped_symptoms[key]["time"] = item.get('time', grouped_symptoms[key]["time"])
-                                grouped_symptoms[key]["vas"] = item.get('vas', grouped_symptoms[key]["vas"])
-                        
-                        display_list = list(reversed(list(grouped_symptoms.values())))[:4]
-                        
-                        symp_cols = st.columns(3)
-                        for i, s in enumerate(display_list):
-                            with symp_cols[i % 3]:
-                                with st.container(border=True):
-                                    st.markdown(f"**👤 {s['full_name']}**")
-                                    st.caption(f"🕒 {s['time']}")
-                                    st.write(f"**Đau (VAS):** {s['vas']}/10")
-                                    with st.expander("Chi tiết triệu chứng"):
-                                        st.write(f"**Tuổi:** {s['age']} | **Mã:** {s['patient_id']}")
-                                        # Hiển thị hai bài tập đã chọn
-                                        exercises_str = ", ".join(s['exercises'])
-                                        st.write(f"**Bài tập đã chọn:** {exercises_str}")
-                                        st.info(s['symptoms'])
-                                        if st.button("Xóa thông báo", key=f"del_symp_main_{i}"):
-                                            # Xóa các bản ghi có patient_id hoặc full_name trùng khớp
-                                            s_id = s['patient_id']
-                                            s_name = s['full_name']
-                                            s_data_new = [item for item in symptoms_data if item.get('patient_id') != s_id and item.get('full_name') != s_name]
-                                            save_data(SYMPTOMS_FILE, s_data_new)
-                                            st.rerun()
-                    else:
-                        st.info("ℹ️ Hiện chưa có thông tin khai báo triệu chứng mới từ bệnh nhân.")
-                    
-                    pass # Đã cắt bỏ chọn bài tập ở trang chủ cho Bác sĩ theo yêu cầu
-
-                # HIỂN THỊ THÔNG TIN BÀI TẬP (CHỈ HIỆN CHO BN - BS/NCV ĐÃ BIẾT NÊN CẮT BỎ ĐỂ TRÁNH RỐI)
-                if user_role == "Bệnh nhân":
-                    # --- KHAI BÁO THÔNG TIN NGƯỚI DÙNG + TRIỆU CHỨNG + CHỌN BÀI TẬP ---
-                    st.markdown("## 📝 THÔNG TIN KHÁM & TẬP LUYỆN")
-                    
-                    with st.container(border=True):
-                        st.markdown("### 📋 THÔNG TIN NGƯỜI DÙNG")
-                        bn_col1, bn_col2 = st.columns(2)
-                        with bn_col1:
-                            ten_nguoi_dung = st.text_input("Họ và tên (*)", value=st.session_state.user_info.get('full_name', ''), placeholder="VD: Nguyễn Văn A", key="bn_tab_ten")
-                            tuoi = st.number_input("Tuổi (*)", 0, 120, 22, key="bn_tab_tuoi")
-                        with bn_col2:
-                            ma_nguoi_dung = st.text_input("Mã số định danh (*)", placeholder="VD: BN0001", key="bn_tab_ma")
-                            gioi_tinh = st.selectbox("Giới tính (*)", ["", "Nam", "Nữ"], key="bn_tab_gt")
-                    
-                    st.markdown("---")
-                    with st.container(border=True):
-                        st.markdown("### 🩺 KHAI BÁO TRIỆU CHỨNG")
-                        s_desc = st.text_area("Mô tả cảm giác đau:",
-                                              placeholder="VD: Đau nhói ở khớp vai khi nâng tay lên cao...",
-                                              height=100, key="bn_tab_desc")
-                        s_vas = st.select_slider("📊 Mức độ đau (VAS 0-10):",
-                                                  options=list(range(11)),
-                                                  value=3, key="bn_tab_vas")
-                        vas_labels = {
-                            0: "Đ 0: Không đau", 1: "Đ 1-3: Đau nhẹ", 4: "Đ 4-6: Đau vừa", 7: "Đ 7-9: Đau nặng", 10: "Đ 10: Đau dữ dội"
-                        }
-                        closest = min(vas_labels, key=lambda x: abs(x - s_vas))
-                        st.caption(f"💡 {vas_labels[closest]}")
-                    
-                    st.markdown("---")
-                    with st.container(border=True):
-                        st.markdown("### 🎯 CHỌN BÀI TẬP VÀ XEM HƯỚNG DẪN")
-                        ma_bai_tap = st.selectbox("🎯 Chọn bài tập", list(BAI_TAP.keys()),
-                                                   format_func=lambda x: f"{BAI_TAP[x]['icon']} {BAI_TAP[x]['ten']}",
-                                                   key="bn_tab_bt")
-                        bai_tap = BAI_TAP[ma_bai_tap]
-                        
-                        is_light = st.session_state.theme == 'light'
-                        info_bg = "rgba(255, 255, 255, 1)" if is_light else "rgba(255, 255, 255, 0.04)"
-                        info_border = "#eee" if is_light else "rgba(255, 255, 255, 0.1)"
-                        info_text = "#000" if is_light else "#fff"
-                        
-                        ex_col1, ex_col2 = st.columns([3, 2])
-                        with ex_col1:
-                            st.markdown(f"""
-                            <div class="info-box" style="background: {info_bg}; border: 1px solid {info_border}; color: {info_text}; padding: 15px; border-radius: 10px;">
-                                <h3 style="margin-top:0;">{bai_tap['icon']} {bai_tap['ten']}</h3>
-                                <p>{bai_tap['mo_ta']}</p>
-                                <div style="display: flex; gap: 20px; font-size: 0.9rem; opacity: 0.8;">
-                                    <span>⏱️ <b>Thời gian:</b> {bai_tap['thoi_gian']}s/lần</span>
-                                    <span>🔄 <b>Số lần:</b> {bai_tap['lan']} lần/ngày</span>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            with st.expander("📖 HƯỚNG DẪN TẬP LUYỆN", expanded=True):
-                                st.markdown(bai_tap['huong_dan'])
-                            with st.expander("✨ LỢI ÍCH CỦA BÀI TẬP", expanded=False):
-                                for loi_ich in bai_tap['loi_ich']:
-                                    st.markdown(f"- {loi_ich}")
-                        
-                        with ex_col2:
-                            card_bg = "#ffffff" if is_light else "rgba(26,26,46,0.8)"
-                            st.markdown(f"""
-                            <div class="custom-card" style="background: {card_bg}; padding: 15px; border-radius: 10px; border: 1px solid {info_border};">
-                                <h4 style="color:{'#0072ff' if is_light else '#fff'}; margin-top:0;">🎯 ĐỐI CHIẾU VIDEO CHUẨN</h4>
-                                <p style="color:#00CED1; margin-bottom:8px; font-size:0.9rem;">⚡ Hệ thống tự động so sánh chuyển động của bạn với <b>Video chuẩn</b>.</p>
-                                <p style="color:#FF6B6B; margin-bottom:10px; font-size:0.9rem;">📊 Độ chính xác dựa trên sai số Euclidean và biên độ khớp.</p>
-                                <div style="font-size:0.85rem; border-top:1px solid {info_border}; padding-top:10px;">
-                                    <p style="margin-bottom:5px;">✅ <b>Đạt:</b> Chuyển động khớp với video mẫu.</p>
-                                    <p style="margin-bottom:0;">❌ <b>Cần cải thiện:</b> Động tác sai lệch.</p>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            if 'video_guide' in bai_tap:
-                                st.markdown("### 🎬 VIDEO HƯỚNG DẪN")
-                                render_video(bai_tap['video_guide'])
-                            elif bai_tap.get('youtube'):
-                                st.markdown("### 📺 VIDEO YOUTUBE THAM KHẢO")
-                                st.video(bai_tap['youtube'])
-                            # Luôn hiện YouTube nếu có, kể cả khi đã có video_guide
-                            if 'video_guide' in bai_tap and bai_tap.get('youtube'):
-                                st.markdown("### 📺 VIDEO YOUTUBE THAM KHẢO")
-                                st.video(bai_tap['youtube'])
-                    
-                    st.markdown("---")
-                    if st.button("📤 GỬi THÔNG TIN CHO BÁC SĨ/KTV VÀ NCV", type="primary", width="stretch"):
-                        if ten_nguoi_dung and ma_nguoi_dung and gioi_tinh != "" and s_desc and ma_bai_tap:
-                            s_data = load_data(SYMPTOMS_FILE)
-                            s_data.append({
-                                "username": st.session_state.user_info['username'],
-                                "full_name": ten_nguoi_dung,
-                                "patient_id": ma_nguoi_dung,
-                                "age": tuoi,
-                                "gender": gioi_tinh,
-                                "exercise": BAI_TAP[ma_bai_tap]['ten'],
-                                "symptoms": s_desc,
-                                "vas": s_vas,
-                                "time": get_vn_now().strftime("%H:%M - %d/%m/%Y")
-                            })
-                            save_data(SYMPTOMS_FILE, s_data)
-                            st.success("✅ Đã gửi thông tin đầy đủ cho BÁC SĨ - KTV và NCV thành công!")
-                            st.balloons()
-                        else:
-                            st.warning("⚠️ Vui lòng điền đầy đủ các thông tin: Họ tên, Mã định danh, Giới tính, Bài tập và Mô tả triệu chứng.")
-                    
-
-                # 2. HÀNG DƯỚI: UPLOAD VÀ XỬ LÝ (Full Width)
-                if user_role == "Bệnh nhân":
-                    st.markdown("---")
-                
-                # BIẾN KIỂM TRA ĐIỀU KIỆN HIỆN UPLOADER
-                show_uploader = not st.session_state.get('has_data')
-                # Nếu là Bệnh nhân, luôn hiện uploader ở trang chủ để họ nộp bài mới
-                if user_role == "Bệnh nhân":
-                    show_uploader = True
-                    
-                if show_uploader:
-                    if 'uploader_id' not in st.session_state:
-                        st.session_state.uploader_id = 0
-
-                    if user_role == "Bệnh nhân":
-                        st.markdown("### 📤 TẢI LÊN VIDEO TẬP LUYỆN")
-                        st.info(f"📁 Hỗ trợ upload file tối đa {MAX_FILE_SIZE_MB}MB (MP4, MOV, AVI, MKV)")
-                        file_upload = st.file_uploader(
-                            "Tải lên video của bạn để gửi cho Bác sĩ/NCV", 
-                            type=["mp4", "mov", "avi", "mkv", "MP4", "MOV"],
-                            help=f"Dung lượng tối đa {MAX_FILE_SIZE_MB}MB",
-                            key=f"video_uploader_v{st.session_state.uploader_id}"
-                        )
-                    else:
-                        file_upload = None
-                else:
-                    file_upload = None
-            
-                # XỬ LÝ VIDEO
-                if file_upload is not None and not st.session_state.processing:
-                    # NẾU FILE MỚI KHÁC FILE CŨ -> RESET DATA ĐỂ PHÂN TÍCH MỚI
-                    if st.session_state.get('uploaded_file_name') != file_upload.name:
-                        # === GIẢI PHÓNG BỘ NHỚ TOÀN DIỆN TRƯỚC KHI PHÂN TÍCH MỚI (CHỐNG OOM) ===
-                        import gc
-
-                        # 1. Xóa file tạm cũ trên đĩa để giải phóng RAM của OS
-                        old_video_path = st.session_state.get('processed_video_path')
-                        if old_video_path and os.path.exists(old_video_path):
-                            try:
-                                os.unlink(old_video_path)
-                                # Xóa cả bản H264 nếu có
-                                old_h264 = old_video_path.replace('_f.mp4', '.mp4') if old_video_path.endswith('_f.mp4') else old_video_path.replace('.mp4', '_f.mp4')
-                                if os.path.exists(old_h264):
-                                    os.unlink(old_h264)
-                            except:
-                                pass
-
-                        old_csv_path = st.session_state.get('current_df_csv_path')
-                        if old_csv_path and os.path.exists(old_csv_path):
-                            try:
-                                os.unlink(old_csv_path)
-                            except:
-                                pass
-
-                        old_frames_dir = st.session_state.get('temp_frames_dir')
-                        if old_frames_dir and os.path.exists(old_frames_dir):
-                            try:
-                                import shutil
-                                shutil.rmtree(old_frames_dir, ignore_errors=True)
-                            except:
-                                pass
-
-                        # 2. Xóa toàn bộ dữ liệu lớn trong session_state
-                        keys_to_clear = [
-                            'has_data', 'stats', 'angle_df', 'processed_video_path',
-                            'all_frames_paths', 'all_frames_data', 'all_frames_data_path',
-                            'output_video_bytes', 'processed_video_bytes', 'frames_zip',
-                            'current_df_csv_path', 'temp_frames_dir', 'temp_video_file',
-                            'video_ready', 'frames_ready', 'frames_loaded',
-                            'current_page', 'processing_result', 'processing_progress',
-                            'processing_status', 'exercise'
-                        ]
-                        for k in keys_to_clear:
-                            if k in st.session_state:
-                                st.session_state[k] = None if k not in ('all_frames_paths', 'all_frames_data') else []
-
-                        st.session_state.has_data = False
-                        st.session_state.video_ready = False
-                        st.session_state.frames_ready = False
-                        st.session_state.frames_loaded = False
-                        st.session_state.current_page = 1
-                        st.session_state.processing_progress = 0
-                        st.session_state.processing_status = ""
-
-                        # 3. Dọn rác Python ngay lập tức
-                        gc.collect()
-                        st.toast("🧹 Đã giải phóng bộ nhớ từ phân tích trước.", icon="💾")
-                    
-                    st.success(f"✅ Đã chọn file: {file_upload.name} ({file_upload.size / (1024*1024):.2f} MB)")
-                    
-                    if user_role == "Nghiên cứu viên":
-                        target_u = st.session_state.get('last_uploaded_patient_username', st.session_state.user_info['username'])
-                        active_video_path, active_prog = find_progress_by_video_info(target_u, file_upload.name)
-                        
-                        if active_prog:
-                            check_and_populate_background_result(active_video_path)
-                            hien_thi_tien_trinh_background_home_fragment(active_video_path)
-                        else:
-                            btn_text = "🚀 BẮT ĐẦU XỬ LÝ AI"
-                            if st.button(btn_text, width="stretch", type="primary"):
-                                st.session_state.processing = True
-                                st.session_state.has_data = True
-                                st.session_state.view_old_analysis = False
-                                
-                                try:
-                                    save_dir = UPLOAD_DIR
-                                    if not os.path.exists(save_dir):
-                                        try: os.makedirs(save_dir, exist_ok=True)
-                                        except: pass
-                                    
-                                    timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
-                                    base_name, _ = os.path.splitext(file_upload.name)
-                                    orig_ext = os.path.splitext(file_upload.name)[1].lower() or ".mp4"
-                                    filename = f"{target_u}_{timestamp}_{base_name}{orig_ext}"
-                                    video_path = os.path.join(save_dir, filename)
-                                    
-                                    temp_uploaded_path = video_path + "_temp" + orig_ext
-                                    with open(temp_uploaded_path, "wb") as f_temp:
-                                        f_temp.write(file_upload.getbuffer())
-                                        
-                                    users_db = load_users()
-                                    target_fn = users_db.get(target_u, {}).get('full_name', target_u)
-                                    
-                                    model_type_ncv = st.session_state.get('ncv_model_type', 'MediaPipe Heavy')
-                                    conf_ncv = st.session_state.get('ncv_confidence', 0.5)
-                                    ncv_gd = st.session_state.get('ncv_giai_doan', 'Giai đoạn 2: Hồi phục (Sai số vừa - 30°)')
-                                    
-                                    # Khởi chạy background thread
-                                    bat_dau_phan_tich_background(
-                                        video_path=video_path,
-                                        username=target_u,
-                                        full_name=target_fn,
-                                        video_name=file_upload.name,
-                                        exercise_name=bai_tap['ten'],
-                                        giai_doan=ncv_gd,
-                                        model_type=model_type_ncv,
-                                        confidence=conf_ncv,
-                                        temp_uploaded_path=temp_uploaded_path,
-                                        skip_step=st.session_state.get('ncv_skip_frames', 0),
-                                        resize_width=st.session_state.get('ncv_resize_width', 720)
-                                    )
-                                    st.toast("🚀 Đã tải video lên và bắt đầu xử lý AI trong nền!", icon="⚡")
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"❌ Lỗi khởi động xử lý nền: {str(e)}")
-                                    st.session_state.processing = False
-                if user_role == "Bệnh nhân":
-                    if st.button("📤 GỬI VIDEO CHO BÁC SĨ - KTV VÀ NCV", width="stretch", type="primary"):
-                        if file_upload is None:
-                            st.error("🚨 Bạn chưa chọn video hoặc file video không hợp lệ. Vui lòng tải lên video trước khi gửi!")
-                        else:
-                            # Tạo thư mục lưu trữ nếu chưa có
-                            save_dir = UPLOAD_DIR
-                            if not os.path.exists(save_dir):
-                                try:
-                                    os.makedirs(save_dir, exist_ok=True)
-                                except:
-                                    pass
-                            
-                            # Tạo tên file duy nhất giữ nguyên phần mở rộng gốc của video để biết định dạng thực tế
-                            timestamp = get_vn_now().strftime("%Y%m%d_%H%M%S")
-                            base_name, _ = os.path.splitext(file_upload.name)
-                            orig_ext = os.path.splitext(file_upload.name)[1].lower() or ".mp4"
-                            
-                            # file_path gốc có đuôi mở rộng thực tế (ví dụ: .mov)
-                            filename = f"{st.session_state.user_info['username']}_{timestamp}_{base_name}{orig_ext}"
-                            file_path = os.path.join(save_dir, filename)
-                            
-                            # Lưu file video tạm
-                            temp_uploaded_path = file_path + "_temp" + orig_ext
-                            with open(temp_uploaded_path, "wb") as f:
-                                f.write(file_upload.getbuffer())
-                            
-                            # Kiểm tra xem video tải lên có thể phát trực tiếp (đã là H.264 MP4) không
-                            v_codec = None
-                            a_codec = None
-                            try:
-                                v_codec, a_codec = get_video_codec(temp_uploaded_path)
-                            except:
-                                pass
-                                
-                            is_h264_mp4 = (v_codec == 'h264' and orig_ext == '.mp4')
-                            
-                            if is_h264_mp4:
-                                # Copy hoặc đổi tên trực tiếp, không cần chạy ffmpeg nén tốn thời gian
-                                if os.path.exists(file_path):
-                                    try: os.remove(file_path)
-                                    except: pass
-                                os.rename(temp_uploaded_path, file_path)
-                                print(f"[Upload Optimization] Video {file_upload.name} đã là H.264 MP4, lưu trực tiếp không cần convert.")
-                            else:
-                                # Nén tối ưu hóa video sang H.264 MP4 (chỉ chạy khi không phải H.264 MP4)
-                                # Đường dẫn đích sau khi convert thành công sẽ là đuôi .mp4
-                                file_path_mp4 = file_path.rsplit('.', 1)[0] + ".mp4"
-                                try:
-                                    import subprocess
-                                    cmd = [
-                                        'ffmpeg', '-y', '-i', temp_uploaded_path,
-                                        '-vcodec', 'libx264',
-                                        '-pix_fmt', 'yuv420p',
-                                        '-preset', 'ultrafast',
-                                        '-crf', '28',
-                                        '-maxrate', '800k',
-                                        '-bufsize', '1600k',
-                                        '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
-                                        '-threads', '0',
-                                    ]
-                                    if a_codec:
-                                        cmd.extend(['-c:a', 'aac'])
-                                    else:
-                                        cmd.extend(['-an'])
-                                    cmd.append(file_path_mp4)
-                                    result_compress = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
-                                    if result_compress.returncode == 0 and os.path.exists(file_path_mp4) and os.path.getsize(file_path_mp4) > 1024:
-                                        try: os.remove(temp_uploaded_path)
-                                        except: pass
-                                        file_path = file_path_mp4
-                                        print(f"[Upload Optimization] Đã convert thành công {file_upload.name} sang H.264 MP4.")
-                                    else:
-                                        # Fallback nếu ffmpeg fail hoặc file ra bị lỗi: dùng file gốc với extension thật
-                                        if os.path.exists(file_path_mp4):
-                                            try: os.remove(file_path_mp4)
-                                            except: pass
-                                        if os.path.exists(file_path):
-                                            try: os.remove(file_path)
-                                            except: pass
-                                        os.rename(temp_uploaded_path, file_path)
-                                except Exception as compress_err:
-                                    print(f"[Compress Upload] Lỗi nén video: {compress_err}")
-                                    # Fallback nếu không có ffmpeg: dùng file gốc với extension thật
-                                    if os.path.exists(temp_uploaded_path):
-                                        if os.path.exists(file_path):
-                                            try: os.remove(file_path)
-                                            except: pass
-                                        os.rename(temp_uploaded_path, file_path)
-                            
-                            # Tự động đẩy file video lên Hugging Face Dataset dưới dạng nền
-                            push_file_to_hf_async(file_path)
-                            
-                            # Lưu thông tin vào database
-                            video_list = load_data(VIDEOS_FILE)
-                            video_list.append({
-                                "username": st.session_state.user_info['username'],
-                                "full_name": ten_nguoi_dung,
-                                "video_name": file_upload.name,
-                                "exercise": bai_tap['ten'],
-                                "accuracy": 0,
-                                "time": get_vn_now().strftime("%H:%M - %d/%m/%Y"),
-                                "video_path": file_path,        # Video gốc
-                                "processed_path": None,        # Video có khung xương (sau khi NCV gửi)
-                                "status": "Chờ NCV phân tích"
-                            })
-                            save_data(VIDEOS_FILE, video_list)
-                            st.success("✅ Đã gửi video cho BÁC SĨ - KTV và NCV thành công! Chuyên gia sẽ xem và đánh giá bài tập của bạn.")
-                            st.balloons()
-                            
-                            # RESET VỀ CHẾ ĐỘ TỰ ĐỘNG (khi NCV gửi kết quả sẽ hiện ngay)
-                            st.session_state.active_video_name = file_upload.name
-                            st.session_state.fresh_session = True  # <-- QUAN TRỌNG: Phải = True để hiện màn hình "Đang chờ NCV..."
-                            st.session_state.has_data = False
-                            time.sleep(2)
-                            st.rerun()
-
-                # === HIỆN TRẠNG THÁI ĐANG XỬ LÝ HOẶC ĐÃ CÓ KẾT QUẢ ===
-                if st.session_state.processing:
-                    st.warning("⏳ Đang xử lý video, vui lòng chờ...")
-                    if st.button("❌ Hủy xử lý", width='stretch'):
-                        st.session_state.processing = False
-                        st.rerun()
-                
-                elif st.session_state.has_data:
-                    st.success("✅ Đã có kết quả phân tích! Hãy xem các tab PHÂN TÍCH và VIDEO & ẢNH.")
-                    st.session_state.processing = False
-
-                # HIỂN THỊ DANH SÁCH VIDEO CHO BÁC SĨ & NGHIÊN CỨU VIÊN
-                if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
-                    st.markdown("---")
-                    st.markdown("### 🎬 DANH SÁCH VIDEO BỆNH NHÂN ĐÃ QUAY")
-                    hien_thi_danh_sach_video_fragment(user_role)
-
-                # === QUY TRÌNH THU THẬP DỮ LIỆU NGHIÊN CỨU KHOA HỌC (CHỈ HIỆN CHO BỆNH NHÂN) ===
-                if user_role == "Bệnh nhân":
-                    st.markdown("---")
-                    st.markdown("<h3 style='color: #00c6ff; text-align: center; margin-bottom: 25px;'>⚙️ QUY TRÌNH XỬ LÝ DỮ LIỆU NCKH</h3>", unsafe_allow_html=True)
-                
-                    # CSS cho các thẻ Quy trình
-                    st.markdown("""
-                    <style>
-                    .step-container {
-                        display: flex;
-                        gap: 15px;
-                        margin-bottom: 20px;
-                        flex-wrap: wrap;
-                    }
-                    .step-box {
-                        flex: 1;
-                        min-width: 200px;
-                        background: rgba(255, 255, 255, 0.03);
-                        border: 1px solid rgba(0, 198, 255, 0.3);
-                        border-radius: 12px;
-                        padding: 18px;
-                        text-align: center;
-                        transition: all 0.3s;
-                        border-top: 3px solid #00c6ff;
-                    }
-                    .step-box:hover {
-                        transform: translateY(-5px);
-                        background: rgba(0, 198, 255, 0.08);
-                        border-color: #00c6ff;
-                        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-                    }
-                    .step-num {
-                        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
-                        color: white;
-                        width: 30px;
-                        height: 30px;
-                        border-radius: 50%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        margin: 0 auto 10px;
-                        font-weight: bold;
-                        font-size: 0.9rem;
-                    }
-                    .step-txt-title {
-                        color: #00c6ff;
-                        font-weight: bold;
-                        font-size: 1rem;
-                        margin-bottom: 8px;
-                        display: block;
-                    }
-                    .step-txt-desc {
-                        color: #aaa;
-                        font-size: 0.8rem;
-                        line-height: 1.4;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-
-                    c1, c2, c3, c4 = st.columns(4)
-                    
-                    with c1:
-                        st.markdown("""
-                        <div class="step-box">
-                            <div class="step-num">1</div>
-                            <span class="step-txt-title">📸 GHI HÌNH</span>
-                            <p class="step-txt-desc">Camera đặt ngang vai (90°), tối thiểu 30 FPS, đủ ánh sáng.</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                    with c2:
-                        st.markdown("""
-                        <div class="step-box">
-                            <div class="step-num">2</div>
-                            <span class="step-txt-title">⚙️ TRÍCH XUẤT</span>
-                            <p class="step-txt-desc">Sử dụng MediaPipe Heavy trích xuất 33 điểm Landmarks.</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                    with c3:
-                        st.markdown("""
-                        <div class="step-box">
-                            <div class="step-num">3</div>
-                            <span class="step-txt-title">📊 PHÂN TÍCH</span>
-                            <p class="step-txt-desc">Tính toán Vector góc Vai/Khuỷu và làm mượt dữ liệu.</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                    with c4:
-                        st.markdown("""
-                        <div class="step-box">
-                            <div class="step-num">4</div>
-                            <span class="step-txt-title">💾 LƯU TRỮ</span>
-                            <p class="step-txt-desc">Số hóa dữ liệu sang JSON/CSV phục vụ báo cáo NCKH.</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # ==================== TAB: PHÂN TÍCH / ĐÁNH GIÁ ====================
-    if selected_tab == "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH":
-        if True:
-            hien_thi_tab_danh_gia_va_nckh_bac_si()
-
-    if selected_tab == "📝 ĐÁNH GIÁ PHCN":
-        if True:
-            hien_thi_form_danh_gia_bac_si()
-            
-    if selected_tab == "📊 KẾT QUẢ AI":
-        if True:
-            selected_video = st.session_state.get('current_eval_video')
-            if not selected_video:
-                st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
-            else:
-                all_vids = load_data(VIDEOS_FILE)
-                v_data = next((v for v in all_vids if v.get('username') == selected_video.get('username') and 
-                               (v.get('video_name') == selected_video.get('video_name') or 
-                                selected_video.get('video_name', '') in v.get('video_name', ''))), None)
-                if v_data and v_data.get('metrics'):
-                    # KIỂM TRA XEM NCV ĐÃ BẤM GỬI BÁO CÁO CHƯA
-                    evals = load_data(EVALUATIONS_FILE)
-                    has_sent = any(e.get('doctor_username') == "AI_Researcher" and 
-                                   e.get('patient_username') == v_data.get('username') and
-                                   (e.get('video_name') == v_data.get('video_name') or v_data.get('video_name', '') in e.get('video_name', ''))
-                                   for e in evals)
-                    
-                    if has_sent:
-                        st.session_state.stats = v_data['metrics']
-                        st.session_state.processed_video_path = v_data.get('processed_path')
-                        st.session_state.all_frames_data_path = v_data.get('all_frames_data_path')
-                        st.session_state.uploaded_file_name = v_data.get('video_name')
-                        st.session_state.has_data = True
-                        # Load bài tập để tránh lỗi NoneType khi hiển thị biểu đồ
-                        ex_name = v_data.get('exercise', 'codman')
-                        ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]['ten'] == ex_name), BAI_TAP['codman'])
-                        st.session_state.exercise = ex_base.copy()
-                        if 'sai_so' in v_data:
-                            st.session_state.exercise['chuan'] = ex_base['chuan'].copy()
-                            st.session_state.exercise['chuan']['sai_so'] = v_data['sai_so']
-                        if v_data.get('df_path') and os.path.exists(v_data['df_path']):
-                            try: st.session_state.angle_df = pd.read_csv(v_data['df_path'])
-                            except: pass
-                        st.markdown("## 📊 KẾT QUẢ PHÂN TÍCH AI TỪ NGHIÊN CỨU VIÊN")
-                        t1, t2 = st.tabs(["📊 BIỂU ĐỒ CHI TIẾT", "🎬 VIDEO & XƯƠNG TRÍCH XUẤT"])
-                        with t1: hien_thi_tab_phan_tich(key_suffix="doc_ai_tab")
-                        with t2: hien_thi_frames_day_du(key_suffix="doc_ai_tab")
-                    else:
-                        st.warning("🕒 Nghiên cứu viên đã thực hiện phân tích nhưng CHƯA BẤM GỬI báo cáo chính thức.")
-                else:
-                    st.warning("🕒 Nghiên cứu viên chưa thực hiện phân tích AI cho video này.")
-
-    if selected_tab == "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU":
-        if True:
-            hien_thi_tab_phan_tich_va_video_ncv()
-
-    if selected_tab == "📊 KẾT QUẢ":
-        if True:
-            hien_thi_ket_qua_cho_benh_nhan()
-    if selected_tab == "📊 KẾT QUẢ ĐÁNH GIÁ":
-        if True:
-            hien_thi_ket_qua_cho_benh_nhan()
-
-    # ==================== TAB: KHAI BÁO TRIỆU CHỨNG ====================
-    if selected_tab == "🩺 KHAI BÁO TRIỆU CHỨNG":
-        if True:
-            hien_thi_tab_khai_bao_trieu_chung()
-
-    # ==================== TAB: LỊCH NHẮC NHỞ ====================
-    if selected_tab == "⏰ LỊCH NHẮC NHỞ":
-        if True:
-            hien_thi_lich_nhac_nho()
-    # ==================== TAB: VIDEO & ẢNH ====================
-    # Tab Video & Ảnh đã được gộp vào Phân tích & Video cho NCV
-
-    if selected_tab == "📖 HƯỚNG DẪN":
-        if True:
-            hien_thi_tab_huong_dan(role=user_role)
-        
-    if selected_tab == "🏥 KIẾN THỨC PHCN":
-        if True:
-            hien_thi_tab_kien_thuc_phcn()
-
-    if selected_tab == "🛠️ QUẢN TRỊ VIÊN":
-        if True:
-            hien_thi_tab_quan_tri_vien()
-            
-    if selected_tab == "🔑 ĐỔI MẬT KHẨU":
-        if True:
-            hien_thi_tab_doi_mat_khau()
-        
-    if selected_tab == "🌐 CÔNG NGHỆ":
-        if True:
-            hien_thi_tab_cong_nghe()
-            
-    if selected_tab == "📚 THÔNG TIN TỔNG HỢP":
-        if True:
-            if user_role == "Bệnh nhân":
-                hien_thi_tab_thong_tin_tong_hop_benh_nhan()
-            else:
-                hien_thi_tab_thong_tin_tong_hop(user_role)
-        
-    if selected_tab == "📞 THÔNG TIN LIÊN HỆ":
-        if True:
-            hien_thi_tab_lien_he()
-            
-    if selected_tab == "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA":
-        if True:
-            hien_thi_tab_nckh_va_thanh_vien_ncv()
-            
-    if selected_tab == "📚 ĐỀ TÀI NCKH":
-        if True:
-            hien_thi_tab_nckh()
-            
-    if selected_tab == "📄 THÔNG TIN NGHIÊN CỨU":
-        if True:
-            hien_thi_tab_thong_tin_nghien_cuu()
-        
-    if selected_tab == "👥 THÀNH VIÊN":
-        if True:
-            hien_thi_tab_thanh_vien()
-        
-    if selected_tab == "💬 PHẢN HỒI":
-        if True:
-            hien_thi_tab_phan_hoi()
-
-
-
-    if selected_tab == "📄 PHIẾU NCKH":
-        if True:
-            hien_thi_tab_phieu_nckh()
-
+    _render_main_tab_content(tab_titles, user_role)
 
     # ==================== FOOTER CHUNG (LUÔN HIỆN Ở DƯỚI CÙNG) ====================
     hien_thi_footer_chung()
