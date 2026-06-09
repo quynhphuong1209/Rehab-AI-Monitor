@@ -3349,9 +3349,9 @@ if 'has_data' not in st.session_state:
 if 'ncv_model_type' not in st.session_state:
     st.session_state.ncv_model_type = "MediaPipe Heavy"
 if 'ncv_resize_width' not in st.session_state:
-    st.session_state.ncv_resize_width = 480
+    st.session_state.ncv_resize_width = 720
 if 'ncv_skip_frames' not in st.session_state:
-    st.session_state.ncv_skip_frames = 1
+    st.session_state.ncv_skip_frames = 0
 if 'view_old_analysis' not in st.session_state:
     st.session_state.view_old_analysis = False
 if 'angle_df' not in st.session_state:
@@ -13613,13 +13613,13 @@ def main():
             st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.5, key="ncv_confidence", help="Ngưỡng để AI chấp nhận một điểm khớp xương.")
             st.selectbox("Tốc độ xử lý", 
                          options=[0, 1, 2, 4], 
-                         index=1, # Mặc định là Bỏ qua 1 frame để tăng tốc xử lý gấp đôi trên CPU
+                         index=0, # Mặc định lấy mọi frame để phân tích đầy đủ
                          format_func=lambda x: "Mặc định (Mọi frame)" if x==0 else f"Nhanh (Bỏ qua {x} frame)",
                          key="ncv_skip_frames",
                          help="Bỏ qua một số khung hình để tăng tốc xử lý video dài. Lưu ý: Heavy/Full luôn lấy MỌI frame; chỉ Lite mới áp dụng bỏ frame.")
             st.selectbox("Độ phân giải video (Video Quality)",
                          options=[480, 720, 1080],
-                         index=0, # Mặc định là 480p (Tốc độ tối ưu) giúp xử lý nhanh gấp đôi
+                         index=1, # Mặc định 720p để cân bằng độ nét khung xương và tốc độ xử lý
                          format_func=lambda x: "480p (Tốc độ tối ưu)" if x==480 else ("720p (HD - Chuẩn sắc nét)" if x==720 else "1080p (Full HD - Cực kỳ chuẩn xác)"),
                          key="ncv_resize_width",
                          help="Độ phân giải càng cao thì vẽ khung xương càng sắc nét và bám sát khớp bệnh nhân hơn.")
