@@ -1458,6 +1458,10 @@ def get_local_frame_path(stored_path):
     rel_path = get_clean_rel_path(stored_path)
     return os.path.normpath(os.path.join(DATA_DIR, rel_path.replace("\\", "/")))
 
+def is_local_file_ready(file_path, min_size=5 * 1024):
+    """Kiểm tra file local có sẵn mà không tải từ cloud."""
+    return bool(file_path and os.path.exists(file_path) and os.path.getsize(file_path) >= min_size)
+
 def check_and_extract_frames_zip(processed_video_path):
     """Kiểm tra và tự động tải/giải nén file ZIP chứa các frame ảnh nếu thư mục ảnh chưa có.
     Hàm này giúp tải một lần duy nhất tất cả frames cực nhanh từ Cloud về thay vì trích xuất từng frame từ video."""
@@ -5763,8 +5767,6 @@ def hien_thi_tien_trinh_background(video_path):
                     st.session_state.has_data = True
                     
                     ensure_local_file(v_re.get('df_path'))
-                    ensure_local_file(v_re.get('all_frames_data_path'))
-                    ensure_local_file(v_re.get('processed_path'))
                     
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
                         try: st.session_state.angle_df = pd.read_csv(v_re['df_path'])
@@ -5937,8 +5939,6 @@ def hien_thi_tien_trinh_background_small(video_path):
                     st.session_state.has_data = True
                     
                     ensure_local_file(v_re.get('df_path'))
-                    ensure_local_file(v_re.get('all_frames_data_path'))
-                    ensure_local_file(v_re.get('processed_path'))
                     
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
                         try: st.session_state.angle_df = pd.read_csv(v_re['df_path'])
@@ -6030,8 +6030,6 @@ def hien_thi_tien_trinh_background_home_fragment(video_path):
                     st.session_state.has_data = True
                     
                     ensure_local_file(v_re.get('df_path'))
-                    ensure_local_file(v_re.get('all_frames_data_path'))
-                    ensure_local_file(v_re.get('processed_path'))
                     
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
                         try: st.session_state.angle_df = pd.read_csv(v_re['df_path'])
@@ -6128,8 +6126,6 @@ def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
                     st.session_state.has_data = True
                     
                     ensure_local_file(v_re.get('df_path'))
-                    ensure_local_file(v_re.get('all_frames_data_path'))
-                    ensure_local_file(v_re.get('processed_path'))
                     
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
                         try: st.session_state.angle_df = pd.read_csv(v_re['df_path'])
@@ -8186,23 +8182,14 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         
                     # Nếu đã chọn xem bản cũ (hoặc không phải NCV), tiến hành tải lại tự động
                     if not st.session_state.get('reanalyze_triggered', False):
-                        # Kiểm tra xem các file có cần tải từ cloud không để hiển thị spinner
-                        need_download = False
-                        for path_key in ['df_path', 'all_frames_data_path', 'processed_path']:
-                            p = v.get(path_key)
-                            if p and (not os.path.exists(p) or os.path.getsize(p) < 5 * 1024):
-                                need_download = True
-                                break
-                        
-                        if need_download:
-                            with st.spinner("📥 Đang tải kết quả phân tích từ Cloud..."):
-                                csv_ok = ensure_local_file(v.get('df_path'))
-                                if csv_ok:
-                                    ensure_local_file(v.get('all_frames_data_path'))
-                                    ensure_local_file(v.get('processed_path'))
+                        # Fast-load: chỉ tải CSV để biểu đồ/chỉ số hiện ngay.
+                        # Video và dữ liệu frame để lazy-load khi người dùng mở tab tương ứng.
+                        csv_path = v.get('df_path')
+                        if is_local_file_ready(csv_path):
+                            csv_ok = True
                         else:
-                            # File có sẵn local, không cần download
-                            csv_ok = bool(v.get('df_path') and os.path.exists(v.get('df_path', '')) and os.path.getsize(v.get('df_path', '')) >= 5 * 1024)
+                            with st.spinner("📥 Đang tải nhanh dữ liệu biểu đồ (CSV)..."):
+                                csv_ok = ensure_local_file(csv_path)
                         
                         if csv_ok:
                             # ✅ Load kết quả cũ ngay lập tức vào session state → hiển thị biểu đồ không cần chờ
@@ -8332,10 +8319,8 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                         st.session_state.exercise['chuan']['sai_so'] = v_re['sai_so']
                     st.session_state.has_data = True
                     
-                    with st.spinner("📥 Đang tải kết quả phân tích cũ..."):
+                    with st.spinner("📥 Đang tải nhanh dữ liệu biểu đồ (CSV)..."):
                         ensure_local_file(v_re.get('df_path'))
-                        ensure_local_file(v_re.get('all_frames_data_path'))
-                        ensure_local_file(v_re.get('processed_path'))
                         
                     if v_re.get('df_path') and os.path.exists(v_re['df_path']):
                         try:
@@ -10872,10 +10857,14 @@ def hien_thi_frames_day_du(key_suffix=""):
         st.info("📭 Không có dữ liệu khung hình để hiển thị.")
         return
 
-    ensure_local_file(all_frames_data_path)
-
-    if not os.path.exists(all_frames_data_path):
-        st.info("📭 Không có dữ liệu khung hình để hiển thị.")
+    if not is_local_file_ready(all_frames_data_path):
+        st.info("📭 Dữ liệu frames chưa có sẵn local. Biểu đồ/chỉ số vẫn đã hiển thị ở tab phân tích.")
+        if st.button("⚡ Tải nhanh dữ liệu frames khi cần xem ảnh", key=f"btn_lazy_frames_data_{key_suffix}", use_container_width=True):
+            with st.spinner("📥 Đang tải dữ liệu frames..."):
+                if ensure_local_file(all_frames_data_path):
+                    st.rerun()
+                else:
+                    st.error("Không tải được dữ liệu frames từ Cloud.")
         return
 
     all_frames_data = load_all_frames_data_cached(all_frames_data_path)
@@ -10916,10 +10905,8 @@ def hien_thi_frames_day_du(key_suffix=""):
     acc_g2 = metrics_g2.get('do_chinh_xac', 0.0) if isinstance(metrics_g2, dict) else 0.0
     acc_g3 = metrics_g3.get('do_chinh_xac', 0.0) if isinstance(metrics_g3, dict) else 0.0
     processed_video_path = get_local_frame_path(st.session_state.get('processed_video_path'))
-    if processed_video_path:
-        ensure_local_file(processed_video_path)
-        # Bỏ giải nén toàn bộ ZIP để tránh lag và đĩa đầy trên Cloud, ta sẽ đọc in-memory khi render
-        # check_and_extract_frames_zip(processed_video_path)
+    # Không tự tải video lớn tại lúc mở tab; chỉ tải khi người dùng bấm nút ở khung video.
+    # Bỏ giải nén toàn bộ ZIP để tránh lag và đĩa đầy trên Cloud.
     frames_zip = get_local_frame_path(st.session_state.get('frames_zip'))
     has_video = bool(processed_video_path and os.path.exists(processed_video_path))
 
@@ -10936,18 +10923,6 @@ def hien_thi_frames_day_du(key_suffix=""):
                 st.session_state.last_processed_video_for_bounds = processed_video_path
                 
             n0, n1, n2, n3 = st.session_state.segment_bounds
-            
-            # Phát hiện fps_export thực tế từ video đầu ra (sử dụng cache tối ưu hóa)
-            fps_export = 15
-            if processed_video_path and os.path.exists(processed_video_path):
-                try:
-                    mtime = os.path.getmtime(processed_video_path)
-                    size = os.path.getsize(processed_video_path)
-                    fps_export = get_video_fps_cached(processed_video_path, mtime, size)
-                except:
-                    pass
-                
-            g1_v_path, g2_v_path, g3_v_path = cut_video_segments(processed_video_path, n1, n2, total_frames, fps_export)
             
             # Lựa chọn ngang bằng st.radio thay cho st.tabs để tăng tối đa tốc độ hiển thị
             giai_doan_options = [
@@ -10968,6 +10943,18 @@ def hien_thi_frames_day_du(key_suffix=""):
                 )
             
             st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
+            g1_v_path = g2_v_path = g3_v_path = None
+            if sel_giai_doan != "📋 Video Tất cả":
+                # Chỉ cắt video giai đoạn khi thật sự được chọn, tránh chậm khi mở tab.
+                fps_export = 15
+                try:
+                    mtime = os.path.getmtime(processed_video_path)
+                    size = os.path.getsize(processed_video_path)
+                    fps_export = get_video_fps_cached(processed_video_path, mtime, size)
+                except Exception:
+                    pass
+                g1_v_path, g2_v_path, g3_v_path = cut_video_segments(processed_video_path, n1, n2, total_frames, fps_export)
             
             if sel_giai_doan == "📋 Video Tất cả":
                 render_video(processed_video_path)
@@ -11062,7 +11049,13 @@ def hien_thi_frames_day_du(key_suffix=""):
                 else:
                     st.info("ℹ️ Không tìm thấy video Giai đoạn 3 hoặc lỗi cắt phân đoạn.")
         else:
-            st.info("ℹ️ Đang tải hoặc không tìm thấy video trích xuất khung xương.")
+            st.info("ℹ️ Video trích xuất chưa có sẵn local. Bấm nút dưới để tải khi cần xem video.")
+            if st.button("⚡ Tải video khung xương", key=f"btn_lazy_processed_video_{key_suffix}", use_container_width=True):
+                with st.spinner("📥 Đang tải video khung xương..."):
+                    if ensure_local_file(processed_video_path):
+                        st.rerun()
+                    else:
+                        st.error("Không tải được video từ Cloud.")
             
     with v_col2:
         is_light = st.session_state.theme == 'light'
