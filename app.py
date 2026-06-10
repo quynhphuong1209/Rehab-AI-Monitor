@@ -447,6 +447,76 @@ def _format_vn_time(time_str, default="N/A"):
     return str(time_str).strip() if time_str else default
 
 
+def _lay_epoch_tu_processed(path):
+    """Trích epoch từ đường dẫn processed_1234567890."""
+    if not path:
+        return None
+    import re
+    m = re.search(r"processed_(\d+)", str(path))
+    return int(m.group(1)) if m else None
+
+
+def _lay_thoi_gian_phan_tich_on_dinh(v, ai_eval=None):
+    """Thời gian phân tích AI ổn định — không lẫn với thời gian upload."""
+    if ai_eval and ai_eval.get("time"):
+        return _format_vn_time(ai_eval.get("time"))
+    proc_ts = _lay_epoch_tu_processed(v.get("processed_path") if v else None)
+    if proc_ts:
+        try:
+            return datetime.fromtimestamp(proc_ts).strftime("%H:%M - %d/%m/%Y")
+        except (OSError, OverflowError, ValueError):
+            pass
+    return None
+
+
+def _lay_thoi_gian_phan_tich_moi_nhat_bn(evals, username):
+    """Thời gian phân tích AI mới nhất của một BN (định dạng thống nhất)."""
+    best_t = datetime.min
+    best_str = None
+    for e in evals or []:
+        if e.get("doctor_username") != "AI_Researcher":
+            continue
+        if e.get("patient_username") != username:
+            continue
+        t = _parse_vn_datetime(e.get("time")) or datetime.min
+        if t >= best_t:
+            best_t = t
+            best_str = _format_vn_time(e.get("time"))
+    return best_str
+
+
+def _tom_tat_benh_nhan_tu_video(video_list, ai_eval_lookup, ai_eval_by_exercise):
+    """Gộp theo BN: tên, số video, thời gian phân tích gần nhất."""
+    by_user = {}
+    for v in video_list or []:
+        u = v.get("username")
+        if not u:
+            continue
+        ev_key = _normalize_video_key(u, v.get("video_name"), v.get("exercise"))
+        ai_eval = ai_eval_lookup.get(ev_key) or ai_eval_by_exercise.get((u, v.get("exercise")))
+        t_str = _lay_thoi_gian_phan_tich_on_dinh(v, ai_eval)
+        t_dt = _parse_vn_datetime(t_str) if t_str else datetime.min
+        row = by_user.get(u)
+        if not row:
+            by_user[u] = {
+                "username": u,
+                "full_name": v.get("full_name") or u,
+                "video_count": 1,
+                "last_analysis": t_str,
+                "last_dt": t_dt,
+            }
+            continue
+        row["video_count"] += 1
+        if t_dt >= row["last_dt"]:
+            row["last_dt"] = t_dt
+            row["last_analysis"] = t_str
+    return sorted(
+        by_user.values(),
+        key=lambda x: x.get("last_dt") or datetime.min,
+        reverse=True,
+    )
+
+
 def _dedup_evaluations(evals):
     """Giữ bản đánh giá mới nhất theo (BN, video, bài tập, người đánh giá)."""
     best = {}
@@ -608,13 +678,9 @@ def _chon_video_moi_hon(a, b):
 
 
 def _lay_thoi_gian_phan_tich_hien_thi(v, ai_eval=None):
-    """Thời gian hiển thị mục đã phân tích — lấy từ đánh giá AI mới nhất, không dùng video_list cũ."""
-    if ai_eval and ai_eval.get("time"):
-        return _format_vn_time(ai_eval.get("time"))
-    upload_t = _parse_upload_time_from_filename(v.get("video_path") or v.get("video_name"))
-    if upload_t:
-        return upload_t
-    return _format_vn_time(v.get("time"), default="N/A")
+    """Thời gian hiển thị mục đã phân tích — chỉ từ AI eval / processed, không dùng upload."""
+    t = _lay_thoi_gian_phan_tich_on_dinh(v, ai_eval)
+    return t if t else "Chưa phân tích"
 
 
 def _lay_trang_thai_video_danh_sach(v, ai_eval=None, doc_eval=None, user_role=None):
@@ -624,7 +690,8 @@ def _lay_trang_thai_video_danh_sach(v, ai_eval=None, doc_eval=None, user_role=No
     if ai_eval and ai_eval.get("time"):
         return f"Đã phân tích ({_format_vn_time(ai_eval.get('time'), default='N/A')})"
     if v.get("status") == "Đã phân tích":
-        return f"Đã phân tích ({_lay_thoi_gian_phan_tich_hien_thi(v, ai_eval)})"
+        t_on_dinh = _lay_thoi_gian_phan_tich_on_dinh(v, ai_eval)
+        return f"Đã phân tích ({t_on_dinh or 'N/A'})"
     if user_role == "Bác sĩ / KTV PHCN":
         return "Đang chờ bác sĩ đánh giá"
     return v.get("status") or "Chờ xử lý"
@@ -4175,6 +4242,39 @@ st.markdown("""
         color: white !important;
     }
 
+    /* Nút secondary — tách khỏi primary để bấm đúng vai trò */
+    .stButton button[kind="secondary"],
+    [data-testid="stBaseButton-secondary"] {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #e8e8e8 !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        box-shadow: none !important;
+    }
+    .stButton button[kind="secondary"]:hover,
+    [data-testid="stBaseButton-secondary"]:hover {
+        background: rgba(255, 255, 255, 0.14) !important;
+        color: #ffffff !important;
+    }
+
+    /* Sửa nút bị mờ/không bấm được khi Streamlit rerun */
+    .stButton > button:not(:disabled),
+    .stDownloadButton > button:not(:disabled),
+    [data-testid="stBaseButton-primary"]:not(:disabled),
+    [data-testid="stBaseButton-secondary"]:not(:disabled),
+    [data-testid="stFormSubmitButton"] button:not(:disabled) {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        opacity: 1 !important;
+        position: relative !important;
+        z-index: 2 !important;
+    }
+    .stApp[data-test-script-state="running"] .stButton > button:not(:disabled),
+    .stApp[data-test-script-state="running"] [data-testid="stBaseButton-primary"]:not(:disabled),
+    .stApp[data-test-script-state="running"] [data-testid="stBaseButton-secondary"]:not(:disabled) {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+    }
+
     /* Đảm bảo chữ bên trong không bị đổi màu bởi Streamlit default */
     .stButton button p, .stDownloadButton button p {
         color: white !important;
@@ -5321,7 +5421,7 @@ def hien_thi_tab_tien_trien():
             df_show.rename(columns={'full_name': 'Bệnh nhân', 'ngay': 'Thời gian tập xong', 'bai_tap': 'Bài tập'}, inplace=True)
         if 'accuracy' in df_show.columns:
             df_show['accuracy'] = df_show['accuracy'].apply(lambda x: f"{x:.1f}%")
-        st.dataframe(df_show, width="stretch")
+        st.dataframe(df_show, use_container_width=True)
         
         # 4. Nút xóa lịch sử (để làm mới nếu cần)
         if st.button("🗑️ Xóa toàn bộ lịch sử", type="secondary"):
@@ -5739,12 +5839,23 @@ def hien_thi_tab_phan_tich_va_video_ncv():
                 )
         st.markdown("---")
     
-    # Tạo sub-tabs bên trong
-    sub_tabs = st.tabs(["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & ẢNH FRAME"])
-    
-    with sub_tabs[0]:
+    ncv_sub_list = ["📊 BIỂU ĐỒ PHÂN TÍCH", "🎬 VIDEO & ẢNH FRAME"]
+    if st.session_state.get("ncv_sub_tab") not in ncv_sub_list:
+        st.session_state.ncv_sub_tab = ncv_sub_list[0]
+    ncv_sub = st.segmented_control(
+        "Sub menu NCV",
+        options=ncv_sub_list,
+        default=st.session_state.ncv_sub_tab,
+        key="ncv_sub_tab_widget",
+        label_visibility="collapsed",
+    )
+    if ncv_sub:
+        st.session_state.ncv_sub_tab = ncv_sub
+    else:
+        ncv_sub = st.session_state.ncv_sub_tab
+    if ncv_sub == "📊 BIỂU ĐỒ PHÂN TÍCH":
         hien_thi_tab_phan_tich(key_suffix="ncv_combined_tab")
-    with sub_tabs[1]:
+    else:
         hien_thi_frames_day_du(key_suffix="ncv_combined_video_tab")
 
 def hien_thi_tab_nckh_va_thanh_vien_ncv():
@@ -5891,7 +6002,7 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
     selected_video = st.session_state.get('current_eval_video')
     has_ai = False
     if selected_video:
-        evals = load_data(EVALUATIONS_FILE)
+        evals = _evals_dedup_cached(_mtimes_video_eval()[1])
         has_ai = any(
             e.get('doctor_username') == "AI_Researcher" and 
             e['patient_username'] == selected_video['username'] and 
@@ -5901,14 +6012,25 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
         )
     
     tab_list = ["📝 ĐÁNH GIÁ PHCN", "📄 PHIẾU NCKH", "🔬 KẾT QUẢ TỪ NCV (AI)", "🎬 VIDEO & HÌNH ẢNH"]
-    sub_tabs = st.tabs(tab_list)
+    if st.session_state.get("doc_sub_tab") not in tab_list:
+        st.session_state.doc_sub_tab = tab_list[0]
+    selected_sub = st.segmented_control(
+        "Sub menu bác sĩ",
+        options=tab_list,
+        default=st.session_state.doc_sub_tab,
+        key="doc_sub_tab_widget",
+        label_visibility="collapsed",
+    )
+    if selected_sub:
+        st.session_state.doc_sub_tab = selected_sub
+    else:
+        selected_sub = st.session_state.doc_sub_tab
     
-    with sub_tabs[0]:
+    if selected_sub == "📝 ĐÁNH GIÁ PHCN":
         hien_thi_form_danh_gia_bac_si()
-    with sub_tabs[1]:
+    elif selected_sub == "📄 PHIẾU NCKH":
         hien_thi_tab_phieu_nckh()
-        
-    with sub_tabs[2]:
+    elif selected_sub == "🔬 KẾT QUẢ TỪ NCV (AI)":
         if not selected_video:
             st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
         elif not has_ai:
@@ -5941,8 +6063,7 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
                     st.warning("⚠️ NCV đã gửi báo cáo nhưng dữ liệu biểu đồ chi tiết chưa được đồng bộ hoặc bị lỗi file.")
             else:
                 st.warning("⚠️ Không tìm thấy dữ liệu video AI tương ứng.")
-                
-    with sub_tabs[3]:
+    elif selected_sub == "🎬 VIDEO & HÌNH ẢNH":
         if not selected_video:
             st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem video trích xuất.")
         elif not has_ai:
@@ -11316,7 +11437,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             st.markdown("#### 📜 Trích xuất tọa độ 33 khớp xương (Keypoints)")
             st.info("💡 Đây là dữ liệu thô phục vụ việc đối soát và huấn luyện mô hình (Dành cho bản Heavy).")
             # Hiển thị 20 dòng đầu của DF để xem cấu trúc keypoints
-            st.dataframe(df.head(20), width="stretch")
+            st.dataframe(df.head(20), use_container_width=True)
             st.download_button(
                 "📥 Tải xuống toàn bộ tọa độ (CSV)",
                 df.to_csv(index=False).encode('utf-8'),
@@ -12233,7 +12354,12 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
 
     my_history_vids = sorted(
         my_history_vids,
-        key=lambda x: _parse_vn_datetime(_lay_thoi_gian_upload_video(x)) or datetime.min,
+        key=lambda x: _parse_vn_datetime(
+            _lay_thoi_gian_phan_tich_on_dinh(
+                x,
+                _lay_eval_moi_nhat_theo_bai_tap(my_evals, x.get("username"), x.get("exercise"), doctor_username="AI_Researcher"),
+            )
+        ) or datetime.min,
         reverse=True,
     )
 
@@ -12309,12 +12435,18 @@ def hien_thi_tab_ket_qua_da_chon(my_history_vids, my_evals, has_ai_eval, user_ro
                 )
                 acc = _lay_do_chinh_xac_hien_thi(v, ai_e)
                 verdict = "Đúng" if acc >= 80 else ("Gần đúng" if acc >= 60 else "Sai")
-                t_show = _lay_thoi_gian_upload_video(v)
+                t_show = _lay_thoi_gian_phan_tich_on_dinh(v, ai_e) or "Chưa phân tích"
                 return f"🕒 {t_show} - Bài: {v.get('exercise')} ({verdict}: {acc:.1f}%)"
             history_opts = [{"label": "--- Đang chờ kết quả mới (Ẩn lịch sử) ---", "val": None}] + [{"label": _hist_label(v), "val": v} for v in my_history_vids]
         else:
             history_opts = [{"label": "--- Chọn một phiên tập để xem ---", "val": None}] + [
-                {"label": f"🕒 {_lay_thoi_gian_upload_video(v)} - {v.get('full_name')} - {v.get('exercise')}", "val": v}
+                {
+                    "label": (
+                        f"🕒 {_lay_thoi_gian_phan_tich_on_dinh(v, _lay_eval_moi_nhat_theo_bai_tap(my_evals, v.get('username'), v.get('exercise'), doctor_username='AI_Researcher')) or 'Chưa phân tích'} "
+                        f"- {v.get('full_name')} - {v.get('exercise')}"
+                    ),
+                    "val": v,
+                }
                 for v in my_history_vids
             ]
 
@@ -14507,7 +14639,7 @@ def hien_thi_tab_quan_tri_vien():
         if search_q:
             df_display = df_display[df_display.apply(lambda row: search_q.lower() in str(row).lower(), axis=1)]
             
-        st.dataframe(df_display, width="stretch", height=400)
+        st.dataframe(df_display, use_container_width=True, height=400)
         
         st.markdown("---")
         st.markdown("### 🗑️ Xóa tài khoản")
@@ -14652,7 +14784,7 @@ def hien_thi_tab_quan_tri_vien():
             if f_role:
                 df_act = df_act[df_act["Vai trò"].isin(f_role)]
                 
-            st.dataframe(df_act, width="stretch", height=500)
+            st.dataframe(df_act, use_container_width=True, height=500)
             
             # Nút xuất log
             csv_log = df_act.to_csv(index=False).encode('utf-8-sig')
@@ -14972,6 +15104,7 @@ def _chuan_hoa_widget_loc_video(key, options, default):
         st.session_state[key] = default
 
 
+@st.fragment
 def hien_thi_danh_sach_video_fragment(user_role):
     evals_db = _evals_dedup_cached(_mtimes_video_eval()[1])
     video_list = load_danh_sach_video_nghien_cuu()
@@ -15010,6 +15143,21 @@ def hien_thi_danh_sach_video_fragment(user_role):
                 prev = doc_eval_by_exercise.get((pu, ex))
                 if not prev or (_parse_vn_datetime(e.get('time')) or datetime.min) >= (_parse_vn_datetime(prev.get('time')) or datetime.min):
                     doc_eval_by_exercise[(pu, ex)] = e
+
+        patient_summary = _tom_tat_benh_nhan_tu_video(video_list, ai_eval_lookup, ai_eval_by_exercise)
+        if patient_summary:
+            st.markdown("##### 👥 DANH SÁCH BỆNH NHÂN — THỜI GIAN PHÂN TÍCH GẦN NHẤT")
+            for row in patient_summary:
+                last_t = row.get("last_analysis") or "Chưa phân tích"
+                st.markdown(
+                    f"<div style='background:rgba(0,198,255,0.06);border:1px solid rgba(0,198,255,0.2);"
+                    f"border-left:4px solid #00c6ff;border-radius:10px;padding:10px 14px;margin-bottom:8px;'>"
+                    f"<b>👤 {row.get('full_name')}</b> "
+                    f"<span style='color:#888;font-size:0.85rem;'>({row.get('video_count')} video)</span><br>"
+                    f"<span style='color:#00c6ff;font-size:0.95rem;'>🕒 Phân tích gần nhất: <b>{last_t}</b></span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
 
         # --- BỘ LỌC DANH SÁCH VIDEO ---
         st.markdown("##### 🔍 BỘ LỌC DANH SÁCH")
@@ -15076,6 +15224,14 @@ def hien_thi_danh_sach_video_fragment(user_role):
                     continue
             filtered_videos.append(v)
 
+        def _sort_key_by_analysis(v_item):
+            ev_k = _normalize_video_key(v_item.get("username"), v_item.get("video_name"), v_item.get("exercise"))
+            ai_e = ai_eval_lookup.get(ev_k) or ai_eval_by_exercise.get((v_item.get("username"), v_item.get("exercise")))
+            t_s = _lay_thoi_gian_phan_tich_on_dinh(v_item, ai_e)
+            return _parse_vn_datetime(t_s) if t_s else datetime.min
+
+        filtered_videos.sort(key=_sort_key_by_analysis, reverse=True)
+
         if (
             not filtered_videos
             and video_list
@@ -15114,7 +15270,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                         ):
                             n_start, n_skip = bat_dau_phan_tich_hang_loat(pending_batch, only_pending=True)
                             st.toast(f"Đã khởi chạy {n_start} video (bỏ qua {n_skip}). Đang chạy nền: {running_n + n_start}.", icon="🚀")
-                            st.rerun()
+                            st.rerun(scope="fragment")
                     else:
                         st.caption("✅ Không còn video chưa phân tích trong bộ lọc hiện tại.")
                 with b_col2:
@@ -15125,7 +15281,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                     ):
                         n_start, n_skip = bat_dau_phan_tich_hang_loat(filtered_videos, only_pending=False, force_reanalyze=True)
                         st.toast(f"Đã xếp hàng chạy lại {n_start} video (bỏ qua {n_skip}).", icon="🔁")
-                        st.rerun()
+                        st.rerun(scope="fragment")
                 if running_n or pending_batch:
                     st.caption(
                         f"Tối đa **{MAX_CONCURRENT_ANALYSIS}** video chạy cùng lúc; video tiếp theo tự xếp hàng. "
@@ -15150,7 +15306,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                 with pg_c1:
                     if st.button("◀ Trang trước", disabled=(st.session_state.vid_list_page == 0), key="vid_pg_prev"):
                         st.session_state.vid_list_page -= 1
-                        st.rerun()
+                        st.rerun(scope="fragment")
                 with pg_c2:
                     st.markdown(
                         f"<div style='text-align:center; padding:6px; color:#aaa;'>Trang {st.session_state.vid_list_page + 1} / {total_pages} "
@@ -15160,7 +15316,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                 with pg_c3:
                     if st.button("Trang sau ▶", disabled=(st.session_state.vid_list_page >= total_pages - 1), key="vid_pg_next"):
                         st.session_state.vid_list_page += 1
-                        st.rerun()
+                        st.rerun(scope="fragment")
 
             start_idx = st.session_state.vid_list_page * PAGE_SIZE
             page_videos = list(enumerate(filtered_videos))[start_idx: start_idx + PAGE_SIZE]
@@ -15199,8 +15355,12 @@ def hien_thi_danh_sach_video_fragment(user_role):
                     v_has_ai = ai_eval is not None
 
                     display_status = _lay_trang_thai_video_danh_sach(v, ai_eval, doc_eval, user_role)
+                    analysis_time = _lay_thoi_gian_phan_tich_on_dinh(v, ai_eval) or "Chưa phân tích"
                     upload_time = _lay_thoi_gian_upload_video(v)
-                    with st.expander(f"🎬 {v['full_name']} - {v['exercise']} (📤 {upload_time}) - {display_status}"):
+                    with st.expander(
+                        f"👤 {v['full_name']} — {v['exercise']} | "
+                        f"🕒 Phân tích: {analysis_time} | 📤 Upload: {upload_time} | {display_status}"
+                    ):
                         # Tỷ lệ cột [1.3, 1.0] để nới rộng video hiển thị vừa vặn hơn
                         col_v1, col_v2 = st.columns([1.3, 1.0])
                         with col_v1:
@@ -15217,12 +15377,12 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                     st.error("❌ Chưa có đường dẫn video cho mục này.")
                                 if st.button("⏸️ Ẩn video", key=f"hide_vid_btn_{idx}", use_container_width=True):
                                     st.session_state[show_vid_key] = False
-                                    st.rerun()
+                                    st.rerun(scope="fragment")
                             else:
                                 st.info("ℹ️ Nhấp vào nút bên dưới để xem video (hệ thống tự tải từ Cloud nếu cần).")
                                 if st.button("▶️ Xem video", key=f"play_vid_btn_{idx}", type="primary", use_container_width=True):
                                     st.session_state[show_vid_key] = True
-                                    st.rerun()
+                                    st.rerun(scope="fragment")
                         with col_v2:
                             st.write(f"**Người tập:** {v['full_name']}")
                             is_gay_ex = any(kw in str(v.get('exercise', '')).lower() for kw in ["gậy", "gay", "pulley", "stick"])
@@ -15259,8 +15419,23 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                     st.write(f"**Độ chính xác AI:** {acc_text}")
                             
                             st.write(f"**Trạng thái:** {display_status}")
-                            if ai_eval and ai_eval.get("time"):
-                                st.write(f"**Thời gian phân tích AI:** {_format_vn_time(ai_eval.get('time'), default='N/A')}")
+                            # Thời gian phân tích AI — badge màu nổi bật
+                            if analysis_time and analysis_time != "Chưa phân tích":
+                                st.markdown(
+                                    f"**🤖 Phân tích lần cuối:**<br>"
+                                    f"<span style='background:rgba(0,198,255,0.15); color:#00c6ff; "
+                                    f"padding:3px 10px; border-radius:8px; font-size:0.9rem; "
+                                    f"border:1px solid rgba(0,198,255,0.4); font-weight:bold;'>"
+                                    f"🕒 {analysis_time}</span>",
+                                    unsafe_allow_html=True
+                                )
+                            else:
+                                st.markdown(
+                                    "**🤖 Phân tích lần cuối:** "
+                                    "<span style='color:#888; font-size:0.85rem;'>⏳ Chưa phân tích</span>",
+                                    unsafe_allow_html=True
+                                )
+                            st.caption(f"📤 Upload: {upload_time}")
                         
                             # Khối chẩn đoán thông tin file (chỉ hiển thị cho bác sĩ/NCV để debug)
                             if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
@@ -15508,7 +15683,7 @@ def _render_main_tab_content(tab_titles, user_role):
                                 with symp_cols[i % 3]:
                                     with st.container(border=True):
                                         st.markdown(f"**👤 {s['full_name']}**")
-                                        st.caption(f"🕒 {s['time']}")
+                                        st.caption(f"🕒 {_format_vn_time(s.get('time'), default='N/A')}")
                                         st.write(f"**Đau (VAS):** {s['vas']}/10")
                                         with st.expander("Chi tiết triệu chứng"):
                                             st.write(f"**Tuổi:** {s['age']} | **Mã:** {s['patient_id']}")
@@ -16028,13 +16203,14 @@ def _render_main_tab_content(tab_titles, user_role):
                 if not selected_video:
                     st.info("ℹ️ Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả AI.")
                 else:
-                    all_vids = load_data(VIDEOS_FILE)
+                    all_vids = load_danh_sach_video_nghien_cuu()
                     v_data = next((v for v in all_vids if v.get('username') == selected_video.get('username') and 
                                    (v.get('video_name') == selected_video.get('video_name') or 
                                     selected_video.get('video_name', '') in v.get('video_name', ''))), None)
                     if v_data and v_data.get('metrics'):
-                        # KIỂM TRA XEM NCV ĐÃ BẤM GỬI BÁO CÁO CHƯA
-                        evals = load_data(EVALUATIONS_FILE)
+                        # KIỂM TRA XEM NCV ĐÃ BẤM GỬI BÁO CÁO CHƯA (dùng cache)
+                        _, e_mtime = _mtimes_video_eval()
+                        evals = _evals_dedup_cached(e_mtime)
                         has_sent = any(e.get('doctor_username') == "AI_Researcher" and 
                                        e.get('patient_username') == v_data.get('username') and
                                        (e.get('video_name') == v_data.get('video_name') or v_data.get('video_name', '') in e.get('video_name', ''))
@@ -16372,19 +16548,22 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # THỐNG KÊ NHANH CHO BÁC SĨ
-                v_list = load_data(VIDEOS_FILE)
-                # Tính số video chưa được bác sĩ này đánh giá (giả định bác sĩ hiện tại là người đánh giá)
-                evals_db = load_data(EVALUATIONS_FILE)
-                current_doctor = st.session_state.user_info.get('username')
+                # THỐNG KÊ NHANH CHO BÁC SĨ — dùng cache để tránh load 341KB mỗi rerun
+                v_list = load_danh_sach_video_nghien_cuu()
+                v_mtime, e_mtime = _mtimes_video_eval()
+                evals_db_cached = _evals_dedup_cached(e_mtime)
                 
-                # Đếm số video chưa có đánh giá từ bất kỳ bác sĩ nào
-                pending_eval = 0
-                for v in v_list:
-                    # Bất kỳ bác sĩ nào đánh giá rồi thì không còn ở trạng thái "Chờ đánh giá" nữa
-                    has_eval = any(e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v['username'] and e.get('video_name') == v.get('video_name') and e.get('exercise') == v.get('exercise') for e in evals_db)
-                    if not has_eval:
-                        pending_eval += 1
+                # Đếm O(n): build set các (username, video_name, exercise) đã được bác sĩ đánh giá
+                evaluated_keys = {
+                    (e.get('patient_username'), e.get('video_name'), e.get('exercise'))
+                    for e in evals_db_cached
+                    if e.get('doctor_username') and e.get('doctor_username') != "AI_Researcher"
+                }
+                pending_eval = sum(
+                    1 for v in v_list
+                    if (v.get('username'), v.get('video_name'), v.get('exercise')) not in evaluated_keys
+                )
+                total_patients = len(set(v.get('username') for v in v_list if v.get('username')))
 
                 st.markdown(f"""
                 <div style="display: flex; gap: 8px; margin-bottom: 20px;">
@@ -16394,7 +16573,7 @@ def main():
                     </div>
                     <div style="flex:1; background: rgba(255,255,255,0.03); padding: 12px 8px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
                         <p style="margin:0; font-size: 0.65rem; color: #888; font-weight: bold;">TỔNG BỆNH NHÂN</p>
-                        <p style="margin:5px 0 0; font-size: 1.3rem; font-weight: bold; color: #00c6ff;">{len(set([v['username'] for v in v_list]))}</p>
+                        <p style="margin:5px 0 0; font-size: 1.3rem; font-weight: bold; color: #00c6ff;">{total_patients}</p>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -16450,7 +16629,16 @@ def main():
         tab_titles = ["🏠 TRANG CHỦ", "🛠️ QUẢN TRỊ VIÊN", "📚 THÔNG TIN TỔNG HỢP", "👥 HỒ SƠ ĐỀ TÀI & ĐỘI NGŨ CHUYÊN GIA", "💬 PHẢN HỒI"]
     elif user_role == "Bác sĩ / KTV PHCN":
         selected_video_main = st.session_state.get('current_eval_video')
-        _, has_video_output = _lay_meta_tab_bac_si(selected_video_main)
+        # Cache kết quả _lay_meta_tab_bac_si theo video key — tránh scan disk mỗi rerun
+        _vid_key_meta = (
+            (selected_video_main or {}).get("username", ""),
+            (selected_video_main or {}).get("video_name", ""),
+        )
+        if st.session_state.get("_meta_tab_vid_key") != _vid_key_meta:
+            _, _has_out = _lay_meta_tab_bac_si(selected_video_main)
+            st.session_state["_meta_tab_vid_key"] = _vid_key_meta
+            st.session_state["_meta_tab_has_output"] = _has_out
+        has_video_output = st.session_state.get("_meta_tab_has_output", False)
         tab_titles = ["🏠 TRANG CHỦ", "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"]
         if has_video_output:
             tab_titles.append("🎬 VIDEO & ẢNH")
