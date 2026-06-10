@@ -322,7 +322,7 @@ Rehab-AI-Monitor/
 ├── 🖼️ Tài nguyên hình ảnh & Logo (Thư mục assets/)
 │   └── assets/
 │       ├── abc1.png                   # Logo Đại học Y tế Công cộng (HUPH)
-│       └── logo_data_science_huph.jpg # Logo khoa Khoa học dữ liệu HUPH
+│       └── logo_data_science_sm.png   # Logo khoa Khoa học dữ liệu HUPH
 │
 ├── 📂 Thư mục tài liệu hướng dẫn & Báo cáo (docs/)
 │   ├── README_UI.md               # Tài liệu thuyết minh chi tiết về thiết kế giao diện UI/UX

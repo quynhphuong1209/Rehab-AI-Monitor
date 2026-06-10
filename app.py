@@ -351,7 +351,7 @@ def _html_hang_logo_header():
     """HTML 3 logo nằm TRONG .main-header — viền nháy sáng (dùng chung login & trang chính)."""
     school_path = _duong_dan_logo_asset("abc1.png")
     school_uri = (_image_path_to_data_uri(school_path) if school_path else None) or get_school_logo_base64()
-    ds_path = _duong_dan_logo_asset("logo_data_science_sm.png", "logo_data_science_huph.jpg")
+    ds_path = _duong_dan_logo_asset("logo_data_science_sm.png")
     ds_uri = (_image_path_to_data_uri(ds_path) if ds_path else None) or DS_LOGO_URL
     pnt_uri = "https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg"
     return f"""
