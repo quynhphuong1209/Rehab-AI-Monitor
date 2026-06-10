@@ -572,6 +572,19 @@ def _lay_thoi_gian_phan_tich_hien_thi(v, ai_eval=None):
     return _format_vn_time(v.get("time"), default="N/A")
 
 
+def _lay_trang_thai_video_danh_sach(v, ai_eval=None, doc_eval=None, user_role=None):
+    """Nhãn trạng thái danh sách video — thời gian khớp tab Kết quả đánh giá."""
+    if doc_eval:
+        return f"Đã đánh giá ({_format_vn_time(doc_eval.get('time'), default='N/A')})"
+    if ai_eval and ai_eval.get("time"):
+        return f"Đã phân tích ({_format_vn_time(ai_eval.get('time'), default='N/A')})"
+    if v.get("status") == "Đã phân tích":
+        return f"Đã phân tích ({_lay_thoi_gian_phan_tich_hien_thi(v, ai_eval)})"
+    if user_role == "Bác sĩ / KTV PHCN":
+        return "Đang chờ bác sĩ đánh giá"
+    return v.get("status") or "Chờ xử lý"
+
+
 def _tao_ban_ghi_video_tu_danh_gia(doc_eval, ai_eval, users=None):
     """Tạo bản ghi video_list từ đánh giá khi video_list.json thiếu hoặc lệch khóa."""
     users = users if users is not None else load_users()
@@ -637,10 +650,57 @@ def _lay_video_nghien_cuu_chinh_thuc(video_list, evals=None):
     return out
 
 
+@st.cache_data(show_spinner=False)
+def _evals_dedup_cached(e_mtime):
+    try:
+        evals = _load_data_cached(EVALUATIONS_FILE, e_mtime)
+    except Exception:
+        evals = []
+    return _dedup_evaluations(evals)
+
+
+@st.cache_data(show_spinner=False)
+def _video_nghien_cuu_cached(v_mtime, e_mtime):
+    evals = _evals_dedup_cached(e_mtime)
+    vlist = _load_video_list_core(v_mtime, e_mtime) or []
+    return _lay_video_nghien_cuu_chinh_thuc(vlist, evals)
+
+
+def _mtimes_video_eval():
+    try:
+        v_mtime = os.path.getmtime(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else 0
+    except Exception:
+        v_mtime = 0
+    try:
+        e_mtime = os.path.getmtime(EVALUATIONS_FILE) if os.path.exists(EVALUATIONS_FILE) else 0
+    except Exception:
+        e_mtime = 0
+    return v_mtime, e_mtime
+
+
+def load_danh_sach_video_nghien_cuu():
+    """8 video nghiên cứu — cache theo mtime JSON (nhanh khi chuyển tab)."""
+    v_mtime, e_mtime = _mtimes_video_eval()
+    return _video_nghien_cuu_cached(v_mtime, e_mtime) or []
+
+
+def _tim_video_cho_progress(video_path):
+    """Tìm video theo path — chỉ quét 8 video nghiên cứu, không load toàn bộ video_list."""
+    if not video_path:
+        return None
+    cur = st.session_state.get("current_eval_video")
+    if cur and cur.get("video_path") == video_path:
+        return cur
+    for v in load_danh_sach_video_nghien_cuu():
+        if v.get("video_path") == video_path:
+            return v
+    return None
+
+
 def _thong_ke_video_nghien_cuu():
     """Thống kê chỉ trên 8 video nghiên cứu — không đếm toàn bộ video_list."""
-    evals_db = _dedup_evaluations(load_data(EVALUATIONS_FILE))
-    v_research = _lay_video_nghien_cuu_chinh_thuc(load_video_list_an_toan(), evals_db)
+    evals_db = _evals_dedup_cached(_mtimes_video_eval()[1])
+    v_research = load_danh_sach_video_nghien_cuu()
     total = len(v_research)
     pending = 0
     acc_vals = []
@@ -2177,6 +2237,9 @@ def save_data(file_path, data):
         json.dump(data, f, ensure_ascii=False, indent=4)
     try:
         _load_data_cached.clear()
+        _load_video_list_core.clear()
+        _video_nghien_cuu_cached.clear()
+        _evals_dedup_cached.clear()
     except Exception:
         pass
     # Tự động đẩy file dữ liệu lên Hugging Face Dataset
@@ -7684,8 +7747,7 @@ def hien_thi_jobs_dang_chay_fragment(key_suffix=""):
             elif st.button("👁️ Theo dõi", key=f"track_job_{key_suffix}_{job_idx}_{hashlib.md5((vp or str(job_idx)).encode()).hexdigest()[:8]}", use_container_width=True):
                 vid = None
                 try:
-                    all_vids = load_data(VIDEOS_FILE)
-                    vid = next((x for x in all_vids if x.get('video_path') == vp), None)
+                    vid = _tim_video_cho_progress(vp)
                 except Exception:
                     vid = None
                 if not vid:
@@ -7732,8 +7794,7 @@ def hien_thi_tien_trinh_background(video_path):
         
         # Cho phép hủy và xem kết quả cũ nếu có kết quả cũ
         try:
-            all_vids = load_data(VIDEOS_FILE)
-            v_re = next((vid for vid in all_vids if vid.get('video_path') == video_path), None)
+            v_re = _tim_video_cho_progress(video_path)
             if v_re and v_re.get('metrics'):
                 if st.button("⬅️ Quay lại xem kết quả cũ đã lưu", key=f"btn_cancel_processing_{hashlib.md5(video_path.encode()).hexdigest()}", type="secondary", use_container_width=True):
                     st.session_state.reanalyze_triggered = False
@@ -7757,10 +7818,6 @@ def hien_thi_tien_trinh_background(video_path):
                     st.rerun()
         except:
             pass
-            
-        # Tự động reload trang sau 3 giây để cập nhật tiến độ
-        time.sleep(3)
-        st.rerun()
         return True
         
     elif status == "error":
@@ -7788,9 +7845,8 @@ def finalize_and_refresh_analysis(video_path):
     if not prog_data:
         # Không có dữ liệu tiến độ — thử load từ video_list
         try:
-            all_vids = load_data(VIDEOS_FILE)
-            v_re = next((vid for vid in all_vids if vid.get('video_path') == video_path and vid.get('metrics')), None)
-            if v_re:
+            v_re = _tim_video_cho_progress(video_path)
+            if v_re and v_re.get('metrics'):
                 st.session_state.stats = v_re['metrics']
                 st.session_state.has_data = True
                 st.session_state.processed_video_path = v_re.get('processed_path', video_path)
@@ -7856,7 +7912,7 @@ def finalize_and_refresh_analysis(video_path):
     st.toast("✅ Phân tích hoàn tất! Đang hiển thị kết quả...", icon="🎉")
     st.rerun()
 
-@st.fragment(run_every=1)
+@st.fragment(run_every=2)
 def hien_thi_tien_trinh_background_small(video_path):
     """Hiển thị tiến trình chạy nền nhỏ gọn bên trong cột phải (không reload toàn trang)"""
     prog = read_progress(video_path)
@@ -7901,8 +7957,7 @@ def hien_thi_tien_trinh_background_small(video_path):
 
         # Cho phép hủy và xem kết quả cũ nếu có kết quả cũ
         try:
-            all_vids = load_data(VIDEOS_FILE)
-            v_re = next((vid for vid in all_vids if vid.get('video_path') == video_path), None)
+            v_re = _tim_video_cho_progress(video_path)
             if v_re and v_re.get('metrics'):
                 st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
                 if st.button("⬅️ Quay lại xem kết quả cũ đã lưu", key=f"btn_cancel_proc_small_{hashlib.md5(video_path.encode()).hexdigest()}", type="secondary", use_container_width=True):
@@ -7941,7 +7996,7 @@ def hien_thi_tien_trinh_background_small(video_path):
                 pass
             st.rerun()
 
-@st.fragment(run_every=1)
+@st.fragment(run_every=2)
 def hien_thi_tien_trinh_background_home_fragment(video_path):
     """Hiển thị giao diện tiến trình chạy nền ở màn hình trang chủ (không reload toàn trang)"""
     prog = read_progress(video_path)
@@ -7991,8 +8046,7 @@ def hien_thi_tien_trinh_background_home_fragment(video_path):
 
         # Cho phép hủy và xem kết quả cũ nếu có kết quả cũ
         try:
-            all_vids = load_data(VIDEOS_FILE)
-            v_re = next((vid for vid in all_vids if vid.get('video_path') == video_path), None)
+            v_re = _tim_video_cho_progress(video_path)
             if v_re and v_re.get('metrics'):
                 st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
                 if st.button("⬅️ Quay lại xem kết quả cũ đã lưu", key=f"btn_cancel_proc_home_{hashlib.md5(video_path.encode()).hexdigest()}", type="secondary", use_container_width=True):
@@ -8053,7 +8107,7 @@ def hien_thi_video_goc_fragment(video_path, key_suffix, video_name=""):
             st.session_state[show_key] = True
             st.rerun(scope="fragment")
 
-@st.fragment(run_every=1)
+@st.fragment(run_every=2)
 def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
     video_path = v['video_path']
     prog_data = read_progress(video_path)
@@ -8108,8 +8162,7 @@ def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
         
         # Cho phép hủy/quay lại xem kết quả cũ
         try:
-            all_vids = load_data(VIDEOS_FILE)
-            v_re = next((vid for vid in all_vids if vid.get('video_path') == video_path), None)
+            v_re = _tim_video_cho_progress(video_path)
             if v_re and v_re.get('metrics'):
                 st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
                 if st.button("⬅️ Quay lại xem kết quả cũ đã lưu", key=f"btn_cancel_proc_frag_{key_suffix}", use_container_width=True, type="secondary"):
@@ -11877,13 +11930,12 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     has_ai_eval = any(e.get('doctor_username') == "AI_Researcher" for e in my_evals)
     
     # 1. CHỈ HIỂN THỊ VIDEO GỐC BN ĐÃ CÓ NHẬN XÉT BÁC SĨ/KTV (8 video nghiên cứu)
-    all_vids = load_video_list_an_toan()
+    all_vids = load_danh_sach_video_nghien_cuu()
     if user_role == "Bệnh nhân":
         p_username = username if username else st.session_state.user_info['username']
-        my_history_vids = _lay_video_nghien_cuu_chinh_thuc(all_vids, evals)
-        my_history_vids = [v for v in my_history_vids if v.get("username") == p_username]
+        my_history_vids = [v for v in all_vids if v.get("username") == p_username]
     else:
-        my_history_vids = _lay_video_nghien_cuu_chinh_thuc(all_vids, evals)
+        my_history_vids = all_vids
 
     my_history_vids = sorted(
         my_history_vids,
@@ -14609,8 +14661,8 @@ def reset_vid_list_page():
 
 @st.fragment
 def hien_thi_danh_sach_video_fragment(user_role):
-    evals_db = _dedup_evaluations(load_data(EVALUATIONS_FILE))
-    video_list = _lay_video_nghien_cuu_chinh_thuc(load_video_list_an_toan(), evals_db)
+    evals_db = _evals_dedup_cached(_mtimes_video_eval()[1])
+    video_list = load_danh_sach_video_nghien_cuu()
     
     if st.session_state.get('delete_success'):
         st.toast(f"🗑️ {st.session_state.delete_success}", icon="✅")
@@ -14817,13 +14869,7 @@ def hien_thi_danh_sach_video_fragment(user_role):
                 doc_eval = doc_eval_lookup.get(ev_key) or doc_eval_by_exercise.get((v.get('username'), v.get('exercise')))
                 v_has_ai = ai_eval is not None
 
-                display_status = v['status']
-                if doc_eval:
-                    eval_time_formatted = _format_vn_time(doc_eval.get('time'), default='N/A')
-                    display_status = f"Đã đánh giá ({eval_time_formatted})"
-                elif user_role == "Bác sĩ / KTV PHCN":
-                    display_status = "Đang chờ bác sĩ đánh giá"
-
+                display_status = _lay_trang_thai_video_danh_sach(v, ai_eval, doc_eval, user_role)
                 upload_time = _lay_thoi_gian_upload_video(v)
                 with st.expander(f"🎬 {v['full_name']} - {v['exercise']} (📤 {upload_time}) - {display_status}"):
                     # Tỷ lệ cột [1.3, 1.0] để nới rộng video hiển thị vừa vặn hơn
@@ -14883,7 +14929,9 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                     acc_text = f"{acc_val:.1f}%" if isinstance(acc_val, (int, float)) and acc_val > 0 else ("Chưa phân tích" if acc_val == 0 else f"{acc_val}%")
                                     st.write(f"**Độ chính xác AI:** {acc_text}")
                                 
-                            st.write(f"**Trạng thái:** {v['status']}")
+                            st.write(f"**Trạng thái:** {display_status}")
+                            if ai_eval and ai_eval.get("time"):
+                                st.write(f"**Thời gian phân tích AI:** {_format_vn_time(ai_eval.get('time'), default='N/A')}")
                             
                             # Khối chẩn đoán thông tin file (chỉ hiển thị cho bác sĩ/NCV để debug)
                             if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
@@ -16047,7 +16095,7 @@ def main():
     # Tự động chọn video đầu tiên nếu chưa chọn để tăng tốc độ hiển thị kết quả lập tức cho Bác sĩ & NCV
     if user_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
         if not st.session_state.get('current_eval_video'):
-            all_vids = _lay_video_nghien_cuu_chinh_thuc(load_video_list_an_toan())
+            all_vids = load_danh_sach_video_nghien_cuu()
             if all_vids:
                 st.session_state.current_eval_video = all_vids[0]
 
