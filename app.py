@@ -354,24 +354,61 @@ def _html_hang_logo_header():
     ds_path = _duong_dan_logo_asset("logo_data_science_sm.png")
     ds_uri = (_image_path_to_data_uri(ds_path) if ds_path else None) or DS_LOGO_URL
     pnt_uri = "https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg"
-    return f"""
-    <div class="header-logos-row">
-        <div class="header-logo-glow header-logo-school" title="Trường ĐH Y tế Công cộng">
-            <img src="{school_uri}" alt="HUPH" />
-        </div>
-        <div class="header-logo-glow header-logo-ds" title="Khoa Khoa học Dữ liệu">
-            <img src="{ds_uri}" alt="Data Science" />
-        </div>
-        <div class="header-logo-glow header-logo-pnt" title="BV Đa khoa Phạm Ngọc Thạch">
-            <img src="{pnt_uri}" alt="BV Phạm Ngọc Thạch" />
-        </div>
-    </div>
-    """
+    return (
+        '<div class="header-logos-row">'
+        f'<div class="header-logo-glow header-logo-school" title="Trường ĐH Y tế Công cộng">'
+        f'<img src="{school_uri}" alt="HUPH" /></div>'
+        f'<div class="header-logo-glow header-logo-ds" title="Khoa Khoa học Dữ liệu">'
+        f'<img src="{ds_uri}" alt="Data Science" /></div>'
+        f'<div class="header-logo-glow header-logo-pnt" title="BV Đa khoa Phạm Ngọc Thạch">'
+        f'<img src="{pnt_uri}" alt="BV Phạm Ngọc Thạch" /></div>'
+        '</div>'
+    )
+
+
+def _html_header_chinh(title_color, subtitle_color, *, show_badge=False, is_light=False, extra_style=""):
+    """HTML header liền khối — tránh st.markdown thoát HTML khi có dòng trống giữa các thẻ."""
+    logos = _html_hang_logo_header()
+    title_block = (
+        f'<h1 class="app-title" style="color: {title_color}; font-family: \'Outfit\', sans-serif !important; '
+        f'font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.4rem; '
+        f'letter-spacing: -0.01em !important; word-spacing: normal !important; line-height: 1.15 !important;">'
+        f'GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>'
+        f'<div style="width: 120px; height: 4px; background: linear-gradient(90deg, #00c6ff, #0072ff); '
+        f'margin: 0.4rem auto; border-radius: 2px;"></div>'
+    )
+    subtitle_size = "1.25rem" if show_badge else "1.3rem"
+    subtitle_block = (
+        f'<p style="color: {subtitle_color}; font-family: \'Outfit\', sans-serif !important; '
+        f'font-size: {subtitle_size}; font-style: italic; opacity: 0.9;">'
+        f'Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>'
+    )
+    badge_block = ""
+    if show_badge:
+        badge_bg = "rgba(0, 198, 255, 0.1)" if not is_light else "rgba(0, 114, 255, 0.08)"
+        badge_border = "#00c6ff" if not is_light else "#0072ff"
+        footer_color = "#ccc" if not is_light else "#666"
+        badge_block = (
+            f'<div class="research-badge" style="margin-top: 0.4rem;">'
+            f'<span style="background: {badge_bg}; color: {title_color}; padding: 6px 18px; '
+            f'border-radius: 20px; border: 1px solid {badge_border}; font-size: 0.9rem; font-weight: bold; '
+            f'font-family: \'Outfit\', sans-serif !important;">'
+            f'📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC CẤP TRƯỜNG - NĂM HỌC 2025-2026</span></div>'
+            f'<p style="font-size: 0.9rem; color: {footer_color}; margin-top: 0.3rem; '
+            f'font-family: \'Outfit\', sans-serif !important;">'
+            f'Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng</p>'
+        )
+    style_attr = f' style="{extra_style}"' if extra_style else ""
+    return f'<div class="main-header"{style_attr}>{logos}{title_block}{subtitle_block}{badge_block}</div>'
+
+
+def _hien_thi_header_chinh(title_color, subtitle_color, *, show_badge=False, is_light=False, extra_style=""):
+    st.html(_html_header_chinh(title_color, subtitle_color, show_badge=show_badge, is_light=is_light, extra_style=extra_style))
 
 
 def hien_thi_hang_logo_header():
     """Giữ tương thích — logo đã gộp vào main-header; gọi riêng chỉ khi cần hàng logo."""
-    st.markdown(_html_hang_logo_header(), unsafe_allow_html=True)
+    st.html(_html_hang_logo_header())
 
 
 def _chuan_hoa_ten_video(name):
@@ -14102,14 +14139,7 @@ def hien_thi_dang_nhap_dang_ky():
     is_light = st.session_state.get('theme') == 'light'
     header_color = "#ffffff" if not is_light else "#1a1a2e"
     sub_color = "#ffffff" if not is_light else "#333333"
-    st.markdown(f"""
-    <div class="main-header" style="margin-bottom: 1.5rem;">
-        {_html_hang_logo_header()}
-        <h1 class="app-title" style="color: {header_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.4rem; letter-spacing: -0.01em !important; word-spacing: normal !important; line-height: 1.15 !important;">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
-        <div style="width: 120px; height: 4px; background: linear-gradient(90deg, #00c6ff, #0072ff); margin: 0.4rem auto; border-radius: 2px;"></div>
-        <p style="color: {sub_color}; font-family: 'Outfit', sans-serif !important; font-size: 1.3rem; font-style: italic; opacity: 0.9;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
-    </div>
-    """, unsafe_allow_html=True)
+    _hien_thi_header_chinh(header_color, sub_color, is_light=is_light, extra_style="margin-bottom: 1.5rem;")
     
     # Sử dụng cột để tạo khung hình vuông ở giữa màn hình
     _, col_mid, _ = st.columns([1, 1.8, 1])
@@ -16028,24 +16058,7 @@ def main():
     is_light = st.session_state.get('theme') == 'light'
     header_h1_color = "#ffffff" if not is_light else "#1a1a2e"
     header_p_color = "#ffffff" if not is_light else "#333333"
-    badge_bg = "rgba(0, 198, 255, 0.1)" if not is_light else "rgba(0, 114, 255, 0.08)"
-    badge_border = "#00c6ff" if not is_light else "#0072ff"
-    st.markdown(f"""
-    <div class="main-header">
-        {_html_hang_logo_header()}
-        <h1 class="app-title" style="color: {header_h1_color}; font-family: 'Outfit', sans-serif !important; font-weight: 900; margin-bottom: 0.4rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); letter-spacing: -0.01em !important; word-spacing: normal !important; line-height: 1.15 !important;">GIÁM SÁT PHỤC HỒI CHỨC NĂNG BẰNG TRÍ TUỆ NHÂN TẠO 🏥</h1>
-        <div style="width: 120px; height: 4px; background: linear-gradient(90deg, #00c6ff, #0072ff); margin: 0.4rem auto; border-radius: 2px;"></div>
-        <p style="color: {header_p_color}; font-family: 'Outfit', sans-serif !important; font-style: italic; font-size: 1.25rem;">Hệ thống giám sát tập luyện Phục hồi chức năng thông minh cao cấp</p>
-        <div class="research-badge" style="margin-top: 0.4rem;">
-            <span style="background: {badge_bg}; color: {header_h1_color}; padding: 6px 18px; border-radius: 20px; border: 1px solid {badge_border}; font-size: 0.9rem; font-weight: bold; font-family: 'Outfit', sans-serif !important;">
-                📚 ĐỀ TÀI NGHIÊN CỨU KHOA HỌC CẤP TRƯỜNG - NĂM HỌC 2025-2026
-            </span>
-        </div>
-        <p style="font-size: 0.9rem; color: {'#ccc' if not is_light else '#666'}; margin-top: 0.3rem; font-family: 'Outfit', sans-serif !important;">
-            Bệnh viện Đa khoa Phạm Ngọc Thạch - Trường Đại học Y tế Công cộng
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    _hien_thi_header_chinh(header_h1_color, header_p_color, show_badge=True, is_light=is_light)
     
     user_role = st.session_state.user_info.get('role', 'Bệnh nhân')
     
