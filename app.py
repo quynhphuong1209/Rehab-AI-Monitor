@@ -15040,8 +15040,8 @@ def hien_thi_danh_sach_video_fragment(user_role):
                         st.rerun(scope="fragment")
                 if running_n or pending_batch:
                     st.caption(
-                        f"Tối đa **{MAX_CONCURRENT_ANALYSIS}** video chạy cùng lúc; video thứ 5+ tự chờ trong hàng đợi. "
-                        "Theo dõi ở tab **Phân tích** hoặc panel **Đang phân tích X video**."
+                        f"Tối đa **{MAX_CONCURRENT_ANALYSIS}** video chạy cùng lúc; video tiếp theo tự xếp hàng. "
+                        "Theo dõi tiến độ ở tab **🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU**."
                     )
                 st.markdown("---")
 
@@ -16388,9 +16388,6 @@ def main():
     if st.session_state.get("active_tab_widget") not in tab_titles:
         st.session_state.pop("active_tab_widget", None)
         st.session_state.active_tab = tab_titles[0]
-
-    if user_role == "Nghiên cứu viên":
-        hien_thi_jobs_dang_chay_fragment(key_suffix="main_top")
 
     _render_main_tab_content(tab_titles, user_role)
 
