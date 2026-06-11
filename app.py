@@ -1572,11 +1572,153 @@ def _lam_moi_ban_ghi_video_tu_db(v):
 
 
 def _tim_video_phan_tich_moi_nhat():
-    """Video nghiên cứu đã phân tích gần nhất (ưu tiên có metrics + CSV)."""
+    """Video nghiên cứu đã phân tích gần nhất."""
+    analyzed = _danh_sach_video_phan_tich_sap_xep()
+    return analyzed[0] if analyzed else None
+
+
+def _tim_video_co_du_lieu_tai_duoc(preferred=None):
+    """Thử lần lượt các video đã phân tích — chọn bản tải được CSV/JSON."""
+    candidates = []
+    seen_slots = set()
+    if preferred:
+        p = _lam_moi_ban_ghi_video_tu_db(preferred)
+        if p:
+            candidates.append(p)
+            seen_slots.add(_slot_nghien_cuu_key(p.get("username"), p.get("exercise")))
+    for v in _danh_sach_video_phan_tich_sap_xep():
+        sk = _slot_nghien_cuu_key(v.get("username"), v.get("exercise"))
+        if sk not in seen_slots:
+            seen_slots.add(sk)
+            candidates.append(v)
+    for v in candidates:
+        if not v or not v.get("metrics"):
+            continue
+        df, src = _nap_angle_df_tu_video(v)
+        if df is not None:
+            return v, df, src
+    return None, None, None
+
+
+def _duong_dan_csv_candidates(v):
+    """Danh sách đường dẫn CSV có thể chứa dữ liệu biểu đồ."""
+    if not v:
+        return []
+    candidates = []
+    df_path = v.get("df_path")
+    if df_path:
+        candidates.append(get_local_frame_path(df_path) or df_path)
+        candidates.append(df_path)
+    proc = v.get("processed_path") or v.get("video_path") or ""
+    import re
+    m = re.search(r"processed_(\d+)", str(proc))
+    if m:
+        ts = m.group(1)
+        for suffix in ("_f_data.csv", "_data.csv"):
+            candidates.append(os.path.join(PROCESSED_DIR, f"processed_{ts}{suffix}"))
+    seen, out = set(), []
+    for p in candidates:
+        if p and p not in seen:
+            seen.add(p)
+            out.append(p)
+    return out
+
+
+def _duong_dan_frames_json_candidates(v):
+    """Danh sách đường dẫn JSON khung xương (fallback khi CSV không có trên Cloud)."""
+    if not v:
+        return []
+    candidates = []
+    frames_path = v.get("all_frames_data_path")
+    if frames_path:
+        candidates.append(get_local_frame_path(frames_path) or frames_path)
+        candidates.append(frames_path)
+    proc = v.get("processed_path") or v.get("video_path") or ""
+    import re
+    m = re.search(r"processed_(\d+)", str(proc))
+    if m:
+        candidates.append(os.path.join(PROCESSED_DIR, f"f_{m.group(1)}.json"))
+    seen, out = set(), []
+    for p in candidates:
+        if p and p not in seen:
+            seen.add(p)
+            out.append(p)
+    return out
+
+
+def _tim_duong_dan_csv_tu_video(v):
+    """Tìm và tải file CSV góc khớp — từ df_path hoặc processed_* timestamp."""
+    for p in _duong_dan_csv_candidates(v):
+        if is_local_file_ready(p, min_size=80):
+            return p
+    for p in _duong_dan_csv_candidates(v):
+        if ensure_local_file(p, quiet=True, try_fallbacks=False):
+            lp = get_local_frame_path(p) or p
+            if is_local_file_ready(lp, min_size=80):
+                return lp
+    return None
+
+
+def _dataframe_tu_frames_json(json_path):
+    """Dựng DataFrame biểu đồ từ file f_*.json khi CSV không tải được."""
+    frames = load_all_frames_data_cached(json_path)
+    if not frames:
+        return None
+    try:
+        df = pd.DataFrame(frames)
+        if df.empty:
+            return None
+        if "frame" not in df.columns and "index" in df.columns:
+            df["frame"] = df["index"]
+        if "timestamp_seconds" not in df.columns and "frame" in df.columns:
+            df["timestamp_seconds"] = pd.to_numeric(df["frame"], errors="coerce").fillna(0) / 30.0
+        for col in ("goc_vai", "goc_khuyu"):
+            if col not in df.columns:
+                return None
+        return df
+    except Exception:
+        return None
+
+
+def _nap_angle_df_tu_video(v):
+    """Nạp angle_df: ưu tiên CSV, fallback JSON khung xương trên Dataset."""
+    global _hf_last_download_error
+    csv_path = _tim_duong_dan_csv_tu_video(v)
+    if csv_path:
+        try:
+            df = read_display_csv_fast(csv_path)
+            if df is not None and len(df) > 0:
+                return df, csv_path
+        except Exception:
+            pass
+    for jp in _duong_dan_frames_json_candidates(v):
+        if not is_local_file_ready(jp, min_size=2):
+            ensure_local_file(jp, quiet=True, try_fallbacks=False)
+            jp = get_local_frame_path(jp) or jp
+        if not is_local_file_ready(jp, min_size=2):
+            continue
+        df = _dataframe_tu_frames_json(jp)
+        if df is not None and len(df) > 0:
+            _hf_last_download_error = None
+            return df, jp
+    tried = _duong_dan_csv_candidates(v)[:1] or _duong_dan_frames_json_candidates(v)[:1]
+    if tried:
+        rel = get_clean_rel_path(tried[0])
+        if _hf_last_download_error and "404" not in str(_hf_last_download_error):
+            pass
+        elif rel:
+            _hf_last_download_error = (
+                f"Chưa có trên Dataset: `{rel}` — thử tải lại sau hoặc chạy phân tích mới."
+            )
+    return None, None
+
+
+def _danh_sach_video_phan_tich_sap_xep():
+    """8 video đã phân tích, mới nhất trước."""
     vlist = load_danh_sach_video_nghien_cuu()
     analyzed = [v for v in vlist if isinstance(v.get("metrics"), dict) and v.get("metrics")]
     if not analyzed:
-        return None
+        return []
     evals = _dedup_evaluations(load_data(EVALUATIONS_FILE))
 
     def _sort_key(v):
@@ -1595,64 +1737,40 @@ def _tim_video_phan_tich_moi_nhat():
         return _parse_vn_datetime(v.get("time")) or datetime.min
 
     analyzed.sort(key=_sort_key, reverse=True)
-    return analyzed[0]
-
-
-def _tim_duong_dan_csv_tu_video(v):
-    """Tìm và tải file CSV góc khớp — từ df_path hoặc processed_* timestamp."""
-    if not v:
-        return None
-    candidates = []
-    df_path = v.get("df_path")
-    if df_path:
-        candidates.append(get_local_frame_path(df_path) or df_path)
-        candidates.append(df_path)
-    proc = v.get("processed_path") or v.get("video_path") or ""
-    import re
-    m = re.search(r"processed_(\d+)", str(proc))
-    if m:
-        ts = m.group(1)
-        for suffix in ("_f_data.csv", "_data.csv"):
-            candidates.append(os.path.join(PROCESSED_DIR, f"processed_{ts}{suffix}"))
-    seen = set()
-    for p in candidates:
-        if not p or p in seen:
-            continue
-        seen.add(p)
-        if is_local_file_ready(p, min_size=80):
-            return p
-    for p in candidates:
-        if not p or p in seen:
-            continue
-        if ensure_local_file(p, quiet=True):
-            lp = get_local_frame_path(p) or p
-            if is_local_file_ready(lp, min_size=80):
-                return lp
-    return None
+    return analyzed
 
 
 def tu_dong_nap_ket_qua_phan_tich_gan_nhat(v=None, force=False):
-    """Tự động nạp kết quả phân tích gần nhất: metrics, CSV biểu đồ, video, frames."""
-    if not v:
-        v = st.session_state.get("current_eval_video") or _tim_video_phan_tich_moi_nhat()
-    if not v:
-        return False
-    v = _lam_moi_ban_ghi_video_tu_db(v)
-    if not v or not v.get("metrics"):
-        return False
+    """Tự động nạp kết quả phân tích gần nhất: metrics, CSV/JSON biểu đồ, video, frames."""
     cur = st.session_state.get("current_eval_video") or {}
-    same_slot = _slot_nghien_cuu_key(cur.get("username"), cur.get("exercise")) == _slot_nghien_cuu_key(
-        v.get("username"), v.get("exercise")
-    )
     if (
         not force
-        and same_slot
         and st.session_state.get("has_data")
         and st.session_state.get("stats")
         and st.session_state.get("angle_df") is not None
+        and (
+            not v
+            or _slot_nghien_cuu_key(cur.get("username"), cur.get("exercise"))
+            == _slot_nghien_cuu_key(
+                (_lam_moi_ban_ghi_video_tu_db(v) or v).get("username"),
+                (_lam_moi_ban_ghi_video_tu_db(v) or v).get("exercise"),
+            )
+        )
     ):
         return True
-    ok = khoi_phuc_ket_qua_cu(v, tai_day_du=True)
+
+    preferred = v or cur or None
+    found_v, pre_df, pre_src = _tim_video_co_du_lieu_tai_duoc(preferred)
+    if not found_v:
+        found_v = _lam_moi_ban_ghi_video_tu_db(preferred) if preferred else _tim_video_phan_tich_moi_nhat()
+    if not found_v or not found_v.get("metrics"):
+        return False
+
+    ok = khoi_phuc_ket_qua_cu(found_v, tai_day_du=True)
+    if pre_df is not None and st.session_state.get("angle_df") is None:
+        st.session_state.angle_df = pre_df
+        if pre_src:
+            st.session_state.current_df_csv_path = pre_src
     return bool(ok and st.session_state.get("stats") and st.session_state.get("angle_df") is not None)
 
 
@@ -1691,17 +1809,16 @@ def khoi_phuc_ket_qua_cu(v, tai_csv=True, tai_day_du=False):
         st.session_state.exercise["chuan"] = ex_base["chuan"].copy()
         st.session_state.exercise["chuan"]["sai_so"] = v["sai_so"]
     if tai_csv or tai_day_du:
-        read_target = _tim_duong_dan_csv_tu_video(v)
-        if read_target:
-            try:
-                st.session_state.angle_df = read_display_csv_fast(read_target)
-                st.session_state.current_df_csv_path = read_target
-                if not v.get("df_path"):
-                    v = dict(v)
-                    v["df_path"] = read_target
-                    st.session_state.current_eval_video = v
-            except Exception:
-                st.session_state.angle_df = None
+        df_loaded, src_loaded = _nap_angle_df_tu_video(v)
+        if df_loaded is not None:
+            st.session_state.angle_df = df_loaded
+            st.session_state.current_df_csv_path = src_loaded
+            v_upd = dict(v)
+            if src_loaded and str(src_loaded).lower().endswith(".csv"):
+                v_upd["df_path"] = src_loaded
+            if src_loaded and str(src_loaded).lower().endswith(".json"):
+                v_upd["all_frames_data_path"] = src_loaded
+            st.session_state.current_eval_video = v_upd
         else:
             st.session_state.angle_df = None
     if tai_day_du:
@@ -2554,6 +2671,11 @@ def thong_bao_loi_tai_hf():
         return
     if _hf_last_download_error:
         st.warning(f"☁️ **Không tải được file phân tích từ Cloud:** {_hf_last_download_error}")
+    elif ok:
+        st.info(
+            "☁️ Cloud Sync đã kết nối nhưng file CSV/JSON của video này chưa có trên Dataset. "
+            "Hệ thống đang thử các video khác hoặc bạn bấm **Tải lại kết quả đã lưu**."
+        )
 
 def khoi_tao_dong_bo_hf():
     """Tải tất cả dữ liệu từ Hugging Face Dataset về đĩa khi khởi động (chạy trong background thread - an toàn với hf-mount)"""
@@ -6201,6 +6323,14 @@ def hien_thi_tab_thong_tin_tong_hop(role):
 def hien_thi_tab_phan_tich_va_video_ncv():
     """Gộp tab Phân tích và Video cho Nghiên cứu viên"""
     st.markdown("## 🔬 PHÂN TÍCH CHUYÊN SÂU & DỮ LIỆU KHUNG XƯƠNG")
+
+    if HF_TOKEN and HF_DATASET_ID:
+        dong_bo_json_cau_hinh_tu_hf(force_files=frozenset({"video_list.json"}))
+        try:
+            _load_video_list_core.clear()
+            _video_nghien_cuu_cached.clear()
+        except Exception:
+            pass
 
     v_cur = st.session_state.get("current_eval_video") or _tim_video_phan_tich_moi_nhat()
     if v_cur:
@@ -11418,10 +11548,15 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
         if tk is None or df is None:
             st.warning("⚠️ Dữ liệu phân tích chi tiết không khả dụng hoặc chưa được tải.")
             thong_bao_loi_tai_hf()
+            v_dbg = v_re or _tim_video_phan_tich_moi_nhat()
+            if v_dbg:
+                st.caption(
+                    f"Video đang thử: **{v_dbg.get('full_name')}** — {v_dbg.get('exercise')} | "
+                    f"CSV: `{v_dbg.get('df_path') or 'chưa có'}`"
+                )
             st.info(
-                "💡 Nếu đã phân tích trước đó: bấm **Tải lại kết quả đã lưu**. "
-                "Sau khi đổi **HF_TOKEN**, cần token Write của tài khoản Dataset và "
-                "`HF_DATASET_ID=quynhphuong1209/Rehab-AI-Monitor-2026-data`."
+                "💡 Bấm **Tải lại kết quả đã lưu** — hệ thống sẽ thử tất cả 8 video đã phân tích "
+                "(CSV hoặc JSON khung xương trên Dataset)."
             )
             if user_role == "Nghiên cứu viên":
                 st.markdown("<br>", unsafe_allow_html=True)
