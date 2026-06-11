@@ -39,5 +39,18 @@ jobs:
           git add -A
           git commit -m "deploy clean version to huggingface spaces"
           
-          # Day de len nhanh main cua Hugging Face (LFS client se tu dong lay thong tin xac thuc tu URL push)
-          git push --force https://quynhphuong1209:$HF_TOKEN@huggingface.co/spaces/quynhphuong1209/Rehab-AI-Monitor-2026 temp-hf-branch:main
+          # Day de len nhanh main cua Hugging Face — retry khi HF tra 429 (rate limit)
+          HF_REMOTE="https://quynhphuong1209:$HF_TOKEN@huggingface.co/spaces/quynhphuong1209/Rehab-AI-Monitor-2026"
+          for attempt in 1 2 3 4 5; do
+            if git push --force "$HF_REMOTE" temp-hf-branch:main; then
+              echo "Push thanh cong (lan $attempt)"
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              wait_secs=$((attempt * 30))
+              echo "Push that bai (co the 429 rate limit). Cho ${wait_secs}s roi thu lai..."
+              sleep "$wait_secs"
+            fi
+          done
+          echo "Push that bai sau 5 lan thu — thu lai sau hoac chay workflow_dispatch thu cong."
+          exit 1
