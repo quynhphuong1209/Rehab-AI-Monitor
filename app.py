@@ -1532,6 +1532,7 @@ def _render_video_html5_iframe(sources_html, comp_key, height=300, footer_html="
     """Phát video HTML5 — preload metadata để hiện khung hình nhanh."""
     import streamlit.components.v1 as _stcomp
     foot = footer_html or ""
+    vid_id = (comp_key or "vp").replace(" ", "_")
     _stcomp.html(
         f"""
 <!DOCTYPE html><html><head>
@@ -1541,7 +1542,7 @@ def _render_video_html5_iframe(sources_html, comp_key, height=300, footer_html="
   .vf{{color:#aaa;font-size:0.72rem;margin-top:4px;text-align:right;font-family:sans-serif;}}
 </style>
 </head><body>
-<video controls preload="metadata" playsinline>
+<video id="{vid_id}" controls preload="metadata" playsinline>
   {sources_html}
   Trình duyệt không hỗ trợ video HTML5.
 </video>
@@ -1549,7 +1550,6 @@ def _render_video_html5_iframe(sources_html, comp_key, height=300, footer_html="
 </body></html>
 """,
         height=height + (18 if foot else 0),
-        key=comp_key,
     )
 
 
@@ -2149,7 +2149,7 @@ def render_video(video_path, check_h264=True):
   Trình duyệt không hỗ trợ video HTML5.
 </video>
 </body></html>
-""", height=255, key=f"cloud_direct_vid_{url_hash}")
+""", height=255)
         except Exception as e:
             st.error(f'⚠️ Lỗi hiển thị video: {e}')
         return
@@ -2237,7 +2237,7 @@ def render_video(video_path, check_h264=True):
   Trình duyệt không hỗ trợ video HTML5.
 </video>
 </body></html>
-""", height=315, key=f"incompatible_cloud_{_url_hash}")
+""", height=315)
                         return
                     except Exception as _cloud_err:
                         pass  # fallthrough to static serving below
