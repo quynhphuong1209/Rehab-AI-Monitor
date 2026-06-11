@@ -11057,22 +11057,8 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                     and prog_data
                     and prog_data.get("status") == "processing"
                 )
-                # Tự khởi chạy một lần khi vào tab từ Trang chủ (fallback nếu thread chưa kịp start)
-                if (
-                    user_role == "Nghiên cứu viên"
-                    and st.session_state.get("reanalyze_triggered")
-                    and v.get("video_path")
-                    and not is_processing
-                    and not video_dang_phan_tich(v["video_path"])
-                ):
-                    _sk = f"_auto_started_{hashlib.md5(v['video_path'].encode()).hexdigest()[:12]}"
-                    if not st.session_state.get(_sk):
-                        khoi_dong_phan_tich_lai_video(v, auto_start=True)
-                        st.session_state[_sk] = True
-                        is_processing = True
-                        prog_data = read_progress(v["video_path"]) or prog_data
-                        if prog_data and prog_data.get("status") == "processing":
-                            is_processing = True
+                # KHÔNG tự khởi chạy phân tích khi vào tab — phân tích mới chỉ chạy khi
+                # người dùng chủ động bấm "🚀 Chạy phân tích mới" / "🚀 CHẠY PHÂN TÍCH & TRÍCH XUẤT MỚI".
                 
                 # Nếu video CHƯA CÓ metrics hoặc NCV muốn chạy lại
                 if st.session_state.get('reanalyze_triggered') or is_processing:
@@ -15544,14 +15530,22 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                 st.session_state.stats = None
                                 vp = v.get("video_path")
                                 if user_role == "Nghiên cứu viên":
-                                    st.session_state.reanalyze_triggered = True
-                                    st.session_state.view_old_analysis = False
-                                    # Khởi chạy ngay — không chờ sang tab Phân tích rồi bấm thêm lần nữa
-                                    if vp and not video_dang_phan_tich(vp):
-                                        khoi_dong_phan_tich_lai_video(v, auto_start=True)
-                                        st.toast("⚡ Đã khởi chạy trích xuất khung xương — chuyển tab Phân tích...", icon="🚀")
-                                    else:
+                                    # KHÔNG tự khởi chạy phân tích mới — chỉ tải kết quả GẦN NHẤT đã lưu
+                                    # (biểu đồ + video khung xương + ảnh frame) rồi chuyển tab.
+                                    # Phân tích mới chỉ chạy khi người dùng chủ động bấm nút trong tab Phân tích.
+                                    st.session_state.reanalyze_triggered = False
+                                    if vp and video_dang_phan_tich(vp):
+                                        st.session_state.view_old_analysis = False
                                         st.toast("🔄 Video đang phân tích — mở tab theo dõi tiến độ...", icon="⏳")
+                                    else:
+                                        _loaded_ok = False
+                                        with st.spinner("📥 Đang tải kết quả gần nhất (biểu đồ, video khung xương, ảnh frame)..."):
+                                            _loaded_ok = khoi_phuc_ket_qua_cu(v, tai_day_du=True)
+                                        if _loaded_ok:
+                                            st.toast("✅ Đã tải kết quả gần nhất — chuyển tab Phân tích...", icon="📊")
+                                        else:
+                                            st.session_state.view_old_analysis = False
+                                            st.toast("🧭 Video chưa có kết quả — sang tab Phân tích, bấm Chạy phân tích khi sẵn sàng.", icon="🔬")
                                 else:
                                     st.session_state.reanalyze_triggered = False
                                     st.session_state.view_old_analysis = bool(v.get("metrics"))
