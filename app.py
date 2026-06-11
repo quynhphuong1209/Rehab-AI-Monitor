@@ -599,7 +599,7 @@ def _lay_eval_moi_nhat_theo_bai_tap(evals, username, exercise, doctor_username=N
     for e in evals or []:
         if e.get("patient_username") != username:
             continue
-        if e.get("exercise") != exercise:
+        if exercise and e.get("exercise") != exercise:
             continue
         if doctor_username is not None and e.get("doctor_username") != doctor_username:
             continue
@@ -610,6 +610,30 @@ def _lay_eval_moi_nhat_theo_bai_tap(evals, username, exercise, doctor_username=N
             best_t = t
             best = e
     return best
+
+
+def _lay_danh_gia_cho_video(selected_v, evals=None):
+    """Lấy đánh giá NCV (AI) và Bác sĩ mới nhất — khớp BN+bài tập, ưu tiên đúng tên file."""
+    if not selected_v:
+        return None, None
+    evals = evals if evals is not None else _dedup_evaluations(load_data(EVALUATIONS_FILE))
+    pu = selected_v.get("username") or selected_v.get("patient_username")
+    ex = selected_v.get("exercise")
+    vn = selected_v.get("video_name")
+    ai_eval = _lay_eval_moi_nhat_theo_bai_tap(evals, pu, ex, doctor_username="AI_Researcher")
+    doc_eval = _lay_eval_moi_nhat_theo_bai_tap(evals, pu, ex)
+    if vn:
+        sel_key = _normalize_video_key(pu, vn, ex)
+        for e in evals:
+            if _normalize_video_key(
+                e.get("patient_username"), e.get("video_name"), e.get("exercise")
+            ) != sel_key:
+                continue
+            if e.get("doctor_username") == "AI_Researcher":
+                ai_eval = e
+            else:
+                doc_eval = e
+    return ai_eval, doc_eval
 
 
 def _lay_do_chinh_xac_hien_thi(v, ai_eval=None):
@@ -2941,6 +2965,38 @@ def nap_ket_qua_ai_vao_session(ai_eval):
 
 def hien_thi_ket_qua_gan_nhat_va_lich_su(username, video_name=None, key_suffix=""):
     """Hiển thị kết quả gần nhất + dropdown xem lại các lần phân tích trước."""
+    evals = _dedup_evaluations(load_data(EVALUATIONS_FILE))
+    doc_history = [
+        e for e in evals
+        if e.get("patient_username") == username
+        and e.get("doctor_username") != "AI_Researcher"
+    ]
+    doc_history.sort(
+        key=lambda e: _parse_vn_datetime(e.get("time")) or datetime.min,
+        reverse=True,
+    )
+    if doc_history:
+        latest_doc = doc_history[0]
+        t_doc = _format_vn_time(latest_doc.get("time"), default="N/A")
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(255,215,0,0.12) 0%, rgba(255,165,0,0.08) 100%);
+            border: 1px solid rgba(255,215,0,0.35); border-left: 5px solid #ffd700; border-radius: 14px;
+            padding: 18px 20px; margin-bottom: 16px;">
+            <p style="margin:0 0 6px 0; font-size:0.8rem; color:#888; text-transform:uppercase; letter-spacing:1px;">
+                👨‍⚕️ Đánh giá Bác sĩ / KTV gần nhất
+            </p>
+            <p style="margin:0; font-size:1.05rem; color:#fff; font-weight:600;">
+                🕒 {t_doc} — {latest_doc.get('exercise', 'N/A')}
+            </p>
+            <p style="margin:6px 0 0; font-size:0.95rem; color:#ffd700;">
+                Kết quả: <b>{latest_doc.get('doctor_result', 'N/A')}</b>
+            </p>
+            <p style="margin:6px 0 0; font-size:0.88rem; color:#ccc;">
+                {latest_doc.get('comments', '')[:200]}{'...' if len(latest_doc.get('comments', '') or '') > 200 else ''}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
     ai_history = lay_danh_gia_ai_benh_nhan(username, video_name)
     if not ai_history:
         return
@@ -11794,8 +11850,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             # THÊM PHẦN NHẬN XÉT CỦA BÁC SĨ (GROUND TRUTH) CHO NCV
             v_meta = st.session_state.get('current_eval_video')
             if v_meta:
-                evals_db = load_data(EVALUATIONS_FILE)
-                doc_eval = next((e for e in reversed(evals_db) if e.get('doctor_username') != "AI_Researcher" and e.get('patient_username') == v_meta['username'] and e.get('video_name') == v_meta.get('video_name')), None)
+                _, doc_eval = _lay_danh_gia_cho_video(v_meta)
                 if doc_eval:
                     st.markdown("---")
                     st.markdown("#### 🩺 PHẢN HỒI TỪ CHUYÊN GIA PHCN (GROUND TRUTH)")
@@ -12469,7 +12524,14 @@ def hien_thi_form_danh_gia_bac_si():
                     st.markdown("<span title='Bạn không thể xóa đánh giá của bác sĩ khác' style='color:#555;font-size:1.1rem;cursor:default;'>🔒</span>", unsafe_allow_html=True)
 def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     st.markdown("## 📊 KẾT QUẢ ĐÁNH GIÁ TỔNG HỢP")
-    
+
+    if HF_TOKEN and HF_DATASET_ID:
+        dong_bo_json_cau_hinh_tu_hf(force_files=frozenset({"doctor_evaluations.json"}))
+        try:
+            _evals_dedup_cached.clear()
+        except Exception:
+            pass
+
     evals = _dedup_evaluations(load_data(EVALUATIONS_FILE))
     user_role = st.session_state.user_info.get('role')
     
@@ -12517,20 +12579,25 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
 
     selected_v = None
 
-    # 3. HIỂN THỊ GIAO DIỆN CHỌN VÀ ĐIỀU KHIỂN (ẨN ĐỐI VỚI NCV)
-    if user_role == "Nghiên cứu viên":
-        selected_v = st.session_state.get('current_eval_video')
-        if not selected_v:
-            st.info("💡 Vui lòng chọn một video bệnh nhân ở TRANG CHỦ để xem kết quả đánh giá chi tiết.")
-            return
-        st.markdown(f"#### 🎬 Video đang xem: {selected_v.get('full_name')} - {selected_v.get('exercise')}")
-        hien_thi_noi_dung_ket_qua(selected_v, my_evals)
+    if not my_history_vids and not my_evals:
+        st.info("🕒 Kết quả đánh giá chuyên môn đang được xử lý. Vui lòng quay lại sau khi Bác sĩ hoặc Nhóm Nghiên cứu hoàn tất đánh giá.")
         return
-    else:
-        if not my_history_vids and not my_evals:
-            st.info("🕒 Kết quả đánh giá chuyên môn của bạn đang được xử lý. Vui lòng quay lại sau khi Bác sĩ hoặc Nhóm Nghiên cứu hoàn tất đánh giá.")
-            return
-        hien_thi_tab_ket_qua_da_chon(my_history_vids, my_evals, has_ai_eval, user_role, is_fresh_session)
+
+    if user_role == "Nghiên cứu viên":
+        cur = st.session_state.get("current_eval_video")
+        if cur and my_history_vids:
+            cur_key = _slot_nghien_cuu_key(cur.get("username"), cur.get("exercise"))
+            matched = next(
+                (
+                    v for v in my_history_vids
+                    if _slot_nghien_cuu_key(v.get("username"), v.get("exercise")) == cur_key
+                ),
+                None,
+            )
+            if matched:
+                st.session_state.current_eval_video = matched
+
+    hien_thi_tab_ket_qua_da_chon(my_history_vids, my_evals, has_ai_eval, user_role, is_fresh_session)
 
 
 @st.fragment
@@ -12659,18 +12726,66 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
         return "❌ Cần tập thêm"
 
     if selected_v:
-        # CHỈ hiển thị nhận xét của video được chọn (bỏ trùng lặp AI/bác sĩ)
-        sel_key = _normalize_video_key(
-            selected_v.get('username') or selected_v.get('patient_username'),
-            selected_v.get('video_name'),
-            selected_v.get('exercise'),
-        )
-        v_evals = _dedup_evaluations([
-            e for e in my_evals
-            if _normalize_video_key(e.get('patient_username'), e.get('video_name'), e.get('exercise')) == sel_key
-        ])
+        ai_eval, doc_eval = _lay_danh_gia_cho_video(selected_v, my_evals)
+        v_evals = []
+        if ai_eval:
+            v_evals.append(ai_eval)
+        if doc_eval and doc_eval is not ai_eval:
+            v_evals.append(doc_eval)
+
+        if ai_eval or doc_eval:
+            st.markdown("#### 📋 TÓM TẮT ĐÁNH GIÁ")
+            c_ai, c_doc = st.columns(2)
+            with c_ai:
+                if ai_eval:
+                    acc_show = ai_eval.get("ai_accuracy")
+                    if acc_show is None:
+                        acc_show = _lay_do_chinh_xac_hien_thi(selected_v, ai_eval)
+                    acc_txt = f"{float(acc_show):.1f}%" if acc_show is not None else "N/A"
+                    st.markdown(f"""
+                    <div style="background:rgba(0,206,209,0.08); border:1px solid rgba(0,206,209,0.35);
+                                border-radius:12px; padding:14px;">
+                        <p style="margin:0 0 6px 0; color:#00CED1; font-weight:700;">🤖 NCV / Phân tích AI</p>
+                        <p style="margin:0; color:#fff; font-size:1.05rem;">
+                            <b>{ai_eval.get('doctor_result', 'N/A')}</b> · {acc_txt}
+                        </p>
+                        <p style="margin:6px 0 0; color:#aaa; font-size:0.82rem;">
+                            🕒 {_format_vn_time(ai_eval.get('time'), default='N/A')}
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.info("🤖 **NCV/AI:** Chưa có báo cáo phân tích cho bài tập này.")
+            with c_doc:
+                if doc_eval:
+                    doc_name = doc_eval.get("doctor_name") or doc_eval.get("doctor_username") or "Bác sĩ / KTV"
+                    st.markdown(f"""
+                    <div style="background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.35);
+                                border-radius:12px; padding:14px;">
+                        <p style="margin:0 0 6px 0; color:#ffd700; font-weight:700;">👨‍⚕️ Bác sĩ / KTV PHCN</p>
+                        <p style="margin:0; color:#fff; font-size:1.05rem;">
+                            <b>{doc_eval.get('doctor_result', 'N/A')}</b>
+                        </p>
+                        <p style="margin:6px 0 0; color:#aaa; font-size:0.82rem;">
+                            👤 {doc_name} · 🕒 {_format_vn_time(doc_eval.get('time'), default='N/A')}
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.info("👨‍⚕️ **Bác sĩ:** Chưa có đánh giá lâm sàng cho bài tập này.")
+            st.markdown("---")
+            st.markdown("#### 📑 CHI TIẾT ĐÁNH GIÁ")
+
         if not v_evals:
-            st.info("Không có nhận xét nào cho video này.")
+            metrics = selected_v.get("metrics") if isinstance(selected_v.get("metrics"), dict) else None
+            if metrics:
+                st.warning(
+                    "⚠️ Chưa tìm thấy bản ghi đánh giá trong `doctor_evaluations.json`, "
+                    "nhưng video đã có kết quả phân tích AI. Bấm **Tải lại kết quả đã lưu** "
+                    "hoặc xem tab **Biểu đồ phân tích**."
+                )
+            else:
+                st.info("Không có nhận xét nào cho video này.")
         for e in v_evals:
             is_ai = e.get('doctor_username') == "AI_Researcher"
             is_gay_ex = any(kw in str(e.get('exercise', '')).lower() for kw in ["gậy", "gay", "pulley", "stick"])
@@ -12907,8 +13022,16 @@ def hien_thi_noi_dung_ket_qua(selected_v, my_evals):
                                 </div>
                                 """, unsafe_allow_html=True)
                     else:
-                        st.markdown(f"**Nhận xét:** {e.get('comments', 'Không có')}")
-                        st.markdown(f"**Kế hoạch:** {e.get('plan', 'N/A')}")
+                        st.markdown(f"**Nhận xét cho BN:** {e.get('comments', 'Không có')}")
+                        if e.get("comments_ncv"):
+                            st.markdown(
+                                f"**💬 Nhận xét cho NCV:** "
+                                f"<span style='color:#ffd700;'>{e.get('comments_ncv')}</span>",
+                                unsafe_allow_html=True,
+                            )
+                        if e.get("errors"):
+                            st.markdown(f"**Lỗi kỹ thuật ghi nhận:** {', '.join(e.get('errors', []))}")
+                        st.markdown(f"**Kế hoạch / Chỉ định:** {e.get('plan', 'N/A')}")
                     
                     status_text = "Dữ liệu AI đã sẵn sàng" if is_ai else "Bác sĩ đã phê duyệt"
                     st.markdown(f'<p style="color: {title_color}; font-size: 0.8rem; font-style: italic; margin-top:10px;">📩 {status_text}</p>', unsafe_allow_html=True)
