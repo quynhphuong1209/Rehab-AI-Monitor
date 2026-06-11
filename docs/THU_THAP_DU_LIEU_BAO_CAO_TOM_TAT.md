@@ -1,7 +1,7 @@
 # THU THẬP DỮ LIỆU NGHIÊN CỨU — PHỤC VỤ BÁO CÁO TÓM TẮT KHOA HỌC
 
 *Nguồn: `database/video_list.json`, `doctor_evaluations.json`, `patient_symptoms.json`, `research_data.json`*  
-*Đối chiếu tự động: `scripts/export_report_metrics.py` → `docs/_VERIFIED_METRICS.txt` (11/06/2026)*  
+*Đối chiếu tự động: `scripts/export_report_metrics.py` → `docs/_VERIFIED_METRICS.txt`, `docs/_PHASE_METRICS_TABLES.txt`; `scripts/export_rom_charts_data.py` → `docs/_ROM_CHARTS_DATA.txt` (11/06/2026)*  
 *AI phân tích lần mới nhất: 04–10/06/2026; đánh giá Bác sĩ PHCN + phiếu NCKH: 08/06/2026*
 
 > **Lưu ý số liệu:** Mỗi video lưu **metrics lần chạy mới nhất** (top-level) và có thể còn **metrics_g1/g2/g3** từ lần chạy cũ. Báo cáo này ưu tiên **top-level** khi có nhiều khung hơn (vd. Cao Codman: **34,3% / 949–2763** chứ không phải g2 cũ 32,3% / 371–1148). Biểu đồ **Boxplot** trong app vẽ từ CSV (`goc_vai`, `goc_khuyu` × nhóm Đúng/Gần đúng/Sai) — số min/max/std bên dưới lấy từ cùng lần phân tích đó.
@@ -98,33 +98,123 @@
 - Lỗi thân người do BS ghi: **5/8 video** — AI chưa phát hiện được
 - Trường hợp điển hình: Vũ Thị Hòa – Codman ACC 100% nhưng BS kết luận **Sai** (tư thế thân người)
 
-### C.4. Chỉ số phân tích AI chi tiết (Giai đoạn 2 — ±30°)
+### C.4. Bảng chỉ số AI đầy đủ — Codman (trung bình 4 BN, 3 giai đoạn)
 
-| BN | Bài tập | ACC | MAE (°) | F1 | ICC | Góc vai TB | Góc khuỷu TB | Frames |
+*RMSE = MAE × 1,25 (cùng công thức hiển thị trong app). GĐ2: ưu tiên metrics top-level khi lần chạy mới hơn `metrics_g2` (vd. Cao Thường 34,3% / 949 khung).*
+
+| Ký hiệu | Giai đoạn 1 (±45°) | Giai đoạn 2 (±30°) | Giai đoạn 3 (±15°) | Phân loại / Chuyên môn |
+| --- | --- | --- | --- | --- |
+| Độ chính xác hệ thống (ACC) | 82,5% | **73,3%** | 30,0% | Đối soát từng giây với video YouTube mẫu |
+| Sai số tuyệt đối trung bình (MAE) | 15,9° | 14,4° | 18,2° | Tốt ở G1–G2; G3 khắt khe hơn |
+| Sai số bình phương trung bình (RMSE) | 19,9° | 18,1° | 22,7° | RMSE = MAE × 1,25 |
+| Hệ số tương quan nội lớp (ICC) | 0,67 | 0,69 | 0,62 | Khá tốt ở G1–G2 |
+| Độ nhạy phân loại (Recall) | 0,88 | 0,79 | 0,41 | Giảm mạnh ở G3 (ngưỡng ±15°) |
+| Độ đặc hiệu phân loại (Precision) | 0,89 | 0,80 | 0,45 | Tin cậy cảnh báo sai tư thế |
+| Chỉ số cân bằng F1 (F1-Score) | 0,88 | 0,80 | 0,43 | Hiệu suất AI tổng hợp |
+| Số lần tập đúng — Pass (khung) | 2.432 | 3.678 | 1.022 | Tổng khung đạt chuẩn theo từng giai đoạn |
+
+### C.4b. Codman — chi tiết từng bệnh nhân (3 giai đoạn)
+
+**Hoàng Hạnh Nguyên**
+
+| Chỉ số | G1 (±45°) | G2 (±30°) | G3 (±15°) |
+| --- | --- | --- | --- |
+| ACC | 97,6% | 94,8% | 41,9% |
+| MAE / RMSE | 12,9° / 16,1° | 10,8° / 13,5° | 23,8° / 29,8° |
+| ICC / F1 | 0,72 / 0,98 | 0,76 / 0,95 | 0,50 / 0,49 |
+| Recall / Precision | 0,98 / 0,98 | 0,95 / 0,96 | 0,48 / 0,51 |
+| Pass | 491 | 639 | 205 |
+
+**Nguyễn Thị Nga**
+
+| Chỉ số | G1 (±45°) | G2 (±30°) | G3 (±15°) |
+| --- | --- | --- | --- |
+| ACC | 78,7% | 64,0% | 28,8% |
+| MAE / RMSE | 12,9° / 16,1° | 11,7° / 14,6° | 13,7° / 17,1° |
+| ICC / F1 | 0,72 / 0,97 | 0,75 / 0,82 | 0,71 / 0,55 |
+| Recall / Precision | 0,97 / 0,97 | 0,81 / 0,82 | 0,54 / 0,56 |
+| Pass | 712 | 955 | 417 |
+
+**Vũ Thị Hòa**
+
+| Chỉ số | G1 (±45°) | G2 (±30°) | G3 (±15°) |
+| --- | --- | --- | --- |
+| ACC | 99,9% | 100,0% | 31,6% |
+| MAE / RMSE | 11,4° / 14,2° | 10,9° / 13,6° | 13,5° / 16,9° |
+| ICC / F1 | 0,75 / 0,99 | 0,76 / 0,99 | 0,71 / 0,40 |
+| Recall / Precision | 0,99 / 0,99 | 0,99 / 0,99 | 0,38 / 0,42 |
+| Pass | 796 | 1.135 | 255 |
+
+**Cao Thị Thường** *(GĐ2 = metrics lần chạy mới nhất toàn video)*
+
+| Chỉ số | G1 (±45°) | G2 (±30°) | G3 (±15°) |
+| --- | --- | --- | --- |
+| ACC | 53,9% | **34,3%** | 17,9% |
+| MAE / RMSE | 26,4° / 33,1° | 24,4° / 30,5° | 21,7° / 27,1° |
+| ICC / F1 | 0,50 / 0,60 | 0,50 / 0,42 | 0,55 / 0,28 |
+| Recall / Precision | 0,58 / 0,61 | 0,41 / 0,44 | 0,26 / 0,30 |
+| Pass | 433 | **949** | 145 |
+
+### C.4c. Bảng chỉ số AI đầy đủ — Bài tập với gậy (trung bình 4 BN)
+
+*Bài gậy chủ yếu phân tích tổng quan ±30°; Vũ Thị Hòa có tách 3 giai đoạn riêng (14,1% / 18,8% / 7,5%).*
+
+| Ký hiệu | G1 (±45°) | G2 (±30°) | G3 (±15°) | Ghi chú |
+| --- | --- | --- | --- | --- |
+| ACC | 33,4% | **34,6%** | 31,8% | TB ngưỡng chính ±30° = 34,6% |
+| MAE | 29,4° | 29,4° | 29,4° | |
+| RMSE | 36,7° | 36,7° | 36,7° | MAE × 1,25 |
+| ICC | 0,50 | 0,50 | 0,50 | |
+| Recall | 0,42 | 0,42 | 0,42 | |
+| Precision | 0,46 | 0,46 | 0,46 | |
+| F1-Score | 0,44 | 0,44 | 0,44 | |
+| Pass | 5.636 | 5.636 | 5.636 | Tổng khung đúng (±30°) |
+
+### C.4d. Gậy — chi tiết từng bệnh nhân
+
+| BN | ACC (±30°) | MAE | RMSE | ICC | F1 | Pass / Tổng | G1 / G2 / G3 *(nếu có)* |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Hoàng Hạnh Nguyên | 48,3% | 33,7° | 42,1° | 0,50 | 0,55 | 749 / 1.550 | 48,3% / 48,3% / 48,3% |
+| Nguyễn Thị Nga | 32,7% | 27,4° | 34,2° | 0,50 | 0,41 | 1.485 / 4.535 | 32,7% / 32,7% / 32,7% |
+| Vũ Thị Hòa | 18,8% | 30,0° | 37,5° | 0,50 | 0,34 | 1.326 / 5.435 | **14,1% / 18,8% / 7,5%** |
+| Cao Thị Thường | 38,5% | 26,5° | 33,1° | 0,50 | 0,46 | 2.076 / 5.386 | 38,5% / 38,5% / 38,5% |
+
+### C.4e. Tóm tắt nhanh (GĐ2 ±30°) — góc khớp & khung hình
+
+| BN | Bài tập | ACC | MAE (°) | F1 | ICC | Góc vai TB | Góc khuỷu TB | Pass / Tổng |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Hoàng Hạnh Nguyên | Codman | 94,8% | 10,8 | 0,95 | 0,76 | 44,5° | 161,9° | 674 |
-| Hoàng Hạnh Nguyên | Gậy | 48,3% | 33,7 | 0,55 | 0,50 | 21,1° | 114,4° | 1550 |
-| Nguyễn Thị Nga | Codman | 64,0% | 11,7 | 0,82 | 0,75 | 44,4° | 161,4° | 2628 |
-| Nguyễn Thị Nga | Gậy | 32,7% | 27,4 | 0,41 | 0,50 | 52,0° | 138,5° | 4535 |
-| Vũ Thị Hòa | Codman | 100,0% | 10,9 | 0,99 | 0,76 | 25,6° | 163,9° | 1135 |
-| Vũ Thị Hòa | Gậy | 18,8% | 30,0 | 0,34 | 0,50 | 51,7° | 131,7° | 5435 |
-| Cao Thị Thường | Codman | 34,3% | 24,4 | 0,42 | 0,50 | 84,7° | 153,6° | 2763 |
-| Cao Thị Thường | Gậy | 38,5% | 26,5 | 0,46 | 0,50 | 39,6° | 136,7° | 5386 |
+| Hoàng Hạnh Nguyên | Codman | 94,8% | 10,8 | 0,95 | 0,76 | 44,5° | 161,9° | 639 / 674 |
+| Hoàng Hạnh Nguyên | Gậy | 48,3% | 33,7 | 0,55 | 0,50 | 21,1° | 114,4° | 749 / 1.550 |
+| Nguyễn Thị Nga | Codman | 64,0% | 11,7 | 0,82 | 0,75 | 44,4° | 161,4° | 2.084 / 2.628 |
+| Nguyễn Thị Nga | Gậy | 32,7% | 27,4 | 0,41 | 0,50 | 52,0° | 138,5° | 1.485 / 4.535 |
+| Vũ Thị Hòa | Codman | 100,0% | 10,9 | 0,99 | 0,76 | 25,6° | 163,9° | 1.135 / 1.135 |
+| Vũ Thị Hòa | Gậy | 18,8% | 30,0 | 0,34 | 0,50 | 51,7° | 131,7° | 1.326 / 5.435 |
+| Cao Thị Thường | Codman | 34,3% | 24,4 | 0,42 | 0,50 | 84,7° | 153,6° | 949 / 2.763 |
+| Cao Thị Thường | Gậy | 38,5% | 26,5 | 0,46 | 0,50 | 39,6° | 136,7° | 2.076 / 5.386 |
 
-### C.5. Phân tích 3 giai đoạn — Bài tập Codman
+### C.5. Phân tích 3 giai đoạn — Bài tập Codman (ACC %)
 
 | Bệnh nhân | GĐ1 (±45°) | GĐ2 (±30°) | GĐ3 (±15°) | AI đề xuất |
 | --- | --- | --- | --- | --- |
 | Hoàng Hạnh Nguyên | 97,6% | 94,8% | 41,9% | Giai đoạn 3 |
 | Nguyễn Thị Nga | 78,7% | 64,0% | 28,8% | Giai đoạn 2 |
 | Vũ Thị Hòa | 99,9% | 100,0% | 31,6% | Giai đoạn 3 |
-| Cao Thị Thường | — | **34,3%** *(phân tích tổng quan ±30°)* | — | Giai đoạn 1 |
-| **Trung bình Codman (4 BN, ±30°)** | — | **≈ 73,3%** | — | — |
-| **Trung bình 3 GĐ (3 BN đủ G1–G3)** | **≈ 92,1%** | **≈ 86,3%** | **≈ 34,1%** | — |
+| Cao Thị Thường | 53,9% | **34,3%** | 17,9% | Giai đoạn 1 |
+| **Trung bình 4 BN** | **82,5%** | **73,3%** | **30,0%** | — |
 
 ### C.5b. Số liệu Boxplot (phân phối góc — phục vụ mô tả biến thiên)
 
-*Boxplot app nhóm theo Đúng / Gần đúng / Sai; bảng dưới là min–max–độ lệch chuẩn (std) từ cùng lần phân tích.*
+*Boxplot app nhóm theo Đúng / Gần đúng / Sai; bảng dưới là min–max–độ lệch chuẩn (std) từ cùng lần phân tích (GĐ2 Codman hoặc tổng quan Gậy).*
+
+**Lệnh tự lấy từ dữ liệu web (không cần mở app):**
+
+```bash
+python scripts/export_rom_charts_data.py
+```
+
+- Đọc **8 video nghiên cứu** từ `video_list.json` (cùng logic tab NCV).
+- Xuất **ROM 3 giai đoạn** (Codman) + **tổng quan / 3 GĐ** (Gậy; Hòa: 14,1% / 18,8% / 7,5%) → `docs/_ROM_CHARTS_DATA.txt` + `.json`.
+- Tùy chọn boxplot theo nhóm từ CSV: `python scripts/export_rom_charts_data.py --hf --csv` (cần `HF_TOKEN` hoặc CSV trong `processed_results/`). **PowerShell:** `$env:HF_TOKEN = "hf_xxx"` (không dùng `set` như CMD).
 
 | BN | Bài tập | Khớp | TB (°) | Min (°) | Max (°) | Std (°) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -229,6 +319,17 @@
 | `docs/KET_QUA_NCV_VA_BAC_SI.md` | Báo cáo chi tiết từng BN |
 | `docs/BAO_CAO_TOM_TAT_PHUC_VU_ABSTRACT.md` | Bản thảo abstract trước đó |
 | `docs/_VERIFIED_METRICS.txt` | Bảng đối chiếu tự động (chạy lại khi cập nhật JSON) |
-| `scripts/export_report_metrics.py` | Script xuất số liệu đã xác minh |
+| `docs/_PHASE_METRICS_TABLES.txt` | Bảng ACC/MAE/RMSE/ICC/F1/Pass theo 3 giai đoạn (Codman + Gậy) |
+| `docs/_ROM_CHARTS_DATA.txt` | ROM + boxplot tóm tắt 8 video (Codman 3 GĐ, Gậy) |
+| `docs/_ROM_CHARTS_DATA.json` | Cùng dữ liệu dạng JSON (dùng cho biểu đồ/script khác) |
+| `scripts/export_report_metrics.py` | Script xuất chỉ số ACC/MAE/RMSE/ICC/F1/Pass |
+| `scripts/export_rom_charts_data.py` | Script xuất ROM + boxplot từ metrics web |
 
-*Biểu đồ Boxplot/ROM: xuất PNG từ tab **Phân tích** hoặc tính lại từ CSV `processed_*_f_data.csv` trên HF Dataset.*
+**Chạy cả hai script (chỉ số + biểu đồ/ROM):**
+
+```bash
+python scripts/export_report_metrics.py
+python scripts/export_rom_charts_data.py
+```
+
+*Ảnh PNG biểu đồ: tab **Phân tích** trên web, hoặc thêm `--hf --csv` để lấy median/Q1/Q3 theo nhóm Đúng/Gần đúng/Sai từ CSV trên HF Dataset.*

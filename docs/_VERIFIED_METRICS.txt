@@ -1,87 +1,89 @@
 VERIFIED FROM database/video_list.json + doctor_evaluations.json
-Generated: 11/06/2026 11:53
+Generated: 11/06/2026 15:15
+RMSE = MAE × 1.25 (cung cong thuc hien thi app)
+GĐ2 Codman: uu tien top-level metrics khi tong_frame >= metrics_g2
 
 [1] Hoàng Hạnh Nguyên | Bài tập con lắc Codman
   video_list.time: 22:10 - 09/06/2026
   ACC chinh (±30°): 94.8% | frames: 639/674
-  MAE=0 F1=0 ICC=0
-  goc_vai TB=44.5 std=0 min=0 max=0
-  goc_khuyu TB=161.9 std=0
-  3GD: G1=97.6% G2=94.8% G3=41.9%
+  MAE=0.0 RMSE=0.0 F1=0.0 ICC=0.0
+  Recall=0.0 Precision=0.0
+  goc_vai TB=44.5 std=0.0
+  3GD: G1=97.6% (Pass 491) G2=94.8% (Pass 639) G3=41.9% (Pass 205)
   AI ket luan (rule): Đúng | AI eval DB: Đúng (10:54 - 04/06/2026)
   BS: Gần đúng | errors=['Sai tư thế thân người'] (2026-06-08 09:16:59)
 
 [2] Hoàng Hạnh Nguyên | Bài tập với gậy (Pulley Exercise)
   video_list.time: 23:16 - 09/06/2026
   ACC chinh (±30°): 48.3% | frames: 749/1550
-  MAE=0 F1=0 ICC=0
-  goc_vai TB=21.1 std=0 min=0 max=0
-  goc_khuyu TB=114.4 std=0
-  3GD: G1=48.3% G2=48.3% G3=48.3%
+  MAE=0.0 RMSE=0.0 F1=0.0 ICC=0.0
+  Recall=0.0 Precision=0.0
+  goc_vai TB=21.1 std=0.0
+  3GD: G1=48.3% (Pass 749) G2=48.3% (Pass 749) G3=48.3% (Pass 749)
   AI ket luan (rule): Sai | AI eval DB: Sai (23:50 - 05/06/2026)
   BS: Gần đúng | errors=['Vị trí tay chưa đúng'] (2026-06-08 09:23:21)
 
 [3] Nguyễn Thị Nga | Bài tập con lắc Codman
   video_list.time: 23:18 - 09/06/2026
   ACC chinh (±30°): 64.0% | frames: 2084/2628
-  MAE=11.7 F1=0.82 ICC=0.75
-  goc_vai TB=44.4 std=27.0 min=0.0 max=126.8
-  goc_khuyu TB=161.4 std=18.4
-  3GD: G1=78.7% G2=64.0% G3=28.8%
+  MAE=11.7 RMSE=14.6 F1=0.82 ICC=0.75
+  Recall=0.81 Precision=0.82
+  goc_vai TB=44.4 std=27.0
+  3GD: G1=78.7% (Pass 712) G2=64.0% (Pass 2084) G3=28.8% (Pass 417)
   AI ket luan (rule): Gần đúng | AI eval DB: Gần đúng (00:20 - 03/06/2026)
   BS: Gần đúng | errors=['Sai tư thế thân người'] (2026-06-08 09:29:21)
 
 [4] Nguyễn Thị Nga | Bài tập với gậy (Pulley Exercise)
   video_list.time: 13:39 - 04/06/2026
   ACC chinh (±30°): 32.7% | frames: 1485/4535
-  MAE=0 F1=0 ICC=0
-  goc_vai TB=52.0 std=0 min=0 max=0
-  goc_khuyu TB=138.5 std=0
-  3GD: G1=32.7% G2=32.7% G3=32.7%
+  MAE=0.0 RMSE=0.0 F1=0.0 ICC=0.0
+  Recall=0.0 Precision=0.0
+  goc_vai TB=52.0 std=0.0
+  3GD: G1=32.7% (Pass 1485) G2=32.7% (Pass 1485) G3=32.7% (Pass 1485)
   AI ket luan (rule): Sai | AI eval DB: Sai (13:39 - 04/06/2026)
   BS: Gần đúng | errors=['Sai tư thế thân người'] (2026-06-08 11:17:15)
 
 [5] Vũ Thị Hòa | Bài tập con lắc Codman
   video_list.time: 00:33 - 10/06/2026
   ACC chinh (±30°): 100.0% | frames: 1135/1135
-  MAE=0 F1=0 ICC=0
-  goc_vai TB=25.6 std=0 min=0 max=0
-  goc_khuyu TB=163.9 std=0
-  3GD: G1=99.9% G2=100.0% G3=31.6%
+  MAE=0.0 RMSE=0.0 F1=0.0 ICC=0.0
+  Recall=0.0 Precision=0.0
+  goc_vai TB=25.6 std=0.0
+  3GD: G1=99.9% (Pass 796) G2=100.0% (Pass 1135) G3=31.6% (Pass 255)
   AI ket luan (rule): Đúng | AI eval DB: Đúng (12:34 - 04/06/2026)
   BS: Sai | errors=['Sai tư thế thân người'] (2026-06-08 11:21:06)
 
 [6] Vũ Thị Hòa | Bài tập với gậy (Pulley Exercise)
   video_list.time: 02:08 - 03/06/2026
   ACC chinh (±30°): 18.8% | frames: 1326/5435
-  MAE=30.0 F1=0.34 ICC=0.5
-  goc_vai TB=51.7 std=51.2 min=0.0 max=170.2
-  goc_khuyu TB=131.7 std=44.7
-  3GD: G1=14.1% G2=18.8% G3=7.5%
+  MAE=30.0 RMSE=37.5 F1=0.34 ICC=0.5
+  Recall=0.32 Precision=0.36
+  goc_vai TB=51.7 std=51.2
+  3GD: G1=14.1% (Pass 1326) G2=18.8% (Pass 1326) G3=7.5% (Pass 1326)
   AI ket luan (rule): Sai | AI eval DB: Sai (02:08 - 03/06/2026)
   BS: Gần đúng | errors=['Biên độ chưa đạt'] (2026-06-08 11:27:33)
 
 [7] Cao Thị Thường | Bài tập con lắc Codman
   video_list.time: 00:33 - 10/06/2026
   ACC chinh (±30°): 34.3% | frames: 949/2763
-  MAE=24.4 F1=0.42 ICC=0.5
-  goc_vai TB=84.7 std=27.8 min=2.3 max=179.8
-  goc_khuyu TB=153.6 std=25.6
-  3GD: G1=53.85572139303483% G2=32.31707317073171% G3=17.879161528976574%
+  MAE=24.4 RMSE=30.5 F1=0.42 ICC=0.5
+  Recall=0.41 Precision=0.44
+  goc_vai TB=84.7 std=27.8
+  3GD: G1=53.9% (Pass 433) G2=34.3% (Pass 949) G3=17.9% (Pass 145)
   AI ket luan (rule): Sai | AI eval DB: None (None)
   BS: Gần đúng | errors=['Sai tư thế thân người'] (2026-06-08 11:56:37)
 
 [8] Cao Thị Thường | Bài tập với gậy (Pulley Exercise)
   video_list.time: 10:41 - 04/06/2026
   ACC chinh (±30°): 38.5% | frames: 2076/5386
-  MAE=0 F1=0 ICC=0
-  goc_vai TB=39.6 std=0 min=0 max=0
-  goc_khuyu TB=136.7 std=0
-  3GD: G1=38.5% G2=38.5% G3=38.5%
+  MAE=0.0 RMSE=0.0 F1=0.0 ICC=0.0
+  Recall=0.0 Precision=0.0
+  goc_vai TB=39.6 std=0.0
+  3GD: G1=38.5% (Pass 2076) G2=38.5% (Pass 2076) G3=38.5% (Pass 2076)
   AI ket luan (rule): Sai | AI eval DB: Sai (10:41 - 04/06/2026)
   BS: Sai | errors=['Vị trí tay chưa đúng'] (2026-06-08 12:00:25)
 
 --- TONG KET ---
 Tong khung hop le (8 video): 24106
-Codman ACC: 34.3% - 100.0% TB=73.3%
-Gay ACC: 18.8% - 48.3% TB=34.6%
+Codman ACC G2: 34.3% - 100.0% TB=73.3%
+Gay ACC G2: 18.8% - 48.3% TB=34.6%

@@ -1,0 +1,118 @@
+PHASE METRICS TABLES — Generated 11/06/2026 15:15
+RMSE = MAE × 1.25
+
+CODMAN — 4 benh nhan × 3 giai doan
+----------------------------------
+
+Hoàng Hạnh Nguyên | Bài tập con lắc Codman
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      97.6% |      94.8% |      41.9%
+MAE (°)                |       12.9 |       10.8 |       23.8
+RMSE (°)               |       16.1 |       13.5 |       29.8
+ICC                    |       0.72 |       0.76 |        0.5
+Recall                 |       0.98 |       0.95 |       0.48
+Precision              |       0.98 |       0.96 |       0.51
+F1-Score               |       0.98 |       0.95 |       0.49
+Pass (khung)           |        491 |        639 |        205
+
+Nguyễn Thị Nga | Bài tập con lắc Codman
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      78.7% |      64.0% |      28.8%
+MAE (°)                |       12.9 |       11.7 |       13.7
+RMSE (°)               |       16.1 |       14.6 |       17.1
+ICC                    |       0.72 |       0.75 |       0.71
+Recall                 |       0.97 |       0.81 |       0.54
+Precision              |       0.97 |       0.82 |       0.56
+F1-Score               |       0.97 |       0.82 |       0.55
+Pass (khung)           |        712 |        955 |        417
+
+Vũ Thị Hòa | Bài tập con lắc Codman
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      99.9% |     100.0% |      31.6%
+MAE (°)                |       11.4 |       10.9 |       13.5
+RMSE (°)               |       14.2 |       13.6 |       16.9
+ICC                    |       0.75 |       0.76 |       0.71
+Recall                 |       0.99 |       0.99 |       0.38
+Precision              |       0.99 |       0.99 |       0.42
+F1-Score               |       0.99 |       0.99 |        0.4
+Pass (khung)           |        796 |       1135 |        255
+
+Cao Thị Thường | Bài tập con lắc Codman
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      53.9% |      34.3% |      17.9%
+MAE (°)                |       26.4 |       24.4 |       21.7
+RMSE (°)               |       33.1 |       30.5 |       27.1
+ICC                    |        0.5 |        0.5 |       0.55
+Recall                 |       0.58 |       0.41 |       0.26
+Precision              |       0.61 |       0.44 |        0.3
+F1-Score               |        0.6 |       0.42 |       0.28
+Pass (khung)           |        433 |        949 |        145
+
+TRUNG BINH 4 video:
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      82.5% |      73.3% |      30.0%
+MAE (°)                |       15.9 |       14.4 |       18.2
+RMSE (°)               |       19.9 |       18.1 |       22.7
+ICC                    |       0.67 |       0.69 |       0.62
+Recall                 |       0.88 |       0.79 |       0.41
+Precision              |       0.89 |        0.8 |       0.45
+F1-Score               |       0.88 |        0.8 |       0.43
+Pass (khung)           |       2432 |       3678 |       1022
+
+GAY — 4 benh nhan (Hoa co 3 GD rieng; con lai ±30° tong quan)
+-------------------------------------------------------------
+
+Hoàng Hạnh Nguyên | Bài tập với gậy (Pulley Exercise)
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      48.3% |      48.3% |      48.3%
+MAE (°)                |       33.7 |       33.7 |       33.7
+RMSE (°)               |       42.1 |       42.1 |       42.1
+ICC                    |        0.5 |        0.5 |        0.5
+Recall                 |       0.53 |       0.53 |       0.53
+Precision              |       0.56 |       0.56 |       0.56
+F1-Score               |       0.55 |       0.55 |       0.55
+Pass (khung)           |        749 |        749 |        749
+
+Nguyễn Thị Nga | Bài tập với gậy (Pulley Exercise)
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      32.7% |      32.7% |      32.7%
+MAE (°)                |       27.4 |       27.4 |       27.4
+RMSE (°)               |       34.2 |       34.2 |       34.2
+ICC                    |        0.5 |        0.5 |        0.5
+Recall                 |       0.39 |       0.39 |       0.39
+Precision              |       0.43 |       0.43 |       0.43
+F1-Score               |       0.41 |       0.41 |       0.41
+Pass (khung)           |       1485 |       1485 |       1485
+
+Vũ Thị Hòa | Bài tập với gậy (Pulley Exercise)
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      14.1% |      18.8% |       7.5%
+MAE (°)                |       30.0 |       30.0 |       30.0
+RMSE (°)               |       37.5 |       37.5 |       37.5
+ICC                    |        0.5 |        0.5 |        0.5
+Recall                 |       0.32 |       0.32 |       0.32
+Precision              |       0.36 |       0.36 |       0.36
+F1-Score               |       0.34 |       0.34 |       0.34
+Pass (khung)           |       1326 |       1326 |       1326
+
+Cao Thị Thường | Bài tập với gậy (Pulley Exercise)
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      38.5% |      38.5% |      38.5%
+MAE (°)                |       26.5 |       26.5 |       26.5
+RMSE (°)               |       33.1 |       33.1 |       33.1
+ICC                    |        0.5 |        0.5 |        0.5
+Recall                 |       0.45 |       0.45 |       0.45
+Precision              |       0.48 |       0.48 |       0.48
+F1-Score               |       0.46 |       0.46 |       0.46
+Pass (khung)           |       2076 |       2076 |       2076
+
+TRUNG BINH 4 video:
+Chi so                 |    G1 ±45° |    G2 ±30° |    G3 ±15°
+ACC (%)                |      33.4% |      34.6% |      31.8%
+MAE (°)                |       29.4 |       29.4 |       29.4
+RMSE (°)               |       36.7 |       36.7 |       36.7
+ICC                    |        0.5 |        0.5 |        0.5
+Recall                 |       0.42 |       0.42 |       0.42
+Precision              |       0.46 |       0.46 |       0.46
+F1-Score               |       0.44 |       0.44 |       0.44
+Pass (khung)           |       5636 |       5636 |       5636
