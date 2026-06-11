@@ -2308,6 +2308,97 @@ def _lam_sach_cache_khi_doi_hf_token():
     _hf_dataset_access_cache = {"ok": None, "msg": None, "fp": None}
 
 
+def _hf_la_loi_thu_vien(err_text):
+    err = str(err_text or "").lower()
+    return any(
+        x in err
+        for x in (
+            "cannot import name",
+            "importerror",
+            "no module named 'huggingface_hub'",
+            "no module named huggingface_hub",
+        )
+    )
+
+
+def _hf_verify_dataset_via_http():
+    """Kiểm tra token + Dataset bằng HTTP (không cần huggingface_hub)."""
+    if not (HF_TOKEN and HF_DATASET_ID):
+        return False, "Chưa cấu hình HF_TOKEN hoặc HF_DATASET_ID."
+    try:
+        import urllib.parse
+        import requests
+        probe = urllib.parse.quote("video_list.json", safe="/")
+        url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{probe}"
+        resp = requests.get(
+            url,
+            headers={"Authorization": f"Bearer {HF_TOKEN}"},
+            timeout=30,
+            stream=True,
+        )
+        if resp.status_code in (401, 403):
+            return False, (
+                f"Token không có quyền đọc Dataset `{HF_DATASET_ID}`. "
+                "Dùng token Write của quynhphuong1209 hoặc thêm collaborator."
+            )
+        if resp.status_code == 404:
+            return False, (
+                f"Không tìm thấy Dataset `{HF_DATASET_ID}`. "
+                "Đặt HF_DATASET_ID=quynhphuong1209/Rehab-AI-Monitor-2026-data."
+            )
+        if resp.status_code != 200:
+            return False, f"HTTP {resp.status_code} khi kiểm tra Dataset."
+        if int(resp.headers.get("content-length") or 0) < 2:
+            chunk = next(resp.iter_content(64), b"")
+            if len(chunk) < 2:
+                return False, "Dataset phản hồi nhưng file video_list.json trống."
+        return True, None
+    except Exception as e:
+        return False, f"Không kết nối Dataset qua HTTP: {e}"
+
+
+def _hf_download_via_http(rel_path, min_size=80, quiet=False):
+    """Tải file Dataset qua HTTP — dự phòng khi huggingface_hub lỗi phiên bản."""
+    global _hf_last_download_error
+    if not (HF_TOKEN and HF_DATASET_ID and rel_path):
+        _hf_last_download_error = "Chưa cấu hình HF_TOKEN hoặc HF_DATASET_ID."
+        return None
+    try:
+        import urllib.parse
+        import requests
+        rel_norm = rel_path.replace("\\", "/")
+        rel_enc = urllib.parse.quote(rel_norm, safe="/")
+        url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_enc}"
+        target = os.path.normpath(os.path.join(DATA_DIR, rel_norm))
+        os.makedirs(os.path.dirname(target) or DATA_DIR, exist_ok=True)
+        resp = requests.get(
+            url,
+            headers={"Authorization": f"Bearer {HF_TOKEN}"},
+            timeout=180,
+            stream=True,
+        )
+        if resp.status_code in (401, 403):
+            _hf_last_download_error = "Token không có quyền tải file từ Dataset."
+            return None
+        if resp.status_code == 404:
+            _hf_last_download_error = f"Chưa có trên Dataset: `{rel_path}`"
+            return None
+        resp.raise_for_status()
+        with open(target, "wb") as f:
+            for chunk in resp.iter_content(chunk_size=256 * 1024):
+                if chunk:
+                    f.write(chunk)
+        if os.path.exists(target) and os.path.getsize(target) >= min_size:
+            _hf_last_download_error = None
+            return target
+        _hf_last_download_error = f"File `{rel_path}` tải về nhưng kích thước không hợp lệ."
+    except Exception as e:
+        _hf_last_download_error = str(e)
+        if not quiet:
+            print(f"[HF Sync] HTTP fallback loi {rel_path}: {e}")
+    return None
+
+
 def kiem_tra_quyen_hf_dataset(force=False):
     """Kiểm tra token hiện tại có đọc được Dataset lưu trữ dữ liệu cũ hay không."""
     global _hf_dataset_access_cache
@@ -2328,6 +2419,7 @@ def kiem_tra_quyen_hf_dataset(force=False):
         _hf_dataset_access_cache = {"ok": False, "msg": msg, "fp": fp}
         return False, msg
 
+    hub_err = None
     try:
         from huggingface_hub import HfApi
         api = HfApi(token=HF_TOKEN)
@@ -2335,7 +2427,19 @@ def kiem_tra_quyen_hf_dataset(force=False):
         _hf_dataset_access_cache = {"ok": True, "msg": None, "fp": fp}
         return True, None
     except Exception as e:
+        hub_err = e
         err = str(e).lower()
+        if _hf_la_loi_thu_vien(err):
+            ok_http, msg_http = _hf_verify_dataset_via_http()
+            if ok_http:
+                _hf_dataset_access_cache = {
+                    "ok": True,
+                    "msg": "Đồng bộ qua HTTP (huggingface_hub trên Space cần rebuild).",
+                    "fp": fp,
+                }
+                return True, _hf_dataset_access_cache["msg"]
+            _hf_dataset_access_cache = {"ok": False, "msg": msg_http, "fp": fp}
+            return False, msg_http
         if any(x in err for x in ("401", "403", "unauthorized", "forbidden", "permission", "credentials")):
             msg = (
                 f"Token không có quyền đọc Dataset `{HF_DATASET_ID}`. "
@@ -2349,7 +2453,11 @@ def kiem_tra_quyen_hf_dataset(force=False):
                 "`quynhphuong1209/Rehab-AI-Monitor-2026-data`."
             )
         else:
-            msg = f"Không kết nối được Dataset: {e}"
+            ok_http, msg_http = _hf_verify_dataset_via_http()
+            if ok_http:
+                _hf_dataset_access_cache = {"ok": True, "msg": None, "fp": fp}
+                return True, None
+            msg = f"Không kết nối được Dataset: {hub_err}"
         _hf_dataset_access_cache = {"ok": False, "msg": msg, "fp": fp}
         return False, msg
 
@@ -2458,6 +2566,7 @@ def _hf_download_dataset_file(rel_path, quiet=False, min_size=None):
         return None
     if min_size is None:
         min_size = _hf_min_size_for_path(rel_path)
+    hub_failed = False
     try:
         from huggingface_hub import hf_hub_download
         local_fp = hf_hub_download(
@@ -2476,20 +2585,30 @@ def _hf_download_dataset_file(rel_path, quiet=False, min_size=None):
             return target
         _hf_last_download_error = f"File `{rel_path}` tải về nhưng kích thước không hợp lệ."
     except Exception as e:
+        hub_failed = True
         err = str(e).lower()
-        if "404" in err or "not found" in err or "entry not found" in err:
+        if _hf_la_loi_thu_vien(err):
+            if not quiet:
+                print(f"[HF Sync] huggingface_hub loi phien ban, thu HTTP: {e}")
+        elif "404" in err or "not found" in err or "entry not found" in err:
             _hf_last_download_error = f"Chưa có trên Dataset: `{rel_path}`"
             if not quiet:
                 print(f"[HF Sync] Chua co tren Dataset: {rel_path}")
+            return None
         elif any(x in err for x in ("401", "403", "unauthorized", "forbidden", "permission", "credentials")):
             _, msg = kiem_tra_quyen_hf_dataset(force=True)
             _hf_last_download_error = msg or str(e)
             if not quiet:
                 print(f"[HF Sync] Token khong du quyen tai {rel_path}: {e}")
+            return None
         else:
-            _hf_last_download_error = str(e)
             if not quiet:
-                print(f"[HF Sync] Khong tai duoc {rel_path}: {e}")
+                print(f"[HF Sync] hub loi {rel_path}: {e}")
+
+    if hub_failed or _hf_last_download_error:
+        got = _hf_download_via_http(rel_path, min_size=min_size, quiet=quiet)
+        if got:
+            return got
     return None
 
 
@@ -16641,16 +16760,19 @@ def main():
         if HF_SPACE_ID or os.path.exists("/data"):
             hf_ok, hf_msg = kiem_tra_quyen_hf_dataset()
             if hf_ok:
+                sub = hf_msg or f"Dataset: <b>{HF_DATASET_ID}</b>"
                 st.markdown(f"""
                 <div style="background: rgba(46, 204, 113, 0.15); padding: 10px; border-radius: 8px; border: 1px solid rgba(46, 204, 113, 0.4); text-align: center; margin-top: 5px; margin-bottom: 15px;">
                     <span style="color: #2ecc71; font-weight: bold; font-size: 0.85rem;">💚 Cloud Sync: ĐÃ KÍCH HOẠT</span>
-                    <p style="color: #aaa; font-size: 0.75rem; margin: 5px 0 0 0;">Dataset: <b>{HF_DATASET_ID}</b></p>
+                    <p style="color: #aaa; font-size: 0.75rem; margin: 5px 0 0 0;">{sub}</p>
                 </div>
                 """, unsafe_allow_html=True)
             elif HF_TOKEN:
+                lib_err = _hf_la_loi_thu_vien(hf_msg or "")
+                sync_label = "THƯ VIỆN LỖI" if lib_err else "TOKEN LỖI"
                 st.markdown(f"""
                 <div style="background: rgba(241, 196, 15, 0.15); padding: 12px; border-radius: 8px; border: 1px solid rgba(241, 196, 15, 0.4); text-align: center; margin-top: 5px; margin-bottom: 15px;">
-                    <span style="color: #f1c40f; font-weight: bold; font-size: 0.85rem;">⚠️ Cloud Sync: TOKEN LỖI</span>
+                    <span style="color: #f1c40f; font-weight: bold; font-size: 0.85rem;">⚠️ Cloud Sync: {sync_label}</span>
                     <p style="color: #ddd; font-size: 0.75rem; margin: 5px 0 0 0;">{hf_msg or 'Token không đọc được Dataset.'}</p>
                 </div>
                 """, unsafe_allow_html=True)
