@@ -137,25 +137,98 @@ def video_fallback_paths(file_path):
     return out
 
 
+def _is_scratch_video_path(path):
+    """File tạm transcode — không phát được (màn đen/xám trên trình duyệt)."""
+    if not path:
+        return False
+    low = str(path).replace("\\", "/").lower()
+    return any(
+        tag in low
+        for tag in ("_ftmp.mp4", "_ttmp.mp4", "_ffmp.mp4", ".ftmp.mp4", "/transcode_error")
+    )
+
+
+def _strip_to_original_upload(path):
+    """Đưa path về file upload gốc, bỏ hậu tố transcode tạm."""
+    if not path:
+        return path
+    p = str(path)
+    for suffix in ("_ftmp.mp4", "_ttmp.mp4", "_ffmp.mp4", "_f.mp4"):
+        if p.endswith(suffix):
+            return p[: -len(suffix)] + ".mp4"
+    return p
+
+
 def video_raw_only_paths(file_path):
-    """Chỉ video gốc BN upload — không fallback sang processed/_f.mp4."""
+    """Chỉ video gốc BN upload — không fallback sang processed/_f/_ftmp."""
     if not file_path:
         return []
     try:
         norm = get_local_frame_path(file_path) or file_path
     except Exception:
         norm = file_path
-    candidates = [norm]
-    if norm.endswith('_ffmp.mp4'):
-        candidates.append(norm.replace('_ffmp.mp4', '.mp4'))
-    elif norm.endswith('_f.mp4') and 'processed_results' not in norm.replace("\\", "/"):
-        candidates.append(norm.replace('_f.mp4', '.mp4'))
+    candidates = []
+    for p in (norm, _strip_to_original_upload(norm)):
+        if p and not _is_scratch_video_path(p):
+            candidates.append(p)
+        base, ext = os.path.splitext(_strip_to_original_upload(p or ""))
+        if base and ext.lower() == ".mp4":
+            mov = base + ".mov"
+            if not _is_scratch_video_path(mov):
+                candidates.append(get_local_frame_path(mov) or mov)
     seen, out = set(), []
     for p in candidates:
-        if p and p not in seen:
+        if p and p not in seen and not _is_scratch_video_path(p):
             seen.add(p)
             out.append(p)
     return out
+
+
+def _tim_video_upload_goc(v):
+    """Tìm file upload gốc trong patient_uploads theo BN + tên video."""
+    uname = (v or {}).get("username") or ""
+    vname = (v or {}).get("video_name") or ""
+    if not uname:
+        return None
+    stem = os.path.splitext(os.path.basename(vname))[0] if vname else ""
+    if not os.path.isdir(UPLOAD_DIR):
+        return None
+    best = None
+    best_mtime = 0
+    try:
+        for fn in os.listdir(UPLOAD_DIR):
+            low = fn.lower()
+            if not low.endswith((".mp4", ".mov", ".avi", ".mkv")):
+                continue
+            if _is_scratch_video_path(fn):
+                continue
+            if uname not in fn:
+                continue
+            if stem and stem not in fn and os.path.splitext(vname)[0] not in fn:
+                continue
+            fp = os.path.join(UPLOAD_DIR, fn)
+            try:
+                mt = os.path.getmtime(fp)
+            except Exception:
+                mt = 0
+            if mt >= best_mtime:
+                best_mtime = mt
+                best = fp
+    except Exception:
+        return None
+    return best
+
+
+def _valid_raw_video_local(path):
+    if not path or _is_scratch_video_path(path):
+        return False
+    if not is_local_file_ready(path):
+        return False
+    try:
+        mtime, size = os.path.getmtime(path), os.path.getsize(path)
+        return _check_video_valid_cached(path, mtime, size)
+    except Exception:
+        return is_local_file_ready(path)
 
 
 def find_ready_local_video(file_path, min_size=5 * 1024):
@@ -1300,9 +1373,7 @@ def ensure_playable_video(video_path):
                         if vid.get('processed_path') == video_path:
                             vid['processed_path'] = final_h264
                             updated = True
-                        elif vid.get('video_path') == video_path:
-                            vid['video_path'] = final_h264
-                            updated = True
+                        # Không ghi đè video_path — giữ file upload gốc BN trong DB
                     if updated:
                         save_data(VIDEOS_FILE, video_list)
                         print("[Async Video] Đã cập nhật database video_list.json")
@@ -1516,11 +1587,11 @@ def check_cloud_file_exists(url):
 
 def _hf_dataset_resolve_urls(video_path, prefer_raw=False):
     """URL stream HF Dataset — processed ưu tiên _f.mp4; raw chỉ dùng file upload gốc."""
-    if not (HF_TOKEN and HF_DATASET_ID and video_path):
+    if not (HF_TOKEN and HF_DATASET_ID and video_path) or _is_scratch_video_path(video_path):
         return None, None
     try:
         import urllib.parse
-        rel = get_clean_rel_path(video_path)
+        rel = get_clean_rel_path(_strip_to_original_upload(video_path))
         base = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main"
         token_q = f"?token={HF_TOKEN}"
         url_raw = f"{base}/{urllib.parse.quote(rel, safe='/')}{token_q}"
@@ -1570,10 +1641,27 @@ def _render_video_html5_iframe(sources_html, comp_key, height=300, footer_html="
   .vf{{color:#aaa;font-size:0.72rem;margin-top:4px;text-align:right;font-family:sans-serif;}}
 </style>
 </head><body>
-<video id="{vid_id}" controls preload="metadata" playsinline>
+<video id="{vid_id}" controls preload="auto" playsinline>
   {sources_html}
   Trình duyệt không hỗ trợ video HTML5.
 </video>
+<script>
+(function() {{
+  var v = document.getElementById("{vid_id}");
+  if (!v) return;
+  var idx = 0;
+  var sources = v.querySelectorAll("source");
+  function tryNext() {{
+    idx += 1;
+    if (idx < sources.length) {{
+      v.src = sources[idx].src;
+      v.load();
+      v.play().catch(function(){{}});
+    }}
+  }}
+  v.addEventListener("error", tryNext);
+}})();
+</script>
 {f'<div class="vf">{foot}</div>' if foot else ''}
 </body></html>
 """,
@@ -2198,7 +2286,17 @@ def render_video(video_path, check_h264=True, prefer_raw=False):
         ensure_playable_video(video_path)
     _prefetch_video_quiet(video_path)
 
-    # HF Space: ưu tiên stream Cloud (Range Request) trước khi đọc file local nặng
+    # Video gốc BN: tải local + st.video trước (iframe Cloud hay bị màn đen với file tạm / codec lạ)
+    if prefer_raw:
+        for p in video_raw_only_paths(video_path):
+            if _is_scratch_video_path(p):
+                continue
+            ensure_local_file(p, quiet=True, try_fallbacks=False)
+            if _valid_raw_video_local(p) and _render_video_streamlit_native(p, allow_large=True):
+                st.caption(f"📤 Video gốc BN — {os.path.basename(p)}")
+                return
+
+    # HF Space: stream Cloud khi chưa có bản local hợp lệ
     if _is_hf_runtime() and HF_TOKEN and HF_DATASET_ID:
         if _try_render_cloud_video_stream(video_path, key_hint="hf_first", optimistic=True, prefer_raw=prefer_raw):
             return
@@ -2206,6 +2304,8 @@ def render_video(video_path, check_h264=True, prefer_raw=False):
     local_ready = None
     if prefer_raw:
         for p in video_raw_only_paths(video_path):
+            if _is_scratch_video_path(p):
+                continue
             if is_local_file_ready(p):
                 local_ready = p
                 break
@@ -3955,22 +4055,49 @@ def _lay_duong_dan_video_hien_thi(v):
 
 def _lay_duong_dan_video_tho(v):
     """Video gốc BN đã upload — dùng trong danh sách video (không hiển thị bản processed)."""
-    raw = v.get("video_path")
-    if not raw:
+    if not v:
         return None
-    return get_local_frame_path(raw) or raw
+    candidates = []
+    raw = v.get("video_path")
+    if raw and not _is_scratch_video_path(raw):
+        candidates.append(get_local_frame_path(raw) or raw)
+    stripped = _strip_to_original_upload(raw or "")
+    if stripped and stripped not in candidates:
+        candidates.append(get_local_frame_path(stripped) or stripped)
+    found = _tim_video_upload_goc(v)
+    if found:
+        candidates.insert(0, found)
+    for c in candidates:
+        if c and not _is_scratch_video_path(c):
+            return c
+    return None
 
 
-def _dam_bao_video_san_sang_play(path, prefer_raw=False):
+def _dam_bao_video_san_sang_play(path, prefer_raw=False, video_record=None):
     """Tự động tải video từ Cloud/local — không cần nút thủ công."""
+    if not path and video_record:
+        path = _lay_duong_dan_video_tho(video_record)
     if not path:
         return None
     if prefer_raw:
-        for candidate in video_raw_only_paths(path):
-            ensure_local_file(candidate, quiet=True, try_fallbacks=True)
+        search_paths = list(video_raw_only_paths(path))
+        if video_record:
+            alt = _lay_duong_dan_video_tho(video_record)
+            if alt and alt not in search_paths:
+                search_paths.insert(0, alt)
+        for candidate in search_paths:
+            if _is_scratch_video_path(candidate):
+                continue
+            ensure_local_file(candidate, quiet=True, try_fallbacks=False)
+            if _valid_raw_video_local(candidate):
+                return candidate
+        for candidate in search_paths:
+            if _is_scratch_video_path(candidate):
+                continue
+            ensure_local_file(candidate, quiet=True, try_fallbacks=False)
             if is_local_file_ready(candidate):
                 return candidate
-        return path
+        return _strip_to_original_upload(path)
     ready = find_ready_local_video(path)
     if ready:
         pb = resolve_playback_video_path(ready)
@@ -15938,9 +16065,16 @@ def hien_thi_danh_sach_video_fragment(user_role):
                             if st.session_state.get(show_vid_key):
                                 if active_display_path:
                                     with st.spinner("📥 Đang tải video gốc..."):
-                                        play_path = _dam_bao_video_san_sang_play(active_display_path, prefer_raw=True)
-                                        if play_path:
+                                        play_path = _dam_bao_video_san_sang_play(
+                                            active_display_path, prefer_raw=True, video_record=v
+                                        )
+                                        if play_path and not _is_scratch_video_path(play_path):
                                             render_video(play_path, check_h264=False, prefer_raw=True)
+                                        elif _is_scratch_video_path(play_path):
+                                            st.error(
+                                                "❌ Đang trỏ nhầm file tạm transcode (_ftmp). "
+                                                "Nhấn F5 hoặc liên hệ NCV kiểm tra file upload trên Dataset."
+                                            )
                                         else:
                                             st.error("❌ Không tìm thấy file video gốc. Vui lòng thử lại sau vài giây.")
                                 else:
