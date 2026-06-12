@@ -15298,13 +15298,16 @@ def hien_thi_dang_nhap_dang_ky():
                                     st.session_state.logged_in = True
                                     st.session_state.user_info = {
                                         "username": u, 
+                                        "full_name": users[u].get('full_name', u),
                                         "email": users[u].get('email'),
                                         "role": users[u].get('role', 'Bệnh nhân')
                                     }
                                     st.query_params["logged_in_user"] = u
                                     st.query_params["logged_in_role"] = users[u].get('role', 'Bệnh nhân')
                                     st.session_state.show_login_dialog = False
-                                    st.rerun()
+                                    # Dùng scope="app" để rerun TOÀN BỘ app (kể cả @st.fragment)
+                                    # tránh tình trạng sidebar đã cập nhật nhưng content chính vẫn hiển thị form đăng nhập
+                                    st.rerun(scope="app")
                                 else:
                                     st.error(f"❌ Tài khoản này không có quyền truy cập với vai trò {login_role}")
                             else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
