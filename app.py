@@ -5014,7 +5014,13 @@ def _inject_base_css_once():
     span[data-testid="stIconMaterial"] {
         display: inline-block !important;
         visibility: visible !important;
-        font-family: 'Material Icons' !important;
+        /* Dùng đúng font Streamlit mặc định (Material Symbols Rounded) để icon ligature render đúng */
+        font-family: 'Material Symbols Rounded' !important;
+        font-feature-settings: "liga" 1 !important;
+        -webkit-font-feature-settings: "liga" 1 !important;
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
+        text-rendering: optimizeLegibility !important;
+        -webkit-font-smoothing: antialiased !important;
     }
 
     /* Đã chuyển styling container vào các block theme-aware phía dưới */
