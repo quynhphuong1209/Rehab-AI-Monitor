@@ -5077,12 +5077,12 @@ def _inject_base_css_once():
     }
     @keyframes header-logo-glow {
         0%, 100% {
-            box-shadow: 0 0 10px rgba(0, 198, 255, 0.45), 0 0 0 2px rgba(0, 198, 255, 0.65);
+            box-shadow: 0 0 14px rgba(0, 198, 255, 0.45), 0 0 30px rgba(0, 198, 255, 0.18);
             border-color: rgba(0, 198, 255, 0.75);
         }
         50% {
-            box-shadow: 0 0 24px rgba(0, 230, 255, 0.9), 0 0 48px rgba(0, 198, 255, 0.35), 0 0 0 3px rgba(0, 230, 118, 0.95);
-            border-color: rgba(0, 230, 255, 1);
+            box-shadow: 0 0 26px rgba(0, 198, 255, 0.75), 0 0 55px rgba(0, 198, 255, 0.30);
+            border-color: rgba(0, 230, 255, 0.95);
         }
     }
     .main-header .header-logos-row {
@@ -5101,14 +5101,13 @@ def _inject_base_css_once():
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: #ffffff;
+        background: rgba(0, 198, 255, 0.06);
         padding: 3px;
         border: 2.5px solid rgba(0, 198, 255, 0.75);
-        animation: header-logo-glow 2.5s ease-in-out infinite;
+        animation: header-logo-glow 3s ease-in-out infinite;
         flex-shrink: 0;
     }
     .main-header .header-logo-ds {
-        border-color: rgba(0, 230, 118, 0.85);
         animation-delay: 0.35s;
     }
     .main-header .header-logo-pnt {
