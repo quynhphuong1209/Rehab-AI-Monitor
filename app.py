@@ -14,6 +14,15 @@ os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 os.environ['MEDIAPIPE_DISABLE_GPU'] = '0'
 
 import streamlit as st
+
+# Gọi sớm nhất có thể — trình duyệt nhận layout ngay, giảm màn hình trống trên HF Space
+st.set_page_config(
+    page_title="Hệ thống giám sát tập PHCN từ xa - Đề tài NCKH",
+    page_icon="🏥",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 import cv2
 import numpy as np
 import pandas as pd
@@ -2426,7 +2435,6 @@ def render_video(video_path, check_h264=True, prefer_raw=False):
 
 import threading
 import queue
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 import gc
 from concurrent.futures import ThreadPoolExecutor
 
@@ -4531,8 +4539,6 @@ def thuc_hien_khoi_tao_he_thong_mot_lan():
     threading.Thread(target=_resume_and_watch_analysis_jobs, daemon=True).start()
     return True
 
-thuc_hien_khoi_tao_he_thong_mot_lan()
-
 # Khởi tạo trạng thái đăng nhập
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -4659,23 +4665,19 @@ def chuyen_tab_bang_js(ten_tab):
     st.markdown(js_code, unsafe_allow_html=True)
 
 # ============================================
-# CẤU HÌNH TRANG
-# ============================================
-st.set_page_config(
-    page_title="Hệ thống giám sát tập PHCN từ xa - Đề tài NCKH",
-    page_icon="🏥",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# ============================================
 # CSS CUSTOM - GIAO DIỆN HIỆN ĐẠI
 # ============================================
-st.markdown("""
+def _inject_base_css_once():
+    """Chỉ gửi khối CSS nền một lần mỗi phiên — giảm payload khi rerun."""
+    if st.session_state.get("_base_css_injected"):
+        return
+    st.session_state._base_css_injected = True
+    st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap">
 <style>
-    /* === TẢI FONT BIỂU TƯỢNG TRỰC TIẾP TỪ GOOGLE === */
-    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-    @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
     html, body, .stApp, [data-testid="stMarkdownContainer"] {
         font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif !important;
     }
@@ -5389,6 +5391,9 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+
+_inject_base_css_once()
 
 # === CSS CHO CHẾ ĐỘ TỐI (DARK MODE FORCED) ===
 # Ép giao diện luôn tối kể cả khi Chrome/Hệ thống đang ở chế độ Sáng
@@ -6584,52 +6589,56 @@ def hien_thi_tab_phan_hoi():
                 """, unsafe_allow_html=True)
 
 # ============================================
-# LỚP XỬ LÝ VIDEO REAL-TIME (WEBRTC)
+# LỚP XỬ LÝ VIDEO REAL-TIME (WEBRTC) — import lazy trong hien_thi_tab_realtime
 # ============================================
-class PoseProcessor(VideoProcessorBase):
-    def __init__(self):
-        self.pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-        self.bai_tap = None
-
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        img = cv2.flip(img, 1)
-        h, w, _ = img.shape
-        
-        # Xử lý với MediaPipe
-        results = self.pose.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-        if results.pose_landmarks:
-            ve_khung_xuong_custom(img, results.pose_landmarks, active_side="LEFT", mau_tong=(0, 255, 0), scale_factor=w/640.0)
-            
-            try:
-                landmarks = results.pose_landmarks.landmark
-                # Lấy tọa độ các khớp (Bên trái)
-                vai = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y * h]
-                khuyu = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y * h]
-                co_tay = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y * h]
-                hong = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y * h]
-                
-                g_vai = tinh_goc(hong, vai, khuyu)
-                g_khuyu = tinh_goc(vai, khuyu, co_tay)
-                
-                # Hiển thị
-                cv2.putText(img, f"VAI: {int(g_vai)}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                cv2.putText(img, f"KHUYU: {int(g_khuyu)}", (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                
-                # Cảnh báo (Nếu có bài tập chuẩn)
-                if self.bai_tap:
-                    if abs(g_vai - self.bai_tap['chuan']['vai']) > self.bai_tap['chuan']['sai_so']:
-                        cv2.putText(img, "⚠️ SAI TU THE VAI!", (w//2-150, h//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
-            except: pass
-            
-        import av
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
-
 def hien_thi_tab_realtime(bai_tap):
     """Xử lý Camera trực tiếp qua Trình duyệt (WebRTC)"""
+    from streamlit_webrtc import RTCConfiguration, VideoProcessorBase, webrtc_streamer
+
+    class PoseProcessor(VideoProcessorBase):
+        def __init__(self):
+            init_mediapipe()
+            self.pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+            self.bai_tap = None
+
+        def recv(self, frame):
+            img = frame.to_ndarray(format="bgr24")
+            img = cv2.flip(img, 1)
+            h, w, _ = img.shape
+
+            # Xử lý với MediaPipe
+            results = self.pose.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            if results.pose_landmarks:
+                ve_khung_xuong_custom(img, results.pose_landmarks, active_side="LEFT", mau_tong=(0, 255, 0), scale_factor=w/640.0)
+
+                try:
+                    landmarks = results.pose_landmarks.landmark
+                    # Lấy tọa độ các khớp (Bên trái)
+                    vai = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y * h]
+                    khuyu = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y * h]
+                    co_tay = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y * h]
+                    hong = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x * w, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y * h]
+
+                    g_vai = tinh_goc(hong, vai, khuyu)
+                    g_khuyu = tinh_goc(vai, khuyu, co_tay)
+
+                    # Hiển thị
+                    cv2.putText(img, f"VAI: {int(g_vai)}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                    cv2.putText(img, f"KHUYU: {int(g_khuyu)}", (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+                    # Cảnh báo (Nếu có bài tập chuẩn)
+                    if self.bai_tap:
+                        if abs(g_vai - self.bai_tap['chuan']['vai']) > self.bai_tap['chuan']['sai_so']:
+                            cv2.putText(img, "⚠️ SAI TU THE VAI!", (w//2-150, h//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+                except Exception:
+                    pass
+
+            import av
+            return av.VideoFrame.from_ndarray(img, format="bgr24")
+
     st.markdown("### 📹 TẬP LUYỆN TRỰC TIẾP VỚI AI (REAL-TIME)")
     st.info("💡 Trình duyệt sẽ yêu cầu quyền Camera. Hãy nhấn 'Allow' để bắt đầu.")
-    
+
     RTC_CONFIGURATION = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
     
     col1, col2 = st.columns([1.3, 1])
@@ -17142,6 +17151,8 @@ def _render_main_tab_content(tab_titles, user_role):
 
 
 def main():
+    thuc_hien_khoi_tao_he_thong_mot_lan()
+
     # Kiểm tra trạng thái đăng nhập ngay đầu hàm main
     if not st.session_state.get("logged_in") or not st.session_state.get("user_info"):
         if st.session_state.get("logged_in") and not st.session_state.get("user_info"):
