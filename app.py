@@ -16352,10 +16352,20 @@ def hien_thi_danh_sach_video_fragment(user_role):
                                         st.toast("🔄 Video đang phân tích — mở tab theo dõi tiến độ...", icon="⏳")
                                     else:
                                         _loaded_ok = False
+                                        v_fresh = _lam_moi_ban_ghi_video_tu_db(v)
+                                        has_metrics = bool((v_fresh or v).get("metrics"))
                                         with st.spinner("📥 Đang tải kết quả gần nhất (biểu đồ, video khung xương, ảnh frame)..."):
-                                            _loaded_ok = khoi_phuc_ket_qua_cu(v, tai_day_du=True)
+                                            _loaded_ok = khoi_phuc_ket_qua_cu(v_fresh or v, tai_day_du=True)
                                         if _loaded_ok:
                                             st.toast("✅ Đã tải kết quả gần nhất — chuyển tab Phân tích...", icon="📊")
+                                        elif has_metrics:
+                                            # Video ĐÃ phân tích (có metrics) nhưng chưa tải được CSV/JSON
+                                            # → vẫn hiển thị kết quả đã lưu, KHÔNG quay về màn hình cấu hình
+                                            st.session_state.view_old_analysis = True
+                                            st.session_state.has_data = True
+                                            st.session_state.stats = (v_fresh or v).get("metrics")
+                                            st.session_state.reanalyze_triggered = False
+                                            st.toast("📊 Đang hiển thị kết quả đã lưu...", icon="📊")
                                         else:
                                             st.session_state.view_old_analysis = False
                                             st.toast("🧭 Video chưa có kết quả — sang tab Phân tích, bấm Chạy phân tích khi sẵn sàng.", icon="🔬")
