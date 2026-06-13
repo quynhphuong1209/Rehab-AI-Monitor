@@ -33,3 +33,6 @@ patient_uploads/
 scratch/
 processed_results/
 database/pose_classifier.pkl
+
+processed_results/
+mediapipe*.whl
