@@ -2572,16 +2572,18 @@ def render_video(video_path, check_h264=True, prefer_raw=False):
                 st.caption(f"📤 Video gốc BN — {os.path.basename(p)}")
                 return
 
-    # Ưu tiên phát local nếu file đã sẵn sàng (tránh hiện "Video đang tải từ Cloud" khi không cần)
+    # Ưu tiên phát local qua st.video() — hỗ trợ Range request, không bị màn đen trên HF Space
     if not prefer_raw:
         _local_first = find_ready_local_video(video_path)
         if not _local_first:
-            # H.264 chưa xong — thử phát MP4 gốc qua static serving để không bị màn đen
+            # H.264 chưa xong — thử phát MP4 gốc (vẫn tốt hơn màn đen)
             _raw_local = get_local_frame_path(video_path) if isinstance(video_path, str) else None
             if _raw_local and os.path.exists(_raw_local) and os.path.getsize(_raw_local) > 0:
                 _local_first = _raw_local
-        if _local_first and _render_video_static_iframe(_local_first):
-            return
+        if _local_first:
+            # st.video() stream đúng với Range request; static iframe bị đen trên HF Space
+            if _render_video_streamlit_native(_local_first, allow_large=True):
+                return
 
     # HF Space: stream Cloud khi chưa có bản local hợp lệ
     if _is_hf_runtime() and HF_TOKEN and HF_DATASET_ID:
