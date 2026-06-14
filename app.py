@@ -8190,29 +8190,45 @@ def ve_nhan_rule_classifier(frame_output, dung, gan_dung, scale_factor=1.0):
     
 def ensure_voice_files():
     import os
-    try:
-        from gtts import gTTS
-    except ImportError:
-        return None
-        
     sounds_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sounds")
     if not os.path.exists(sounds_dir):
-        os.makedirs(sounds_dir)
-        
-    files = {
-        "dung.mp3": "Đúng",
-        "gan_dung.mp3": "Gần đúng",
-        "sai.mp3": "Sai"
-    }
-    
-    for filename, text in files.items():
+        os.makedirs(sounds_dir, exist_ok=True)
+
+    # Tần số beep fallback: đúng=880Hz, gần đúng=660Hz, sai=440Hz
+    _BEEP_FREQ = {"dung.mp3": 880, "gan_dung.mp3": 660, "sai.mp3": 440}
+    _TTS_TEXT = {"dung.mp3": "Đúng", "gan_dung.mp3": "Gần đúng", "sai.mp3": "Sai"}
+
+    for filename in ("dung.mp3", "gan_dung.mp3", "sai.mp3"):
         filepath = os.path.join(sounds_dir, filename)
-        if not os.path.exists(filepath):
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            continue
+
+        # 1. Thử gTTS (cần internet)
+        saved = False
+        try:
+            from gtts import gTTS
+            tts = gTTS(text=_TTS_TEXT[filename], lang='vi')
+            tts.save(filepath)
+            saved = os.path.exists(filepath) and os.path.getsize(filepath) > 0
+        except Exception as _gte:
+            print(f"[Audio] gTTS fail cho {filename}: {_gte}")
+
+        # 2. Fallback: sinh sine wave bằng ffmpeg (không cần internet)
+        if not saved:
             try:
-                tts = gTTS(text=text, lang='vi')
-                tts.save(filepath)
-            except:
-                pass
+                freq = _BEEP_FREQ[filename]
+                subprocess.run(
+                    ['ffmpeg', '-y', '-f', 'lavfi',
+                     '-i', f'sine=frequency={freq}:duration=0.6',
+                     '-ar', '44100', '-ac', '1', filepath],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10
+                )
+                saved = os.path.exists(filepath) and os.path.getsize(filepath) > 0
+                if saved:
+                    print(f"[Audio] Dùng beep fallback cho {filename} ({freq}Hz)")
+            except Exception as _ffe:
+                print(f"[Audio] ffmpeg beep fail cho {filename}: {_ffe}")
+
     return sounds_dir
 
 
