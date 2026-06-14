@@ -5099,33 +5099,50 @@ def _inject_base_css_once():
     }
 
     /* === TẮT BLINK/NHẤP NHÁY KHI FRAGMENT AUTO-REFRESH ===
-       Streamlit áp @keyframes pulse lên button/control khi fragment đang re-run.
-       Override thành no-op để loại bỏ hiệu ứng nhấp nháy khó chịu.            */
+       Cơ chế thực: Streamlit đặt opacity=0.33 trên [data-stale="true"] khi fragment
+       re-run mỗi 1.5s → toàn bộ element trong fragment nhấp nháy mờ/hiện liên tục.
+       Fix: giữ opacity=1 và pointer-events bình thường suốt quá trình stale.       */
+
+    /* ROOT FIX: giữ nguyên opacity cho mọi element đang "stale" (fragment đang refresh) */
+    [data-stale],
+    [data-stale="true"],
+    [data-stale] *,
+    [data-stale="true"] * {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        visibility: visible !important;
+    }
+
+    /* Override no-op các keyframe Streamlit dùng cho running state */
     @keyframes pulse { from { opacity: 1; } to { opacity: 1; } }
     @keyframes border-pulse { from { } to { } }
+    @keyframes fadeIn { from { opacity: 1; } to { opacity: 1; } }
 
-    /* Nút bấm và toggle: tắt hẳn animation do Streamlit inject trong lúc running */
+    /* Nút bấm, toggle, tab: tắt animation + giữ opacity khi fragment chạy lại */
     button,
     [data-baseweb="button"],
+    [data-baseweb="segmented-control"],
     [data-baseweb="segmented-control"] *,
     [data-testid^="stBaseButton"],
     [data-testid="stSegmentedControl"],
     [data-testid="stSegmentedControl"] *,
     [role="tab"],
+    [role="tablist"],
     [data-testid="stSlider"] [role="slider"] {
         animation: none !important;
+        opacity: 1 !important;
         transition: background-color 0.12s ease, color 0.12s ease,
-                    border-color 0.12s ease, opacity 0.12s ease !important;
+                    border-color 0.12s ease !important;
     }
 
-    /* Xóa viền nhấp nháy (blue outline) Streamlit thêm khi fragment chạy lại */
+    /* Xóa viền nhấp nháy (blue outline pulse) Streamlit thêm lúc running */
     [data-running] button,
     [data-running] [data-baseweb],
-    [data-stale] button,
-    [data-stale] [data-baseweb] {
+    [data-running] [role="tab"] {
         animation: none !important;
         border-color: inherit !important;
         box-shadow: none !important;
+        opacity: 1 !important;
     }
 
     /* Khống chế kích thước ảnh frame để tránh giật/rung lắc giao diện khi load ảnh */
@@ -10332,15 +10349,15 @@ def hien_thi_video_phan_tich_preview_fragment(v, key_suffix):
 def _interval_khu_vuc_phan_tich(video_path):
     prog = read_progress(video_path) if video_path else None
     if prog and prog.get("status") in ("processing", "success"):
-        return timedelta(seconds=1.0)
+        return timedelta(seconds=3.0)
     return None
 
 
 def _interval_tien_trinh_background(video_path):
-    """Chỉ auto-refresh tiến trình khi đang chạy hoặc vừa xong — tránh rerun 4s vô ích."""
+    """Chỉ auto-refresh tiến trình khi đang chạy hoặc vừa xong — tránh rerun vô ích."""
     prog = read_progress(video_path) if video_path else None
     if prog and prog.get("status") in ("processing", "success"):
-        return timedelta(seconds=1.5)
+        return timedelta(seconds=3.0)
     return None
 
 
