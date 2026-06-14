@@ -5098,27 +5098,28 @@ def _inject_base_css_once():
         overflow-y: scroll !important;
     }
 
-    /* === TẮT BLINK/NHẤP NHÁY KHI FRAGMENT AUTO-REFRESH ===
-       Cơ chế thực: Streamlit đặt opacity=0.33 trên [data-stale="true"] khi fragment
-       re-run mỗi 1.5s → toàn bộ element trong fragment nhấp nháy mờ/hiện liên tục.
-       Fix: giữ opacity=1 và pointer-events bình thường suốt quá trình stale.       */
+    /* === TẮT BLINK/NHẤP NHÁY KHI FRAGMENT AUTO-REFRESH (CSS layer) ===
+       Streamlit dùng nhiều cơ chế: data-stale, .stale class, inline opacity, animation.
+       CSS dưới đây phủ tất cả các layer đã biết.                                      */
 
-    /* ROOT FIX: giữ nguyên opacity cho mọi element đang "stale" (fragment đang refresh) */
-    [data-stale],
-    [data-stale="true"],
-    [data-stale] *,
-    [data-stale="true"] * {
+    /* 1. data-stale attribute (Streamlit 1.35+) */
+    [data-stale], [data-stale="true"],
+    [data-stale] *, [data-stale="true"] * {
         opacity: 1 !important;
         pointer-events: auto !important;
         visibility: visible !important;
     }
 
-    /* Override no-op các keyframe Streamlit dùng cho running state */
-    @keyframes pulse { from { opacity: 1; } to { opacity: 1; } }
-    @keyframes border-pulse { from { } to { } }
-    @keyframes fadeIn { from { opacity: 1; } to { opacity: 1; } }
+    /* 2. .stale CSS class (Streamlit internal React class) */
+    .stale, .stale * { opacity: 1 !important; }
 
-    /* Nút bấm, toggle, tab: tắt animation + giữ opacity khi fragment chạy lại */
+    /* 3. Override no-op tất cả keyframe animation Streamlit dùng khi running */
+    @keyframes pulse      { 0%,100% { opacity: 1; } }
+    @keyframes border-pulse { 0%,100% { } }
+    @keyframes fadeIn     { 0%,100% { opacity: 1; } }
+    @keyframes spin       { to { transform: rotate(360deg); } } /* giữ spinner hoạt động */
+
+    /* 4. Nút bấm, toggle, tab: lock opacity=1, tắt animation, transition chỉ màu */
     button,
     [data-baseweb="button"],
     [data-baseweb="segmented-control"],
@@ -5126,19 +5127,17 @@ def _inject_base_css_once():
     [data-testid^="stBaseButton"],
     [data-testid="stSegmentedControl"],
     [data-testid="stSegmentedControl"] *,
-    [role="tab"],
-    [role="tablist"],
+    [role="tab"], [role="tablist"],
     [data-testid="stSlider"] [role="slider"] {
         animation: none !important;
         opacity: 1 !important;
-        transition: background-color 0.12s ease, color 0.12s ease,
-                    border-color 0.12s ease !important;
+        transition: background-color 0.1s ease, color 0.1s ease,
+                    border-color 0.1s ease !important;
     }
 
-    /* Xóa viền nhấp nháy (blue outline pulse) Streamlit thêm lúc running */
-    [data-running] button,
-    [data-running] [data-baseweb],
-    [data-running] [role="tab"] {
+    /* 5. Xóa viền nhấp nháy khi Streamlit đang chạy */
+    [data-running] button, [data-running] [data-baseweb], [data-running] [role="tab"],
+    [data-stale]   button, [data-stale]   [data-baseweb], [data-stale]   [role="tab"] {
         animation: none !important;
         border-color: inherit !important;
         box-shadow: none !important;
@@ -5868,6 +5867,59 @@ def _inject_base_css_once():
         font-size: 0.85rem !important;
     }
 </style>
+<script>
+(function(){
+    /* === NO-BLINK FIX: chặn Streamlit set opacity < 1 lên buttons/tabs khi fragment refresh ===
+       Streamlit dùng React inline style để dim elements — CSS !important không đủ vì inline style
+       cũng có độ ưu tiên cao. MutationObserver chặn ngay khi DOM thay đổi.                     */
+    if (window.__stNoBlinkInstalled) return;
+    window.__stNoBlinkInstalled = true;
+
+    var SEL = 'button,[role="tab"],[data-baseweb="button"],[data-baseweb="segmented-control"]';
+
+    function fix(el) {
+        if (!el || el.nodeType !== 1) return;
+        /* Nếu element hoặc tổ tiên là interactive thì lock opacity */
+        if (el.matches(SEL) || el.closest(SEL)) {
+            var op = parseFloat(el.style.opacity);
+            if (op > 0 && op < 0.99) {
+                el.style.setProperty('opacity', '1', 'important');
+            }
+        }
+        /* Quét children luôn */
+        var kids = el.querySelectorAll ? el.querySelectorAll(SEL) : [];
+        for (var i = 0; i < kids.length; i++) {
+            var k = kids[i];
+            var kop = parseFloat(k.style.opacity);
+            if (kop > 0 && kop < 0.99) {
+                k.style.setProperty('opacity', '1', 'important');
+            }
+        }
+    }
+
+    var obs = new MutationObserver(function(muts) {
+        for (var i = 0; i < muts.length; i++) {
+            var m = muts[i];
+            if (m.type === 'attributes' && m.attributeName === 'style') {
+                fix(m.target);
+            } else if (m.type === 'childList') {
+                for (var j = 0; j < m.addedNodes.length; j++) fix(m.addedNodes[j]);
+            }
+        }
+    });
+
+    function start() {
+        if (!document.body) { setTimeout(start, 50); return; }
+        obs.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['style'],
+            childList: true,
+            subtree: true
+        });
+    }
+    start();
+})();
+</script>
 """, unsafe_allow_html=True)
 
 
