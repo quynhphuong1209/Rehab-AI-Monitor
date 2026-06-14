@@ -2493,24 +2493,13 @@ def _quay_lai_ket_qua_cu_da_luu(v, rerun=False):
 
 
 def _hien_thi_hang_video_va_tien_do(v, key_suffix, is_processing=False):
-    """Hàng 2 cột: video thô trái, video phân tích (đang tạo) phải."""
-    st.markdown("##### 📺 So sánh video gốc và video phân tích")
+    """Hàng 2 cột: video gốc (trái) + luồng phân tích 4 bước (phải) — theo screenshot 3."""
     col_v1, col_v2 = st.columns([1.0, 1.0])
     with col_v1:
-        st.markdown("**🎬 Video gốc (thô)**")
-        if is_processing:
-            st.caption("Video bệnh nhân upload — xem trong lúc hệ thống phân tích bên phải.")
-        video_path = _lay_duong_dan_video_tho(v)
-        play_path = _dam_bao_video_san_sang_play(video_path, prefer_raw=True, video_record=v)
-        if play_path and not _is_scratch_video_path(play_path):
-            render_video(play_path, check_h264=False, prefer_raw=True)
-        else:
-            st.warning(
-                "⚠️ Chưa tải được video gốc từ Cloud. Tiến trình phân tích vẫn chạy nếu server đã có file."
-            )
+        video_name = v.get("original_filename") or v.get("video_path", "")
+        hien_thi_video_goc_fragment(v, key_suffix, video_name=video_name)
     with col_v2:
-        st.markdown("**🤖 Video phân tích**")
-        hien_thi_video_phan_tich_preview_fragment(v, key_suffix)
+        hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix)
 
 
 def _hien_thi_thong_bao_che_do_phan_tich_moi():
@@ -10375,10 +10364,21 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         elapsed_live = (time.time() - float(start_t)) if start_t else elapsed
         st.progress(p_val)
         detail = f" — {status_msg}" if status_msg else ""
-        st.caption(
-            f"🔄 Phân tích mới nền: **{p_val*100:.1f}%** | ⏱️ {elapsed_live:.1f}s{detail} — "
-            "biểu đồ đã lưu hiển thị bên trái."
+        st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {elapsed_live:.1f}s{detail}")
+        st.button(
+            f"🚀 ĐANG TRÍCH XUẤT KHUNG XƯƠNG...",
+            width="stretch",
+            type="primary",
+            key=f"btn_analyze_disabled_metrics_{key_suffix}",
+            disabled=True,
         )
+        if st.button(
+            "⬅️ Quay lại xem kết quả cũ đã lưu",
+            width="stretch",
+            type="secondary",
+            key=f"btn_back_old_{key_suffix}",
+        ):
+            _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
     elif is_processing:
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
         st.progress(p_val)
@@ -10387,7 +10387,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         elapsed_live = (time.time() - float(start_t)) if start_t else elapsed
         st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {elapsed_live:.1f}s{detail}")
         st.button(
-            "⏳ Đang phân tích — không bấm được",
+            "🚀 ĐANG TRÍCH XUẤT KHUNG XƯƠNG...",
             width="stretch",
             type="primary",
             key=f"btn_analyze_disabled_{key_suffix}",
@@ -10762,10 +10762,13 @@ def bat_dau_phan_tich_background(
             clear_checkpoint(ckpt_path)
             has_ckpt = False
     
-    # Tránh chạy trùng lặp
+    # Tránh chạy trùng lặp — force_restart bỏ qua kiểm tra thread đang sống
     if video_path in _running_threads and _running_threads[video_path].is_alive():
-        print(f"[BG Process] Thread cho video {video_path} đang chạy.")
-        return {"started": False, "reason": "already_running"}
+        if not force_restart:
+            print(f"[BG Process] Thread cho video {video_path} đang chạy.")
+            return {"started": False, "reason": "already_running"}
+        print(f"[BG Process] force_restart=True — ghi đè thread cũ, khởi động lại.")
+        _running_threads.pop(video_path, None)
 
     job_meta = {
         "full_name": full_name,
