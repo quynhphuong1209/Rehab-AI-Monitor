@@ -16852,58 +16852,40 @@ def _noi_dung_danh_sach_video_fragment(user_role):
                             # Đổi nhãn nút theo vai trò
                             eval_btn_label = "📝 Đánh giá của chuyên môn PHCN" if user_role == "Bác sĩ / KTV PHCN" else "📝 Phân tích và trích xuất khung xương AI"
                             if st.button(eval_btn_label, key=f"eval_btn_{idx}", width="stretch"):
-                                st.session_state.current_eval_video = _lam_moi_ban_ghi_video_tu_db(v)
-                                _xoa_session_phan_tich()
-                                st.session_state.reanalyze_triggered = False
+                                v = _lam_moi_ban_ghi_video_tu_db(v)
+                                st.session_state.current_eval_video = v
                                 vp = v.get("video_path")
+                                has_metrics = bool(v.get("metrics"))
+                                dang_chay = bool(vp and video_dang_phan_tich(vp))
+
                                 if user_role == "Nghiên cứu viên":
-                                    # KHÔNG tự khởi chạy phân tích mới — chỉ tải kết quả GẦN NHẤT đã lưu
-                                    # (biểu đồ + video khung xương + ảnh frame) rồi chuyển tab.
-                                    # Phân tích mới chỉ chạy khi người dùng chủ động bấm nút trong tab Phân tích.
-                                    if vp and video_dang_phan_tich(vp):
-                                        st.session_state.view_old_analysis = False
-                                        st.toast("🔄 Video đang phân tích — mở tab theo dõi tiến độ...", icon="⏳")
-                                    else:
-                                        _loaded_ok = False
-                                        v_fresh = _lam_moi_ban_ghi_video_tu_db(v)
-                                        has_metrics = bool((v_fresh or v).get("metrics"))
-                                        with st.spinner("📥 Đang tải kết quả..."):
-                                            # Bước 1: Load metrics + CSV ngay (nhanh — chỉ đọc file nhỏ, hiện biểu đồ)
-                                            _loaded_ok = khoi_phuc_ket_qua_cu(v_fresh or v, tai_csv=True, tai_day_du=False)
-                                            # Bước 2: Tải video khung xương + frames ở background thread — không block UI
-                                            if _loaded_ok or has_metrics:
-                                                _v_for_bg = v_fresh or v
-                                                def _bg_download_files(_vbg=_v_for_bg):
-                                                    try:
-                                                        proc = _vbg.get("processed_path") or _vbg.get("video_path")
-                                                        if proc:
-                                                            ensure_local_file(proc, try_fallbacks=True)
-                                                            dam_bao_tai_video_phan_tich(proc)
-                                                        frames_json = _vbg.get("all_frames_data_path")
-                                                        if frames_json:
-                                                            ensure_local_file(frames_json)
-                                                        fz = _vbg.get("frames_zip")
-                                                        if fz:
-                                                            ensure_local_file(fz)
-                                                        if proc:
-                                                            check_and_extract_frames_zip(proc)
-                                                    except Exception as _e:
-                                                        print(f"[BG Download] Lỗi tải file phân tích: {_e}")
-                                                import threading as _thr
-                                                _thr.Thread(target=_bg_download_files, daemon=True).start()
-                                        if _loaded_ok:
-                                            st.toast("✅ Đã tải kết quả gần nhất — chuyển tab Phân tích...", icon="📊")
-                                        elif has_metrics:
-                                            # Video ĐÃ phân tích (có metrics) nhưng chưa tải được CSV/JSON
-                                            # → vẫn hiển thị kết quả đã lưu, KHÔNG quay về màn hình cấu hình
-                                            st.session_state.view_old_analysis = True
-                                            st.session_state.has_data = True
-                                            st.session_state.stats = (v_fresh or v).get("metrics")
-                                            st.session_state.reanalyze_triggered = False
-                                            st.toast("📊 Đang hiển thị kết quả đã lưu...", icon="📊")
+                                    # Không xóa session / không spinner block — nạp song song, chuyển tab ngay
+                                    if has_metrics or dang_chay:
+                                        st.session_state.view_old_analysis = True
+                                        st.session_state.reanalyze_triggered = dang_chay
+                                        _nap_bieu_do_nhanh_tu_cloud(v, giu_phan_tich_moi=dang_chay)
+                                        st.session_state._pending_chart_refresh = True
+                                        if dang_chay:
+                                            st.toast(
+                                                "🔄 Video đang phân tích nền — mở tab xem tiến độ + kết quả đã lưu...",
+                                                icon="⏳",
+                                            )
                                         else:
-                                            st.session_state.view_old_analysis = False
-                                            st.toast("🧭 Video chưa có kết quả — sang tab Phân tích, bấm Chạy phân tích khi sẵn sàng.", icon="🔬")
+                                            st.toast(
+                                                "✅ Đã mở kết quả gần nhất — chuyển tab Phân tích...",
+                                                icon="📊",
+                                            )
+                                    else:
+                                        slot_moi = _slot_video_phan_tich(v)
+                                        slot_cu = st.session_state.get("_ncv_analysis_loaded_key")
+                                        if slot_moi and slot_cu and slot_moi != slot_cu:
+                                            _xoa_session_phan_tich()
+                                        st.session_state.view_old_analysis = False
+                                        st.session_state.reanalyze_triggered = False
+                                        st.toast(
+                                            "🔬 Video chưa có kết quả — sang tab Phân tích và bấm **Chạy phân tích mới**.",
+                                            icon="🧭",
+                                        )
                                 else:
                                     st.session_state.reanalyze_triggered = False
                                     st.session_state.view_old_analysis = bool(v.get("metrics"))
@@ -16916,7 +16898,6 @@ def _noi_dung_danh_sach_video_fragment(user_role):
                                     st.session_state.trigger_tab_switch = "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"
                                 elif user_role == "Nghiên cứu viên":
                                     st.session_state.trigger_tab_switch = "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"
-                                # Phải rerun TOÀN TRANG — fragment rerun không đổi được tab segmented_control
                                 st.rerun()
                         
                         st.button("🗑️ Xóa video này", key=f"del_video_{idx}", width="stretch",
