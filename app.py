@@ -9622,7 +9622,13 @@ def check_and_populate_background_result(video_path):
             v_sync = st.session_state.get("current_eval_video")
             if v_sync:
                 _gan_khoa_session_phan_tich(v_sync)
-            
+                # CSV local mất (Space restart) — tải ngay từ HF Dataset để biểu đồ hiện nhanh
+                if st.session_state.get("angle_df") is None and df_path and not os.path.exists(df_path):
+                    try:
+                        _bat_dau_tai_day_du_song_song(v_sync)
+                    except Exception:
+                        pass
+
             # Xóa progress file sau khi đã nạp kết quả
             p_file = get_progress_file(video_path)
             try:
@@ -9656,17 +9662,13 @@ def finalize_background_analysis_if_ready(video_path):
     return False
 
 def poll_background_analysis_complete():
-    """
-    Nạp NHẸ kết quả phân tích nền nếu đã xong (KHÔNG rerun).
-    Gọi ở đầu main() để khi tải trang, kết quả mới hiện ngay trong cùng lần render.
-    Không gọi st.rerun ở đây để tránh vòng lặp rerun gây vỡ giao diện (vd: kẹt màn đăng nhập).
-    """
+    """Nạp kết quả phân tích nền nếu đã xong; rerun ngay để hiện biểu đồ tự động."""
     v = st.session_state.get("current_eval_video")
     if not v:
         return
     video_path = v.get("video_path")
-    if video_path:
-        finalize_background_analysis_if_ready(video_path)
+    if video_path and finalize_background_analysis_if_ready(video_path):
+        st.rerun()
 
 def _scan_progress_by_status(*statuses):
     """Quét file progress_*.json theo danh sách trạng thái."""
@@ -10089,6 +10091,9 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         elif status == "success":
             if finalize_background_analysis_if_ready(video_path):
                 _lam_moi_giao_dien_sau_nut()
+            else:
+                # Đã finalize rồi (done_key set) — rerun fragment lần cuối để stop auto-refresh
+                st.rerun(scope="fragment")
             
     with st.expander("📖 Luồng phân tích 4 bước (bấm để xem)", expanded=False):
         st.markdown("""
