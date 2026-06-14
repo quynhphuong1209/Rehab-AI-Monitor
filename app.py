@@ -12877,22 +12877,13 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
 
             # Ảnh 2: video đã có kết quả lưu — luôn dùng layout gọn, tải Cloud liền mạch
             if has_metrics and (is_processing or st.session_state.get("reanalyze_triggered")):
-                if not da_co_du_lieu:
-                    _hien_thi_thong_bao_che_do_phan_tich_moi()
                 if user_role == "Nghiên cứu viên":
                     hien_thi_nut_tai_lai_va_phan_tich_moi(
                         v, key_suffix=f"split_{key_suffix}"
                     )
                     st.markdown("---")
-                if is_processing or st.session_state.get("reanalyze_triggered"):
-                    _hien_thi_hang_video_va_tien_do(v, key_suffix, is_processing=is_processing)
-                    st.markdown("---")
-                if not da_co_du_lieu:
-                    st.caption(
-                        "☁️ Biểu đồ đang tải từ Cloud — tiến độ ở thanh phía trên; "
-                        "sẽ **tự hiện** khi CSV sẵn sàng (không cần bấm thêm)."
-                    )
-                    return
+                _hien_thi_hang_video_va_tien_do(v, key_suffix, is_processing=is_processing)
+                return
 
             # Ảnh 1: video chưa từng phân tích — màn chờ lần đầu
             if not hien_thi_bieu_do and not has_metrics and (is_processing or st.session_state.get("reanalyze_triggered")):
