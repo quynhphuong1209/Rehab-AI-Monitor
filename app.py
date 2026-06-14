@@ -4543,23 +4543,30 @@ def thuc_hien_khoi_tao_he_thong_mot_lan():
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-# Thử khôi phục phiên từ query parameters khi F5 refresh trang
+# Thử khôi phục phiên từ query parameters khi F5 refresh trang / mở link bookmark
 if not st.session_state.logged_in:
     if "logged_in_user" in st.query_params and "logged_in_role" in st.query_params:
         try:
-            logged_user = st.query_params["logged_in_user"]
-            logged_role = st.query_params["logged_in_role"]
+            import urllib.parse
+            logged_user = urllib.parse.unquote_plus(str(st.query_params["logged_in_user"])).strip()
+            logged_role = urllib.parse.unquote_plus(str(st.query_params["logged_in_role"])).strip()
             users = load_users()
-            if logged_user in users and users[logged_user].get('role', 'Bệnh nhân') == logged_role:
+            stored_role = users[logged_user].get('role', 'Bệnh nhân') if logged_user in users else None
+            if logged_user in users and stored_role == logged_role:
                 st.session_state.logged_in = True
                 st.session_state.user_info = {
                     "username": logged_user,
+                    "full_name": users[logged_user].get('full_name', logged_user),
                     "email": users[logged_user].get('email'),
-                    "role": logged_role
+                    "role": stored_role,
                 }
+                # Luôn về TRANG CHỦ khi mở link — tránh tab phân tích trống, thiếu danh sách BN
+                st.session_state.active_tab = "🏠 TRANG CHỦ"
+                st.session_state.pop("active_tab_widget", None)
+                st.session_state._need_home_sync = True
                 for _fk in ("filter_video_patient", "filter_video_status", "vid_list_page", "_vid_filter_heal_rerun"):
                     st.session_state.pop(_fk, None)
-        except:
+        except Exception:
             pass
 
 if 'user_info' not in st.session_state:
@@ -6331,12 +6338,17 @@ def convert_mov_to_mp4(input_path):
 # ============================================
 if 'has_data' not in st.session_state:
     st.session_state.has_data = False
+_on_hf_runtime = bool(
+    (os.environ.get("HF_SPACE_ID") or os.environ.get("SPACE_ID", "")).strip()
+    or os.path.exists("/data")
+)
 if 'ncv_model_type' not in st.session_state:
-    st.session_state.ncv_model_type = "MediaPipe Heavy"
+    # HF Space CPU yếu: Full vẫn đủ chính xác, nhanh hơn Heavy đáng kể
+    st.session_state.ncv_model_type = "MediaPipe Full" if _on_hf_runtime else "MediaPipe Heavy"
 if 'ncv_resize_width' not in st.session_state:
-    st.session_state.ncv_resize_width = 720
+    st.session_state.ncv_resize_width = 480 if _on_hf_runtime else 720
 if 'ncv_skip_frames' not in st.session_state:
-    st.session_state.ncv_skip_frames = 0
+    st.session_state.ncv_skip_frames = 2 if _on_hf_runtime else 0
 if 'view_old_analysis' not in st.session_state:
     st.session_state.view_old_analysis = False
 if 'angle_df' not in st.session_state:
@@ -9514,7 +9526,7 @@ def hien_thi_video_goc_fragment(video_or_v, key_suffix, video_name=""):
 def _interval_khu_vuc_phan_tich(video_path):
     prog = read_progress(video_path) if video_path else None
     if prog and prog.get("status") in ("processing", "success"):
-        return timedelta(seconds=2)
+        return timedelta(seconds=1.5)
     return None
 
 
@@ -9705,19 +9717,28 @@ def la_bai_tap_gay(exercise_name):
 
 
 def tinh_tham_so_toc_do_phan_tich(video_path, exercise_name, model_type, skip_step, resize_width):
-    """Tự động giảm tải cho video dài — KHÔNG đổi bài Gậy (giữ MediaPipe Heavy theo cấu hình NCV)."""
-    if la_bai_tap_gay(exercise_name):
-        return model_type, skip_step, resize_width
+    """Tự động giảm tải cho video dài — áp dụng cả bài Gậy (thường rất dài trên HF Space)."""
     frames, fps = lay_so_khung_video(video_path)
     duration = (frames / fps) if fps > 0 else 0.0
-    fast = frames > 6000 or duration > 240
+    is_gay = la_bai_tap_gay(exercise_name)
+    on_cloud = bool(HF_SPACE_ID or os.path.exists("/data"))
+    # Ngưỡng thấp hơn trên cloud / bài gậy để tránh treo ở 3% hàng chục phút
+    fast = frames > (4500 if is_gay else 6000) or duration > (150 if is_gay else 240)
     if not fast:
+        if on_cloud and int(skip_step or 0) == 0:
+            try:
+                rw = min(int(resize_width or 720), 480)
+            except (TypeError, ValueError):
+                rw = 480
+            return model_type, skip_step, rw
         return model_type, skip_step, resize_width
     mt = str(model_type or "")
-    if "Heavy" in mt or "Full" in mt:
+    if "Heavy" in mt:
+        mt = "MediaPipe Lite" if duration > 120 or frames > 3000 else "MediaPipe Full"
+    elif "Full" in mt and (duration > 180 or frames > 4500):
         mt = "MediaPipe Lite"
     try:
-        ss = max(int(skip_step or 0), 2)
+        ss = max(int(skip_step or 0), 2 if (is_gay or on_cloud) else 2)
     except (TypeError, ValueError):
         ss = 2
     try:
@@ -9841,16 +9862,18 @@ def khoi_phuc_job_phan_tich_sau_deploy(cold_start=False):
 def skip_step_theo_model(model_type, manual_skip=None):
     """
     Quy ước bỏ frame theo loại MediaPipe:
-    - Heavy: lấy MỌI frame (skip=0) — đầy đủ + chính xác nhất.
-    - Full : lấy MỌI frame (skip=0) — đầy đủ frames + video.
-    - Lite : tự bỏ frame (skip>=2) để xử lý nhanh; vẫn theo độ phân giải đã chọn.
+    - NCV chọn skip>0 ở sidebar: áp dụng cho mọi model (kể cả Heavy/Full).
+    - Heavy/Full mặc định: lấy MỌI frame (skip=0).
+    - Lite: tự bỏ frame (skip>=2) để xử lý nhanh.
     """
+    try:
+        ms = int(manual_skip) if manual_skip is not None else 0
+    except (TypeError, ValueError):
+        ms = 0
+    if ms > 0:
+        return ms
     mt = str(model_type or "")
     if "Lite" in mt:
-        try:
-            ms = int(manual_skip) if manual_skip is not None else 0
-        except (TypeError, ValueError):
-            ms = 0
         return max(ms, 2)
     return 0
 
@@ -10183,7 +10206,7 @@ def bat_dau_phan_tich_background(
                 
                 percent = int(prog_val * 100)
                 # Ghi tiến độ thường xuyên để UI không có cảm giác đứng im với video dài.
-                if percent != last_prog_percent[0] or (now - last_write_time[0] >= 0.7):
+                if percent != last_prog_percent[0] or (now - last_write_time[0] >= 0.35):
                     write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=prog_val, elapsed=elap, start_time=start_t, status_msg=status_msg)
                     last_write_time[0] = now
                     last_prog_percent[0] = percent
@@ -15919,6 +15942,17 @@ def _chuan_hoa_widget_loc_video(key, options, default):
 def hien_thi_danh_sach_video_fragment(user_role):
     evals_db = _evals_dedup_cached(_mtimes_video_eval()[1])
     video_list = load_danh_sach_video_nghien_cuu()
+
+    # Mở link bookmark / F5: đồng bộ Cloud ngay nếu danh sách trống (tránh UI thiếu BN)
+    if not video_list and (HF_TOKEN and HF_DATASET_ID):
+        with st.spinner("☁️ Đang tải danh sách video từ Cloud..."):
+            _dong_bo_video_list_day_du_tu_hf(force=True)
+            try:
+                _video_nghien_cuu_cached.clear()
+                _load_video_list_core.clear()
+            except Exception:
+                pass
+        video_list = load_danh_sach_video_nghien_cuu()
     
     if st.session_state.get('delete_success'):
         st.toast(f"🗑️ {st.session_state.delete_success}", icon="✅")
@@ -17201,6 +17235,16 @@ def main():
     # Nạp nhẹ kết quả phân tích nền đã hoàn tất (không rerun) -> hiện ngay khi tải trang
     poll_background_analysis_complete()
 
+    # Đồng bộ nhanh khi vừa đăng nhập qua link ?logged_in_user=... (tránh trang trống)
+    if st.session_state.pop("_need_home_sync", False):
+        with st.spinner("☁️ Đang đồng bộ dữ liệu từ Cloud..."):
+            _dong_bo_video_list_day_du_tu_hf(force=True)
+            try:
+                _video_nghien_cuu_cached.clear()
+                _load_video_list_core.clear()
+            except Exception:
+                pass
+
     # Callback xử lý đổi theme nhanh
     def update_theme_callback():
         st.session_state.theme = 'dark' if st.session_state.get('theme_toggle_top', True) else 'light'
@@ -17296,13 +17340,17 @@ def main():
             st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.5, key="ncv_confidence", help="Ngưỡng để AI chấp nhận một điểm khớp xương.")
             st.selectbox("Tốc độ xử lý", 
                          options=[0, 1, 2, 4], 
-                         index=0, # Mặc định lấy mọi frame để phân tích đầy đủ
+                         index=([0, 1, 2, 4].index(st.session_state.get("ncv_skip_frames", 2 if (HF_SPACE_ID or os.path.exists("/data")) else 0))
+                                  if st.session_state.get("ncv_skip_frames", 2 if (HF_SPACE_ID or os.path.exists("/data")) else 0) in [0, 1, 2, 4]
+                                  else (2 if (HF_SPACE_ID or os.path.exists("/data")) else 0)),
                          format_func=lambda x: "Mặc định (Mọi frame)" if x==0 else f"Nhanh (Bỏ qua {x} frame)",
                          key="ncv_skip_frames",
-                         help="Bỏ qua một số khung hình để tăng tốc xử lý video dài. Lưu ý: Heavy/Full luôn lấy MỌI frame; chỉ Lite mới áp dụng bỏ frame.")
+                         help="Bỏ qua khung hình để tăng tốc (gợi ý: 2 frame trên Hugging Face). Áp dụng khi bạn chọn giá trị > 0, kể cả Heavy/Full.")
             st.selectbox("Độ phân giải video (Video Quality)",
                          options=[480, 720, 1080],
-                         index=1, # Mặc định 720p để cân bằng độ nét khung xương và tốc độ xử lý
+                         index=([480, 720, 1080].index(st.session_state.get("ncv_resize_width", 480 if (HF_SPACE_ID or os.path.exists("/data")) else 720))
+                                  if st.session_state.get("ncv_resize_width", 480 if (HF_SPACE_ID or os.path.exists("/data")) else 720) in [480, 720, 1080]
+                                  else (0 if (HF_SPACE_ID or os.path.exists("/data")) else 1)),
                          format_func=lambda x: "480p (Tốc độ tối ưu)" if x==480 else ("720p (HD - Chuẩn sắc nét)" if x==720 else "1080p (Full HD - Cực kỳ chuẩn xác)"),
                          key="ncv_resize_width",
                          help="Độ phân giải càng cao thì vẽ khung xương càng sắc nét và bám sát khớp bệnh nhân hơn.")
@@ -17331,12 +17379,16 @@ def main():
             st.markdown("### 🎯 CHỌN MÔ HÌNH")
             st.selectbox("Mô hình Pose", 
                          options=["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"], 
-                         index=0, # Mặc định là Heavy để đảm bảo trích xuất chính xác 33 điểm nhất
+                         index=(["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"].index(
+                             st.session_state.get("ncv_model_type", "MediaPipe Full" if (HF_SPACE_ID or os.path.exists("/data")) else "MediaPipe Heavy"))
+                             if st.session_state.get("ncv_model_type", "MediaPipe Full" if (HF_SPACE_ID or os.path.exists("/data")) else "MediaPipe Heavy")
+                             in ["MediaPipe Heavy", "MediaPipe Full", "MediaPipe Lite"]
+                             else (1 if (HF_SPACE_ID or os.path.exists("/data")) else 0)),
                          key="ncv_model_type",
                          help=(
-                             "Heavy (Complexity 2): chính xác nhất, lấy MỌI frame + video + đầy đủ chỉ số nghiên cứu. "
-                             "Full (Complexity 1): lấy MỌI frame + video, chỉ số cơ bản. "
-                             "Lite (Complexity 0): tự bỏ bớt frame để xử lý nhanh, dashboard gọn nhẹ."
+                             "Heavy (Complexity 2): chính xác nhất, chậm nhất. "
+                             "Full (Complexity 1): cân bằng tốc độ/chính xác — khuyến nghị trên Hugging Face. "
+                             "Lite (Complexity 0): nhanh nhất, dashboard gọn nhẹ."
                          ))
 
             st.markdown("### 🤖 POSE CLASSIFIER")
@@ -17532,6 +17584,7 @@ def main():
     _render_main_tab_content(tab_titles, user_role)
 
     # ==================== FOOTER CHUNG (LUÔN HIỆN Ở DƯỚI CÙNG) ====================
+    st.markdown('<div id="rehab-footer-anchor"></div>', unsafe_allow_html=True)
     hien_thi_footer_chung()
 
 
