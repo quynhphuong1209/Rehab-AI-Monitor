@@ -2175,6 +2175,49 @@ def khoi_phuc_ket_qua_cu(v, tai_csv=True, tai_day_du=False):
     return bool(st.session_state.get("stats"))
 
 
+def _tai_video_frames_phan_tich_nen(v):
+    """Tải video khung xương + JSON/ZIP frames ở nền — không block UI (tránh timeout HF)."""
+    def _worker(_v=v):
+        try:
+            v_local = _lam_moi_ban_ghi_video_tu_db(_v) or _v
+            proc = v_local.get("processed_path") or v_local.get("video_path")
+            if proc:
+                ensure_local_file(proc, try_fallbacks=True)
+                dam_bao_tai_video_phan_tich(proc)
+            frames_json = v_local.get("all_frames_data_path")
+            if frames_json:
+                ensure_local_file(frames_json)
+            fz = v_local.get("frames_zip")
+            if fz:
+                ensure_local_file(fz)
+            if proc:
+                check_and_extract_frames_zip(proc)
+        except Exception as bg_err:
+            print(f"[BG Download] Loi tai video/frames: {bg_err}")
+
+    threading.Thread(target=_worker, daemon=True).start()
+
+
+def _nap_bieu_do_nhanh_tu_cloud(v):
+    """Chỉ tải metrics + CSV biểu đồ từ Cloud — video/frames tải nền sau."""
+    v = _lam_moi_ban_ghi_video_tu_db(v)
+    if not v or not v.get("metrics"):
+        return False, v
+    _dong_bo_video_list_day_du_tu_hf(force=False)
+    v_hf, _ = tai_tep_phan_tich_tu_hf(v)
+    if v_hf:
+        v = v_hf
+    st.session_state.current_eval_video = v
+    ok = khoi_phuc_ket_qua_cu(v, tai_csv=True, tai_day_du=False)
+    if ok and st.session_state.get("angle_df") is not None:
+        _gan_khoa_session_phan_tich(v)
+        st.session_state.view_old_analysis = True
+        st.session_state.reanalyze_triggered = False
+        _tai_video_frames_phan_tich_nen(v)
+        return True, v
+    return False, v
+
+
 def _quay_lai_ket_qua_cu_da_luu(v, rerun=False):
     """Hủy phân tích mới và nạp lại kết quả đã lưu (giống nút Tải lại kết quả).
     Không gọi st.rerun() — tránh màn trắng khi chạy trong fragment trên HF Space."""
@@ -2186,13 +2229,16 @@ def _quay_lai_ket_qua_cu_da_luu(v, rerun=False):
     st.session_state.reanalyze_triggered = False
     st.session_state.view_old_analysis = True
     st.session_state.pop("_ncv_analysis_loaded_key", None)
-    with st.spinner("📥 Đang tải biểu đồ, video và ảnh frame từ Cloud..."):
-        _dong_bo_video_list_day_du_tu_hf(force=True)
-        v, _ = tai_tep_phan_tich_tu_hf(v)
-        st.session_state.current_eval_video = v
-        ok = tu_dong_nap_ket_qua_phan_tich_gan_nhat(v, force=True)
-        if not ok or st.session_state.get("angle_df") is None:
-            ok = khoi_phuc_ket_qua_cu(v, tai_day_du=True)
+    with st.spinner("📥 Đang tải biểu đồ từ Cloud..."):
+        ok, v = _nap_bieu_do_nhanh_tu_cloud(v)
+        if not ok:
+            _dong_bo_video_list_day_du_tu_hf(force=True)
+            v, _ = tai_tep_phan_tich_tu_hf(v)
+            st.session_state.current_eval_video = v
+            ok = khoi_phuc_ket_qua_cu(v, tai_csv=True, tai_day_du=False)
+            if ok and st.session_state.get("angle_df") is not None:
+                _gan_khoa_session_phan_tich(v)
+                _tai_video_frames_phan_tich_nen(v)
     if ok and st.session_state.get("angle_df") is not None:
         st.toast("✅ Đã quay lại kết quả phân tích cũ!", icon="📊")
         st.session_state._pending_chart_refresh = True
@@ -2222,11 +2268,9 @@ def hien_thi_nut_tai_lai_va_phan_tich_moi(v_re, key_suffix=""):
             type="primary",
             use_container_width=True,
         ):
-            with st.spinner("📥 Đang tải biểu đồ, video và ảnh frame từ Cloud..."):
-                _dong_bo_video_list_day_du_tu_hf(force=True)
-                v_re, _ = tai_tep_phan_tich_tu_hf(v_re)
+            with st.spinner("📥 Đang tải biểu đồ từ Cloud..."):
+                ok, v_re = _nap_bieu_do_nhanh_tu_cloud(v_re)
                 st.session_state.current_eval_video = v_re
-                ok = khoi_phuc_ket_qua_cu(v_re, tai_day_du=True)
             if ok:
                 chi_tiet = []
                 if st.session_state.get("angle_df") is not None:
@@ -4596,11 +4640,8 @@ def _xoa_widget_dang_nhap_sau_rerun():
 
 
 def _rerun_toan_bo_app():
-    """Rerun toàn app, fallback cho môi trường Streamlit/HF xử lý scope chưa ổn định."""
-    try:
-        st.rerun()
-    except TypeError:
-        st.rerun(scope="app")
+    """Rerun toàn app — st.rerun() thuần, tránh scope gây màn trắng trên HF Space."""
+    st.rerun()
 
 
 def _hoan_tat_dang_nhap(username, user_record):
@@ -6932,7 +6973,7 @@ def hien_thi_tab_phan_tich_va_video_ncv():
     """Gộp tab Phân tích và Video cho Nghiên cứu viên"""
     st.markdown("## 🔬 PHÂN TÍCH CHUYÊN SÂU & DỮ LIỆU KHUNG XƯƠNG")
 
-    _dong_bo_video_list_day_du_tu_hf()
+    _dong_bo_video_list_day_du_tu_hf(force=False)
 
     v_cur = _lam_moi_ban_ghi_video_tu_db(
         st.session_state.get("current_eval_video") or _tim_video_phan_tich_moi_nhat()
@@ -6963,7 +7004,7 @@ def hien_thi_tab_phan_tich_va_video_ncv():
             with st.spinner(
                 f"📥 Đang nạp kết quả: {v_cur.get('full_name')} — {v_cur.get('exercise')}..."
             ):
-                tu_dong_nap_ket_qua_phan_tich_gan_nhat(v_cur, force=True)
+                _nap_bieu_do_nhanh_tu_cloud(v_cur)
                 st.session_state.view_old_analysis = True
         v_cur = _lam_moi_ban_ghi_video_tu_db(st.session_state.current_eval_video or v_cur)
     if v_cur:
@@ -9300,10 +9341,10 @@ def _noi_dung_jobs_dang_chay(key_suffix=""):
             vp = job.get("video_path", "")
             if st.button(f"📊 Xem kết quả: {vname}", key=f"view_done_{key_suffix}_{done_idx}_{hashlib.md5((vp or str(done_idx)).encode()).hexdigest()[:8]}", use_container_width=True):
                 if vp and finalize_background_analysis_if_ready(vp):
-                    st.rerun(scope="app")
+                    st.rerun()
                 elif vp:
                     check_and_populate_background_result(vp)
-                    st.rerun(scope="app")
+                    st.rerun()
     for job_idx, job in enumerate(jobs):
         vp = job.get("video_path", "")
         vname = job.get("video_name", "Video")
@@ -9343,7 +9384,7 @@ def _noi_dung_jobs_dang_chay(key_suffix=""):
                 st.session_state.reanalyze_triggered = True
                 st.session_state.view_old_analysis = False
                 st.session_state.pop("_ncv_analysis_loaded_key", None)
-                st.rerun(scope="app")
+                st.rerun()
     st.markdown("---")
 
 
@@ -12118,17 +12159,9 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                 with st.spinner(
                     f"📥 Đang tải kết quả: {v.get('full_name')} — {v.get('exercise')}..."
                 ):
-                    _dong_bo_video_list_day_du_tu_hf(force=True)
-                    v_hf, _ = tai_tep_phan_tich_tu_hf(v)
-                    if v_hf:
-                        v = v_hf
+                    loaded, v = _nap_bieu_do_nhanh_tu_cloud(v)
+                    if loaded:
                         st.session_state.current_eval_video = v
-                    loaded = tu_dong_nap_ket_qua_phan_tich_gan_nhat(v, force=True)
-                    if not loaded or st.session_state.get("angle_df") is None:
-                        loaded = khoi_phuc_ket_qua_cu(v, tai_day_du=True)
-                    if loaded and st.session_state.get("angle_df") is not None:
-                        st.session_state.view_old_analysis = True
-                        st.session_state.reanalyze_triggered = False
 
             if st.session_state.get('reanalyze_triggered', False):
                 st.info("💡 Bạn đang cấu hình lại để chạy phân tích AI mới. Kết quả phân tích cũ vẫn được bảo lưu an toàn.")
@@ -13028,7 +13061,13 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
 
 def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_ext=None):
     """Hiển thị tab biểu đồ — polling tiến trình do panel bên phải đảm nhiệm."""
-    _hien_thi_tab_phan_tich_noi_dung(key_suffix, stats_ext, df_ext, exercise_ext)
+    try:
+        _hien_thi_tab_phan_tich_noi_dung(key_suffix, stats_ext, df_ext, exercise_ext)
+    except Exception as chart_err:
+        st.error(f"💥 Lỗi hiển thị biểu đồ: {chart_err}")
+        import traceback
+        st.code(traceback.format_exc())
+        thong_bao_loi_tai_hf()
 
 def hien_thi_tab_nckh():
     is_light = st.session_state.theme == 'light'
@@ -13636,7 +13675,7 @@ def hien_thi_tab_ket_qua_da_chon(my_history_vids, my_evals, user_role, is_fresh_
                         del st.session_state[key]
                 st.session_state.fresh_session = True
                 st.session_state.uploader_id = st.session_state.get('uploader_id', 0) + 1
-                st.rerun(scope="app")
+                st.rerun()
 
     if not selected_v:
         return
@@ -14610,7 +14649,7 @@ def _noi_dung_frames_day_du(key_suffix=""):
                         proc = st.session_state.get("processed_video_path")
                         if proc:
                             check_and_extract_frames_zip(proc)
-                        st.rerun(scope="app")
+                        st.rerun()
                     else:
                         st.error("Không tải được dữ liệu frames từ Cloud.")
             if st.session_state.get("current_eval_video"):
@@ -16107,7 +16146,7 @@ def _noi_dung_danh_sach_video_fragment(user_role):
         if st.button("🔄 Tải lại danh sách từ Cloud / khôi phục", key="btn_reload_video_list", use_container_width=True):
             with st.spinner("Đang tải danh sách từ Cloud..."):
                 tai_lai_video_list_tu_cloud()
-            st.rerun(scope="app")
+            st.rerun()
     else:
         st.caption(
             f"📋 Hiển thị **{len(video_list)} video nghiên cứu** "
@@ -16582,7 +16621,7 @@ def _noi_dung_danh_sach_video_fragment(user_role):
                                 elif user_role == "Nghiên cứu viên":
                                     st.session_state.trigger_tab_switch = "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"
                                 # Phải rerun TOÀN TRANG — fragment rerun không đổi được tab segmented_control
-                                st.rerun(scope="app")
+                                st.rerun()
                         
                         st.button("🗑️ Xóa video này", key=f"del_video_{idx}", width="stretch",
                                   on_click=delete_video_callback, args=(v.get('video_name'), v.get('username')))
@@ -16652,7 +16691,6 @@ def _lay_meta_tab_bac_si(selected_video):
     return has_ai, has_output
 
 
-@st.fragment
 def _render_main_tab_content(tab_titles, user_role):
         _tab_target = st.session_state.pop('trigger_tab_switch', None)
         if _tab_target and _tab_target in tab_titles:
