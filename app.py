@@ -2231,77 +2231,171 @@ def tai_csv_bieu_do_tu_hf(v):
     return tai_bieu_do_va_frames_tu_hf(v)
 
 
-def _tai_video_frames_phan_tich_nen(v):
-    """Tải video khung xương + JSON/ZIP frames ở nền — không block UI (tránh timeout HF)."""
-    def _worker(_v=v):
+_bg_load_jobs = {}
+
+
+def _slot_tai_key(v):
+    sk = _slot_video_phan_tich(v)
+    if sk:
+        return sk
+    vp = (v or {}).get("video_path") or ""
+    return hashlib.md5(vp.encode()).hexdigest()[:12] if vp else "default"
+
+
+def _trang_thai_tai_media(v):
+    """Kiểm tra biểu đồ / JSON frames / video / zip đã sẵn sàng local chưa."""
+    v = _lam_moi_ban_ghi_video_tu_db(v) or v
+    proc = v.get("processed_path") or v.get("video_path")
+    fj = v.get("all_frames_data_path") or st.session_state.get("all_frames_data_path")
+    fz = v.get("frames_zip") or st.session_state.get("frames_zip")
+    csv_ok = st.session_state.get("angle_df") is not None
+    if not csv_ok:
+        for p in _duong_dan_csv_candidates(v) + ([v.get("df_path")] if v.get("df_path") else []):
+            if p and is_local_file_ready(get_local_frame_path(p) or p, min_size=80):
+                csv_ok = True
+                break
+    json_ok = False
+    if fj:
+        lp = get_local_frame_path(fj) or fj
+        json_ok = is_local_file_ready(lp, min_size=2)
+    vid_ok = bool(proc and is_local_file_ready(proc, min_size=50 * 1024))
+    zip_ok = not fz or is_local_file_ready(get_local_frame_path(fz) or fz, min_size=1024)
+    job = _bg_load_jobs.get(_slot_tai_key(v), {})
+    return {
+        "csv": csv_ok,
+        "json": json_ok,
+        "video": vid_ok,
+        "zip": zip_ok,
+        "running": bool(job.get("running")),
+    }
+
+
+def _bat_dau_tai_day_du_song_song(v):
+    """Tải song song CSV + JSON + video + ZIP — không block UI."""
+    key = _slot_tai_key(v)
+    job = _bg_load_jobs.get(key, {})
+    if job.get("running"):
+        return key
+    _bg_load_jobs[key] = {
+        "csv": False, "json": False, "video": False, "zip": False, "running": True,
+    }
+    st.session_state["_media_load_slot"] = key
+
+    def _worker(_v=v, _key=key):
         try:
             v_local = _lam_moi_ban_ghi_video_tu_db(_v) or _v
+            _dong_bo_video_list_day_du_tu_hf(force=False)
+            v_local = _lam_moi_ban_ghi_video_tu_db(v_local) or v_local
+
+            csv_paths = list(dict.fromkeys(
+                [p for p in ([v_local.get("df_path")] + _duong_dan_csv_candidates(v_local)) if p]
+            ))
+            for p in csv_paths:
+                if ensure_local_file(p, quiet=True, try_fallbacks=False):
+                    _bg_load_jobs[_key]["csv"] = True
+                    break
+
+            json_paths = list(dict.fromkeys(
+                [p for p in ([v_local.get("all_frames_data_path")] + _duong_dan_frames_json_candidates(v_local)) if p]
+            ))
+            for p in json_paths:
+                rel = get_clean_rel_path(p).lower()
+                if any(x in rel for x in (".mp4", ".mov", ".zip", "patient_uploads")):
+                    continue
+                if ensure_local_file(p, quiet=True, try_fallbacks=False):
+                    _bg_load_jobs[_key]["json"] = True
+                    break
+
             proc = v_local.get("processed_path") or v_local.get("video_path")
-            if proc:
-                ensure_local_file(proc, try_fallbacks=True)
+            if proc and ensure_local_file(proc, try_fallbacks=True, quiet=True):
                 dam_bao_tai_video_phan_tich(proc)
-            frames_json = v_local.get("all_frames_data_path")
-            if frames_json:
-                ensure_local_file(frames_json)
+                _bg_load_jobs[_key]["video"] = True
+
             fz = v_local.get("frames_zip")
-            if fz:
-                ensure_local_file(fz)
+            if fz and ensure_local_file(fz, quiet=True):
+                _bg_load_jobs[_key]["zip"] = True
             if proc:
                 check_and_extract_frames_zip(proc)
-        except Exception as bg_err:
-            print(f"[BG Download] Loi tai video/frames: {bg_err}")
+        except Exception as err:
+            print(f"[ParallelLoad] {err}")
+        finally:
+            if _key in _bg_load_jobs:
+                _bg_load_jobs[_key]["running"] = False
 
     threading.Thread(target=_worker, daemon=True).start()
+    return key
+
+
+def _tai_video_frames_phan_tich_nen(v):
+    """Tương thích cũ — chuyển sang tải song song."""
+    _bat_dau_tai_day_du_song_song(v)
+
+
+def _ap_dung_angle_df_tu_video(v):
+    """Nạp angle_df từ file local/Cloud vào session."""
+    df_loaded, src_loaded = _nap_angle_df_tu_video(v)
+    if df_loaded is None:
+        return False
+    st.session_state.angle_df = df_loaded
+    if src_loaded:
+        st.session_state.current_df_csv_path = src_loaded
+        v_upd = dict(_lam_moi_ban_ghi_video_tu_db(v) or v)
+        if str(src_loaded).lower().endswith(".csv"):
+            v_upd["df_path"] = src_loaded
+        if str(src_loaded).lower().endswith(".json"):
+            v_upd["all_frames_data_path"] = src_loaded
+            st.session_state.all_frames_data_path = src_loaded
+        st.session_state.current_eval_video = v_upd
+    return True
 
 
 def _nap_bieu_do_nhanh_tu_cloud(v, giu_phan_tich_moi=False):
-    """Nạp kết quả đã lưu: biểu đồ + JSON frames (đồng bộ), video/zip (nền)."""
+    """Nạp kết quả đã lưu: biểu đồ ngay + video/frames tải song song liên tục."""
     v = _lam_moi_ban_ghi_video_tu_db(v)
     if not v or not v.get("metrics"):
         return False, v
 
-    slot = _slot_video_phan_tich(v)
-    if (
-        slot
-        and st.session_state.get("_ncv_analysis_loaded_key") == slot
-        and st.session_state.get("angle_df") is not None
-        and st.session_state.get("all_frames_data_path")
-    ):
-        v = _gan_session_ket_qua_tu_video(v)
-        if not giu_phan_tich_moi:
-            st.session_state.reanalyze_triggered = False
-        _tai_video_frames_phan_tich_nen(v)
-        return True, v
-
     v = _gan_session_ket_qua_tu_video(v)
-    v_hf, _ = tai_bieu_do_va_frames_tu_hf(v)
-    if v_hf:
-        v = v_hf
-        v = _gan_session_ket_qua_tu_video(v)
+    _ap_dung_angle_df_tu_video(v)
+    if st.session_state.get("angle_df") is not None:
+        _gan_khoa_session_phan_tich(st.session_state.get("current_eval_video") or v)
+    if not giu_phan_tich_moi:
+        st.session_state.reanalyze_triggered = False
+    _bat_dau_tai_day_du_song_song(v)
+    return bool(st.session_state.get("angle_df") is not None), v
 
-    df_loaded, src_loaded = _nap_angle_df_tu_video(v)
-    if df_loaded is not None:
-        st.session_state.angle_df = df_loaded
-        if src_loaded:
-            st.session_state.current_df_csv_path = src_loaded
-            v_upd = dict(v)
-            if str(src_loaded).lower().endswith(".csv"):
-                v_upd["df_path"] = src_loaded
-            if str(src_loaded).lower().endswith(".json"):
-                v_upd["all_frames_data_path"] = src_loaded
-                st.session_state.all_frames_data_path = src_loaded
-            st.session_state.current_eval_video = v_upd
-            v = v_upd
-        _gan_khoa_session_phan_tich(v)
-        if not giu_phan_tich_moi:
-            st.session_state.reanalyze_triggered = False
-        _tai_video_frames_phan_tich_nen(v)
-        return True, v
-    return False, v
+
+def _fragment_tien_do_tai_media(v, key_suffix=""):
+    """Fragment 2s — cập nhật tiến độ tải Cloud + tự hiện biểu đồ khi CSV sẵn sàng."""
+    interval = timedelta(seconds=2) if st.session_state.get("_media_load_slot") else None
+
+    @st.fragment(run_every=interval)
+    def _poll():
+        if not v or not v.get("metrics"):
+            return
+        status = _trang_thai_tai_media(v)
+        icons = (
+            f"{'✅' if status['csv'] else '⏳'} Biểu đồ · "
+            f"{'✅' if status['json'] else '⏳'} Frames · "
+            f"{'✅' if status['video'] else '⏳'} Video · "
+            f"{'✅' if status['zip'] or not (v.get('frames_zip')) else '⏳'} ZIP"
+        )
+        if status["running"] or not all((status["csv"], status["json"], status["video"])):
+            st.caption(f"☁️ **Đang tải từ Cloud:** {icons}")
+        elif status["csv"] and status["json"] and status["video"]:
+            st.caption(f"✅ **Đã tải đủ:** {icons} — mở tab **🎬 VIDEO & ẢNH FRAME**.")
+
+        if st.session_state.get("angle_df") is None and status["csv"]:
+            if _ap_dung_angle_df_tu_video(v):
+                st.session_state.view_old_analysis = True
+                _gan_khoa_session_phan_tich(st.session_state.get("current_eval_video") or v)
+                _lam_moi_giao_dien_sau_nut()
+
+    _poll()
 
 
 def _quay_lai_ket_qua_cu_da_luu(v, rerun=False):
-    """Nạp và hiển thị kết quả đã lưu — phân tích mới vẫn chạy nền nếu đang có."""
+    """Nạp kết quả đã lưu đầy đủ — biểu đồ ngay, video/frames tải song song."""
     v = _lam_moi_ban_ghi_video_tu_db(v)
     if not v or not v.get("metrics"):
         st.error("❌ Không tìm thấy kết quả cũ cho video này.")
@@ -2317,39 +2411,30 @@ def _quay_lai_ket_qua_cu_da_luu(v, rerun=False):
     if not dang_chay:
         st.session_state.reanalyze_triggered = False
 
-    with st.spinner("📥 Đang tải biểu đồ, JSON frames — video khung xương tải nền..."):
-        ok, v = _nap_bieu_do_nhanh_tu_cloud(v, giu_phan_tich_moi=dang_chay)
-        if not ok or st.session_state.get("angle_df") is None:
-            if HF_TOKEN and HF_DATASET_ID:
-                dong_bo_json_cau_hinh_tu_hf(force_files=frozenset({"video_list.json"}))
-                _xoa_cache_sau_dong_bo_json(["video_list.json"])
-            v = _lam_moi_ban_ghi_video_tu_db(v)
-            v = _gan_session_ket_qua_tu_video(v)
-            v, _ = tai_bieu_do_va_frames_tu_hf(v)
-            df_loaded, src_loaded = _nap_angle_df_tu_video(v)
-            if df_loaded is not None:
-                st.session_state.angle_df = df_loaded
-                if src_loaded:
-                    st.session_state.current_df_csv_path = src_loaded
-                    if str(src_loaded).lower().endswith(".json"):
-                        st.session_state.all_frames_data_path = src_loaded
-                _gan_khoa_session_phan_tich(v)
-                if not dang_chay:
-                    st.session_state.reanalyze_triggered = False
-                _tai_video_frames_phan_tich_nen(v)
-                ok = True
+    ok, v = _nap_bieu_do_nhanh_tu_cloud(v, giu_phan_tich_moi=dang_chay)
+    if not ok:
+        if HF_TOKEN and HF_DATASET_ID:
+            dong_bo_json_cau_hinh_tu_hf(force_files=frozenset({"video_list.json"}))
+            _xoa_cache_sau_dong_bo_json(["video_list.json"])
+        v = _gan_session_ket_qua_tu_video(_lam_moi_ban_ghi_video_tu_db(v) or v)
+        _bat_dau_tai_day_du_song_song(v)
+        ok = _ap_dung_angle_df_tu_video(v)
+        if ok:
+            _gan_khoa_session_phan_tich(st.session_state.get("current_eval_video") or v)
 
     if ok and st.session_state.get("angle_df") is not None:
-        msg = "✅ Đã nạp biểu đồ + frames! Video khung xương đang tải nền — mở tab 🎬 VIDEO & ẢNH FRAME."
+        msg = "✅ Biểu đồ sẵn sàng! Video + frames đang tải liên tục từ Cloud..."
         if dang_chay:
-            msg += " Phân tích mới vẫn chạy nền bên phải."
+            msg += " (phân tích mới vẫn chạy bên phải)"
         st.toast(msg, icon="📊")
         st.session_state._pending_chart_refresh = True
         _lam_moi_giao_dien_sau_nut()
         return True
     if st.session_state.get("stats"):
-        st.warning("⚠️ Có số liệu tóm tắt nhưng chưa tải được CSV biểu đồ từ Cloud.")
-        thong_bao_loi_tai_hf()
+        st.warning("⚠️ Đang tải CSV/JSON từ Cloud — chờ vài giây, tiến độ hiện phía trên.")
+        _bat_dau_tai_day_du_song_song(v)
+        st.session_state.view_old_analysis = True
+        _lam_moi_giao_dien_sau_nut()
         return False
     st.error("❌ Không tìm thấy kết quả cũ cho video này.")
     thong_bao_loi_tai_hf()
@@ -7151,12 +7236,14 @@ def hien_thi_tab_phan_tich_va_video_ncv():
         hien_thi_frames_day_du(key_suffix="ncv_combined_video_tab")
 
 def _dam_bao_du_lieu_video_frames_truoc_hien_thi(v=None):
-    """Nạp CSV/JSON/video trước khi mở tab VIDEO — tránh màn trắng."""
+    """Nạp metadata + khởi động tải song song trước tab VIDEO — không block UI."""
     v = _lam_moi_ban_ghi_video_tu_db(v or st.session_state.get("current_eval_video"))
     if not v or not v.get("metrics"):
         return
-    if st.session_state.get("angle_df") is None or not st.session_state.get("all_frames_data_path"):
-        _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
+    _gan_session_ket_qua_tu_video(v)
+    if st.session_state.get("angle_df") is None:
+        _ap_dung_angle_df_tu_video(v)
+    _bat_dau_tai_day_du_song_song(v)
 
 def hien_thi_tab_nckh_va_thanh_vien_ncv():
     """Gộp tab Đề tài NCKH và Thành viên cho Nghiên cứu viên"""
@@ -12190,7 +12277,6 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
 
     if st.session_state.pop("_pending_chart_refresh", False):
         st.session_state.view_old_analysis = True
-        st.session_state.reanalyze_triggered = False
 
     # Luôn kiểm tra phân tích nền đã xong — kể cả đang chạy phân tích mới
     if st.session_state.get('current_eval_video'):
@@ -12230,7 +12316,7 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                 and st.session_state.get("_ncv_analysis_loaded_key") != slot_v
             ):
                 _xoa_session_phan_tich()
-            # Tự nạp kết quả đã lưu — không làm khi đang chạy phân tích mới
+            # Tự nạp kết quả — không spinner (tải song song nền)
             if (
                 has_metrics
                 and not (
@@ -12242,14 +12328,14 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                     or not _session_phan_tich_khop_video(v)
                 )
             ):
-                with st.spinner(
-                    f"📥 Đang tải kết quả: {v.get('full_name')} — {v.get('exercise')}..."
-                ):
-                    _prog_tmp = read_progress(v.get("video_path"))
-                    _dang_chay = bool(_prog_tmp and _prog_tmp.get("status") == "processing")
-                    loaded, v = _nap_bieu_do_nhanh_tu_cloud(v, giu_phan_tich_moi=_dang_chay)
-                    if loaded:
-                        st.session_state.current_eval_video = v
+                _prog_tmp = read_progress(v.get("video_path"))
+                _dang_chay = bool(_prog_tmp and _prog_tmp.get("status") == "processing")
+                loaded, v = _nap_bieu_do_nhanh_tu_cloud(v, giu_phan_tich_moi=_dang_chay)
+                if loaded:
+                    st.session_state.current_eval_video = v
+
+            if has_metrics:
+                _fragment_tien_do_tai_media(v, key_suffix)
 
             if st.session_state.get('reanalyze_triggered', False):
                 st.info("💡 Bạn đang cấu hình lại để chạy phân tích AI mới. Kết quả phân tích cũ vẫn được bảo lưu an toàn.")
@@ -12329,9 +12415,10 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
         if not csv_path and st.session_state.get('current_eval_video'):
             csv_path = st.session_state.current_eval_video.get('df_path')
         if csv_path:
-            ensure_local_file(csv_path)
             csv_local = get_local_frame_path(csv_path) or csv_path
             _read_fp = csv_local if os.path.exists(csv_local) else (csv_path if os.path.exists(csv_path) else None)
+            if not _read_fp and HF_TOKEN:
+                _bat_dau_tai_day_du_song_song(st.session_state.get("current_eval_video"))
             if _read_fp:
                 try:
                     df = read_display_csv_fast(_read_fp)
@@ -12343,15 +12430,15 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
             st.session_state.get("current_eval_video") or _tim_video_phan_tich_moi_nhat()
         )
         if v_re:
-            with st.spinner(
-                f"📥 Đang tải kết quả: {v_re.get('full_name')} — {v_re.get('exercise')}..."
-            ):
-                if tu_dong_nap_ket_qua_phan_tich_gan_nhat(v_re, force=False):
-                    tk = st.session_state.get("stats") or tk
-                    df = st.session_state.get("angle_df") if df is None else df
-                    _bt_new = st.session_state.get("exercise")
-                    if _bt_new:
-                        bt = _bt_new
+            _prog_tmp = read_progress(v_re.get("video_path"))
+            _dang_chay = bool(_prog_tmp and _prog_tmp.get("status") == "processing")
+            if _nap_bieu_do_nhanh_tu_cloud(v_re, giu_phan_tich_moi=_dang_chay)[0]:
+                tk = st.session_state.get("stats") or tk
+                df = st.session_state.get("angle_df") if df is None else df
+                _bt_new = st.session_state.get("exercise")
+                if _bt_new:
+                    bt = _bt_new
+                _lam_moi_giao_dien_sau_nut()
         if tk is None or df is None:
             st.warning("⚠️ Dữ liệu phân tích chi tiết không khả dụng hoặc chưa được tải.")
             thong_bao_loi_tai_hf()
