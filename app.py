@@ -3239,30 +3239,86 @@ def khoi_tao_dong_bo_hf():
     except Exception as e:
         print(f"[HF Sync] Lỗi khởi động đồng bộ: {e}")
 
-def push_file_to_hf_async(local_path):
-    """Đồng bộ một file lên Hugging Face Dataset dưới dạng bất đồng bộ (không làm lag UI)"""
-    if not HF_TOKEN or not HF_DATASET_ID:
-        return
-        
-    def _run_upload():
-        try:
-            from huggingface_hub import HfApi
-            api = HfApi(token=HF_TOKEN)
-            rel_path = get_clean_rel_path(local_path)
-            
-            if os.path.exists(local_path):
-                api.upload_file(
-                    path_or_fileobj=local_path,
-                    path_in_repo=rel_path,
-                    repo_id=HF_DATASET_ID,
-                    repo_type="dataset",
-                    token=HF_TOKEN
-                )
-                print(f"[HF Sync] Đã đẩy lên Dataset: {rel_path}")
-        except Exception as e:
-            print(f"[HF Sync] Lỗi đẩy file {local_path}: {e}")
+_hf_upload_queue = []
+_hf_upload_queue_lock = threading.Lock()
+_hf_upload_worker_started = False
+_hf_upload_backoff_until = 0.0
+_hf_last_upload_at = 0.0
+_hf_min_upload_interval = 45.0
+_hf_rate_limit_logged = False
 
-    threading.Thread(target=_run_upload, daemon=True).start()
+
+def _hf_start_upload_worker():
+    global _hf_upload_worker_started
+    if _hf_upload_worker_started:
+        return
+    _hf_upload_worker_started = True
+
+    def _worker():
+        global _hf_last_upload_at, _hf_upload_backoff_until, _hf_rate_limit_logged
+        while True:
+            try:
+                now = time.time()
+                if now < _hf_upload_backoff_until:
+                    time.sleep(15)
+                    continue
+                item = None
+                with _hf_upload_queue_lock:
+                    if _hf_upload_queue:
+                        _hf_upload_queue.sort(key=lambda x: x[0])
+                        item = _hf_upload_queue.pop(0)
+                if not item:
+                    time.sleep(2)
+                    continue
+                _, local_path = item
+                if not local_path or not os.path.exists(local_path):
+                    continue
+                wait = _hf_min_upload_interval - (time.time() - _hf_last_upload_at)
+                if wait > 0:
+                    time.sleep(wait)
+                try:
+                    from huggingface_hub import HfApi
+                    api = HfApi(token=HF_TOKEN)
+                    rel_path = get_clean_rel_path(local_path)
+                    api.upload_file(
+                        path_or_fileobj=local_path,
+                        path_in_repo=rel_path,
+                        repo_id=HF_DATASET_ID,
+                        repo_type="dataset",
+                        token=HF_TOKEN,
+                    )
+                    _hf_last_upload_at = time.time()
+                    _hf_rate_limit_logged = False
+                    print(f"[HF Sync] Đã đẩy lên Dataset: {rel_path}")
+                except Exception as e:
+                    err = str(e).lower()
+                    if any(x in err for x in ("429", "too many requests", "rate limit", "exceeded")):
+                        _hf_upload_backoff_until = time.time() + 3600
+                        if not _hf_rate_limit_logged:
+                            print(
+                                "[HF Sync] Đã chạm giới hạn 128 commit/giờ của Hugging Face — "
+                                "tạm dừng đẩy Dataset ~1 giờ. Phân tích vẫn chạy bình thường trên Space."
+                            )
+                            _hf_rate_limit_logged = True
+                    else:
+                        print(f"[HF Sync] Lỗi đẩy file {local_path}: {e}")
+            except Exception as loop_err:
+                print(f"[HF Sync] Worker lỗi: {loop_err}")
+                time.sleep(5)
+
+    threading.Thread(target=_worker, daemon=True).start()
+
+
+def push_file_to_hf_async(local_path, priority=5):
+    """Xếp hàng đẩy file lên HF Dataset — tối đa ~1 commit/45s, tránh lỗi 429."""
+    global _hf_upload_queue
+    if not HF_TOKEN or not HF_DATASET_ID or not local_path:
+        return
+    _hf_start_upload_worker()
+    norm = os.path.normpath(local_path)
+    with _hf_upload_queue_lock:
+        _hf_upload_queue = [x for x in _hf_upload_queue if x[1] != norm]
+        _hf_upload_queue.append((int(priority), norm))
 
 def _hf_download_dataset_file(rel_path, quiet=False, min_size=None):
     """Tải một file từ HF Dataset về DATA_DIR. Trả về đường dẫn local nếu thành công."""
@@ -8427,7 +8483,9 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
             try:
                 save_checkpoint(ckpt_path, payload)
                 if phase == "pass1_done":
-                    _day_progress_checkpoint_len_hf(checkpoint_video_path or duong_dan_video, force=True)
+                    _day_progress_checkpoint_len_hf(
+                        checkpoint_video_path or duong_dan_video, force=True, progress=0.5, status="processing"
+                    )
             finally:
                 ckpt_save_busy[0] = False
 
@@ -9181,25 +9239,37 @@ _resume_phan_tich_lock = threading.Lock()
 _resume_phan_tich_done = False
 
 
-def _day_progress_checkpoint_len_hf(video_path, p_file=None, force=False):
-    """Đẩy progress + checkpoint lên HF Dataset (giữ tiến độ sau deploy)."""
+def _day_progress_checkpoint_len_hf(video_path, p_file=None, force=False, progress=None, status=None):
+    """Đẩy progress + checkpoint lên HF Dataset — giãn cách để không vượt 128 commit/giờ."""
     if not (HF_TOKEN and HF_DATASET_ID):
         return
     key = video_path or p_file or ""
     if not key:
         return
     now = time.time()
-    # HF Space: đẩy thường xuyên hơn (40s → 12s) để push code không mất % gần nhất
-    throttle = 12 if (HF_SPACE_ID or os.path.exists("/data")) else 40
-    if not force and (now - _last_progress_hf_push.get(key, 0)) < throttle:
-        return
-    _last_progress_hf_push[key] = now
+    on_space = bool(HF_SPACE_ID or os.path.exists("/data"))
+    throttle = 300 if on_space else 600
+    last = _last_progress_hf_push.get(key, {})
+    prog = float(progress if progress is not None else last.get("prog", 0.0) or 0.0)
+    st = status or last.get("status") or ""
+    terminal = st in ("success", "error")
+    prog_jump = abs(prog - float(last.get("prog", 0.0) or 0.0)) >= 0.10
+    status_changed = bool(st and st != last.get("status"))
+
+    if not force and not terminal:
+        if (now - float(last.get("t", 0) or 0)) < throttle and not prog_jump and not status_changed:
+            return
+
+    _last_progress_hf_push[key] = {"t": now, "prog": prog, "status": st}
+
+    prio = 0 if terminal else (1 if force else 4)
     if p_file and os.path.exists(p_file):
-        push_file_to_hf_async(p_file)
+        push_file_to_hf_async(p_file, priority=prio)
     if video_path:
         ckpt = get_checkpoint_path(video_path, PROCESSED_DIR)
         if ckpt and os.path.exists(ckpt) and os.path.getsize(ckpt) > 100:
-            push_file_to_hf_async(ckpt)
+            if force or terminal or prog_jump:
+                push_file_to_hf_async(ckpt, priority=prio + 1)
 
 
 def _tai_trang_thai_phan_tich_tu_hf(force=False):
@@ -9278,7 +9348,9 @@ def write_progress(video_path, status, username="", video_name="", progress=0.0,
     try:
         with open(p_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False)
-        _day_progress_checkpoint_len_hf(video_path, p_file)
+        _day_progress_checkpoint_len_hf(
+            video_path, p_file, progress=progress, status=status
+        )
     except Exception as e:
         print(f"Lỗi ghi progress file: {e}")
 
