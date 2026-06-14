@@ -2451,6 +2451,28 @@ def _quay_lai_ket_qua_cu_da_luu(v, rerun=False):
     return False
 
 
+def _hien_thi_hang_video_va_tien_do(v, key_suffix, is_processing=False):
+    """Hàng 2 cột kiểu ảnh 2: video gốc trái, tiến độ phân tích phải."""
+    col_v1, col_v2 = st.columns([1.3, 1.0])
+    with col_v1:
+        if is_processing:
+            st.caption(
+                "🔬 Đang trích xuất khung xương ở bên phải. Bạn có thể xem video gốc bên dưới — "
+                "tiến trình vẫn chạy bình thường."
+            )
+        hien_thi_video_goc_fragment(v, key_suffix, v.get("video_name", ""))
+    with col_v2:
+        hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix)
+
+
+def _hien_thi_thong_bao_che_do_phan_tich_moi():
+    st.info(
+        "🔬 **Chế độ phân tích mới** — MediaPipe 33 landmarks, đối chiếu YouTube (REF), "
+        "huấn luyện/nạp ML Classifier. **Bạn có thể chuyển sang tab khác** trong lúc chờ; "
+        "kết quả sẽ **tự hiển thị biểu đồ** khi hoàn tất."
+    )
+
+
 def hien_thi_nut_tai_lai_va_phan_tich_moi(v_re, key_suffix=""):
     """Hai nút thao tác nhanh: tải lại kết quả đã lưu + chạy phân tích mới."""
     if not v_re:
@@ -9993,23 +10015,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             clear_analysis_progress(video_path)
             khoi_dong_phan_tich_lai_video(v, auto_start=True)
             _lam_moi_giao_dien_sau_nut()
-    elif is_processing and not (st.session_state.get("view_old_analysis") and st.session_state.get("has_data")):
-        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-        st.progress(p_val)
-        detail = f" — {status_msg}" if status_msg else ""
-        st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {elapsed:.1f}s{detail}")
-        st.button("🚀 ĐANG TRÍCH XUẤT KHUNG XƯƠNG...", width="stretch", type="primary", key=f"btn_analyze_disabled_{key_suffix}", disabled=True)
-        
-        # Cho phép hủy/quay lại xem kết quả cũ
-        try:
-            v_re = _tim_video_cho_progress(video_path)
-            if v_re and v_re.get('metrics'):
-                st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-                if st.button("⬅️ Quay lại xem kết quả cũ đã lưu", key=f"btn_cancel_proc_frag_{key_suffix}", use_container_width=True, type="secondary"):
-                    _quay_lai_ket_qua_cu_da_luu(v_re)
-        except:
-            pass
-    elif is_processing and st.session_state.get("view_old_analysis") and st.session_state.get("has_data"):
+    elif is_processing and v.get("metrics"):
         start_t = prog_data.get("start_time")
         elapsed_live = (time.time() - float(start_t)) if start_t else elapsed
         st.progress(p_val)
@@ -10017,6 +10023,20 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         st.caption(
             f"🔄 Phân tích mới nền: **{p_val*100:.1f}%** | ⏱️ {elapsed_live:.1f}s{detail} — "
             "biểu đồ đã lưu hiển thị bên trái."
+        )
+    elif is_processing:
+        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+        st.progress(p_val)
+        detail = f" — {status_msg}" if status_msg else ""
+        start_t = prog_data.get("start_time")
+        elapsed_live = (time.time() - float(start_t)) if start_t else elapsed
+        st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {elapsed_live:.1f}s{detail}")
+        st.button(
+            "🚀 ĐANG TRÍCH XUẤT KHUNG XƯƠNG...",
+            width="stretch",
+            type="primary",
+            key=f"btn_analyze_disabled_{key_suffix}",
+            disabled=True,
         )
     else:
         if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
@@ -12437,16 +12457,14 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
             if has_metrics:
                 _fragment_tien_do_tai_media(v, key_suffix)
 
-            if st.session_state.get('reanalyze_triggered', False):
-                st.info("💡 Bạn đang cấu hình lại để chạy phân tích AI mới. Kết quả phân tích cũ vẫn được bảo lưu an toàn.")
-                if st.button("⬅️ HỦY BỎ & XEM LẠI KẾT QUẢ ĐÃ LƯU", key=f"btn_cancel_reanalyze_{key_suffix}", width="stretch"):
-                    _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
-                st.markdown("---")
-
             prog_data = read_progress(v.get('video_path'))
             is_processing = bool(
                 prog_data and prog_data.get("status") == "processing"
             )
+
+            if has_metrics and not st.session_state.get("has_data"):
+                _gan_session_ket_qua_tu_video(v)
+
             if has_metrics and not (
                 st.session_state.get("has_data")
                 and st.session_state.get("angle_df") is not None
@@ -12463,40 +12481,41 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                 st.session_state.get("has_data")
                 and st.session_state.get("angle_df") is not None
             )
-            # Luôn hiển thị biểu đồ khi đã nạp — phân tích mới chạy nền, không che kết quả cũ
             hien_thi_bieu_do = da_co_du_lieu
-            if not hien_thi_bieu_do and (
-                not has_metrics
-                or (is_processing and not da_co_du_lieu)
-            ):
-                if st.session_state.get('reanalyze_triggered') or is_processing:
-                    st.info(
-                        "🔬 **Chế độ phân tích mới** — MediaPipe 33 landmarks, đối chiếu YouTube (REF), "
-                        "huấn luyện/nạp ML Classifier. **Bạn có thể chuyển sang tab khác** trong lúc chờ; "
-                        "kết quả sẽ **tự hiển thị biểu đồ** khi hoàn tất."
+
+            # Ảnh 2: video đã có kết quả lưu — luôn dùng layout gọn, tải Cloud liền mạch
+            if has_metrics and (is_processing or st.session_state.get("reanalyze_triggered")):
+                if not da_co_du_lieu:
+                    _hien_thi_thong_bao_che_do_phan_tich_moi()
+                if user_role == "Nghiên cứu viên":
+                    hien_thi_nut_tai_lai_va_phan_tich_moi(
+                        v, key_suffix=f"split_{key_suffix}"
                     )
-                elif not has_metrics:
-                    st.warning(f"⚠️ Video '{v.get('video_name')}' của BN {v.get('full_name')} chưa được phân tích.")
-                if user_role == "Nghiên cứu viên" and has_metrics:
+                    st.markdown("---")
+                if is_processing:
+                    _hien_thi_hang_video_va_tien_do(v, key_suffix, is_processing=True)
+                    st.markdown("---")
+                if not da_co_du_lieu:
+                    st.caption(
+                        "☁️ Biểu đồ đang tải từ Cloud — tiến độ ở thanh phía trên; "
+                        "sẽ **tự hiện** khi CSV sẵn sàng (không cần bấm thêm)."
+                    )
+                    return
+
+            # Ảnh 1: video chưa từng phân tích — màn chờ lần đầu
+            if not hien_thi_bieu_do and not has_metrics and (is_processing or st.session_state.get("reanalyze_triggered")):
+                _hien_thi_thong_bao_che_do_phan_tich_moi()
+                if user_role == "Nghiên cứu viên":
                     hien_thi_nut_tai_lai_va_phan_tich_moi(
                         v, key_suffix=f"waiting_{key_suffix}"
                     )
                     st.markdown("---")
-                col_v1, col_v2 = st.columns([1.3, 1.0])
-                with col_v1:
-                    if is_processing:
-                        st.caption("🔬 Đang trích xuất khung xương ở bên phải. Bạn có thể xem video gốc bên dưới — tiến trình vẫn chạy bình thường.")
-                    hien_thi_video_goc_fragment(v, key_suffix, v.get('video_name', ''))
-                with col_v2:
-                    hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix)
+                _hien_thi_hang_video_va_tien_do(v, key_suffix, is_processing=is_processing)
                 return
 
-            if hien_thi_bieu_do and is_processing:
-                p_pct = float(prog_data.get("progress", 0.0) or 0.0) * 100
-                st.caption(
-                    f"🔄 Phân tích mới đang chạy nền (**{p_pct:.1f}%**) — "
-                    "bên dưới là **kết quả đã lưu**; biểu đồ sẽ tự cập nhật khi xong."
-                )
+            if not hien_thi_bieu_do and not has_metrics:
+                st.warning(f"⚠️ Video '{v.get('video_name')}' của BN {v.get('full_name')} chưa được phân tích.")
+                return
     
     # Lấy dữ liệu (Ưu tiên tham số truyền vào từ Doctor/Patient view)
     bt = exercise_ext if exercise_ext is not None else st.session_state.get('exercise', BAI_TAP['codman'])
@@ -12560,9 +12579,11 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                 hien_thi_nut_tai_lai_va_phan_tich_moi(v_re, key_suffix=f"missing_{key_suffix}")
             return
 
-    # Nút thao tác nhanh khi đã có kết quả (NCV) — parent không còn hàng nút riêng,
-    # hiển thị một hàng duy nhất ngay trong nội dung subtab.
-    if user_role == "Nghiên cứu viên" and tk is not None:
+    # Nút thao tác nhanh khi đã có kết quả (NCV) — bỏ qua nếu đã hiện ở hàng video/tiến độ phía trên
+    _v_hdr = st.session_state.get("current_eval_video")
+    _prog_hdr = read_progress(_v_hdr.get("video_path")) if _v_hdr else None
+    _dang_phan_tich_hdr = bool(_prog_hdr and _prog_hdr.get("status") == "processing")
+    if user_role == "Nghiên cứu viên" and tk is not None and not _dang_phan_tich_hdr:
         st.success(
             f"📊 **KẾT QUẢ ĐÃ LƯU:** BN **{st.session_state.get('current_eval_video', {}).get('full_name', 'Bệnh nhân')}** — "
             "biểu đồ bên dưới · tab **🎬 VIDEO & ẢNH FRAME** (video + ảnh khung xương)."
