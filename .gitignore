@@ -36,3 +36,5 @@ database/pose_classifier.pkl
 
 processed_results/
 mediapipe*.whl
+tmp_hf_pkg/
+*.pyd
