@@ -10372,7 +10372,8 @@ def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
 
 
 def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
-    _STALL_SECONDS = 180  # heartbeat im lặng >3 phút = thread đã chết
+    _STALL_SECONDS = 180   # heartbeat im > 3 phút = thread đã chết
+    _SLOW_SECONDS  = 300   # chạy > 5 phút mà progress < 30% = cảnh báo chậm
 
     prog_data = read_progress(video_path)
 
@@ -10401,29 +10402,32 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             else:
                 st.rerun(scope="fragment")
 
-    # Detect stall: heartbeat có sẵn nhưng không cập nhật > _STALL_SECONDS
     now = time.time()
-    is_stalled = (
-        is_processing
-        and heartbeat > 0
-        and (now - heartbeat) > _STALL_SECONDS
-    )
+    start_t = float(prog_data.get("start_time") or now) if prog_data else now
+    elapsed_live = now - start_t
 
-    def _render_stall_warning():
-        stall_min = int((now - heartbeat) // 60)
-        st.warning(
-            f"⚠️ **Tiến trình bị kẹt!** Không có cập nhật trong **{stall_min} phút** "
-            f"(lần cuối: {p_val*100:.1f}%). "
-            "Thread phân tích có thể đã crash do hết RAM hoặc lỗi MediaPipe."
-        )
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("🔄 Khởi động lại phân tích", width="stretch", type="primary", key=f"btn_restart_stall_{key_suffix}"):
-                clear_analysis_progress(video_path)
-                _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
-        with c2:
-            if v.get("metrics") and st.button("⬅️ Xem kết quả cũ", width="stretch", type="secondary", key=f"btn_old_stall_{key_suffix}"):
-                _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
+    # Phân loại trạng thái
+    is_stalled   = is_processing and heartbeat > 0 and (now - heartbeat) > _STALL_SECONDS
+    is_slow      = (is_processing and not is_stalled
+                    and elapsed_live > _SLOW_SECONDS and p_val < 0.30 and p_val > 0.01)
+
+    # ETA ước tính
+    def _eta_str():
+        if p_val <= 0.01 or elapsed_live < 30:
+            return None
+        remaining = elapsed_live / p_val * (1 - p_val)
+        if remaining > 7200:
+            return f"~{remaining/3600:.1f} giờ"
+        if remaining > 120:
+            return f"~{int(remaining//60)} phút"
+        return f"~{int(remaining)}s"
+
+    # Force-stop: xóa khỏi registry + ghi trạng thái cancelled
+    def _dung_phan_tich():
+        _running_threads.pop(video_path, None)
+        write_progress(video_path, "error", progress=p_val, elapsed=elapsed_live,
+                       start_time=start_t,
+                       error_msg="⛔ Người dùng đã dừng phân tích. Nhấn 'Thử lại' để chạy lại với cài đặt khác.")
 
     with st.expander("📖 Luồng phân tích 4 bước (bấm để xem)", expanded=False):
         st.markdown("""
@@ -10438,14 +10442,54 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         if st.button("🔄 THỬ LẠI PHÂN TÍCH", width="stretch", type="primary", key=f"btn_retry_bg_{key_suffix}"):
             clear_analysis_progress(video_path)
             _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
+
     elif is_stalled:
-        _render_stall_warning()
-    elif is_processing and v.get("metrics"):
-        start_t = prog_data.get("start_time")
-        elapsed_live = (now - float(start_t)) if start_t else elapsed
+        stall_min = int((now - heartbeat) // 60)
+        st.warning(
+            f"⚠️ **Tiến trình bị kẹt!** Không cập nhật trong **{stall_min} phút** "
+            f"(dừng ở {p_val*100:.1f}%). Thread có thể đã crash do hết RAM hoặc lỗi MediaPipe."
+        )
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("🔄 Khởi động lại", width="stretch", type="primary", key=f"btn_restart_stall_{key_suffix}"):
+                clear_analysis_progress(video_path)
+                _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
+        with c2:
+            if v.get("metrics") and st.button("⬅️ Xem kết quả cũ", width="stretch", type="secondary", key=f"btn_old_stall_{key_suffix}"):
+                _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
+
+    elif is_slow:
+        eta = _eta_str()
+        elapsed_min = int(elapsed_live // 60)
+        st.warning(
+            f"🐢 **Video đang xử lý rất chậm** — đã chạy **{elapsed_min} phút**, "
+            f"mới được **{p_val*100:.1f}%**"
+            + (f" | Ước tính còn **{eta}**" if eta else "") +
+            ".\n\n💡 **Gợi ý:** Đổi model sang **MediaPipe Lite** ở sidebar để tăng tốc ~5×, "
+            "hoặc nhấn **Dừng** để huỷ và chạy lại."
+        )
         st.progress(p_val)
         detail = f" — {status_msg}" if status_msg else ""
-        st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {elapsed_live:.1f}s{detail}")
+        st.caption(f"🔄 {p_val*100:.1f}% | ⏱️ {elapsed_live:.0f}s{detail}")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            if st.button("⛔ Dừng phân tích", width="stretch", type="primary", key=f"btn_stop_slow_{key_suffix}"):
+                _dung_phan_tich()
+                st.rerun(scope="fragment")
+        with c2:
+            if st.button("🔄 Khởi động lại", width="stretch", type="secondary", key=f"btn_restart_slow_{key_suffix}"):
+                clear_analysis_progress(video_path)
+                _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
+        with c3:
+            if v.get("metrics") and st.button("⬅️ Kết quả cũ", width="stretch", type="secondary", key=f"btn_old_slow_{key_suffix}"):
+                _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
+
+    elif is_processing and v.get("metrics"):
+        eta = _eta_str()
+        eta_str = f" | ETA {eta}" if eta else ""
+        st.progress(p_val)
+        detail = f" — {status_msg}" if status_msg else ""
+        st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {elapsed_live:.0f}s{eta_str}{detail}")
         st.button(
             "🚀 ĐANG TRÍCH XUẤT KHUNG XƯƠNG...",
             width="stretch",
@@ -10453,27 +10497,34 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             key=f"btn_analyze_disabled_metrics_{key_suffix}",
             disabled=True,
         )
-        if st.button(
-            "⬅️ Quay lại xem kết quả cũ đã lưu",
-            width="stretch",
-            type="secondary",
-            key=f"btn_back_old_{key_suffix}",
-        ):
-            _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("⛔ Dừng phân tích", width="stretch", type="secondary", key=f"btn_stop_metrics_{key_suffix}"):
+                _dung_phan_tich()
+                st.rerun(scope="fragment")
+        with c2:
+            if st.button("⬅️ Quay lại xem kết quả cũ đã lưu", width="stretch", type="secondary", key=f"btn_back_old_{key_suffix}"):
+                _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
+
     elif is_processing:
-        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-        start_t = prog_data.get("start_time")
-        elapsed_live = (now - float(start_t)) if start_t else elapsed
+        eta = _eta_str()
+        eta_str = f" | ETA {eta}" if eta else ""
         st.progress(p_val)
         detail = f" — {status_msg}" if status_msg else ""
-        st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {elapsed_live:.1f}s{detail}")
-        st.button(
-            "🚀 ĐANG TRÍCH XUẤT KHUNG XƯƠNG...",
-            width="stretch",
-            type="primary",
-            key=f"btn_analyze_disabled_{key_suffix}",
-            disabled=True,
-        )
+        st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {elapsed_live:.0f}s{eta_str}{detail}")
+        c1, c2 = st.columns([2, 1])
+        with c1:
+            st.button(
+                "🚀 ĐANG TRÍCH XUẤT KHUNG XƯƠNG...",
+                width="stretch",
+                type="primary",
+                key=f"btn_analyze_disabled_{key_suffix}",
+                disabled=True,
+            )
+        with c2:
+            if st.button("⛔ Dừng", width="stretch", type="secondary", key=f"btn_stop_plain_{key_suffix}"):
+                _dung_phan_tich()
+                st.rerun(scope="fragment")
     else:
         if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
             result = khoi_dong_phan_tich_lai_video(v, auto_start=True)
