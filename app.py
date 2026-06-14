@@ -2572,6 +2572,12 @@ def render_video(video_path, check_h264=True, prefer_raw=False):
                 st.caption(f"📤 Video gốc BN — {os.path.basename(p)}")
                 return
 
+    # Ưu tiên phát local nếu file đã sẵn sàng (tránh hiện "Video đang tải từ Cloud" khi không cần)
+    if not prefer_raw:
+        _local_first = find_ready_local_video(video_path)
+        if _local_first and _render_video_static_iframe(_local_first):
+            return
+
     # HF Space: stream Cloud khi chưa có bản local hợp lệ
     if _is_hf_runtime() and HF_TOKEN and HF_DATASET_ID:
         if _try_render_cloud_video_stream(video_path, key_hint="hf_first", optimistic=True, prefer_raw=prefer_raw):
@@ -6673,7 +6679,7 @@ MAX_FILE_SIZE_MB = 10000
 SKIP_FRAMES = 0    # Mặc định: Xử lý mọi khung hình
 RESIZE_WIDTH = 720 # Mặc định độ phân giải HD (720p) để trích xuất sắc nét và chuẩn xác nhất
 OUTPUT_QUALITY = 50 
-MAX_FRAMES = 20000  # Nâng hạn mức lên 20000 frame (khoảng 11 phút ở 30fps)
+MAX_FRAMES = 100000  # Hỗ trợ tối đa 100000 frame (~55 phút @ 30fps)
 THUMBNAIL_QUALITY = 80
 THUMBNAIL_WIDTH = 320
 
@@ -15104,7 +15110,6 @@ def _noi_dung_frames_day_du(key_suffix=""):
     _frames_ready = (
         (_first_frame_path and os.path.exists(_first_frame_path) and os.path.getsize(_first_frame_path) >= 5 * 1024)
         or bool(_zip_local)
-        or (_proc_fp and os.path.exists(_proc_fp))
     )
     if not _frames_ready:
         _zip_to_dl = _zip_from_proc or _fz_sess
@@ -15116,12 +15121,12 @@ def _noi_dung_frames_day_du(key_suffix=""):
                 check_and_extract_frames_zip(_proc_fp)
         _zip_now = (_zip_from_proc if (_zip_from_proc and os.path.exists(_zip_from_proc))
                     else (_fz_sess if (_fz_sess and os.path.exists(_fz_sess)) else ""))
-        if (_zip_now
-                or (_first_frame_path and os.path.exists(_first_frame_path) and os.path.getsize(_first_frame_path) >= 5 * 1024)
-                or (_proc_fp and os.path.exists(_proc_fp))):
+        _first_ok = (_first_frame_path and os.path.exists(_first_frame_path) and os.path.getsize(_first_frame_path) >= 5 * 1024)
+        _vid_ok = (_proc_fp and os.path.exists(_proc_fp) and os.path.getsize(_proc_fp) > 0)
+        if _zip_now or _first_ok or _vid_ok:
             st.rerun()
         else:
-            st.info("⏳ Ảnh frames chưa có trên Cloud. Bấm **Tải lại kết quả đã lưu** hoặc phân tích lại video.")
+            st.info("⏳ Ảnh frames chưa có — tải lại kết quả đã lưu hoặc phân tích lại video.")
             if st.session_state.get("current_eval_video"):
                 hien_thi_nut_tai_lai_va_phan_tich_moi(
                     st.session_state.current_eval_video, key_suffix=f"noframes_{key_suffix}"
@@ -15662,24 +15667,44 @@ Dòng **Xác suất 3 lớp** (nếu có): tổng ~100%, cho biết mô hình ph
         e_idx = min(s_idx + fpp, total_f)
         page_inds = indices_list[s_idx:e_idx]
 
-        # Tối ưu hóa: Phục hồi ảnh bị thiếu hoặc lỗi (LFS pointer hoặc size < 5KB) bằng cách mở video
-        # Nếu đã có file ZIP, ta coi như ảnh khả dụng (vì hệ thống sẽ đọc trực tiếp từ ZIP mà không cần lưu ổ cứng)
+        # Xác định ZIP và đọc TOÀN BỘ frames trang hiện tại từ ZIP một lần (tránh mở ZIP N lần)
         has_zip = False
         zip_path_for_check = ""
+        # Thử cả hai nguồn ZIP: từ video path và từ session state frames_zip
+        _zip_candidates = []
         if processed_video_path:
-            zip_path_for_check = get_local_frame_path(processed_video_path.replace('.mp4', '_frames.zip'))
-            has_zip = os.path.exists(zip_path_for_check)
+            _zip_candidates.append(get_local_frame_path(processed_video_path.replace('.mp4', '_frames.zip')))
+        _fz_alt = get_local_frame_path(st.session_state.get('frames_zip') or "")
+        if _fz_alt and _fz_alt not in _zip_candidates:
+            _zip_candidates.append(_fz_alt)
+        for _zc in _zip_candidates:
+            if _zc and os.path.exists(_zc) and os.path.getsize(_zc) > 1024:
+                zip_path_for_check = _zc
+                has_zip = True
+                break
+
+        # Đọc trước base64 tất cả frames trang hiện tại từ ZIP (1 lần mở, đọc nhiều)
+        zip_b64_cache = {}
+        if has_zip:
+            try:
+                import zipfile
+                with zipfile.ZipFile(zip_path_for_check, 'r') as _z_page:
+                    _names_in_zip = set(_z_page.namelist())
+                    for _pi in page_inds:
+                        _fp = get_local_frame_path(frame_data_list[_pi].get('path', ''))
+                        _fn = os.path.basename(_fp) if _fp else ''
+                        if _fn and _fn in _names_in_zip:
+                            try:
+                                zip_b64_cache[_fn] = base64.b64encode(_z_page.read(_fn)).decode('utf-8')
+                            except Exception:
+                                pass
+            except Exception as _ze:
+                print(f"[Frame Gallery] Lỗi đọc ZIP: {_ze}")
 
         def _is_image_missing_or_invalid(img_p):
-            if has_zip:
-                try:
-                    import zipfile
-                    f_name = os.path.basename(img_p)
-                    with zipfile.ZipFile(zip_path_for_check, 'r') as z:
-                        if f_name in z.namelist():
-                            return False
-                except:
-                    pass
+            fn = os.path.basename(img_p) if img_p else ''
+            if fn and fn in zip_b64_cache:
+                return False
             if not img_p or not os.path.exists(img_p):
                 return True
             try:
@@ -15687,30 +15712,43 @@ Dòng **Xác suất 3 lớp** (nếu có): tổng ~100%, cho biết mô hình ph
             except:
                 return True
 
+        # Phục hồi frame từ video nếu còn thiếu sau khi đã thử ZIP
         any_missing = any(_is_image_missing_or_invalid(get_local_frame_path(frame_data_list[idx].get('path', ''))) for idx in page_inds)
         cap_recover = None
-        if any_missing and processed_video_path and os.path.exists(processed_video_path):
-            try:
-                cap_recover = cv2.VideoCapture(processed_video_path)
-            except Exception as e:
-                print("[Frame Recovery] Lỗi mở video phục hồi frame:", e)
-                cap_recover = None
+        if any_missing and processed_video_path:
+            # Ưu tiên H.264 (_f.mp4) vì dễ decode hơn MP4V gốc
+            _h264_path = get_final_h264_path(processed_video_path)
+            _vid_for_recovery = (
+                _h264_path if (_h264_path and os.path.exists(_h264_path) and os.path.getsize(_h264_path) > 0)
+                else (processed_video_path if (processed_video_path and os.path.exists(processed_video_path) and os.path.getsize(processed_video_path) > 0)
+                      else None)
+            )
+            if _vid_for_recovery:
+                try:
+                    cap_recover = cv2.VideoCapture(_vid_for_recovery)
+                    if not cap_recover.isOpened():
+                        cap_recover.release()
+                        cap_recover = None
+                except Exception as e:
+                    print("[Frame Recovery] Lỗi mở video phục hồi frame:", e)
+                    cap_recover = None
 
         for orig_idx in page_inds:
             f_data = frame_data_list[orig_idx]
             f_path = get_local_frame_path(f_data.get('path'))
-            
-            # Khôi phục ảnh từ video nếu thiếu hoặc lỗi
+
+            # Khôi phục ảnh từ video nếu thiếu (dùng đúng index frame trong video)
             if f_path and _is_image_missing_or_invalid(f_path) and cap_recover and cap_recover.isOpened():
                 try:
                     os.makedirs(os.path.dirname(f_path), exist_ok=True)
-                    f_idx = orig_idx
+                    # Dùng index thực của frame trong video (không phải vị trí trong list)
+                    f_idx = f_data.get('index', orig_idx)
                     cap_recover.set(cv2.CAP_PROP_POS_FRAMES, f_idx)
                     ret, frame_img = cap_recover.read()
                     if ret:
-                        cv2.imwrite(f_path, frame_img, [cv2.IMWRITE_JPEG_QUALITY, 50])
+                        cv2.imwrite(f_path, frame_img, [cv2.IMWRITE_JPEG_QUALITY, 60])
                 except Exception as e:
-                    print(f"[Frame Recovery] Lỗi tự động trích xuất ảnh frame {orig_idx}: {e}")
+                    print(f"[Frame Recovery] Lỗi trích xuất frame {orig_idx}: {e}")
 
         if cap_recover:
             cap_recover.release()
@@ -15721,7 +15759,7 @@ Dòng **Xác suất 3 lớp** (nếu có): tổng ~100%, cho biết mô hình ph
             col_target = cols[i % grid_cols]
             f_data = frame_data_list[orig_idx]
             f_path = get_local_frame_path(f_data.get('path'))
-            
+
             phase_st = _frame_phase_status(f_data, tab_threshold)
             color = "#22c55e" if phase_st == "PASS" else ("#f59e0b" if phase_st == "NEAR" else "#ef4444")
             bg_alpha = "rgba(34,197,94,0.12)" if phase_st == "PASS" else ("rgba(245,158,11,0.12)" if phase_st == "NEAR" else "rgba(239,68,68,0.12)")
@@ -15755,27 +15793,15 @@ Dòng **Xác suất 3 lớp** (nếu có): tổng ~100%, cho biết mô hình ph
             diff_v = abs(gv - cv_ref)
             diff_k = abs(gk - ck_ref)
 
-            # Lấy base64 của ảnh để vẽ HTML tùy chỉnh có hỗ trợ hover zoom (ưu tiên đọc trực tiếp trên đĩa SSD)
-            b64_data = ""
-            if f_path and os.path.exists(f_path) and os.path.getsize(f_path) >= 5 * 1024:
+            # Lấy base64: ưu tiên cache từ ZIP (đã đọc một lần ở trên), sau đó đọc từ file
+            f_name = os.path.basename(f_path) if f_path else ''
+            b64_data = zip_b64_cache.get(f_name, '')
+            if not b64_data and f_path and os.path.exists(f_path) and os.path.getsize(f_path) >= 5 * 1024:
                 try:
                     with open(f_path, "rb") as img_file:
                         b64_data = base64.b64encode(img_file.read()).decode("utf-8")
                 except:
                     pass
-            
-            # Nếu không tìm thấy file ảnh lẻ, đọc trực tiếp từ ZIP file (in-memory) để tránh giải nén chậm
-            if not b64_data and processed_video_path:
-                zip_path = get_local_frame_path(processed_video_path.replace('.mp4', '_frames.zip'))
-                if zip_path and os.path.exists(zip_path):
-                    try:
-                        import zipfile
-                        f_name = os.path.basename(f_path)
-                        with zipfile.ZipFile(zip_path, 'r') as z:
-                            if f_name in z.namelist():
-                                b64_data = base64.b64encode(z.read(f_name)).decode("utf-8")
-                    except Exception as zip_read_err:
-                        print(f"Lỗi đọc frame {f_name} từ ZIP: {zip_read_err}")
             
             with col_target:
                 if b64_data:
