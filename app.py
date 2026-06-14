@@ -6944,7 +6944,7 @@ def hien_thi_tab_phan_tich_va_video_ncv():
             v_cur = _lam_moi_ban_ghi_video_tu_db(st.session_state.current_eval_video) or v_cur
             st.session_state.current_eval_video = v_cur
             st.toast("✅ Phân tích xong! Đang hiển thị kết quả...", icon="🎉")
-            st.rerun(scope="app")
+            st.session_state._pending_chart_refresh = True
         slot_cur = _slot_video_phan_tich(v_cur)
         if (
             slot_cur
@@ -7009,7 +7009,21 @@ def hien_thi_tab_phan_tich_va_video_ncv():
     if ncv_sub == "📊 BIỂU ĐỒ PHÂN TÍCH":
         hien_thi_tab_phan_tich(key_suffix="ncv_combined_tab")
     else:
+        _dam_bao_du_lieu_video_frames_truoc_hien_thi(v_cur)
         hien_thi_frames_day_du(key_suffix="ncv_combined_video_tab")
+
+def _dam_bao_du_lieu_video_frames_truoc_hien_thi(v=None):
+    """Nạp CSV/JSON/video trước khi mở tab VIDEO — tránh màn trắng."""
+    v = _lam_moi_ban_ghi_video_tu_db(v or st.session_state.get("current_eval_video"))
+    if not v or not v.get("metrics"):
+        return
+    if st.session_state.get("angle_df") is None or not st.session_state.get("all_frames_data_path"):
+        try:
+            if not tu_dong_nap_ket_qua_phan_tich_gan_nhat(v, force=True):
+                khoi_phuc_ket_qua_cu(v, tai_day_du=True)
+            st.session_state.view_old_analysis = True
+        except Exception as preload_err:
+            print(f"[Frames] Loi nap du lieu truoc hien thi: {preload_err}")
 
 def hien_thi_tab_nckh_va_thanh_vien_ncv():
     """Gộp tab Đề tài NCKH và Thành viên cho Nghiên cứu viên"""
@@ -9413,7 +9427,7 @@ def finalize_and_refresh_analysis(video_path):
             st.session_state.current_eval_video = v
             _gan_khoa_session_phan_tich(v)
         st.toast("✅ Phân tích hoàn tất! Đang hiển thị kết quả...", icon="🎉")
-        st.rerun()
+        st.session_state._pending_chart_refresh = True
 
 def hien_thi_tien_trinh_background_small(video_path):
     """Hiển thị tiến trình chạy nền nhỏ gọn bên trong cột phải (không reload toàn trang)"""
@@ -9645,7 +9659,8 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             is_error = True
             err_msg = prog_data.get("error_msg", "Lỗi không xác định")
         elif status == "success":
-            finalize_and_refresh_analysis(video_path)
+            if finalize_background_analysis_if_ready(video_path):
+                st.rerun(scope="fragment")
             
     with st.expander("📖 Luồng phân tích 4 bước (bấm để xem)", expanded=False):
         st.markdown("""
@@ -12067,7 +12082,7 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                 st.session_state.current_eval_video = v_done
                 _gan_khoa_session_phan_tich(v_done)
             st.toast("✅ Phân tích xong! Đang hiển thị biểu đồ...", icon="🎉")
-            st.rerun(scope="app")
+            st.session_state._pending_chart_refresh = True
 
     # Nếu không có dữ liệu truyền vào -> Kiểm tra tải tự động (Dành cho NCV)
     if stats_ext is None and df_ext is None:
@@ -12096,14 +12111,10 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                 and st.session_state.get("_ncv_analysis_loaded_key") != slot_v
             ):
                 _xoa_session_phan_tich()
-            # Tự nạp kết quả đã lưu — kể cả khi đang chạy phân tích mới ở nền
-            need_chart_load = has_metrics and (
-                not _session_phan_tich_khop_video(v)
-                or st.session_state.get("angle_df") is None
-            )
-            if need_chart_load and (
-                not st.session_state.get('reanalyze_triggered', False)
-                or st.session_state.get("view_old_analysis", False)
+            # Tự nạp kết quả đã lưu — luôn thử khi video đã có metrics
+            if has_metrics and (
+                st.session_state.get("angle_df") is None
+                or not _session_phan_tich_khop_video(v)
             ):
                 with st.spinner(
                     f"📥 Đang tải kết quả: {v.get('full_name')} — {v.get('exercise')}..."
@@ -12113,7 +12124,7 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                         loaded = khoi_phuc_ket_qua_cu(v, tai_day_du=True)
                     if loaded and st.session_state.get("angle_df") is not None:
                         st.session_state.view_old_analysis = True
-                        st.rerun(scope="fragment")
+                        st.session_state.reanalyze_triggered = False
 
             if st.session_state.get('reanalyze_triggered', False):
                 st.info("💡 Bạn đang cấu hình lại để chạy phân tích AI mới. Kết quả phân tích cũ vẫn được bảo lưu an toàn.")
@@ -12140,6 +12151,17 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                 or (st.session_state.get('reanalyze_triggered', False) and not da_co_du_lieu)
                 or (is_processing and not da_co_du_lieu)
             ):
+                if has_metrics and not da_co_du_lieu:
+                    if st.button(
+                        "📊 XEM KẾT QUẢ ĐÃ LƯU NGAY",
+                        key=f"btn_force_load_saved_{key_suffix}",
+                        width="stretch",
+                        type="primary",
+                    ):
+                        if khoi_phuc_ket_qua_cu(v, tai_day_du=True):
+                            st.session_state.view_old_analysis = True
+                            st.session_state.reanalyze_triggered = False
+                            st.rerun(scope="fragment")
                 if st.session_state.get('reanalyze_triggered') or is_processing:
                     st.info(
                         "🔬 **Chế độ phân tích mới** — MediaPipe 33 landmarks, đối chiếu YouTube (REF), "
@@ -13001,18 +13023,8 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
                                     st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
 
 def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_ext=None):
-    """Fragment auto-refresh khi đang phân tích — tự chuyển sang biểu đồ khi xong."""
-    video_path = None
-    if stats_ext is None and df_ext is None:
-        v = st.session_state.get("current_eval_video")
-        if v:
-            video_path = v.get("video_path")
-
-    @st.fragment(run_every=_interval_khu_vuc_phan_tich(video_path))
-    def _render_tab_phan_tich():
-        _hien_thi_tab_phan_tich_noi_dung(key_suffix, stats_ext, df_ext, exercise_ext)
-
-    _render_tab_phan_tich()
+    """Hiển thị tab biểu đồ — polling tiến trình do panel bên phải đảm nhiệm."""
+    _hien_thi_tab_phan_tich_noi_dung(key_suffix, stats_ext, df_ext, exercise_ext)
 
 def hien_thi_tab_nckh():
     is_light = st.session_state.theme == 'light'
@@ -14543,9 +14555,20 @@ def load_all_frames_data_cached(path):
 # ============================================
 # HÀM HIỂN THỊ LỊCH FRAMES ĐẦY ĐỦ
 # ============================================
-@st.fragment
 def hien_thi_frames_day_du(key_suffix=""):
-    """Hiển thị frames với Streamlit Fragment (Chỉ load lại vùng này, cực nhanh)"""
+    """Hiển thị video khung xương + ảnh frame đã phân tích."""
+    try:
+        _noi_dung_frames_day_du(key_suffix)
+    except Exception as frames_err:
+        st.error(f"❌ Không thể hiển thị video/ảnh frame: {frames_err}")
+        v_err = st.session_state.get("current_eval_video")
+        if v_err:
+            hien_thi_nut_tai_lai_va_phan_tich_moi(v_err, key_suffix=f"frames_err_{key_suffix}")
+        import traceback
+        st.caption(traceback.format_exc())
+
+
+def _noi_dung_frames_day_du(key_suffix=""):
     user_role = st.session_state.user_info.get('role')
     ex_obj = st.session_state.get('exercise')
     exercise_name = ex_obj.get('ten', '') if isinstance(ex_obj, dict) else ''
@@ -16046,8 +16069,18 @@ def _chuan_hoa_widget_loc_video(key, options, default):
         st.session_state[key] = default
 
 
-@st.fragment
 def hien_thi_danh_sach_video_fragment(user_role):
+    """Danh sách video/BN — tự refresh mỗi 2s khi đang đồng bộ Cloud sau F5."""
+    interval = timedelta(seconds=2) if st.session_state.get("_bg_video_list_sync") else None
+
+    @st.fragment(run_every=interval)
+    def _body():
+        _noi_dung_danh_sach_video_fragment(user_role)
+
+    _body()
+
+
+def _noi_dung_danh_sach_video_fragment(user_role):
     evals_db = _evals_dedup_cached(_mtimes_video_eval()[1])
     video_list = load_danh_sach_video_nghien_cuu()
 
@@ -17682,7 +17715,12 @@ def main():
         st.session_state.pop("active_tab_widget", None)
         st.session_state.active_tab = tab_titles[0]
 
-    _render_main_tab_content(tab_titles, user_role)
+    try:
+        _render_main_tab_content(tab_titles, user_role)
+    except Exception as tab_err:
+        st.error(f"💥 Lỗi hiển thị nội dung tab: {tab_err}")
+        import traceback
+        st.code(traceback.format_exc())
 
     # ==================== FOOTER CHUNG (LUÔN HIỆN Ở DƯỚI CÙNG) ====================
     st.markdown('<div id="rehab-footer-anchor"></div>', unsafe_allow_html=True)
@@ -17696,3 +17734,8 @@ if __name__ == "__main__":
         st.error(f"💥 Lỗi khởi động ứng dụng: {e}")
         import traceback
         st.code(traceback.format_exc())
+        try:
+            st.markdown('<div id="rehab-footer-anchor"></div>', unsafe_allow_html=True)
+            hien_thi_footer_chung()
+        except Exception:
+            pass
