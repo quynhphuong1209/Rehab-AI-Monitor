@@ -6939,6 +6939,12 @@ def hien_thi_tab_phan_tich_va_video_ncv():
     )
     if v_cur:
         st.session_state.current_eval_video = v_cur
+        vp = v_cur.get("video_path")
+        if vp and finalize_background_analysis_if_ready(vp):
+            v_cur = _lam_moi_ban_ghi_video_tu_db(st.session_state.current_eval_video) or v_cur
+            st.session_state.current_eval_video = v_cur
+            st.toast("✅ Phân tích xong! Đang hiển thị kết quả...", icon="🎉")
+            st.rerun(scope="app")
         slot_cur = _slot_video_phan_tich(v_cur)
         if (
             slot_cur
@@ -6947,8 +6953,7 @@ def hien_thi_tab_phan_tich_va_video_ncv():
         ):
             _xoa_session_phan_tich()
         need_load = (
-            not st.session_state.get("reanalyze_triggered")
-            and v_cur.get("metrics")
+            v_cur.get("metrics")
             and (
                 not _session_phan_tich_khop_video(v_cur)
                 or st.session_state.get("angle_df") is None
@@ -6959,7 +6964,8 @@ def hien_thi_tab_phan_tich_va_video_ncv():
                 f"📥 Đang nạp kết quả: {v_cur.get('full_name')} — {v_cur.get('exercise')}..."
             ):
                 tu_dong_nap_ket_qua_phan_tich_gan_nhat(v_cur, force=True)
-        v_cur = _lam_moi_ban_ghi_video_tu_db(st.session_state.get("current_eval_video") or v_cur)
+                st.session_state.view_old_analysis = True
+        v_cur = _lam_moi_ban_ghi_video_tu_db(st.session_state.current_eval_video or v_cur)
     if v_cur:
         st.info(
             f"📌 Đang xem phân tích: **{v_cur.get('full_name', 'N/A')}** — "
@@ -9144,6 +9150,7 @@ def check_and_populate_background_result(video_path):
             st.session_state.frames_zip = result.get("frames_zip")
             st.session_state.temp_frames_dir = result.get("temp_frames_dir")
             st.session_state.reanalyze_triggered = False
+            st.session_state.view_old_analysis = True
             
             # Cập nhật st.session_state.current_eval_video để đồng bộ trạng thái phân tích
             try:
@@ -12047,9 +12054,8 @@ st.markdown(f"""
 # ============================================
 # HÀM HIỂN THỊ TAB 2 - THIẾT KẾ LẠI
 # ============================================
-@st.fragment
-def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_ext=None):
-    """Hiển thị tab phân tích với thiết kế chuyên nghiệp và nhận định lâm sàng"""
+def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None, exercise_ext=None):
+    """Nội dung tab phân tích — tách riêng để fragment có thể auto-refresh khi đang chạy AI."""
     user_role = st.session_state.user_info.get('role')
 
     # Luôn kiểm tra phân tích nền đã xong — kể cả đang chạy phân tích mới
@@ -12061,7 +12067,7 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 st.session_state.current_eval_video = v_done
                 _gan_khoa_session_phan_tich(v_done)
             st.toast("✅ Phân tích xong! Đang hiển thị biểu đồ...", icon="🎉")
-            st.rerun(scope="fragment")
+            st.rerun(scope="app")
 
     # Nếu không có dữ liệu truyền vào -> Kiểm tra tải tự động (Dành cho NCV)
     if stats_ext is None and df_ext is None:
@@ -12090,20 +12096,24 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 and st.session_state.get("_ncv_analysis_loaded_key") != slot_v
             ):
                 _xoa_session_phan_tich()
-            if not st.session_state.get('reanalyze_triggered', False):
-                need_chart_load = has_metrics and (
-                    not _session_phan_tich_khop_video(v)
-                    or st.session_state.get("angle_df") is None
-                )
-                if need_chart_load:
-                    with st.spinner(
-                        f"📥 Đang tải kết quả: {v.get('full_name')} — {v.get('exercise')}..."
-                    ):
-                        loaded = tu_dong_nap_ket_qua_phan_tich_gan_nhat(v, force=True)
-                        if not loaded or st.session_state.get("angle_df") is None:
-                            loaded = khoi_phuc_ket_qua_cu(v, tai_day_du=True)
-                        if loaded and st.session_state.get("angle_df") is not None:
-                            st.rerun()
+            # Tự nạp kết quả đã lưu — kể cả khi đang chạy phân tích mới ở nền
+            need_chart_load = has_metrics and (
+                not _session_phan_tich_khop_video(v)
+                or st.session_state.get("angle_df") is None
+            )
+            if need_chart_load and (
+                not st.session_state.get('reanalyze_triggered', False)
+                or st.session_state.get("view_old_analysis", False)
+            ):
+                with st.spinner(
+                    f"📥 Đang tải kết quả: {v.get('full_name')} — {v.get('exercise')}..."
+                ):
+                    loaded = tu_dong_nap_ket_qua_phan_tich_gan_nhat(v, force=True)
+                    if not loaded or st.session_state.get("angle_df") is None:
+                        loaded = khoi_phuc_ket_qua_cu(v, tai_day_du=True)
+                    if loaded and st.session_state.get("angle_df") is not None:
+                        st.session_state.view_old_analysis = True
+                        st.rerun(scope="fragment")
 
             if st.session_state.get('reanalyze_triggered', False):
                 st.info("💡 Bạn đang cấu hình lại để chạy phân tích AI mới. Kết quả phân tích cũ vẫn được bảo lưu an toàn.")
@@ -12115,16 +12125,20 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
             is_processing = bool(
                 prog_data and prog_data.get("status") == "processing"
             )
-            co_ket_qua_san_sang = bool(
+            da_co_du_lieu = bool(
                 st.session_state.get("has_data")
                 and st.session_state.get("angle_df") is not None
-                and not st.session_state.get("reanalyze_triggered")
-                and not is_processing
             )
-            if not co_ket_qua_san_sang and (
+            # Hiển thị biểu đồ khi đã nạp dữ liệu — kể cả đang chạy phân tích mới ở nền
+            hien_thi_bieu_do = da_co_du_lieu and not (
+                st.session_state.get('reanalyze_triggered', False)
+                and is_processing
+                and not st.session_state.get("view_old_analysis", False)
+            )
+            if not hien_thi_bieu_do and (
                 not has_metrics
-                or st.session_state.get('reanalyze_triggered', False)
-                or is_processing
+                or (st.session_state.get('reanalyze_triggered', False) and not da_co_du_lieu)
+                or (is_processing and not da_co_du_lieu)
             ):
                 if st.session_state.get('reanalyze_triggered') or is_processing:
                     st.info(
@@ -12142,6 +12156,13 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                 with col_v2:
                     hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix)
                 return
+
+            if hien_thi_bieu_do and is_processing:
+                p_pct = float(prog_data.get("progress", 0.0) or 0.0) * 100
+                st.caption(
+                    f"🔄 Phân tích mới đang chạy nền (**{p_pct:.1f}%**) — "
+                    "bên dưới là **kết quả đã lưu**; biểu đồ sẽ tự cập nhật khi xong."
+                )
     
     # Lấy dữ liệu (Ưu tiên tham số truyền vào từ Doctor/Patient view)
     bt = exercise_ext if exercise_ext is not None else st.session_state.get('exercise', BAI_TAP['codman'])
@@ -12978,6 +12999,20 @@ def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_
                                     st.rerun()
                                 else:
                                     st.error("❌ Lỗi tạo file ZIP. Thử lại sau.")
+
+def hien_thi_tab_phan_tich(key_suffix="", stats_ext=None, df_ext=None, exercise_ext=None):
+    """Fragment auto-refresh khi đang phân tích — tự chuyển sang biểu đồ khi xong."""
+    video_path = None
+    if stats_ext is None and df_ext is None:
+        v = st.session_state.get("current_eval_video")
+        if v:
+            video_path = v.get("video_path")
+
+    @st.fragment(run_every=_interval_khu_vuc_phan_tich(video_path))
+    def _render_tab_phan_tich():
+        _hien_thi_tab_phan_tich_noi_dung(key_suffix, stats_ext, df_ext, exercise_ext)
+
+    _render_tab_phan_tich()
 
 def hien_thi_tab_nckh():
     is_light = st.session_state.theme == 'light'
