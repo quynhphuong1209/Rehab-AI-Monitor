@@ -476,20 +476,21 @@ def get_data_science_logo_base64():
 
 
 def _html_hang_logo_header():
-    """HTML 3 logo nằm TRONG .main-header — viền nháy sáng (dùng chung login & trang chính)."""
-    school_path = _duong_dan_logo_asset("abc1.png")
-    school_uri = (_image_path_to_data_uri(school_path) if school_path else None) or get_school_logo_base64()
-    ds_path = _duong_dan_logo_asset("logo_data_science_sm.png")
-    ds_uri = (_image_path_to_data_uri(ds_path) if ds_path else None) or DS_LOGO_URL
-    pnt_uri = "https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg"
+    """HTML 3 logo nằm TRONG .main-header — viền nháy sáng (dùng chung login & trang chính).
+    Dùng HTTPS URL trực tiếp — tránh data URI bị Streamlit CSP block."""
+    # HUPH logo: thử local data URI trước, fallback về HTTPS
+    school_https = "https://huph.edu.vn/uploads/logo/logo-huph.png"
+    ds_https = DS_LOGO_URL  # GitHub raw
+    pnt_https = "https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg"
     return (
         '<div class="header-logos-row">'
         f'<div class="header-logo-glow header-logo-school" title="Trường ĐH Y tế Công cộng">'
-        f'<img src="{school_uri}" alt="HUPH" /></div>'
+        f'<img src="{school_https}" alt="HUPH" />'
+        f'<img src="" onerror="this.style.display=\'none\'" style="display:none" /></div>'
         f'<div class="header-logo-glow header-logo-ds" title="Khoa Khoa học Dữ liệu">'
-        f'<img src="{ds_uri}" alt="Data Science" /></div>'
+        f'<img src="{ds_https}" alt="Data Science" /></div>'
         f'<div class="header-logo-glow header-logo-pnt" title="BV Đa khoa Phạm Ngọc Thạch">'
-        f'<img src="{pnt_uri}" alt="BV Phạm Ngọc Thạch" /></div>'
+        f'<img src="{pnt_https}" alt="BV Phạm Ngọc Thạch" /></div>'
         '</div>'
     )
 
@@ -4965,8 +4966,11 @@ def _rerun_toan_bo_app():
 
 
 def _lam_moi_giao_dien_sau_nut():
-    """Sau bấm nút — rerun để hiện kết quả cũ HOẶC màn hình phân tích mới ngay."""
-    st.rerun()
+    """Sau bấm nút — full app rerun (scope='app') kể cả khi gọi từ bên trong @st.fragment."""
+    try:
+        st.rerun(scope="app")
+    except TypeError:
+        st.rerun()
 
 
 def _hoan_tat_dang_nhap(username, user_record):
@@ -10456,8 +10460,11 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
     if prog_data:
         status = prog_data.get("status")
         if status == "processing":
-            # Kiểm tra thread có thực sự alive không — nếu không, đây là progress file cũ
-            if _thread_dang_chay_thuc_su(video_path):
+            thread_alive = _thread_dang_chay_thuc_su(video_path)
+            # Grace period 15s: ngay sau khi khởi động, thread chưa kịp đăng ký
+            _start_t_raw = prog_data.get("start_time")
+            just_started = bool(_start_t_raw and (time.time() - float(_start_t_raw)) < 15)
+            if thread_alive or just_started:
                 is_processing = True
                 p_val = prog_data.get("progress", 0.0)
                 elapsed = prog_data.get("elapsed", 0.0)
@@ -12697,7 +12704,7 @@ BAI_TAP = {
         - Tuần 1-2: 10 lần x 2 hiệp, nghỉ 30s, dây cấp độ 1
         - Tuần 3-4: 12 lần x 3 hiệp, tăng số lần trước
         - Tuần 5-6: 15 lần x 3 hiệp, tăng cấp độ dây nếu dễ dàng
-        - Tuần 7-8: Thêm bài tập phức hợp và tăng kháng lực
+        - Tuần 7-8: Thêm các bài tập phức hợp và tăng kháng lực
         
         **7. THEO DÕI CƯỜNG ĐỘ TẬP (RPE - Rating of Perceived Exertion):**
         - RPE 3-4: Hơi mệt, có thể trò chuyện trong khi tập
@@ -13080,7 +13087,7 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
             prog_data = read_progress(v.get('video_path'))
             is_processing = bool(
                 prog_data and prog_data.get("status") == "processing"
-                and st.session_state.get("_analysis_started_this_session")
+                and _thread_dang_chay_thuc_su(v.get('video_path'))
             )
 
             if has_metrics and not st.session_state.get("has_data"):
@@ -13194,9 +13201,10 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
     # Nút thao tác nhanh khi đã có kết quả (NCV) — bỏ qua nếu đã hiện ở hàng video/tiến độ phía trên
     _v_hdr = st.session_state.get("current_eval_video")
     _prog_hdr = read_progress(_v_hdr.get("video_path")) if _v_hdr else None
+    # Chỉ ẩn nút khi thread PHÂN TÍCH thực sự đang chạy — không dựa progress file cũ
     _dang_phan_tich_hdr = bool(
         _prog_hdr and _prog_hdr.get("status") == "processing"
-        and st.session_state.get("_analysis_started_this_session")
+        and _thread_dang_chay_thuc_su(_v_hdr.get("video_path") if _v_hdr else None)
     )
     if user_role == "Nghiên cứu viên" and tk is not None and not _dang_phan_tich_hdr:
         st.success(
@@ -15903,18 +15911,49 @@ def _noi_dung_frames_day_du(key_suffix=""):
 <div style='font-size:0.75rem; color:#94a3b8; margin-top:4px;'>ℹ️ AI chỉ theo dõi bệnh nhân đầu tiên phát hiện</div>
 </div>""", unsafe_allow_html=True)
         
-        if user_role == "Nghiên cứu viên":
+        if user_role == "Nghi\u00ean c\u1ee9u vi\u00ean":
+            # Hi\u1ec3n th\u1ecb t\u00f3m t\u1eaft \u00e2m thanh AI
             st.write("")
-            btn_label = "📤 GỬI BÁO CÁO PHÂN TÍCH CHO BS & BN" if is_gay_ex else "📤 GỬI BÁO CÁO TỔNG HỢP 3 GIAI ĐOẠN CHO BS & BN"
-            if st.button(btn_label, key=f"btn_send_ncv_3_stages_{key_suffix}", use_container_width=True, type="primary"):
+            _n_dung_audio = sum(1 for f in all_frames_data if f.get('dung'))
+            _n_gan_audio = sum(1 for f in all_frames_data if f.get('gan_dung') and not f.get('dung'))
+            _n_sai_audio = total_frames - _n_dung_audio - _n_gan_audio
+            _pct_d = _n_dung_audio / total_frames * 100 if total_frames > 0 else 0
+            _pct_g = _n_gan_audio / total_frames * 100 if total_frames > 0 else 0
+            _pct_s = _n_sai_audio / total_frames * 100 if total_frames > 0 else 0
+            _play_path_audio = playback_video_path or processed_video_path
+            _has_audio_track = bool(
+                _play_path_audio and os.path.exists(_play_path_audio)
+                and video_has_audio_track(_play_path_audio)
+            )
+            _audio_badge = (
+                "**:green[Co giong AI]**" if _has_audio_track
+                else "**:orange[Chua co giong AI]**"
+            )
+            st.markdown(f"**:blue[Phan hoi am thanh AI]** {_audio_badge}")
+            a1, a2, a3 = st.columns(3)
+            a1.metric(":green[Dung]", _n_dung_audio, f"{_pct_d:.0f}%")
+            a2.metric(":orange[Gan dung]", _n_gan_audio, f"{_pct_g:.0f}%")
+            a3.metric(":red[Sai]", _n_sai_audio, f"{_pct_s:.0f}%")
+            if not _has_audio_track:
+                st.caption("Bam **Chay phan tich moi** de nhung giong AI vao video.")
+            st.write("")
+            # Nut chay lai phan tich moi
+            _v_for_reanalyze = st.session_state.get("current_eval_video")
+            if _v_for_reanalyze:
+                hien_thi_nut_tai_lai_va_phan_tich_moi(_v_for_reanalyze, key_suffix=f"video_col2_{key_suffix}")
+            st.write("")
+            btn_label = "GUI BAO CAO PHAN TICH CHO BS & BN" if is_gay_ex else "GUI BAO CAO TONG HOP 3 GIAI DOAN CHO BS & BN"
+            if st.button(f"📤 {btn_label}", key=f"btn_send_ncv_3_stages_{key_suffix}", use_container_width=True, type="primary"):
                 if gui_bao_cao_tong_hop_3_giai_doan():
                     v_meta = st.session_state.get('current_eval_video') or {}
-                    msg = f"✅ Đã gửi báo cáo phân tích cho BN {v_meta.get('full_name', 'Bệnh nhân')}!" if is_gay_ex else f"✅ Đã gửi báo cáo tổng hợp 3 giai đoạn cho BN {v_meta.get('full_name', 'Bệnh nhân')}!"
-                    st.success(msg)
+                    pname = v_meta.get('full_name', 'Benh nhan')
+                    msg = f"Da gui bao cao phan tich cho BN {pname}!" if is_gay_ex else f"Da gui bao cao tong hop 3 giai doan cho BN {pname}!"
+                    st.success(f"✅ {msg}")
                     st.balloons()
                     st.rerun()
 
     st.markdown("---")
+
 
     # ================================================================
     # PHẦN HIỂN THỊ KHUNG HÌNH TRÍCH XUẤT (NCV)
