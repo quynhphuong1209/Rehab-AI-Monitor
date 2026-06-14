@@ -4582,6 +4582,47 @@ if 'theme' not in st.session_state:
 
 _lam_sach_cache_khi_doi_hf_token()
 
+def _xoa_widget_dang_nhap_sau_rerun():
+    """Dọn các widget login ở đầu rerun, trước khi form đăng nhập được render lại."""
+    if not st.session_state.pop("_clear_login_widgets_next_run", False):
+        return
+    for _k in (
+        "login_u", "login_p", "login_role_main", "theme_toggle_login",
+        "forgot_password_mode", "change_password_mode",
+        "f_u", "f_e", "f_p1", "f_p2",
+        "cp_u_v2", "cp_old_v2", "cp_new_v2", "cp_conf_v2",
+    ):
+        st.session_state.pop(_k, None)
+
+
+def _rerun_toan_bo_app():
+    """Rerun toàn app, fallback cho môi trường Streamlit/HF xử lý scope chưa ổn định."""
+    try:
+        st.rerun()
+    except TypeError:
+        st.rerun(scope="app")
+
+
+def _hoan_tat_dang_nhap(username, user_record):
+    """Gom xử lý sau đăng nhập để tránh sidebar đã login nhưng body còn form cũ."""
+    role = user_record.get('role', 'Bệnh nhân')
+    st.session_state.logged_in = True
+    st.session_state.user_info = {
+        "username": username,
+        "full_name": user_record.get('full_name', username),
+        "email": user_record.get('email'),
+        "role": role,
+    }
+    st.query_params["logged_in_user"] = username
+    st.query_params["logged_in_role"] = role
+    st.session_state.show_login_dialog = False
+    st.session_state.active_tab = "🏠 TRANG CHỦ"
+    st.session_state.pop("active_tab_widget", None)
+    st.session_state._need_home_sync = True
+    st.session_state._clear_login_widgets_next_run = True
+
+_xoa_widget_dang_nhap_sau_rerun()
+
 # KIỂM TRA ĐĂNG NHẬP GOOGLE (Hỗ trợ Streamlit Cloud Identity)
 if not st.session_state.get('logged_in'):
     try:
@@ -4679,10 +4720,12 @@ def _inject_base_css_once():
     st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" media="print" onload="this.media='all'">
+<noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined&display=swap">
+</noscript>
 <style>
     html, body, .stApp, [data-testid="stMarkdownContainer"] {
         font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif !important;
@@ -5410,6 +5453,7 @@ _inject_base_css_once()
 # Ép giao diện luôn tối kể cả khi Chrome/Hệ thống đang ở chế độ Sáng
 # Inject mỗi rerun — DOM được rebuild nên cần inject lại
 _current_theme = st.session_state.get('theme', 'dark')
+_last_injected_theme = st.session_state.get('_last_injected_theme', '')
 if st.session_state.get('theme', 'dark') == 'dark':
     st.markdown("""
     <style>
@@ -5939,6 +5983,7 @@ if st.session_state.get('theme', 'dark') == 'dark':
         }
     </style>
     """, unsafe_allow_html=True)
+    st.session_state['_last_injected_theme'] = 'dark'
 
 # === CSS CHO CHẾ ĐỘ SÁNG (LIGHT MODE OVERRIDE) ===
 if st.session_state.get('theme') == 'light' and _current_theme != _last_injected_theme:
@@ -6293,6 +6338,7 @@ if st.session_state.get('theme') == 'light' and _current_theme != _last_injected
         }
     </style>
     """, unsafe_allow_html=True)
+    st.session_state['_last_injected_theme'] = 'light'
 
 MAX_FILE_SIZE_MB = 10000
 
@@ -15333,19 +15379,8 @@ def hien_thi_dang_nhap_dang_ky():
                             users = load_users()
                             if u in users and verify_password(p, users[u]['password']):
                                 if users[u].get('role', 'Bệnh nhân') == login_role:
-                                    st.session_state.logged_in = True
-                                    st.session_state.user_info = {
-                                        "username": u, 
-                                        "full_name": users[u].get('full_name', u),
-                                        "email": users[u].get('email'),
-                                        "role": users[u].get('role', 'Bệnh nhân')
-                                    }
-                                    st.query_params["logged_in_user"] = u
-                                    st.query_params["logged_in_role"] = users[u].get('role', 'Bệnh nhân')
-                                    st.session_state.show_login_dialog = False
-                                    # Dùng scope="app" để rerun TOÀN BỘ app (kể cả @st.fragment)
-                                    # tránh tình trạng sidebar đã cập nhật nhưng content chính vẫn hiển thị form đăng nhập
-                                    st.rerun(scope="app")
+                                    _hoan_tat_dang_nhap(u, users[u])
+                                    _rerun_toan_bo_app()
                                 else:
                                     st.error(f"❌ Tài khoản này không có quyền truy cập với vai trò {login_role}")
                             else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
@@ -15926,6 +15961,21 @@ def delete_video_callback(video_name, username):
         st.session_state.delete_success = f"Đã xóa video: {v.get('video_name', 'Không rõ tên')}"
 
 
+def _dong_bo_video_list_nen(force=False):
+    """Đồng bộ video_list.json nền — không chặn render trang."""
+    import threading
+
+    def _job():
+        try:
+            _dong_bo_video_list_day_du_tu_hf(force=force)
+            _video_nghien_cuu_cached.clear()
+            _load_video_list_core.clear()
+        except Exception:
+            pass
+
+    threading.Thread(target=_job, daemon=True).start()
+
+
 def reset_vid_list_page():
     st.session_state.vid_list_page = 0
 
@@ -15943,16 +15993,15 @@ def hien_thi_danh_sach_video_fragment(user_role):
     evals_db = _evals_dedup_cached(_mtimes_video_eval()[1])
     video_list = load_danh_sach_video_nghien_cuu()
 
-    # Mở link bookmark / F5: đồng bộ Cloud ngay nếu danh sách trống (tránh UI thiếu BN)
+    # Mở link bookmark / F5: đồng bộ Cloud nền nếu danh sách trống (không chặn UI)
     if not video_list and (HF_TOKEN and HF_DATASET_ID):
-        with st.spinner("☁️ Đang tải danh sách video từ Cloud..."):
-            _dong_bo_video_list_day_du_tu_hf(force=True)
-            try:
-                _video_nghien_cuu_cached.clear()
-                _load_video_list_core.clear()
-            except Exception:
-                pass
+        if not st.session_state.get("_bg_video_list_sync"):
+            st.session_state._bg_video_list_sync = True
+            _dong_bo_video_list_nen(force=True)
+        st.caption("☁️ Đang đồng bộ danh sách video từ Cloud — vui lòng chờ vài giây...")
         video_list = load_danh_sach_video_nghien_cuu()
+        if video_list:
+            st.session_state.pop("_bg_video_list_sync", None)
     
     if st.session_state.get('delete_success'):
         st.toast(f"🗑️ {st.session_state.delete_success}", icon="✅")
@@ -17235,15 +17284,9 @@ def main():
     # Nạp nhẹ kết quả phân tích nền đã hoàn tất (không rerun) -> hiện ngay khi tải trang
     poll_background_analysis_complete()
 
-    # Đồng bộ nhanh khi vừa đăng nhập qua link ?logged_in_user=... (tránh trang trống)
+    # Đồng bộ nền khi vừa đăng nhập qua link ?logged_in_user=... — hiện UI ngay, không chờ Cloud
     if st.session_state.pop("_need_home_sync", False):
-        with st.spinner("☁️ Đang đồng bộ dữ liệu từ Cloud..."):
-            _dong_bo_video_list_day_du_tu_hf(force=True)
-            try:
-                _video_nghien_cuu_cached.clear()
-                _load_video_list_core.clear()
-            except Exception:
-                pass
+        _dong_bo_video_list_nen(force=True)
 
     # Callback xử lý đổi theme nhanh
     def update_theme_callback():
