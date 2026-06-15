@@ -507,9 +507,15 @@ def _html_hang_logo_header():
     )
 
 
+@st.cache_resource(show_spinner=False)
+def _logo_html_cached():
+    """Cache base64 logo HTML một lần cho toàn bộ vòng đời app — tránh đọc file mỗi rerun."""
+    return _html_hang_logo_header()
+
+
 def _html_header_chinh(title_color, subtitle_color, *, show_badge=False, is_light=False, extra_style=""):
     """HTML header liền khối — tránh st.markdown thoát HTML khi có dòng trống giữa các thẻ."""
-    logos = _html_hang_logo_header()
+    logos = _logo_html_cached()
     title_block = (
         f'<h1 class="app-title" style="color: {title_color}; font-family: {APP_FONT_FAMILY} !important; '
         f'font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.4rem; '
@@ -5655,7 +5661,7 @@ def _inject_base_css_once():
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 198, 255, 0.06);
+        background: rgba(255,255,255,0.92);
         padding: 3px;
         border: 3px solid rgba(0, 198, 255, 0.9);
         box-shadow: 0 0 12px rgba(0, 198, 255, 0.7), 0 0 0 3px rgba(0, 198, 255, 0.5);
@@ -6216,8 +6222,6 @@ if st.session_state.get('theme', 'dark') == 'dark':
         .stApp[data-test-script-state="running"] .stButton button,
         .stApp[data-test-script-state="running"] [data-testid="stBaseButton-primary"],
         .stApp[data-test-script-state="running"] [data-testid="stBaseButton-secondary"] {
-            background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%) !important;
-            color: #ffffff !important;
             opacity: 1 !important;
         }
         /* Ẩn spinner chạy vòng tròn ở góc trên phải */
@@ -13070,7 +13074,7 @@ st.markdown(f"""
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: #ffffff;
+        background: rgba(255,255,255,0.92);
         padding: 3px;
         border: 3px solid rgba(0, 198, 255, 0.9);
         box-shadow: 0 0 12px rgba(0, 198, 255, 0.7), 0 0 0 3px rgba(0, 198, 255, 0.5);
@@ -17921,7 +17925,9 @@ def _noi_dung_danh_sach_video_fragment(user_role):
                                     st.session_state.trigger_tab_switch = "📊 QUẢN LÝ ĐÁNH GIÁ & NCKH"
                                 elif user_role == "Nghiên cứu viên":
                                     st.session_state.trigger_tab_switch = "🔬 PHÂN TÍCH & TRÍCH XUẤT DỮ LIỆU"
-                                st.rerun()
+                                # scope="app" cần thiết vì button này nằm trong fragment:
+                                # st.rerun() không scope → chỉ rerun fragment → tab switch không chạy
+                                st.rerun(scope="app")
                         
                         st.button("🗑️ Xóa video này", key=f"del_video_{idx}", width="stretch",
                                   on_click=delete_video_callback, args=(v.get('video_name'), v.get('username')))
