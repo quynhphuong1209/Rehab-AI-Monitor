@@ -2541,16 +2541,15 @@ def _hien_thi_thong_bao_che_do_phan_tich_moi():
 
 
 def hien_thi_nut_tai_lai_va_phan_tich_moi(v_re, key_suffix=""):
-    """Hai nút thao tác nhanh: tải lại kết quả đã lưu + chạy phân tích mới."""
+    """Nút thao tác nhanh: chạy phân tích mới (hiển thị loading ngay khi bấm)."""
     if not v_re:
         return
-    st.markdown("##### 🔄 Thao tác nhanh")
     c1, c2 = st.columns(2)
     with c1:
         if st.button(
             "📂 Tải lại kết quả đã lưu",
             key=f"btn_reload_saved_{key_suffix}",
-            type="primary",
+            type="secondary",
             use_container_width=True,
         ):
             _quay_lai_ket_qua_cu_da_luu(v_re, rerun=False)
@@ -2558,7 +2557,7 @@ def hien_thi_nut_tai_lai_va_phan_tich_moi(v_re, key_suffix=""):
         if st.button(
             "🚀 Chạy phân tích mới",
             key=f"btn_new_analysis_{key_suffix}",
-            type="secondary",
+            type="primary",
             use_container_width=True,
         ):
             _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v_re, auto_start=True))
@@ -13432,22 +13431,12 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
 
             # Ảnh 2: video đã có kết quả lưu — luôn dùng layout gọn, tải Cloud liền mạch
             if has_metrics and (is_processing or st.session_state.get("reanalyze_triggered")):
-                if user_role == "Nghiên cứu viên":
-                    hien_thi_nut_tai_lai_va_phan_tich_moi(
-                        v, key_suffix=f"split_{key_suffix}"
-                    )
-                    st.markdown("---")
                 _hien_thi_hang_video_va_tien_do(v, key_suffix, is_processing=is_processing)
                 return
 
             # Ảnh 1: video chưa từng phân tích — màn chờ lần đầu
             if not hien_thi_bieu_do and not has_metrics and (is_processing or st.session_state.get("reanalyze_triggered")):
                 _hien_thi_thong_bao_che_do_phan_tich_moi()
-                if user_role == "Nghiên cứu viên":
-                    hien_thi_nut_tai_lai_va_phan_tich_moi(
-                        v, key_suffix=f"waiting_{key_suffix}"
-                    )
-                    st.markdown("---")
                 _hien_thi_hang_video_va_tien_do(v, key_suffix, is_processing=is_processing)
                 return
 
