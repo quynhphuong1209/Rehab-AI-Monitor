@@ -17883,7 +17883,9 @@ def _noi_dung_danh_sach_video_fragment(user_role):
                                     # Không xóa session / không spinner block — nạp song song, chuyển tab ngay
                                     if has_metrics or dang_chay:
                                         st.session_state.view_old_analysis = True
-                                        st.session_state.reanalyze_triggered = dang_chay
+                                        # Luôn đặt reanalyze_triggered=True để PHÂN TÍCH tab hiện
+                                        # giao diện phân tích (nút bắt đầu / tiến độ) thay vì chỉ kết quả cũ
+                                        st.session_state.reanalyze_triggered = True
                                         _nap_bieu_do_nhanh_tu_cloud(v, giu_phan_tich_moi=dang_chay)
                                         st.session_state._pending_chart_refresh = True
                                         if dang_chay:
@@ -17893,8 +17895,8 @@ def _noi_dung_danh_sach_video_fragment(user_role):
                                             )
                                         else:
                                             st.toast(
-                                                "✅ Đã mở kết quả gần nhất — chuyển tab Phân tích...",
-                                                icon="📊",
+                                                "🔬 Chuyển sang tab Phân tích — bấm nút để chạy lại hoặc xem kết quả cũ.",
+                                                icon="🧭",
                                             )
                                     else:
                                         slot_moi = _slot_video_phan_tich(v)
