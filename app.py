@@ -10842,13 +10842,26 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                 _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
 
     elif is_processing and v.get("metrics"):
-        eta = _eta_str()
-        eta_str = f" | ETA {eta}" if eta else ""
-        st.progress(p_val)
         detail = f" — {status_msg}" if status_msg else ""
         _em = int(elapsed_live // 60); _es = int(elapsed_live % 60)
         _elapsed_str = f"{_em}m {_es:02d}s" if _em else f"{_es}s"
-        st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {_elapsed_str}{eta_str}{detail}")
+        _is_stuck = p_val < 0.185 or p_val >= 0.92
+        if _is_stuck:
+            _stuck_label = "⏳ Đang tải model AI & khởi động..." if p_val < 0.185 else "📦 Đang mã hóa & đóng gói video..."
+            st.markdown(
+                '<style>@keyframes _indet{0%{left:-35%;width:35%}100%{left:100%;width:35%}}'
+                '.indet-w{position:relative;height:8px;background:rgba(0,100,255,.12);border-radius:4px;overflow:hidden;margin:4px 0 8px}'
+                '.indet-f{position:absolute;height:100%;background:linear-gradient(90deg,#1a6fff,#00c6ff);border-radius:4px;animation:_indet 1.3s linear infinite !important}'
+                '[data-stale] .indet-f,.stale .indet-f{animation:_indet 1.3s linear infinite !important}'
+                '</style><div class="indet-w"><div class="indet-f"></div></div>',
+                unsafe_allow_html=True
+            )
+            st.info(f"🔄 {_stuck_label} | ⏱️ {_elapsed_str}{detail}")
+        else:
+            eta = _eta_str()
+            eta_str = f" | ETA {eta}" if eta else ""
+            st.progress(p_val)
+            st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {_elapsed_str}{eta_str}{detail}")
         st.button(
             "🚀 ĐANG TRÍCH XUẤT KHUNG XƯƠNG...",
             width="stretch",
@@ -10866,13 +10879,26 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                 _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
 
     elif is_processing:
-        eta = _eta_str()
-        eta_str = f" | ETA {eta}" if eta else ""
-        st.progress(p_val)
         detail = f" — {status_msg}" if status_msg else ""
         _em = int(elapsed_live // 60); _es = int(elapsed_live % 60)
         _elapsed_str = f"{_em}m {_es:02d}s" if _em else f"{_es}s"
-        st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {_elapsed_str}{eta_str}{detail}")
+        _is_stuck = p_val < 0.185 or p_val >= 0.92
+        if _is_stuck:
+            _stuck_label = "⏳ Đang tải model AI & khởi động..." if p_val < 0.185 else "📦 Đang mã hóa & đóng gói video..."
+            st.markdown(
+                '<style>@keyframes _indet{0%{left:-35%;width:35%}100%{left:100%;width:35%}}'
+                '.indet-w{position:relative;height:8px;background:rgba(0,100,255,.12);border-radius:4px;overflow:hidden;margin:4px 0 8px}'
+                '.indet-f{position:absolute;height:100%;background:linear-gradient(90deg,#1a6fff,#00c6ff);border-radius:4px;animation:_indet 1.3s linear infinite !important}'
+                '[data-stale] .indet-f,.stale .indet-f{animation:_indet 1.3s linear infinite !important}'
+                '</style><div class="indet-w"><div class="indet-f"></div></div>',
+                unsafe_allow_html=True
+            )
+            st.info(f"🔄 {_stuck_label} | ⏱️ {_elapsed_str}{detail}")
+        else:
+            eta = _eta_str()
+            eta_str = f" | ETA {eta}" if eta else ""
+            st.progress(p_val)
+            st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {_elapsed_str}{eta_str}{detail}")
         c1, c2 = st.columns([2, 1])
         with c1:
             st.button(
