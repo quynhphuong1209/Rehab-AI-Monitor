@@ -11215,7 +11215,10 @@ def bat_dau_phan_tich_background(
         )
     skip_step = skip_step_theo_model(model_type, skip_step)
 
-    # Đặt lại cancel flag mỗi lần khởi chạy mới (xóa cờ cũ nếu còn)
+    # Signal thread cũ dừng, rồi tạo cancel flag mới cho thread này
+    _old_flag = _cancel_flags.get(video_path)
+    if _old_flag:
+        _old_flag.set()
     _cancel_flags[video_path] = threading.Event()
 
     if has_ckpt:
@@ -11256,6 +11259,8 @@ def bat_dau_phan_tich_background(
         progress_video_path = video_path
         start_t = snap["start_time"]
         sem_acquired = False
+        # Capture flag của thread này — không lookup từ dict để tránh lấy nhầm flag của thread mới hơn
+        _my_cancel_flag = _cancel_flags.get(video_path)
         ckpt_wait = load_checkpoint(get_checkpoint_path(progress_video_path, PROCESSED_DIR))
         is_resume_pass2 = bool(
             ckpt_wait
@@ -11484,9 +11489,8 @@ def bat_dau_phan_tich_background(
                 percent_tenth = int(prog_val * 1000)
                 # Ghi tiến độ mỗi 1s (heartbeat) hoặc khi % thay đổi — UI không bị đứng im.
                 if percent_tenth != last_prog_tenth[0] or (now - last_write_time[0] >= 1.0):
-                    # Kiểm tra cancel flag — người dùng bấm Dừng
-                    _cf = _cancel_flags.get(progress_video_path)
-                    if _cf and _cf.is_set():
+                    # Kiểm tra cancel flag riêng của thread này (không lookup dict tránh lấy nhầm flag mới)
+                    if _my_cancel_flag and _my_cancel_flag.is_set():
                         raise InterruptedError("⛔ Phân tích bị dừng bởi người dùng.")
                     write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=prog_val, elapsed=elap, start_time=start_t, status_msg=status_msg)
                     last_write_time[0] = now
