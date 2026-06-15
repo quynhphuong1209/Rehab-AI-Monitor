@@ -3041,15 +3041,33 @@ a {{color:{title_color};text-decoration:none}}
     margin: 0 !important;
 }}
 @keyframes footer-logo-glow {{
-    0%, 100% {{ box-shadow: 0 0 14px rgba(0,198,255,0.45), 0 0 30px rgba(0,198,255,0.18); border-color: rgba(0,198,255,0.75); }}
-    50%       {{ box-shadow: 0 0 26px rgba(0,198,255,0.75), 0 0 55px rgba(0,198,255,0.30); border-color: rgba(0,230,255,0.95); }}
+    0%, 100% {{ box-shadow: 0 0 12px rgba(0,198,255,0.7), 0 0 0 3px rgba(0,198,255,0.4); border-color: rgba(0,198,255,0.8); }}
+    50%       {{ box-shadow: 0 0 30px rgba(0,230,255,1), 0 0 60px rgba(0,198,255,0.45), 0 0 0 5px rgba(0,230,255,0.9); border-color: rgba(0,230,255,1); }}
+}}
+@keyframes footer-logo-glow-green {{
+    0%, 100% {{ box-shadow: 0 0 12px rgba(0,210,100,0.7), 0 0 0 3px rgba(0,210,100,0.4); border-color: rgba(0,210,100,0.8); }}
+    50%       {{ box-shadow: 0 0 30px rgba(0,255,130,1), 0 0 60px rgba(0,210,100,0.45), 0 0 0 5px rgba(0,255,130,0.9); border-color: rgba(0,255,130,1); }}
+}}
+.footer-logo-pulse {{
+    animation: footer-logo-glow 3s ease-in-out infinite !important;
+}}
+.footer-logo-pulse-green {{
+    animation: footer-logo-glow-green 3s ease-in-out infinite !important;
+    animation-delay: 0.5s !important;
+}}
+[data-stale] .footer-logo-pulse, [data-stale="true"] .footer-logo-pulse, .stale .footer-logo-pulse {{
+    animation: footer-logo-glow 3s ease-in-out infinite !important;
+}}
+[data-stale] .footer-logo-pulse-green, [data-stale="true"] .footer-logo-pulse-green, .stale .footer-logo-pulse-green {{
+    animation: footer-logo-glow-green 3s ease-in-out infinite !important;
+    animation-delay: 0.5s !important;
 }}
 </style>
 <div class="main-footer">
 <div class="footer-container">
 <div class="footer-col">
 <div class="school-logo-section">
-<div style="width:95px;height:95px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:inline-flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:footer-logo-glow 3s ease-in-out infinite !important;margin-bottom:10px">
+<div class="footer-logo-pulse" style="width:95px;height:95px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.8);display:inline-flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);margin-bottom:10px">
 <img src="{logo_src}" style="width:75px;height:75px;border-radius:50%;object-fit:contain" alt="HUPH Logo">
 </div>
 <div class="school-name-text">TRƯỜNG ĐẠI HỌC<br>Y TẾ CÔNG CỘNG</div>
@@ -3061,7 +3079,7 @@ a {{color:{title_color};text-decoration:none}}
 </div>
 <div class="footer-col medium">
 <div class="school-logo-section" style="margin-bottom:12px;text-align:center">
-<div style="width:95px;height:95px;border-radius:50%;border:2.5px solid rgba(0,198,255,0.75);display:inline-flex;align-items:center;justify-content:center;background:rgba(0,198,255,0.06);animation:footer-logo-glow 3s ease-in-out infinite !important;margin-bottom:10px">
+<div class="footer-logo-pulse-green" style="width:95px;height:95px;border-radius:50%;border:2.5px solid rgba(0,210,100,0.8);display:inline-flex;align-items:center;justify-content:center;background:rgba(0,210,100,0.06);margin-bottom:10px">
 <img src="https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg" style="width:75px;height:75px;border-radius:50%;object-fit:contain" alt="Logo BV PNT">
 </div>
 <div style="font-weight:bold;font-size:1.05rem;margin-bottom:4px">🏥 BỆNH VIỆN ĐA KHOA<br>PHẠM NGỌC THẠCH</div>
