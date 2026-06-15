@@ -10576,9 +10576,9 @@ def hien_thi_video_phan_tich_preview_fragment(v, key_suffix):
 
 
 def _interval_khu_vuc_phan_tich(video_path):
-    """Auto-refresh khi thread đang chạy, vừa xong, hoặc progress file vẫn là 'processing'.
-    Giữ fragment luôn refresh trong khi status=='processing' — stall detection trong content
-    function (_STALL_SECONDS=180) sẽ hiện cảnh báo nếu thread thực sự đã chết."""
+    """Auto-refresh khi thread đang chạy hoặc progress file vẫn là 'processing'.
+    Dừng refresh khi status=='success' — kết quả đã hiển thị, không cần tiếp.
+    Stall detection (_STALL_SECONDS=180) sẽ hiện cảnh báo nếu thread thực sự đã chết."""
     if not video_path:
         return None
     if _thread_dang_chay_thuc_su(video_path):
@@ -10587,13 +10587,14 @@ def _interval_khu_vuc_phan_tich(video_path):
     if not prog:
         return None
     status = prog.get("status")
-    if status in ("success", "processing"):
+    if status == "processing":
         return timedelta(seconds=3.0)
     return None
 
 
 def _interval_tien_trinh_background(video_path):
-    """Auto-refresh tiến trình khi thread đang chạy hoặc vừa xong."""
+    """Auto-refresh tiến trình khi thread đang chạy hoặc status còn 'processing'.
+    Dừng refresh khi status=='success' để tránh fragment warning spam."""
     if not video_path:
         return None
     if _thread_dang_chay_thuc_su(video_path):
@@ -10602,7 +10603,7 @@ def _interval_tien_trinh_background(video_path):
     if not prog:
         return None
     status = prog.get("status")
-    if status in ("success", "processing"):
+    if status == "processing":
         return timedelta(seconds=3.0)
     return None
 
