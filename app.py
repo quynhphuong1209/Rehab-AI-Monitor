@@ -8908,7 +8908,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                     # Dùng processed_count để % không đứng im khi skip_frame > 0
                     frames_to_process = max(1, (tong_frame + skip_step) // (skip_step + 1))
                     prog = min(processed_count / frames_to_process, 1.0) * 0.5
-                    callback(prog)
+                    callback(prog, frame_count=frame_count, total_frames=tong_frame)
                     if frame_count % 100 == 1 or frame_count == tong_frame:
                         print(f"[AI Process] Pass 1: Frame {frame_count}/{tong_frame} (Tiến độ: {prog*100:.1f}%)")
                 
@@ -9201,7 +9201,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 p_len = len(raw_pass1_data)
                 # Pass 2 chỉ đi tới 90%; phần sau dành cho chờ ghi ảnh/ZIP/đóng gói H.264.
                 prog = 0.5 + (min(processed_count / p_len, 1.0) * 0.40 if p_len > 0 else 0.40)
-                callback(prog)
+                callback(prog, frame_count=processed_count, total_frames=p_len)
                 if processed_count % 100 == 1 or processed_count == p_len:
                     print(f"[AI Process] Pass 2: Frame {processed_count}/{p_len} (Tiến độ: {prog*100:.1f}%)")
 
@@ -10628,6 +10628,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
     err_msg = ""
     status_msg = ""
     heartbeat = 0.0
+    _p1_entry = {}
 
     # Grace period khi vừa bấm Thử lại — hiển thị loading tối thiểu 8s dù thread fail nhanh
     _retry_key = f"_retry_start_{key_suffix}"
@@ -10655,6 +10656,15 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                 _prog_track["start_time"] = _file_start
             _prog_track["max_p"] = p_val
             st.session_state[_prog_track_key] = _prog_track
+            # Ghi nhan thoi diem bat dau Pass 1 de ETA chinh xac hon
+            _p1_entry_key = f"_p1_entry_{key_suffix}"
+            _p1_entry = st.session_state.get(_p1_entry_key, {})
+            if p_val >= 0.185 and not _p1_entry.get("set"):
+                st.session_state[_p1_entry_key] = {"t": time.time(), "p": p_val, "set": True, "start": _file_start}
+                _p1_entry = st.session_state[_p1_entry_key]
+            elif _p1_entry.get("start") != _file_start:
+                st.session_state.pop(_p1_entry_key, None)
+                _p1_entry = {}
         elif status == "error":
             if _just_retried:
                 # Thread thất bại rất nhanh (race condition) — giữ loading UI 8s sau khi bấm Thử lại
@@ -10680,11 +10690,21 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
     is_slow      = (is_processing and not is_stalled
                     and elapsed_live > _SLOW_SECONDS and p_val < 0.30 and p_val > 0.01)
 
-    # ETA ước tính
+    # ETA ước tính — dùng tốc độ Pass 1 thực tế (bỏ qua giai đoạn init 0-18% nhanh hơn)
     def _eta_str():
-        if p_val <= 0.01 or elapsed_live < 30:
+        if p_val < 0.20:
             return None
-        remaining = elapsed_live / p_val * (1 - p_val)
+        if _p1_entry.get("set"):
+            p1_elapsed = time.time() - _p1_entry["t"]
+            p1_done = max(p_val - _p1_entry["p"], 0.001)
+            if p1_elapsed < 30 or p1_done < 0.002:
+                return None
+            rate = p1_elapsed / p1_done
+            remaining = rate * (1.0 - p_val)
+        else:
+            if elapsed_live < 120:
+                return None
+            remaining = elapsed_live / p_val * (1 - p_val)
         if remaining > 7200:
             return f"~{remaining/3600:.1f} giờ"
         if remaining > 120:
@@ -11433,7 +11453,7 @@ def bat_dau_phan_tich_background(
             last_write_time = [0.0]
             last_prog_tenth = [-1]
 
-            def bg_progress_callback(p):
+            def bg_progress_callback(p, frame_count=None, total_frames=None):
                 now = time.time()
                 elap = now - start_t
                 # Chia tiến độ thành các vùng để video lớn không bị đứng ở 99/100% quá lâu:
@@ -11447,16 +11467,17 @@ def bat_dau_phan_tich_background(
                     prog_val = 0.50 + ((p - 0.5) / 0.42) * 0.40
                 else:
                     prog_val = min(p, 0.99)
-                
+
                 # Tạo status_msg sinh động để hiển thị chi tiết tiến trình
+                _fc = f" | Frame {frame_count}/{total_frames}" if (frame_count and total_frames) else ""
                 if p <= 0.5:
                     p1_pct = (p / 0.5) * 100
-                    status_msg = f"🔬 Bước 1/2: Trích xuất khung xương ({p1_pct:.0f}%)"
+                    status_msg = f"🔬 Bước 1/2: Trích xuất khung xương ({p1_pct:.0f}%){_fc}"
                 elif p <= 0.505:
                     status_msg = "🤖 Đang chuẩn bị model ML và khởi động Pass 2..."
                 elif p < 0.92:
                     p2_pct = ((p - 0.5) / 0.42) * 100
-                    status_msg = f"🎨 Bước 2/2: Vẽ nhãn REF/ML & ghi khung hình ({p2_pct:.0f}%)"
+                    status_msg = f"🎨 Bước 2/2: Vẽ nhãn REF/ML & ghi khung hình ({p2_pct:.0f}%){_fc}"
                 else:
                     status_msg = "📦 Đang lưu frames, đóng gói video và hoàn tất kết quả..."
                 
