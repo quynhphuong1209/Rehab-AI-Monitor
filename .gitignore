@@ -39,3 +39,4 @@ mediapipe*.whl
 tmp_hf_pkg/
 *.pyd
 .streamlit/secrets.toml
+.venv310/
