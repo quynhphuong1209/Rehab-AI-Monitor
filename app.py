@@ -10732,11 +10732,32 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
 
     with st.expander("📖 Luồng phân tích 4 bước (bấm để xem)", expanded=False):
         st.markdown("""
-        1. **MediaPipe Pose** — 33 landmarks (Heavy / Full / Lite ở sidebar)
-        2. **Đối chiếu YouTube (RULE)** — Codman: tay phải; Gậy: hai bên
-        3. **ML Classifier** — Random Forest trên tọa độ khớp + góc
-        4. **Đầu ra** — Video khung xương, ảnh frame, CSV, nhãn REF + ML
-        """)
+**Bước 1 — Trích xuất khung xương (Pass 1 · MediaPipe Pose)**
+- Đọc từng khung hình video, chạy **MediaPipe Pose** (Heavy / Full / Lite tuỳ cài đặt sidebar)
+- Trích xuất **33 điểm mốc** (landmarks) toàn thân mỗi khung hình, gồm vai, khuỷu, cổ tay, hông, gối, mắt cá
+- Tính **góc khớp vai** (shoulder angle) và **góc khớp khuỷu** (elbow angle) theo bài tập:
+  - *Codman / Dây kháng lực*: theo dõi tay phải (hoặc tay chủ đạo được nhận diện tự động)
+  - *Gậy pulley*: theo dõi đồng thời cả hai tay
+- Lưu kết quả dưới dạng **file checkpoint** sau Pass 1 → nếu Space tắt giữa chừng, tiếp tục từ Bước 2 mà không cần chạy lại
+
+**Bước 2 — Đối chiếu chuẩn YouTube (Pass 2 · RULE Labeling)**
+- Nạp **tư thế chuẩn** từ file tham chiếu (reference_codman / reference_gay / reference_day) trích xuất từ video YouTube chuyên gia
+- So sánh góc khớp từng khung hình với **ngưỡng sai số** theo giai đoạn phục hồi (G1 / G2 / G3)
+- Gắn nhãn **REF** cho từng khung: `✅ Đúng` · `🟡 Gần đúng` · `❌ Sai`
+- Vẽ **khung xương 33 điểm**, màu sắc theo nhãn, lên từng frame → tạo **video phân tích** đầu ra
+
+**Bước 3 — Phân loại ML (Random Forest Classifier)**
+- Sau khi thu thập đủ dữ liệu, huấn luyện (hoặc nạp) **Random Forest** trên đặc trưng: tọa độ landmarks + góc vai + góc khuỷu
+- Dự đoán nhãn **ML** độc lập với RULE cho từng khung hình
+- Hiển thị song song nhãn REF và nhãn ML → bác sĩ thấy mức độ nhất quán giữa luật cứng và học máy
+
+**Bước 4 — Đóng gói kết quả**
+- **Video** khung xương có nhãn REF + ML (`.mp4`)
+- **CSV** từng khung hình: góc vai, góc khuỷu, nhãn REF, nhãn ML, thời điểm (ms)
+- **JSON** toàn bộ frame data (tọa độ 33 điểm) để tái phân tích sau
+- **ZIP** ảnh từng frame (tuỳ chọn) · **Biểu đồ** ROM, độ chính xác, F1-score theo giai đoạn
+- Tự đồng bộ lên **HF Dataset** để lưu trữ lâu dài sau khi Space tắt
+""")
 
     if is_error:
         st.error(f"❌ Phân tích thất bại: {err_msg}")
