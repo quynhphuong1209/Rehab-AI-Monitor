@@ -5128,10 +5128,16 @@ def _inject_base_css_once():
         opacity: 1 !important;
         pointer-events: auto !important;
         visibility: visible !important;
+        transition: none !important;
+        animation: none !important;
     }
 
     /* 2. .stale CSS class (Streamlit internal React class) */
-    .stale, .stale * { opacity: 1 !important; }
+    .stale, .stale * {
+        opacity: 1 !important;
+        transition: none !important;
+        animation: none !important;
+    }
 
     /* 3. Override no-op tất cả keyframe animation Streamlit dùng khi running */
     @keyframes pulse      { 0%,100% { opacity: 1; } }
@@ -5162,7 +5168,18 @@ def _inject_base_css_once():
         border-color: inherit !important;
         box-shadow: none !important;
         opacity: 1 !important;
+        transition: none !important;
     }
+
+    /* 6. Fragment container & mọi con cháu không được fade khi fragment refresh */
+    [data-fragment-id], [data-fragment-id] * {
+        opacity: 1 !important;
+        transition: none !important;
+        animation-duration: 0s !important;
+    }
+
+    /* 7. Ngăn toàn bộ giao diện blink khi rerun */
+    .stApp > * { transition: none !important; }
 
     /* Khống chế kích thước ảnh frame để tránh giật/rung lắc giao diện khi load ảnh */
     div[data-testid="stImage"] {
@@ -5898,33 +5915,44 @@ _st_components.html("""<script>
 (function(){
     if(window.__stNoBlinkInstalled)return;
     window.__stNoBlinkInstalled=true;
-    var SEL='button,[role="tab"],[data-baseweb="button"],[data-baseweb="segmented-control"]';
-    function fix(el){
+    // Fix bất kỳ element nào bị giảm opacity hoặc có transition opacity
+    function fixEl(el){
         if(!el||el.nodeType!==1)return;
-        if((el.matches&&el.matches(SEL))||(el.closest&&el.closest(SEL))){
-            var op=parseFloat(el.style.opacity);
-            if(op>0&&op<0.99)el.style.setProperty('opacity','1','important');
+        var st=el.style;
+        if(!st)return;
+        var op=parseFloat(st.opacity);
+        if(op>0&&op<0.99){
+            st.setProperty('opacity','1','important');
+            st.setProperty('transition','none','important');
         }
-        var kids=el.querySelectorAll?el.querySelectorAll(SEL):[];
-        for(var i=0;i<kids.length;i++){
-            var kop=parseFloat(kids[i].style.opacity);
-            if(kop>0&&kop<0.99)kids[i].style.setProperty('opacity','1','important');
+        // Xóa transition opacity trên mọi element
+        if(st.transition&&st.transition.indexOf('opacity')>-1){
+            st.setProperty('transition','none','important');
         }
+    }
+    function fixTree(root){
+        if(!root||root.nodeType!==1)return;
+        fixEl(root);
+        var all=root.querySelectorAll?root.querySelectorAll('*'):[];
+        for(var i=0;i<all.length;i++)fixEl(all[i]);
     }
     var obs=new MutationObserver(function(muts){
         for(var i=0;i<muts.length;i++){
             var m=muts[i];
-            if(m.type==='attributes'&&m.attributeName==='style')fix(m.target);
-            else if(m.type==='childList')for(var j=0;j<m.addedNodes.length;j++)fix(m.addedNodes[j]);
+            if(m.type==='attributes'){
+                if(m.attributeName==='style'||m.attributeName==='class')fixEl(m.target);
+            } else if(m.type==='childList'){
+                for(var j=0;j<m.addedNodes.length;j++)fixTree(m.addedNodes[j]);
+            }
         }
     });
     function start(){
         if(!document.body){setTimeout(start,50);return;}
-        obs.observe(document.body,{attributes:true,attributeFilter:['style'],childList:true,subtree:true});
+        obs.observe(document.body,{attributes:true,attributeFilter:['style','class'],childList:true,subtree:true});
         try{
             var p=window.parent;
             if(p&&p.document&&p.document.body)
-                obs.observe(p.document.body,{attributes:true,attributeFilter:['style'],childList:true,subtree:true});
+                obs.observe(p.document.body,{attributes:true,attributeFilter:['style','class'],childList:true,subtree:true});
         }catch(e){}
     }
     start();
@@ -10303,16 +10331,15 @@ def hien_thi_video_goc_fragment(video_or_v, key_suffix, video_name=""):
     if show_key not in st.session_state:
         st.session_state[show_key] = True
     if st.session_state[show_key]:
-        play_path = _dam_bao_video_san_sang_play(video_path, prefer_raw=True, video_record=vrec)
-        if play_path and not _is_scratch_video_path(play_path):
+        if video_path:
+            # render_video tự xử lý mọi fallback: local → HF Cloud stream → cảnh báo
             st.caption(f"🎬 Video gốc BN — {video_name or ''}")
-            render_video(play_path, check_h264=False, prefer_raw=True)
+            render_video(video_path, check_h264=False, prefer_raw=True)
         else:
             st.markdown(f"""
             <div style="background:rgba(30,41,59,0.5);border:1px dashed rgba(148,163,184,0.3);border-radius:12px;padding:28px;text-align:center;">
                 <div style="font-size:2.2rem;margin-bottom:8px;">🎬</div>
-                <div style="color:#94a3b8;font-size:0.9rem;">Video đang tải từ Cloud...</div>
-                <div style="color:#64748b;font-size:0.8rem;margin-top:6px;">Bấm 🔄 trên trang để thử lại nếu không hiện</div>
+                <div style="color:#94a3b8;font-size:0.9rem;">Không tìm thấy video — tải lên lại để tiếp tục</div>
             </div>""", unsafe_allow_html=True)
         if st.button("🙈 Ẩn video gốc", key=f"btn_hide_src_video_{key_suffix}", use_container_width=True):
             st.session_state[show_key] = False
@@ -10477,6 +10504,11 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
     status_msg = ""
     heartbeat = 0.0
 
+    # Grace period khi vừa bấm Thử lại — hiển thị loading tối thiểu 8s dù thread fail nhanh
+    _retry_key = f"_retry_start_{key_suffix}"
+    _retry_start_ts = float(st.session_state.get(_retry_key, 0))
+    _just_retried = (time.time() - _retry_start_ts) < 8
+
     if prog_data:
         status = prog_data.get("status")
         if status == "processing":
@@ -10498,8 +10530,15 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                     f"Đã đạt {prog_data.get('progress', 0)*100:.0f}% — nhấn 'Thử lại' để chạy lại."
                 )
         elif status == "error":
-            is_error = True
-            err_msg = prog_data.get("error_msg", "Lỗi không xác định")
+            if _just_retried:
+                # Thread thất bại rất nhanh (race condition) — giữ loading UI 8s sau khi bấm Thử lại
+                is_processing = True
+                p_val = prog_data.get("progress", 0.02)
+                elapsed = time.time() - _retry_start_ts
+                status_msg = "🔄 Đang khởi động lại phân tích..."
+            else:
+                is_error = True
+                err_msg = prog_data.get("error_msg", "Lỗi không xác định")
         elif status == "success":
             if finalize_background_analysis_if_ready(video_path):
                 _lam_moi_giao_dien_sau_nut()
@@ -10546,6 +10585,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
     if is_error:
         st.error(f"❌ Phân tích thất bại: {err_msg}")
         if st.button("🔄 THỬ LẠI PHÂN TÍCH", width="stretch", type="primary", key=f"btn_retry_bg_{key_suffix}"):
+            st.session_state[_retry_key] = time.time()  # Grace period: ẩn lỗi 8s sau khi bấm
             clear_analysis_progress(video_path)
             _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
 
