@@ -2651,10 +2651,21 @@ def render_video(video_path, check_h264=True, prefer_raw=False):
                 if _try_render_cloud_video_stream(_h264_cloud, key_hint="hf_h264_fb", optimistic=False, prefer_raw=False):
                     return
             # Không tìm được video gốc ở đâu — hiện placeholder rõ ràng thay vì iframe hỏng
-            st.info(
-                "⏳ **Video gốc BN chưa sẵn sàng** — sẽ tự hiện sau khi phân tích hoàn tất "
-                "và file được đồng bộ lên Cloud."
-            )
+            try:
+                _vprog = read_progress(video_path)
+                _vstat = _vprog.get("status") if _vprog else None
+            except Exception:
+                _vstat = None
+            if _vstat == "error":
+                st.warning(
+                    "⚠️ **Video gốc BN không còn trên server** — "
+                    "vui lòng **tải lên lại video** để phân tích."
+                )
+            else:
+                st.info(
+                    "⏳ **Video gốc BN chưa sẵn sàng** — sẽ tự hiện sau khi phân tích hoàn tất "
+                    "và file được đồng bộ lên Cloud."
+                )
             return
 
     local_ready = None
@@ -10609,6 +10620,17 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                        start_time=start_t,
                        error_msg="⛔ Người dùng đã dừng phân tích. Nhấn 'Thử lại' để chạy lại với cài đặt khác.")
 
+    # Khi error + grace period hết: dừng auto-refresh bằng cách trigger full rerun 1 lần
+    # Tránh nút nhấp nháy do fragment run_every=3s tiếp tục sau khi thread đã chết
+    _err_stop_key = f"_error_stop_refresh_{key_suffix}"
+    if is_error and not _just_retried:
+        if st.session_state.get(_err_stop_key) != video_path:
+            st.session_state[_err_stop_key] = video_path
+            try:
+                st.rerun(scope="app")
+            except TypeError:
+                st.rerun()
+
     with st.expander("📖 Luồng phân tích 4 bước (bấm để xem)", expanded=False):
         st.markdown("""
         1. **MediaPipe Pose** — 33 landmarks (Heavy / Full / Lite ở sidebar)
@@ -10620,6 +10642,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
     if is_error:
         st.error(f"❌ Phân tích thất bại: {err_msg}")
         if st.button("🔄 THỬ LẠI PHÂN TÍCH", width="stretch", type="primary", key=f"btn_retry_bg_{key_suffix}"):
+            st.session_state.pop(_err_stop_key, None)  # Cho phép stop-refresh lần tiếp theo
             st.session_state[_retry_key] = time.time()  # Grace period: ẩn lỗi 8s sau khi bấm
             clear_analysis_progress(video_path)
             _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
@@ -11271,7 +11294,7 @@ def bat_dau_phan_tich_background(
                                 write_progress(progress_video_path, "processing", username=username, video_name=video_name, progress=0.18, elapsed=time.time()-start_t, start_time=start_t, status_msg="✅ Đã tải video H.264 tối ưu, đang chuẩn bị phân tích...")
 
                         if not dl_ok:
-                            write_progress(progress_video_path, "error", username=username, video_name=video_name, progress=0.0, elapsed=time.time()-start_t, start_time=start_t, error_msg="❌ Không thể tải video từ Cloud về server.")
+                            write_progress(progress_video_path, "error", username=username, video_name=video_name, progress=0.0, elapsed=time.time()-start_t, start_time=start_t, error_msg="❌ Video gốc không còn trên server và không có trên Cloud — vui lòng **tải lên lại video** để phân tích.")
                             return
                 except Exception as dl_err:
                     print(f"[BG Download] Lỗi tải video: {dl_err}")
