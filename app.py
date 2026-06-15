@@ -25,6 +25,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+import sys
+import os
+# Thêm thư mục utils/ vào path để import các module đã dời
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "utils"))
+
 import cv2
 import numpy as np
 import pandas as pd
