@@ -48,17 +48,11 @@ def get_checkpoint_path(video_path, processed_dir):
 
 
 def build_config_hash(video_path, model_type, min_confidence, exercise_name, skip_step, resize_width):
-    mtime = 0
-    try:
-        if video_path and os.path.exists(video_path):
-            mtime = int(os.path.getmtime(video_path))
-    except Exception:
-        pass
+    # KHÔNG dùng mtime — HF Space re-download video đổi mtime → checkpoint bị bỏ qua sai
     raw = "|".join(
         str(x)
         for x in (
             video_path or "",
-            mtime,
             model_type or "",
             min_confidence,
             exercise_name or "",
