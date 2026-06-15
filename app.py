@@ -10583,16 +10583,23 @@ def hien_thi_video_phan_tich_preview_fragment(v, key_suffix):
 
 
 def _interval_khu_vuc_phan_tich(video_path):
-    """Auto-refresh CHỈ khi thread Python thực sự đang chạy hoặc vừa xong.
-    Không dựa vào progress file cũ — tránh nhấp nháy khi tải lại trang."""
+    """Auto-refresh khi thread đang chạy, vừa xong, hoặc heartbeat còn mới.
+    Heartbeat fallback: thread có thể bị mất khỏi registry sau rerun nhưng vẫn đang chạy thực."""
     if not video_path:
         return None
     if _thread_dang_chay_thuc_su(video_path):
         return timedelta(seconds=3.0)
-    # Vừa xong (success) — cần một lần refresh để hiện kết quả
     prog = read_progress(video_path)
-    if prog and prog.get("status") == "success":
+    if not prog:
+        return None
+    status = prog.get("status")
+    if status == "success":
         return timedelta(seconds=3.0)
+    if status == "processing":
+        hb = float(prog.get("heartbeat") or prog.get("start_time") or 0)
+        # Thread còn ghi heartbeat gần đây → vẫn đang chạy dù không trong registry
+        if hb and (time.time() - hb) < JOB_ORPHAN_SECONDS:
+            return timedelta(seconds=3.0)
     return None
 
 
@@ -10603,8 +10610,15 @@ def _interval_tien_trinh_background(video_path):
     if _thread_dang_chay_thuc_su(video_path):
         return timedelta(seconds=3.0)
     prog = read_progress(video_path)
-    if prog and prog.get("status") == "success":
+    if not prog:
+        return None
+    status = prog.get("status")
+    if status == "success":
         return timedelta(seconds=3.0)
+    if status == "processing":
+        hb = float(prog.get("heartbeat") or prog.get("start_time") or 0)
+        if hb and (time.time() - hb) < JOB_ORPHAN_SECONDS:
+            return timedelta(seconds=3.0)
     return None
 
 
@@ -10641,10 +10655,13 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         status = prog_data.get("status")
         if status == "processing":
             thread_alive = _thread_dang_chay_thuc_su(video_path)
-            # Grace period 15s: ngay sau khi khởi động, thread chưa kịp đăng ký
             _start_t_raw = prog_data.get("start_time")
+            _hb_raw = prog_data.get("heartbeat")
+            # Coi thread còn sống nếu: in registry, hoặc heartbeat mới (< JOB_ORPHAN_SECONDS)
+            # Điều này xử lý trường hợp thread bị mất khỏi registry sau rerun nhưng vẫn đang chạy
+            hb_recent = bool(_hb_raw and (time.time() - float(_hb_raw)) < JOB_ORPHAN_SECONDS)
             just_started = bool(_start_t_raw and (time.time() - float(_start_t_raw)) < 15)
-            if thread_alive or just_started:
+            if thread_alive or just_started or hb_recent:
                 is_processing = True
                 p_val = prog_data.get("progress", 0.0)
                 elapsed = prog_data.get("elapsed", 0.0)
