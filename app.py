@@ -2640,14 +2640,22 @@ def render_video(video_path, check_h264=True, prefer_raw=False):
 
     # HF Space: stream Cloud khi chưa có bản local hợp lệ
     if _is_hf_runtime() and HF_TOKEN and HF_DATASET_ID:
-        if _try_render_cloud_video_stream(video_path, key_hint="hf_first", optimistic=True, prefer_raw=prefer_raw):
+        # prefer_raw: dùng optimistic=False để không render iframe hỏng khi file chưa có trên HF Dataset
+        _cloud_optimistic = not prefer_raw
+        if _try_render_cloud_video_stream(video_path, key_hint="hf_first", optimistic=_cloud_optimistic, prefer_raw=prefer_raw):
             return
         # Fallback Cloud: khi raw không trên HF Dataset, stream _f.mp4 (H.264) thay thế
         if prefer_raw:
             _h264_cloud = get_final_h264_path(_strip_to_original_upload(video_path))
             if _h264_cloud and _h264_cloud != video_path:
-                if _try_render_cloud_video_stream(_h264_cloud, key_hint="hf_h264_fb", optimistic=True, prefer_raw=False):
+                if _try_render_cloud_video_stream(_h264_cloud, key_hint="hf_h264_fb", optimistic=False, prefer_raw=False):
                     return
+            # Không tìm được video gốc ở đâu — hiện placeholder rõ ràng thay vì iframe hỏng
+            st.info(
+                "⏳ **Video gốc BN chưa sẵn sàng** — sẽ tự hiện sau khi phân tích hoàn tất "
+                "và file được đồng bộ lên Cloud."
+            )
+            return
 
     local_ready = None
     if prefer_raw:
