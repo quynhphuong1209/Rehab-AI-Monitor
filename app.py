@@ -11032,10 +11032,24 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                 st.rerun()  # Full rerun: tạo lại fragment với run_every=None
     else:
         # Nếu vừa bấm nút phân tích nhưng thread chưa ghi progress → hiện loading ngay
+        _triggered_at_key = f"_reanalyze_triggered_at_{key_suffix}"
         if st.session_state.get("reanalyze_triggered"):
-            st.info("⏳ Đang khởi động phân tích... vui lòng chờ vài giây.")
-            st.progress(0.02)
+            if not st.session_state.get(_triggered_at_key):
+                st.session_state[_triggered_at_key] = time.time()
+            _trigger_age = time.time() - float(st.session_state.get(_triggered_at_key, time.time()))
+            if _trigger_age < 20:
+                st.info(f"⏳ Đang khởi động phân tích... vui lòng chờ ({int(_trigger_age)}s)")
+                st.progress(min(0.02, _trigger_age / 20 * 0.05))
+            else:
+                # Đã chờ 20s mà không có progress → thread crash / không khởi động được
+                st.session_state.pop("reanalyze_triggered", None)
+                st.session_state.pop(_triggered_at_key, None)
+                st.warning("⚠️ Không thể khởi động phân tích sau 20 giây. Thử lại bên dưới.")
+                if st.button("🔄 Thử lại phân tích", width="stretch", type="primary", key=f"btn_retry_timeout_{key_suffix}"):
+                    clear_analysis_progress(video_path)
+                    _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
         else:
+            st.session_state.pop(_triggered_at_key, None)
             if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
                 result = khoi_dong_phan_tich_lai_video(v, auto_start=True)
                 if isinstance(result, dict) and result.get("started"):
