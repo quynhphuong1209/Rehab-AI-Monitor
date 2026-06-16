@@ -8690,14 +8690,11 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         if ref_file_found:
             dynamic_chuan = load_reference_poses(ref_file_found, ref_name)
             if callback: callback(0.01)
-            st.toast(
-                f"✅ Đã nạp {len(dynamic_chuan)} tư thế chuẩn ({ref_name}) — khớp theo góc, không theo giây",
-                icon="📊",
-            )
+            print(f"[AI Process] Da nap {len(dynamic_chuan)} tu the chuan ({ref_name})")
         else:
-            st.error(f"⚠️ Không tìm thấy file chuẩn: reference_{ref_name}.json")
+            print(f"[AI Process] Khong tim thay file chuan: reference_{ref_name}.json")
     except Exception as e:
-        st.error(f"⚠️ Lỗi nạp chuẩn: {e}")
+        print(f"[AI Process] Loi nap chuan: {e}")
 
     cap = cv2.VideoCapture(duong_dan_video)
     if not cap.isOpened():
@@ -8733,10 +8730,11 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
     ckpt_valid = (
         ckpt
         and ckpt.get("config_hash") == cfg_hash
-        and ckpt.get("analysis_input_path") == duong_dan_video
         and ckpt.get("phase") in ("pass1_done", "pass2")
         and ckpt.get("pass1_data")
     )
+    # Không check analysis_input_path — đường dẫn temp thay đổi mỗi lần HF Space restart
+    # (config_hash đã đảm bảo đúng video+tham số)
     if ckpt and not ckpt_valid:
         print(f"[Checkpoint] Bo qua checkpoint cu (cau hinh/video khac): {ckpt_path}")
         clear_checkpoint(ckpt_path)
@@ -8871,6 +8869,7 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
 
     # PASS 1: Trích xuất landmarks và tọa độ (bỏ qua nếu đã có checkpoint)
     if not resume_pass1:
+        gc.collect()  # giải phóng RAM trước khi MediaPipe bắt đầu xử lý
         try:
             while cap.isOpened():
                 ret, frame = cap.read()
@@ -8978,12 +8977,19 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                     gc.collect()
                 
         except Exception as e:
-            print("Lỗi trong Pass 1:", e)
+            import traceback as _tb
+            print(f"[AI Process] LOI PASS 1 tai frame {frame_count}: {e}\n{_tb.format_exc()}")
+            if callback:
+                try:
+                    callback(min(processed_count / max(tong_frame, 1), 0.499) * 0.5,
+                             frame_count=frame_count, total_frames=tong_frame)
+                except Exception:
+                    pass
 
         # Xác định bên tay tập chủ đạo dựa trên dữ liệu tích lũy
         if ref_name == "codman":
             active_side = "RIGHT"
-            st.toast("🦾 Bài tập Codman: Cố định bên tập chủ đạo là TAY PHẢI (RIGHT)", icon="🦾")
+            print("[AI Process] Bai tap Codman: co dinh TAY PHAI (RIGHT)")
         else:
             active_side = "RIGHT"
             if left_deviations and right_deviations:
