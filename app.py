@@ -17767,7 +17767,11 @@ def _chuan_hoa_widget_loc_video(key, options, default):
 
 def hien_thi_danh_sach_video_fragment(user_role):
     """Danh sách video/BN — tự refresh khi đang đồng bộ Cloud sau F5."""
-    interval = timedelta(seconds=5) if st.session_state.get("_bg_video_list_sync") else None
+    # Pre-check để set interval=5s ngay từ đầu nếu list trống — tránh tạo fragment với interval=None
+    # rồi không tự refresh khi _bg_video_list_sync được set bên trong fragment body.
+    _pre = load_danh_sach_video_nghien_cuu()
+    _syncing = st.session_state.get("_bg_video_list_sync") or (not _pre and bool(HF_TOKEN and HF_DATASET_ID))
+    interval = timedelta(seconds=5) if _syncing else None
 
     @st.fragment(run_every=interval)
     def _body():
@@ -17789,17 +17793,19 @@ def _noi_dung_danh_sach_video_fragment(user_role):
         video_list = load_danh_sach_video_nghien_cuu()
         if video_list:
             st.session_state.pop("_bg_video_list_sync", None)
-    
+
     if st.session_state.get('delete_success'):
         st.toast(f"🗑️ {st.session_state.delete_success}", icon="✅")
         st.session_state.delete_success = None
-        
+
     if not video_list:
-        st.info("📭 Hiện chưa có video nào được gửi đến.")
-        if st.button("🔄 Tải lại danh sách từ Cloud / khôi phục", key="btn_reload_video_list", use_container_width=True):
-            with st.spinner("Đang tải danh sách từ Cloud..."):
-                tai_lai_video_list_tu_cloud()
-            st.rerun()
+        # Khi đang sync Cloud thì không hiển thị "📭 chưa có video" — tránh hiện cả 2 message cùng lúc
+        if not st.session_state.get("_bg_video_list_sync"):
+            st.info("📭 Hiện chưa có video nào được gửi đến.")
+            if st.button("🔄 Tải lại danh sách từ Cloud / khôi phục", key="btn_reload_video_list", use_container_width=True):
+                with st.spinner("Đang tải danh sách từ Cloud..."):
+                    tai_lai_video_list_tu_cloud()
+                st.rerun()
     else:
         st.caption(
             f"📋 Hiển thị **{len(video_list)} video nghiên cứu** "
