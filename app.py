@@ -10571,7 +10571,10 @@ def _hien_thi_gan_lai_video_ui(v, video_path, key_suffix):
             ):
                 with st.spinner("Đang lưu video..."):
                     _saved = False
-                    _save_path = video_path
+                    # Normalize path (Windows backslash → absolute Linux path)
+                    _save_path = get_local_frame_path(video_path) or os.path.normpath(
+                        os.path.join(DATA_DIR, video_path.replace("\\", "/"))
+                    )
                     try:
                         # Ưu tiên: ghi đè lại đúng video_path cũ (không cần cập nhật DB)
                         _save_dir = os.path.dirname(_save_path)
@@ -10771,20 +10774,20 @@ def _interval_khu_vuc_phan_tich(video_path):
     """Auto-refresh khi thread đang chạy hoặc progress file vẫn là 'processing'.
     Dừng refresh khi status=='success' — kết quả đã hiển thị, không cần tiếp.
     Stall detection (_STALL_SECONDS=180) sẽ hiện cảnh báo nếu thread thực sự đã chết.
-    Dùng 3s thay vì 1s: 4 fragment cùng refresh 1s → server HF ngập request, nút bị bỏ qua."""
+    Dùng 2s thay vì 1s: 4 fragment cùng refresh 1s → server HF ngập request, nút bị bỏ qua."""
     if not video_path:
         return None
     if _thread_dang_chay_thuc_su(video_path):
-        return timedelta(seconds=3.0)
+        return timedelta(seconds=2.0)
     # reanalyze_triggered: vừa bấm nút, thread chưa kịp ghi progress → vẫn refresh để bắt kịp
     if st.session_state.get("reanalyze_triggered"):
-        return timedelta(seconds=2.0)
+        return timedelta(seconds=1.5)
     prog = read_progress(video_path)
     if not prog:
         return None
     status = prog.get("status")
     if status == "processing":
-        return timedelta(seconds=3.0)
+        return timedelta(seconds=2.0)
     return None
 
 
@@ -11090,6 +11093,13 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         else:
             eta = _eta_str()
             eta_str = f" | ETA {eta}" if eta else ""
+            st.markdown(
+                '<style>div[data-testid="stProgress"]>div>div>div{'
+                'animation:_ppulse 1.8s ease-in-out infinite}'
+                '@keyframes _ppulse{0%,100%{opacity:1}50%{opacity:.6}}'
+                '</style>',
+                unsafe_allow_html=True,
+            )
             st.progress(p_val)
             st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {_elapsed_str}{eta_str}{detail}")
         st.button(
@@ -11152,6 +11162,13 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         else:
             eta = _eta_str()
             eta_str = f" | ETA {eta}" if eta else ""
+            st.markdown(
+                '<style>div[data-testid="stProgress"]>div>div>div{'
+                'animation:_ppulse 1.8s ease-in-out infinite}'
+                '@keyframes _ppulse{0%,100%{opacity:1}50%{opacity:.6}}'
+                '</style>',
+                unsafe_allow_html=True,
+            )
             st.progress(p_val)
             st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {_elapsed_str}{eta_str}{detail}")
         c1, c2 = st.columns([2, 1])
