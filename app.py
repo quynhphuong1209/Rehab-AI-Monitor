@@ -3018,6 +3018,13 @@ def hien_thi_footer_chung():
     logo_src = _LOGO_HUPH_URI  # base64 inline - khong phu thuoc file/URL ben ngoai
 
     is_light = st.session_state.get('theme') == 'light'
+    footer_cache_key = f"footer_html_v2_{'light' if is_light else 'dark'}"
+    if st.session_state.get("_footer_html_cache_key") == footer_cache_key:
+        cached_footer = st.session_state.get("_footer_html_cache")
+        if cached_footer:
+            st.markdown(cached_footer, unsafe_allow_html=True)
+            return
+
     footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)" if is_light else "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
     footer_text = "#444" if is_light else "#ccc"
     border_color = "#0072ff" if is_light else "#00c6ff"
@@ -3119,7 +3126,7 @@ a {{color:{title_color};text-decoration:none}}
 <div class="footer-col medium">
 <div class="school-logo-section" style="margin-bottom:12px;text-align:center">
 <div class="footer-logo-pulse-green" style="width:95px;height:95px;border-radius:50%;border:2.5px solid rgba(0,210,100,0.8);display:inline-flex;align-items:center;justify-content:center;background:rgba(0,210,100,0.06);margin-bottom:10px">
-<img src="https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg" style="width:75px;height:75px;border-radius:50%;object-fit:contain" alt="Logo BV PNT">
+<img src="https://benhandientu.moh.gov.vn/storage/uploads/2025/11/bvpntlogo-1763704605.jpg" loading="lazy" decoding="async" style="width:75px;height:75px;border-radius:50%;object-fit:contain" alt="Logo BV PNT">
 </div>
 <div style="font-weight:bold;font-size:1.05rem;margin-bottom:4px">🏥 BỆNH VIỆN ĐA KHOA<br>PHẠM NGỌC THẠCH</div>
 <div style="font-size:0.9rem;opacity:0.85;margin-bottom:6px">Khoa Vật lý trị liệu - PHCN</div>
@@ -3147,6 +3154,8 @@ a {{color:{title_color};text-decoration:none}}
 </div>
 <div class="footer-bottom">Đề tài NCKH cấp Trường | <b>REHAB-AI-MONITOR</b> | © 2026 NHÓM NGHIÊN CỨU TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
 </div>"""
+    st.session_state["_footer_html_cache_key"] = footer_cache_key
+    st.session_state["_footer_html_cache"] = footer_html
     st.markdown(footer_html, unsafe_allow_html=True)
 
 # --- TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU SANG HUGGING FACE DATASET (MIỄN PHÍ - BỀN VỮNG) ---
@@ -17974,14 +17983,17 @@ def hien_thi_danh_sach_video_fragment(user_role):
 
     @st.fragment(run_every=interval)
     def _body():
-        _noi_dung_danh_sach_video_fragment(user_role)
+        _noi_dung_danh_sach_video_fragment(
+            user_role,
+            video_list_preloaded=None if st.session_state.get("_bg_video_list_sync") else _pre,
+        )
 
     _body()
 
 
-def _noi_dung_danh_sach_video_fragment(user_role):
+def _noi_dung_danh_sach_video_fragment(user_role, video_list_preloaded=None):
     evals_db = _evals_dedup_cached(_mtimes_video_eval()[1])
-    video_list = load_danh_sach_video_nghien_cuu()
+    video_list = video_list_preloaded if video_list_preloaded is not None else load_danh_sach_video_nghien_cuu()
 
     # Mở link bookmark / F5: đồng bộ Cloud nền nếu danh sách trống (không chặn UI)
     if not video_list and (HF_TOKEN and HF_DATASET_ID):
