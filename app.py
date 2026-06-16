@@ -11058,23 +11058,35 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             and status_msg
             and ("chuẩn bị model ML" in status_msg or ("Pass 2" in status_msg and "Frame 1/" in status_msg))
         )
-        _is_stuck = (p_val < 0.185 or p_val >= 0.92 or _p2_loading) and not (status_msg and "Frame" in status_msg)
+        _is_model_init = bool(status_msg and "Đang khởi tạo AI" in status_msg)
+        _is_stuck = (p_val < 0.20 or p_val >= 0.92 or _p2_loading or _is_model_init) and not (status_msg and "Frame" in status_msg)
         if _is_stuck:
-            if p_val < 0.185:
-                _stuck_label = "⏳ Đang tải model AI & khởi động Pass 1..."
-            elif _p2_loading:
-                _stuck_label = "🤖 Đang tải model phân loại ML & khởi động Pass 2..."
-            else:
-                _stuck_label = "📦 Đang mã hóa & đóng gói video..."
-            st.markdown(
+            _is_dl = bool(status_msg and "tải video" in status_msg)
+            _indet_css = (
                 '<style>@keyframes _indet{0%{left:-35%;width:35%}100%{left:100%;width:35%}}'
                 '.indet-w{position:relative;height:8px;background:rgba(0,100,255,.12);border-radius:4px;overflow:hidden;margin:4px 0 8px}'
                 '.indet-f{position:absolute;height:100%;background:linear-gradient(90deg,#1a6fff,#00c6ff);border-radius:4px;animation:_indet 1.3s linear infinite !important}'
                 '[data-stale] .indet-f,.stale .indet-f{animation:_indet 1.3s linear infinite !important}'
-                '</style><div class="indet-w"><div class="indet-f"></div></div>',
-                unsafe_allow_html=True
+                '</style><div class="indet-w"><div class="indet-f"></div></div>'
             )
-            st.info(f"🔄 {_stuck_label} | ⏱️ {_elapsed_str}{detail}")
+            if _is_dl:
+                import re as _re
+                _dl_m = _re.search(r'\((\d+)%\)', status_msg or "")
+                _dl_pct = int(_dl_m.group(1)) / 100 if _dl_m else 0
+                st.progress(max(_dl_pct, 0.01))
+                st.info(f"⬇️ Đang tải video từ Cloud... **{int(_dl_pct*100)}%** | ⏱️ {_elapsed_str} — {status_msg}")
+            elif _is_model_init:
+                st.markdown(_indet_css, unsafe_allow_html=True)
+                st.info(f"🔄 🤖 {status_msg} | ⏱️ {_elapsed_str}")
+            elif p_val < 0.20:
+                st.markdown(_indet_css, unsafe_allow_html=True)
+                st.info(f"🔄 ⏳ Đang chuẩn bị phân tích... | ⏱️ {_elapsed_str}{detail}")
+            elif _p2_loading:
+                st.markdown(_indet_css, unsafe_allow_html=True)
+                st.info(f"🔄 🤖 Đang tải model phân loại ML & khởi động Pass 2... | ⏱️ {_elapsed_str}{detail}")
+            else:
+                st.markdown(_indet_css, unsafe_allow_html=True)
+                st.info(f"🔄 📦 Đang mã hóa & đóng gói video... | ⏱️ {_elapsed_str}{detail}")
         else:
             eta = _eta_str()
             eta_str = f" | ETA {eta}" if eta else ""
@@ -11108,23 +11120,35 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             and status_msg
             and ("chuẩn bị model ML" in status_msg or ("Pass 2" in status_msg and "Frame 1/" in status_msg))
         )
-        _is_stuck = (p_val < 0.185 or p_val >= 0.92 or _p2_loading) and not (status_msg and "Frame" in status_msg)
+        _is_model_init = bool(status_msg and "Đang khởi tạo AI" in status_msg)
+        _is_stuck = (p_val < 0.20 or p_val >= 0.92 or _p2_loading or _is_model_init) and not (status_msg and "Frame" in status_msg)
         if _is_stuck:
-            if p_val < 0.185:
-                _stuck_label = "⏳ Đang tải model AI & khởi động Pass 1..."
-            elif _p2_loading:
-                _stuck_label = "🤖 Đang tải model phân loại ML & khởi động Pass 2..."
-            else:
-                _stuck_label = "📦 Đang mã hóa & đóng gói video..."
-            st.markdown(
+            _is_dl = bool(status_msg and "tải video" in status_msg)
+            _indet_css = (
                 '<style>@keyframes _indet{0%{left:-35%;width:35%}100%{left:100%;width:35%}}'
                 '.indet-w{position:relative;height:8px;background:rgba(0,100,255,.12);border-radius:4px;overflow:hidden;margin:4px 0 8px}'
                 '.indet-f{position:absolute;height:100%;background:linear-gradient(90deg,#1a6fff,#00c6ff);border-radius:4px;animation:_indet 1.3s linear infinite !important}'
                 '[data-stale] .indet-f,.stale .indet-f{animation:_indet 1.3s linear infinite !important}'
-                '</style><div class="indet-w"><div class="indet-f"></div></div>',
-                unsafe_allow_html=True
+                '</style><div class="indet-w"><div class="indet-f"></div></div>'
             )
-            st.info(f"🔄 {_stuck_label} | ⏱️ {_elapsed_str}{detail}")
+            if _is_dl:
+                import re as _re
+                _dl_m = _re.search(r'\((\d+)%\)', status_msg or "")
+                _dl_pct = int(_dl_m.group(1)) / 100 if _dl_m else 0
+                st.progress(max(_dl_pct, 0.01))
+                st.info(f"⬇️ Đang tải video từ Cloud... **{int(_dl_pct*100)}%** | ⏱️ {_elapsed_str} — {status_msg}")
+            elif _is_model_init:
+                st.markdown(_indet_css, unsafe_allow_html=True)
+                st.info(f"🔄 🤖 {status_msg} | ⏱️ {_elapsed_str}")
+            elif p_val < 0.20:
+                st.markdown(_indet_css, unsafe_allow_html=True)
+                st.info(f"🔄 ⏳ Đang chuẩn bị phân tích... | ⏱️ {_elapsed_str}{detail}")
+            elif _p2_loading:
+                st.markdown(_indet_css, unsafe_allow_html=True)
+                st.info(f"🔄 🤖 Đang tải model phân loại ML & khởi động Pass 2... | ⏱️ {_elapsed_str}{detail}")
+            else:
+                st.markdown(_indet_css, unsafe_allow_html=True)
+                st.info(f"🔄 📦 Đang mã hóa & đóng gói video... | ⏱️ {_elapsed_str}{detail}")
         else:
             eta = _eta_str()
             eta_str = f" | ETA {eta}" if eta else ""
