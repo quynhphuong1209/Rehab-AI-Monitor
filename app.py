@@ -19115,6 +19115,25 @@ def _render_main_tab_content(tab_titles, user_role):
 
 
 def main():
+    # Auto-reconnect: nếu sau 25s WebSocket vẫn chưa kết nối (màn đen), tự F5 lại
+    st.markdown(
+        """<script>
+(function(){
+  var _tid = setTimeout(function(){
+    var app = document.querySelector('[data-testid="stApp"]');
+    var main = document.querySelector('[data-testid="stMain"]') ||
+               document.querySelector('.main .block-container') ||
+               document.querySelector('section[data-testid="stSidebar"]');
+    if (app && !main) { location.reload(); }
+  }, 25000);
+  document.addEventListener('stConnectionStatus', function(e){
+    if (e && e.detail && e.detail.status === 'connected') clearTimeout(_tid);
+  });
+})();
+</script>""",
+        unsafe_allow_html=True,
+    )
+
     thuc_hien_khoi_tao_he_thong_mot_lan()
 
     # Kiểm tra trạng thái đăng nhập ngay đầu hàm main
