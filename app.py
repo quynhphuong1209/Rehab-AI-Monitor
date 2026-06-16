@@ -64,6 +64,7 @@ from io import BytesIO
 import subprocess
 import hashlib
 import gc
+import unicodedata
 
 try:
     from pose_classifier_utils import (
@@ -4872,12 +4873,59 @@ def load_users():
 
 def save_users(users):
     save_data(USER_DATA_FILE, users)
+    try:
+        _get_cached_users_dict.clear()
+    except Exception:
+        pass
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def verify_password(password, hashed):
     return hash_password(password) == hashed
+
+def _normalize_auth_text(value):
+    """Chuẩn hóa chuỗi đăng nhập để tránh lệch dấu Unicode/khoảng trắng sau F5 hoặc copy-paste."""
+    if value is None:
+        return ""
+    text = unicodedata.normalize("NFC", str(value))
+    return " ".join(text.strip().split())
+
+
+def _auth_lookup_key(users, username):
+    """Tìm username theo cách mềm hơn nhưng vẫn trả về key thật trong users.json."""
+    wanted = _normalize_auth_text(username)
+    if not wanted:
+        return None
+    if wanted in users:
+        return wanted
+    wanted_fold = wanted.casefold()
+    for key, record in users.items():
+        if _normalize_auth_text(key).casefold() == wanted_fold:
+            return key
+        full_name = _normalize_auth_text((record or {}).get("full_name"))
+        if full_name and full_name.casefold() == wanted_fold:
+            return key
+    return None
+
+
+def _roles_match(stored_role, selected_role):
+    return _normalize_auth_text(stored_role or "Bệnh nhân") == _normalize_auth_text(selected_role or "Bệnh nhân")
+
+
+def _verify_auth_password(username_key, password, user_record):
+    stored_hash = (user_record or {}).get("password", "")
+    return verify_password(password, stored_hash)
+
+
+def _query_param_text(name):
+    try:
+        value = st.query_params.get(name, "")
+    except Exception:
+        value = ""
+    if isinstance(value, (list, tuple)):
+        value = value[0] if value else ""
+    return _normalize_auth_text(value)
 
 def don_dep_file_tam():
     """Dọn dẹp file tạm cũ trong /tmp để ngăn OOM khi chạy nhiều phân tích liên tiếp"""
@@ -5024,17 +5072,17 @@ if 'logged_in' not in st.session_state:
 if not st.session_state.logged_in:
     if "logged_in_user" in st.query_params and "logged_in_role" in st.query_params:
         try:
-            import urllib.parse
-            logged_user = urllib.parse.unquote_plus(str(st.query_params["logged_in_user"])).strip()
-            logged_role = urllib.parse.unquote_plus(str(st.query_params["logged_in_role"])).strip()
+            logged_user = _query_param_text("logged_in_user")
+            logged_role = _query_param_text("logged_in_role")
             users = load_users()
-            stored_role = users[logged_user].get('role', 'Bệnh nhân') if logged_user in users else None
-            if logged_user in users and stored_role == logged_role:
+            user_key = _auth_lookup_key(users, logged_user)
+            stored_role = users[user_key].get('role', 'Bệnh nhân') if user_key else None
+            if user_key and _roles_match(stored_role, logged_role):
                 st.session_state.logged_in = True
                 st.session_state.user_info = {
-                    "username": logged_user,
-                    "full_name": users[logged_user].get('full_name', logged_user),
-                    "email": users[logged_user].get('email'),
+                    "username": user_key,
+                    "full_name": users[user_key].get('full_name', user_key),
+                    "email": users[user_key].get('email'),
                     "role": stored_role,
                 }
                 # Luôn về TRANG CHỦ khi mở link — tránh tab phân tích trống, thiếu danh sách BN
@@ -5043,9 +5091,6 @@ if not st.session_state.logged_in:
                 st.session_state._need_home_sync = True
                 for _fk in ("filter_video_patient", "filter_video_status", "vid_list_page", "_vid_filter_heal_rerun"):
                     st.session_state.pop(_fk, None)
-                
-                # Gọi rerun để cập nhật toàn bộ trạng thái và render sạch sẽ
-                st.rerun()
         except Exception:
             pass
 
@@ -10340,8 +10385,12 @@ def hien_thi_tien_trinh_background(video_path):
         </div>
         """, unsafe_allow_html=True)
         
-        st.progress(p_val)
-        st.info(f"🔄 Tiến độ tổng thể: {p_val*100:.1f}%")
+        _hien_thi_progress_hai_pass(
+            prog,
+            status_msg=prog.get("status_msg", ""),
+            elapsed_text=f"⏱️ {elapsed:.1f}s",
+            show_total=True,
+        )
         
         # Cho phép hủy và xem kết quả cũ nếu có kết quả cũ
         try:
@@ -10421,8 +10470,12 @@ def _noi_dung_tien_trinh_background_small(video_path):
         </style>
         """, unsafe_allow_html=True)
         
-        st.progress(p_val)
-        st.info(f"🔄 Đang xử lý... {p_val*100:.1f}%")
+        _hien_thi_progress_hai_pass(
+            prog,
+            status_msg=prog.get("status_msg", ""),
+            elapsed_text=f"⏱️ {elapsed:.1f}s",
+            show_total=True,
+        )
         
         # Mách nước tối ưu hóa tốc độ
         st.markdown("""
@@ -10710,6 +10763,70 @@ def _tim_duong_dan_video_phan_tich_hien_tai(v, video_path, prog_data=None):
     return None
 
 
+def _pass_progress_from_total(progress_value, status_msg="", status="processing"):
+    """Tách progress tổng thành Pass 1/Pass 2 để UI luôn thấy cả hai pass lên 100%."""
+    try:
+        p = min(max(float(progress_value or 0.0), 0.0), 1.0)
+    except (TypeError, ValueError):
+        p = 0.0
+    if status == "success" or p >= 0.995:
+        return 1.0, 1.0
+
+    p1 = 0.0
+    p2 = 0.0
+    if p >= 0.45:
+        p1 = 1.0
+    elif p > 0.18:
+        p1 = min(max((p - 0.18) / 0.27, 0.0), 1.0)
+
+    if p >= 0.90:
+        p2 = 1.0
+    elif p > 0.50:
+        p2 = min(max((p - 0.50) / 0.40, 0.0), 1.0)
+
+    import re as _re_pass
+    msg = status_msg or ""
+    m1 = _re_pass.search(r"Bước 1/2.*?\((\d+(?:\.\d+)?)%\)", msg)
+    m2 = _re_pass.search(r"Bước 2/2.*?\((\d+(?:\.\d+)?)%\)", msg)
+    if m1:
+        p1 = max(p1, min(float(m1.group(1)) / 100.0, 1.0))
+    if m2:
+        p1 = 1.0
+        p2 = max(p2, min(float(m2.group(1)) / 100.0, 1.0))
+    return p1, p2
+
+
+def _hien_thi_progress_hai_pass(prog_data, status_msg="", elapsed_text="", show_total=True):
+    """Render tổng tiến trình + hai pass 100% rõ ràng cho vùng phân tích."""
+    prog_data = prog_data or {}
+    status = prog_data.get("status", "processing")
+    try:
+        p_val = min(max(float(prog_data.get("progress", 0.0)), 0.0), 1.0)
+    except (TypeError, ValueError):
+        p_val = 0.0
+    msg = status_msg or prog_data.get("status_msg", "")
+    p1, p2 = _pass_progress_from_total(p_val, msg, status=status)
+
+    if show_total:
+        try:
+            st.progress(p_val, text=f"Tiến độ tổng thể: {p_val * 100:.1f}%")
+        except TypeError:
+            st.progress(p_val)
+            st.caption(f"Tiến độ tổng thể: **{p_val * 100:.1f}%**")
+    try:
+        st.progress(p1, text=f"Pass 1 - Trích xuất khung xương: {p1 * 100:.1f}%")
+        st.progress(p2, text=f"Pass 2 - Vẽ nhãn, video và frames: {p2 * 100:.1f}%")
+    except TypeError:
+        st.progress(p1)
+        st.caption(f"Pass 1 - Trích xuất khung xương: **{p1 * 100:.1f}%**")
+        st.progress(p2)
+        st.caption(f"Pass 2 - Vẽ nhãn, video và frames: **{p2 * 100:.1f}%**")
+    detail = f" | {msg}" if msg else ""
+    elapsed = f" | {elapsed_text}" if elapsed_text else ""
+    st.caption(f"🔄 Tổng **{p_val * 100:.1f}%** · Pass 1 **{p1 * 100:.1f}%** · Pass 2 **{p2 * 100:.1f}%**{elapsed}{detail}")
+    return p1, p2
+
+
 def _hien_thi_tien_do_phan_tich_compact(prog_data, v, key_suffix):
     """Thanh tiến độ gọn cho cột video phân tích."""
     if not prog_data:
@@ -10738,9 +10855,13 @@ def _hien_thi_tien_do_phan_tich_compact(prog_data, v, key_suffix):
         status_msg = prog_data.get("status_msg", "")
         start_t = prog_data.get("start_time")
         elapsed_live = (time.time() - float(start_t)) if start_t else prog_data.get("elapsed", 0.0)
-        st.progress(p_val)
         detail = f" — {status_msg}" if status_msg else ""
-        st.caption(f"🔄 **{p_val * 100:.1f}%** | ⏱️ {elapsed_live:.1f}s{detail}")
+        _hien_thi_progress_hai_pass(
+            prog_data,
+            status_msg=status_msg,
+            elapsed_text=f"⏱️ {elapsed_live:.1f}s",
+            show_total=True,
+        )
         return True, False
     return False, False
 
@@ -11025,19 +11146,12 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             ".\n\n💡 **Gợi ý:** Đổi model sang **MediaPipe Lite** ở sidebar để tăng tốc ~5×, "
             "hoặc nhấn **Dừng** để huỷ và chạy lại."
         )
-        # Thanh tổng thể
-        st.progress(p_val)
-        # Thanh Pass 1 riêng (di chuyển nhanh hơn ~2.7× so với thanh tổng)
-        _fc_match = _re.search(r'Frame (\d+)/(\d+)', status_msg)
-        if _fc_match and p_val < 0.46:
-            _fc_cur = int(_fc_match.group(1)); _fc_tot = int(_fc_match.group(2))
-            _p1_frac = min(_fc_cur / _fc_tot, 1.0) if _fc_tot > 0 else 0.0
-            _fps_est = _fc_cur / elapsed_live if elapsed_live > 5 else 0
-            st.progress(_p1_frac)
-            st.caption(f"📊 Pass 1: **{_p1_frac*100:.1f}%** | Frame {_fc_cur:,}/{_fc_tot:,} | ⚡ {_fps_est:.1f} fps | ⏱️ {_elapsed_str}")
-        else:
-            detail = f" — {status_msg}" if status_msg else ""
-            st.caption(f"🔄 {p_val*100:.1f}% | ⏱️ {_elapsed_str}{detail}")
+        _hien_thi_progress_hai_pass(
+            prog_data,
+            status_msg=status_msg,
+            elapsed_text=f"⏱️ {_elapsed_str}",
+            show_total=True,
+        )
         c1, c2, c3 = st.columns(3)
         with c1:
             if st.button("⛔ Dừng phân tích", width="stretch", type="primary", key=f"btn_stop_slow_{key_suffix}"):
@@ -11090,6 +11204,12 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             else:
                 st.markdown(_indet_css, unsafe_allow_html=True)
                 st.info(f"🔄 📦 Đang mã hóa & đóng gói video... | ⏱️ {_elapsed_str}{detail}")
+            _hien_thi_progress_hai_pass(
+                prog_data,
+                status_msg=status_msg,
+                elapsed_text=f"⏱️ {_elapsed_str}",
+                show_total=False,
+            )
         else:
             eta = _eta_str()
             eta_str = f" | ETA {eta}" if eta else ""
@@ -11100,7 +11220,12 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                 '</style>',
                 unsafe_allow_html=True,
             )
-            st.progress(p_val)
+            _hien_thi_progress_hai_pass(
+                prog_data,
+                status_msg=status_msg,
+                elapsed_text=f"⏱️ {_elapsed_str}{eta_str}",
+                show_total=True,
+            )
             st.info(f"🔄 Đang xử lý... **{p_val*100:.1f}%** | ⏱️ {_elapsed_str}{eta_str}{detail}")
         st.button(
             "🚀 ĐANG TRÍCH XUẤT KHUNG XƯƠNG...",
@@ -17160,9 +17285,10 @@ def hien_thi_dang_nhap_dang_ky():
                 with c1:
                     if st.button("Đặt lại mật khẩu", width="stretch", type="primary"):
                         users = load_users()
-                        if u_reset in users and users[u_reset].get('email') == e_reset:
+                        u_key = _auth_lookup_key(users, u_reset)
+                        if u_key and _normalize_auth_text(users[u_key].get('email')) == _normalize_auth_text(e_reset):
                             if n_pass == c_pass and len(n_pass) >= 6:
-                                users[u_reset]['password'] = hash_password(n_pass)
+                                users[u_key]['password'] = hash_password(n_pass)
                                 save_users(users)
                                 st.success("✅ Thành công! Hãy đăng nhập lại.")
                                 st.session_state.forgot_password_mode = False
@@ -17198,10 +17324,11 @@ def hien_thi_dang_nhap_dang_ky():
                             with c1:
                                 if st.form_submit_button("💾 CẬP NHẬT", width="stretch"):
                                     users = load_users()
-                                    if cp_u in users and verify_password(cp_old, users[cp_u]['password']):
-                                        if users[cp_u].get('role') == login_role:
+                                    cp_key = _auth_lookup_key(users, cp_u)
+                                    if cp_key and _verify_auth_password(cp_key, cp_old, users[cp_key]):
+                                        if _roles_match(users[cp_key].get('role'), login_role):
                                             if cp_new == cp_conf and len(cp_new) >= 6:
-                                                users[cp_u]['password'] = hash_password(cp_new)
+                                                users[cp_key]['password'] = hash_password(cp_new)
                                                 save_users(users)
                                                 st.success("✅ Thành công! Hãy đăng nhập lại.")
                                                 st.session_state.change_password_mode = False
@@ -17220,13 +17347,17 @@ def hien_thi_dang_nhap_dang_ky():
                         
                         if st.button("🚀 ĐĂNG NHẬP NGAY", width="stretch", type="primary"):
                             users = load_users()
-                            if u in users and verify_password(p, users[u]['password']):
-                                if users[u].get('role', 'Bệnh nhân') == login_role:
-                                    _hoan_tat_dang_nhap(u, users[u])
+                            u_key = _auth_lookup_key(users, u)
+                            if u_key and _verify_auth_password(u_key, p, users[u_key]):
+                                if _roles_match(users[u_key].get('role', 'Bệnh nhân'), login_role):
+                                    _hoan_tat_dang_nhap(u_key, users[u_key])
                                     _rerun_toan_bo_app()
                                 else:
                                     st.error(f"❌ Tài khoản này không có quyền truy cập với vai trò {login_role}")
-                            else: st.error("❌ Tài khoản hoặc mật khẩu không đúng")
+                            elif u_key and users[u_key].get('role') == "Bệnh nhân":
+                                st.error("❌ Mật khẩu bệnh nhân chưa đúng với dữ liệu trong database/users.json.")
+                            else:
+                                st.error("❌ Tài khoản hoặc mật khẩu không đúng")
                         
                         # Chỉ hiện nút Đổi mật khẩu cho Bác sĩ và NCV
                         if login_role in ["Bác sĩ / KTV PHCN", "Nghiên cứu viên"]:
@@ -17250,18 +17381,20 @@ def hien_thi_dang_nhap_dang_ky():
                     reg_role = "Bệnh nhân" # Gán mặc định không cần hiển thị
                     
                     if st.button("🚀 ĐĂNG KÝ TRUY CẬP", width="stretch", type="primary"):
+                        reg_u_clean = _normalize_auth_text(reg_u)
+                        reg_e_clean = _normalize_auth_text(reg_e)
                         if not reg_u or not reg_e or len(reg_p) < 6:
                             st.warning("⚠️ Vui lòng điền đầy đủ các thông tin bắt buộc (*)")
                         elif reg_p != reg_cp:
                             st.error("❌ Mật khẩu xác nhận không khớp")
                         else:
                             users = load_users()
-                            if reg_u in users: st.error("❌ Tên đăng nhập này đã tồn tại")
+                            if _auth_lookup_key(users, reg_u_clean): st.error("❌ Tên đăng nhập này đã tồn tại")
                             else:
-                                users[reg_u] = {
+                                users[reg_u_clean] = {
                                     "password": hash_password(reg_p),
-                                    "email": reg_e,
-                                    "full_name": reg_name,
+                                    "email": reg_e_clean,
+                                    "full_name": _normalize_auth_text(reg_name) or reg_u_clean,
                                     "role": reg_role,
                                     "created_at": get_vn_now().isoformat()
                                 }
@@ -19115,16 +19248,25 @@ def _render_main_tab_content(tab_titles, user_role):
 
 
 def main():
-    # Auto-reconnect: nếu sau 25s WebSocket vẫn chưa kết nối (màn đen), tự F5 lại
+    # Auto-reconnect: nếu sau 25s WebSocket vẫn chưa kết nối hoặc app render rỗng, tự F5 lại một lần.
     st.markdown(
         """<script>
 (function(){
   var _tid = setTimeout(function(){
+    var reloadKey = 'rehab_ai_blank_reload_ts';
+    var lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
+    if (Date.now() - lastReload < 45000) return;
     var app = document.querySelector('[data-testid="stApp"]');
     var main = document.querySelector('[data-testid="stMain"]') ||
                document.querySelector('.main .block-container') ||
                document.querySelector('section[data-testid="stSidebar"]');
-    if (app && !main) { location.reload(); }
+    var block = document.querySelector('[data-testid="stAppViewBlockContainer"]') ||
+                document.querySelector('.main .block-container');
+    var hasContent = block && block.innerText && block.innerText.trim().length > 20;
+    if (app && (!main || !hasContent)) {
+      sessionStorage.setItem(reloadKey, String(Date.now()));
+      location.reload();
+    }
   }, 25000);
   document.addEventListener('stConnectionStatus', function(e){
     if (e && e.detail && e.detail.status === 'connected') clearTimeout(_tid);
