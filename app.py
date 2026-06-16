@@ -8936,6 +8936,9 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                 ret, frame = cap.read()
                 if not ret or (MAX_FRAMES and processed_count >= MAX_FRAMES): break
 
+                # Nhả CPU / GIL để luồng chính Streamlit phản hồi kịp nút bấm
+                time.sleep(0.001)
+
                 frame_count += 1
                 if skip_step > 0 and frame_count % (skip_step + 1) != 1:
                     continue
@@ -9196,6 +9199,9 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         while cap.isOpened() and processed_count < len(raw_pass1_data):
             ret, frame = cap.read()
             if not ret: break
+            
+            # Nhả CPU / GIL để luồng chính Streamlit phản hồi kịp nút bấm
+            time.sleep(0.001)
             
             frame_count += 1
             if skip_step > 0 and frame_count % (skip_step + 1) != 1:
@@ -11017,7 +11023,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         with c1:
             if st.button("⛔ Dừng phân tích", width="stretch", type="primary", key=f"btn_stop_slow_{key_suffix}"):
                 _dung_phan_tich()
-                st.rerun()  # Full rerun: tạo lại fragment với run_every=None
+                _lam_moi_giao_dien_sau_nut()
         with c2:
             _sel_slow_label = st.session_state.get("ncv_model_type", "MediaPipe Heavy").replace("MediaPipe ", "")
             if st.button(f"⚡ Chạy lại với {_sel_slow_label}", width="stretch", type="secondary", key=f"btn_restart_slow_{key_suffix}"):
@@ -11069,7 +11075,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         with c1:
             if st.button("⛔ Dừng phân tích", width="stretch", type="secondary", key=f"btn_stop_metrics_{key_suffix}"):
                 _dung_phan_tich()
-                st.rerun()  # Full rerun: tạo lại fragment với run_every=None
+                _lam_moi_giao_dien_sau_nut()
         with c2:
             if st.button("⬅️ Quay lại xem kết quả cũ đã lưu", width="stretch", type="secondary", key=f"btn_back_old_{key_suffix}"):
                 _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
@@ -11120,7 +11126,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         with c2:
             if st.button("⛔ Dừng", width="stretch", type="secondary", key=f"btn_stop_plain_{key_suffix}"):
                 _dung_phan_tich()
-                st.rerun()  # Full rerun: tạo lại fragment với run_every=None
+                _lam_moi_giao_dien_sau_nut()
     else:
         # Nếu vừa bấm nút phân tích nhưng thread chưa ghi progress → hiện loading ngay
         _triggered_at_key = f"_reanalyze_triggered_at_{key_suffix}"
@@ -17760,8 +17766,8 @@ def _chuan_hoa_widget_loc_video(key, options, default):
 
 
 def hien_thi_danh_sach_video_fragment(user_role):
-    """Danh sách video/BN — tự refresh mỗi 2s khi đang đồng bộ Cloud sau F5."""
-    interval = timedelta(seconds=2) if st.session_state.get("_bg_video_list_sync") else None
+    """Danh sách video/BN — tự refresh khi đang đồng bộ Cloud sau F5."""
+    interval = timedelta(seconds=5) if st.session_state.get("_bg_video_list_sync") else None
 
     @st.fragment(run_every=interval)
     def _body():
