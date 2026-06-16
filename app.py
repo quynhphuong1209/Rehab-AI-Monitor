@@ -11159,24 +11159,30 @@ def download_file_with_progress(file_path, write_progress_fn, start_t, username,
     """Tải file từ Hugging Face Dataset có cập nhật tiến độ (progress bar) từng chunk"""
     if not file_path:
         return False
-        
+
+    # Chuẩn hóa path: video_list.json có thể lưu backslash Windows ('.\\patient_uploads\\...')
+    # Trên Linux (HF Spaces), os.path.dirname không nhận '\\' → trả về '' → makedirs lỗi.
+    file_path = get_local_frame_path(file_path) or os.path.normpath(
+        os.path.join(DATA_DIR, file_path.replace("\\", "/"))
+    )
+
     # Xóa file cũ lỗi nếu có
     if os.path.exists(file_path):
         try: os.remove(file_path)
         except: pass
-        
+
     if not (HF_TOKEN and HF_DATASET_ID):
         return False
-        
+
     try:
         import requests
         import urllib.parse
         rel_path = get_clean_rel_path(file_path)
         rel_path_encoded = urllib.parse.quote(rel_path, safe='/')
         url = f"https://huggingface.co/datasets/{HF_DATASET_ID}/resolve/main/{rel_path_encoded}?token={HF_TOKEN}"
-        
-        # Đảm bảo thư mục cha tồn tại
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        # Đảm bảo thư mục cha tồn tại (fallback DATA_DIR nếu dirname trả về '')
+        os.makedirs(os.path.dirname(file_path) or DATA_DIR, exist_ok=True)
         
         # Gọi requests stream
         response = requests.get(url, stream=True, timeout=30)
@@ -13700,7 +13706,10 @@ def _hien_thi_tab_phan_tich_noi_dung(key_suffix="", stats_ext=None, df_ext=None,
             ):
                 _prog_tmp = read_progress(v.get("video_path"))
                 _dang_chay = bool(_prog_tmp and _prog_tmp.get("status") == "processing")
-                loaded, v = _nap_bieu_do_nhanh_tu_cloud(v, giu_phan_tich_moi=_dang_chay)
+                # Giữ reanalyze_triggered nếu vừa bấm nút — tránh race condition khi thread
+                # chưa kịp ghi progress file lần đầu mà _dang_chay vẫn còn False
+                _giu = _dang_chay or bool(st.session_state.get("reanalyze_triggered"))
+                loaded, v = _nap_bieu_do_nhanh_tu_cloud(v, giu_phan_tich_moi=_giu)
                 if loaded:
                     st.session_state.current_eval_video = v
 
