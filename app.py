@@ -3696,14 +3696,20 @@ def _dong_bo_video_list_day_du_tu_hf(force=False):
     """Làm mới video_list.json từ HF — lấy df_path / metrics đầy đủ cho 8 video đã phân tích."""
     if not (HF_TOKEN and HF_DATASET_ID):
         return False
-    if not force and st.session_state.get("_video_list_full_sync"):
-        return True
+    try:
+        if not force and st.session_state.get("_video_list_full_sync"):
+            return True
+    except Exception:
+        pass
     dst = os.path.join(DB_DIR, "video_list.json")
     local_ok = os.path.exists(dst) and os.path.getsize(dst) > 2
     if force or not local_ok:
         dong_bo_json_cau_hinh_tu_hf(force_files=frozenset({"video_list.json"}))
         _xoa_cache_sau_dong_bo_json(["video_list.json"])
-    st.session_state["_video_list_full_sync"] = True
+    try:
+        st.session_state["_video_list_full_sync"] = True
+    except Exception:
+        pass
     return True
 
 
@@ -9005,7 +9011,10 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
                     active_side = "LEFT"
                 else:
                     active_side = "RIGHT"
-            st.toast(f"🤖 AI phát hiện bên tập chủ đạo: {'TAY TRÁI (LEFT)' if active_side == 'LEFT' else 'TAY PHẢI (RIGHT)'}", icon="🦾")
+            try:
+                st.toast(f"🤖 AI phát hiện bên tập chủ đạo: {'TAY TRÁI (LEFT)' if active_side == 'LEFT' else 'TAY PHẢI (RIGHT)'}", icon="🦾")
+            except Exception:
+                pass
 
         for item in raw_pass1_data:
             if active_side == "LEFT":
@@ -9021,8 +9030,11 @@ def xu_ly_video_day_du(duong_dan_video, chuan, callback=None, model_type="MediaP
         if not segment_bounds:
             segment_bounds = segment_frames(raw_pass1_data)
 
-    st.session_state.segment_bounds = segment_bounds
-    st.session_state.last_processed_video_for_bounds = out_path
+    try:
+        st.session_state.segment_bounds = segment_bounds
+        st.session_state.last_processed_video_for_bounds = out_path
+    except Exception:
+        pass
     n0, n1, n2, n3 = segment_bounds
 
     if resume_pass1:
@@ -10655,6 +10667,9 @@ def _interval_khu_vuc_phan_tich(video_path):
         return None
     if _thread_dang_chay_thuc_su(video_path):
         return timedelta(seconds=1.0)
+    # reanalyze_triggered: vừa bấm nút, thread chưa kịp ghi progress → vẫn refresh để bắt kịp
+    if st.session_state.get("reanalyze_triggered"):
+        return timedelta(seconds=1.0)
     prog = read_progress(video_path)
     if not prog:
         return None
@@ -10924,7 +10939,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             if v.get("metrics") and st.button("⬅️ Kết quả cũ", width="stretch", type="secondary", key=f"btn_old_slow_{key_suffix}"):
                 _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
 
-    elif is_processing and v.get("metrics"):
+    elif is_processing:
         detail = f" — {status_msg}" if status_msg else ""
         _em = int(elapsed_live // 60); _es = int(elapsed_live % 60)
         _elapsed_str = f"{_em}m {_es:02d}s" if _em else f"{_es}s"
@@ -10933,7 +10948,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             and status_msg
             and ("chuẩn bị model ML" in status_msg or ("Pass 2" in status_msg and "/11774 (Tiến" in status_msg and "Frame 1/" in status_msg))
         )
-        _is_stuck = p_val < 0.185 or p_val >= 0.92 or _p2_loading
+        _is_stuck = (p_val < 0.185 or p_val >= 0.92 or _p2_loading) and not (status_msg and "Frame" in status_msg)
         if _is_stuck:
             if p_val < 0.185:
                 _stuck_label = "⏳ Đang tải model AI & khởi động Pass 1..."
@@ -10980,7 +10995,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             and status_msg
             and ("chuẩn bị model ML" in status_msg or ("Pass 2" in status_msg and "/11774 (Tiến" in status_msg and "Frame 1/" in status_msg))
         )
-        _is_stuck = p_val < 0.185 or p_val >= 0.92 or _p2_loading
+        _is_stuck = (p_val < 0.185 or p_val >= 0.92 or _p2_loading) and not (status_msg and "Frame" in status_msg)
         if _is_stuck:
             if p_val < 0.185:
                 _stuck_label = "⏳ Đang tải model AI & khởi động Pass 1..."
@@ -11016,13 +11031,18 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                 _dung_phan_tich()
                 st.rerun()  # Full rerun: tạo lại fragment với run_every=None
     else:
-        if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
-            result = khoi_dong_phan_tich_lai_video(v, auto_start=True)
-            if isinstance(result, dict) and result.get("started"):
-                st.toast("🚀 Đã khởi chạy phân tích — tiến độ cập nhật ngay bên dưới!", icon="⚡")
-                _lam_moi_giao_dien_sau_nut()
-            else:
-                _xu_ly_ket_qua_khoi_dong_phan_tich(result)
+        # Nếu vừa bấm nút phân tích nhưng thread chưa ghi progress → hiện loading ngay
+        if st.session_state.get("reanalyze_triggered"):
+            st.info("⏳ Đang khởi động phân tích... vui lòng chờ vài giây.")
+            st.progress(0.02)
+        else:
+            if st.button("🚀 PHÂN TÍCH VÀ TRÍCH XUẤT KHUNG XƯƠNG NGAY", width="stretch", type="primary", key=f"btn_analyze_now_{key_suffix}"):
+                result = khoi_dong_phan_tich_lai_video(v, auto_start=True)
+                if isinstance(result, dict) and result.get("started"):
+                    st.toast("🚀 Đã khởi chạy phân tích — tiến độ cập nhật ngay bên dưới!", icon="⚡")
+                    _lam_moi_giao_dien_sau_nut()
+                else:
+                    _xu_ly_ket_qua_khoi_dong_phan_tich(result)
 
 def download_file_with_progress(file_path, write_progress_fn, start_t, username, video_name):
     """Tải file từ Hugging Face Dataset có cập nhật tiến độ (progress bar) từng chunk"""
