@@ -9793,6 +9793,7 @@ import traceback
 _db_lock = threading.Lock()
 _running_threads = {}
 _cancel_flags = {}   # video_path -> threading.Event(); set() = yêu cầu thread dừng
+_start_analysis_lock = threading.Lock()  # serialize khoi chay — CHONG start 2 luong/1 video
 
 # Số video phân tích chạy SONG SONG. HF Space mặc định 1 (Gậy + Heavy: chạy từng video).
 # Ghi đè: biến môi trường MAX_CONCURRENT_ANALYSIS=2
@@ -11230,9 +11231,13 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
 
     # Phân loại trạng thái
     _thread_alive = _thread_dang_chay_thuc_su(video_path)
+    # CHI coi la "ket" khi heartbeat THUC SU im > 3 phut (_STALL_SECONDS). TRUOC day con
+    # dua vao (thread khong alive + elapsed_live > 180): nhung sau khi Space restart/deploy,
+    # _running_threads trong bo nho RONG nen MOI video 'processing' deu bi coi la 'thread
+    # missing' du heartbeat vua moi ghi (resume se tu chay lai) -> bao "ket 0 phut / crash
+    # RAM" SAI, lam nguoi dung hoang. Heartbeat moi la tin hieu dung de biet con cap nhat.
     _heartbeat_stale = heartbeat > 0 and (now - heartbeat) > _STALL_SECONDS
-    _thread_missing_too_long = (not _thread_alive) and elapsed_live > _STALL_SECONDS and not _just_retried
-    is_stalled   = is_processing and (_heartbeat_stale or _thread_missing_too_long)
+    is_stalled   = is_processing and _heartbeat_stale and not _just_retried
     is_slow      = (is_processing and not is_stalled
                     and elapsed_live > _SLOW_SECONDS and p_val < 0.30 and p_val > 0.01)
 
@@ -11343,10 +11348,11 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
 
     elif is_stalled:
-        stall_min = int((now - heartbeat) // 60)
+        stall_min = max(int((now - heartbeat) // 60), 3)
         st.warning(
-            f"⚠️ **Tiến trình bị kẹt!** Không cập nhật trong **{stall_min} phút** "
-            f"(dừng ở {p_val*100:.1f}%). Thread có thể đã crash do hết RAM hoặc lỗi MediaPipe."
+            f"⏳ Tiến trình chưa cập nhật trong ~**{stall_min} phút** (đang ở {p_val*100:.1f}%). "
+            f"Hệ thống sẽ **tự chạy lại từ checkpoint**. Nếu chờ lâu, bấm **Khởi động lại** "
+            f"hoặc **Xem kết quả cũ** (nếu đã có)."
         )
         c1, c2 = st.columns(2)
         with c1:
@@ -12003,6 +12009,14 @@ def bat_dau_phan_tich_background(
     if not video_path:
         return {"started": False, "reason": "no_video"}
 
+    # CHONG CHAY TRUNG (som, khong side-effect): da co luong song dang phan tich video nay
+    # va khong force_restart -> bo qua NGAY, tranh setup thua va tranh dung cancel-flag cua
+    # luong dang chay. Kiem tra atomic lan cuoi o cuoi ham (truoc khi start).
+    _ht = _running_threads.get(video_path)
+    if (not force_restart) and _ht is not None and _ht.is_alive():
+        print(f"[BG Process] Da co luong dang phan tich '{video_name or video_path}' — bo qua khoi chay trung.")
+        return {"started": False, "reason": "already_running"}
+
     _don_dep_thread_phan_tich(video_path)
 
     ckpt_path = get_checkpoint_path(video_path, PROCESSED_DIR)
@@ -12027,11 +12041,9 @@ def bat_dau_phan_tich_background(
         )
     skip_step = skip_step_theo_model(model_type, skip_step)
 
-    # Signal thread cũ dừng, rồi tạo cancel flag mới cho thread này
-    _old_flag = _cancel_flags.get(video_path)
-    if _old_flag:
-        _old_flag.set()
-    _cancel_flags[video_path] = threading.Event()
+    # (Cancel-flag duoc tao/đặt o BLOCK ATOMIC cuoi ham — chi khi CHAC CHAN start luong moi.
+    #  Truoc day set flag o day la SAI: lo set flag cua luong dang chay roi van bo qua khoi
+    #  chay -> giet luong cu ma khong start luong moi.)
 
     if has_ckpt:
         cfg_now = build_config_hash(video_path, model_type, confidence, exercise_name, skip_step, resize_width)
@@ -12040,13 +12052,7 @@ def bat_dau_phan_tich_background(
             clear_checkpoint(ckpt_path)
             has_ckpt = False
     
-    # Tránh chạy trùng lặp — force_restart bỏ qua kiểm tra thread đang sống
-    if video_path in _running_threads and _running_threads[video_path].is_alive():
-        if not force_restart:
-            print(f"[BG Process] Thread cho video {video_path} đang chạy.")
-            return {"started": False, "reason": "already_running"}
-        print(f"[BG Process] force_restart=True — ghi đè thread cũ, khởi động lại.")
-        _running_threads.pop(video_path, None)
+    # (Kiem tra trung + xu ly force_restart da chuyen xuong block atomic o cuoi ham.)
 
     job_meta = {
         "full_name": full_name,
@@ -12553,10 +12559,24 @@ def bat_dau_phan_tich_background(
                 _analysis_slots.release(progress_video_path)
             _cancel_flags.pop(progress_video_path, None)
 
-    t = threading.Thread(target=thread_target, daemon=True)
-    _running_threads[video_path] = t
-    t.start()
-    return {"started": True, "reason": ""}
+    # KIEM TRA-VA-START ATOMIC: dam bao CHI 1 luong / 1 video du co nhieu lan goi dong thoi
+    # (resume cold-start + watcher dinh ky + user bam). Chi den day moi dung vao cancel-flag.
+    with _start_analysis_lock:
+        _cur = _running_threads.get(video_path)
+        if _cur is not None and _cur.is_alive():
+            if not force_restart:
+                print(f"[BG Process] Luong khac vua khoi chay '{video_name}' — bo luong trung nay.")
+                return {"started": False, "reason": "already_running"}
+            print(f"[BG Process] force_restart=True — ghi de luong cu.")
+        # Den day la CHAC CHAN start luong moi: bao luong cu (neu con) dung + cap flag moi
+        _old_flag = _cancel_flags.get(video_path)
+        if _old_flag:
+            _old_flag.set()
+        _cancel_flags[video_path] = threading.Event()
+        t = threading.Thread(target=thread_target, daemon=True)
+        _running_threads[video_path] = t
+        t.start()
+        return {"started": True, "reason": ""}
 
 
 def _xu_ly_ket_qua_khoi_dong_phan_tich(result):
