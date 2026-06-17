@@ -2117,6 +2117,32 @@ def _duong_dan_csv_candidates(v):
     return out
 
 
+def _artifact_timestamps_from_video(v):
+    """Lay cac timestamp processed_* lien quan den mot ban ghi ket qua da luu."""
+    if not v:
+        return []
+    import re
+    stamps = []
+    for key in (
+        "processed_path", "df_path", "all_frames_data_path",
+        "frames_zip", "frames_zip_path", "video_path",
+    ):
+        p = v.get(key)
+        if not p:
+            continue
+        text = str(p)
+        for m in re.finditer(r"processed_(\d+)", text):
+            stamps.append(m.group(1))
+        for m in re.finditer(r"(?:^|[/\\])f_(\d+)\.json", text):
+            stamps.append(m.group(1))
+    seen, out = set(), []
+    for ts in stamps:
+        if ts and ts not in seen:
+            seen.add(ts)
+            out.append(ts)
+    return out
+
+
 def _duong_dan_frames_json_candidates(v):
     """Danh sách đường dẫn JSON khung xương (fallback khi CSV không có trên Cloud)."""
     if not v:
@@ -2126,11 +2152,8 @@ def _duong_dan_frames_json_candidates(v):
     if frames_path:
         candidates.append(get_local_frame_path(frames_path) or frames_path)
         candidates.append(frames_path)
-    proc = v.get("processed_path") or v.get("video_path") or ""
-    import re
-    m = re.search(r"processed_(\d+)", str(proc))
-    if m:
-        candidates.append(os.path.join(PROCESSED_DIR, f"f_{m.group(1)}.json"))
+    for ts in _artifact_timestamps_from_video(v):
+        candidates.append(os.path.join(PROCESSED_DIR, f"f_{ts}.json"))
     seen, out = set(), []
     for p in candidates:
         if p and p not in seen:
@@ -2155,6 +2178,9 @@ def _frames_zip_from_processed_path(processed_path):
 def _frames_zip_path_from_video(v):
     if not v:
         return ""
+    for ts in _artifact_timestamps_from_video(v):
+        if ts:
+            return os.path.join(PROCESSED_DIR, f"processed_{ts}_frames.zip")
     for key in ("frames_zip", "frames_zip_path"):
         p = v.get(key)
         if p:
@@ -2417,6 +2443,56 @@ def _gan_session_ket_qua_tu_video(v):
     return v
 
 
+def _dong_bo_metadata_frames_vao_session(v=None, download=False):
+    """Bo sung JSON/ZIP frames cho session khi ket qua cu co bieu do nhung metadata frame bi thieu."""
+    src = v or st.session_state.get("current_eval_video") or {}
+    src = _lam_moi_ban_ghi_video_tu_db(src) or src
+    if not src:
+        return src
+
+    sess_v = st.session_state.get("current_eval_video") or {}
+    same_slot = _slot_video_phan_tich(sess_v) == _slot_video_phan_tich(src)
+    cur = dict(sess_v if same_slot else src)
+    for key in ("processed_path", "video_path", "df_path", "metrics", "exercise", "video_name", "username", "full_name"):
+        if src.get(key) and not cur.get(key):
+            cur[key] = src.get(key)
+
+    if src.get("all_frames_data_path") and not cur.get("all_frames_data_path"):
+        cur["all_frames_data_path"] = src.get("all_frames_data_path")
+    if src.get("df_path") and not cur.get("df_path"):
+        cur["df_path"] = src.get("df_path")
+
+    frames_path = (st.session_state.get("all_frames_data_path") if same_slot else None) or cur.get("all_frames_data_path")
+    if not frames_path:
+        for cand in _duong_dan_frames_json_candidates(cur):
+            lp = get_local_frame_path(cand) or cand
+            if is_local_file_ready(lp, min_size=2) or (download and ensure_local_file(cand, quiet=True, try_fallbacks=False)):
+                frames_path = lp if is_local_file_ready(lp, min_size=2) else cand
+                cur["all_frames_data_path"] = frames_path
+                break
+
+    if frames_path:
+        st.session_state.all_frames_data_path = frames_path
+        cur["all_frames_data_path"] = frames_path
+
+    zip_path = _frames_zip_path_from_video(cur)
+    if zip_path:
+        st.session_state.frames_zip = zip_path
+        cur["frames_zip"] = zip_path
+        cur["frames_zip_path"] = zip_path
+        if download:
+            ensure_local_file(zip_path, quiet=True, try_fallbacks=False)
+
+    proc = cur.get("processed_path") or st.session_state.get("processed_video_path")
+    if proc:
+        st.session_state.processed_video_path = proc
+        if download:
+            ensure_local_file(proc, quiet=True, try_fallbacks=True)
+
+    st.session_state.current_eval_video = cur
+    return cur
+
+
 def tai_bieu_do_va_frames_tu_hf(v):
     """Tải CSV biểu đồ + JSON khung xương từ HF (không tải video/zip — tránh đơ nút)."""
     if not v:
@@ -2467,6 +2543,7 @@ def _slot_tai_key(v):
 def _trang_thai_tai_media(v):
     """Kiểm tra biểu đồ / JSON frames / video / zip đã sẵn sàng local chưa."""
     v = _lam_moi_ban_ghi_video_tu_db(v) or v
+    v = _dong_bo_metadata_frames_vao_session(v, download=False) or v
     proc = v.get("processed_path") or v.get("video_path")
     fj = v.get("all_frames_data_path") or st.session_state.get("all_frames_data_path")
     fz = _frames_zip_path_from_video(v) or st.session_state.get("frames_zip")
@@ -16735,6 +16812,8 @@ def _noi_dung_frames_day_du(key_suffix=""):
     is_gay_ex = any(kw in str(exercise_name).lower() or kw in str(st.session_state.get('current_eval_video', {}).get('exercise', '')).lower() for kw in ["gậy", "gay", "pulley", "stick"])
 
     v_frames = st.session_state.get("current_eval_video") or _tim_video_phan_tich_moi_nhat()
+    if v_frames:
+        v_frames = _dong_bo_metadata_frames_vao_session(v_frames, download=False) or v_frames
     if v_frames and not _session_phan_tich_khop_video(v_frames):
         with st.spinner(
             f"📥 Đang tải khung xương: {v_frames.get('full_name')} — {v_frames.get('exercise')}..."
@@ -16742,6 +16821,9 @@ def _noi_dung_frames_day_du(key_suffix=""):
             tu_dong_nap_ket_qua_phan_tich_gan_nhat(v_frames, force=False)
 
     all_frames_data_path = get_local_frame_path(st.session_state.get('all_frames_data_path'))
+    if not all_frames_data_path:
+        v_frames = _dong_bo_metadata_frames_vao_session(v_frames, download=True) if v_frames else v_frames
+        all_frames_data_path = get_local_frame_path(st.session_state.get('all_frames_data_path'))
     if not all_frames_data_path:
         st.info("📭 Không có dữ liệu khung hình để hiển thị.")
         if st.session_state.get("current_eval_video"):
