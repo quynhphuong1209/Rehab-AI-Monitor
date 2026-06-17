@@ -5281,12 +5281,8 @@ def _inject_base_css_once():
     st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" media="print" onload="this.media='all'">
-<noscript>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap">
-</noscript>
 <style>
     html, body, .stApp, [data-testid="stMarkdownContainer"] {
         font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif !important;
@@ -19292,34 +19288,8 @@ def _render_main_tab_content(tab_titles, user_role):
 
 
 def main():
-    # Auto-reconnect: nếu sau 25s WebSocket vẫn chưa kết nối hoặc app render rỗng, tự F5 lại một lần.
-    st.markdown(
-        """<script>
-(function(){
-  var _tid = setTimeout(function(){
-    var reloadKey = 'rehab_ai_blank_reload_ts';
-    var lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
-    if (Date.now() - lastReload < 45000) return;
-    var app = document.querySelector('[data-testid="stApp"]');
-    var main = document.querySelector('[data-testid="stMain"]') ||
-               document.querySelector('.main .block-container') ||
-               document.querySelector('section[data-testid="stSidebar"]');
-    var block = document.querySelector('[data-testid="stAppViewBlockContainer"]') ||
-                document.querySelector('.main .block-container');
-    var hasContent = block && block.innerText && block.innerText.trim().length > 20;
-    if (app && (!main || !hasContent)) {
-      sessionStorage.setItem(reloadKey, String(Date.now()));
-      location.reload();
-    }
-  }, 25000);
-  document.addEventListener('stConnectionStatus', function(e){
-    if (e && e.detail && e.detail.status === 'connected') clearTimeout(_tid);
-  });
-})();
-</script>""",
-        unsafe_allow_html=True,
-    )
-
+    # Do not force browser reloads after F5 on HF Spaces.
+    # Streamlit owns reconnect; manual location.reload() can loop into a blank app shell.
     thuc_hien_khoi_tao_he_thong_mot_lan()
 
     # Kiểm tra trạng thái đăng nhập ngay đầu hàm main

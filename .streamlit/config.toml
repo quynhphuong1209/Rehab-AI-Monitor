@@ -8,9 +8,6 @@ headless = true
 # TẮT nén WebSocket — HF Spaces proxy (Nginx) không hỗ trợ per-message deflate
 # enableWebsocketCompression = true gây màn hình đen khi F5 hoặc mở máy khác
 enableWebsocketCompression = false
-# Cho phép cache 15s để reconnect nhanh hơn (0 = tắt cache → reconnect rất chậm, dễ đen màn)
-maxCachedMessageAge = 15
-
 [browser]
 # Bỏ gửi thống kê sử dụng — bớt 1 request mạng mỗi lần tải trang
 gatherUsageStats = false
