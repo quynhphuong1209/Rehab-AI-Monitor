@@ -3713,20 +3713,56 @@ def _load_data_cached(file_path, mtime):
 
 def load_data(file_path):
     if os.path.exists(file_path):
-        try:
-            mtime = os.path.getmtime(file_path)
-            return _load_data_cached(file_path, mtime)
-        except:
+        last_err = None
+        for _ in range(3):
+            try:
+                mtime = os.path.getmtime(file_path)
+                return _load_data_cached(file_path, mtime)
+            except PermissionError as err:
+                last_err = err
+                time.sleep(0.08)
+            except:
+                break
+        for _ in range(3):
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     return json.load(f)
+            except PermissionError as err:
+                last_err = err
+                time.sleep(0.08)
             except:
                 return [] if "users" not in file_path else {}
+        if last_err:
+            print(f"[Data] File dang bi khoa khi doc {file_path}: {last_err}")
+        return [] if "users" not in file_path else {}
     return [] if "users" not in file_path else {}
 
 def save_data(file_path, data):
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
+    tmp_path = f"{file_path}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
+    last_err = None
+    for attempt in range(6):
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            os.replace(tmp_path, file_path)
+            last_err = None
+            break
+        except (PermissionError, OSError) as err:
+            last_err = err
+            time.sleep(0.12 * (attempt + 1))
+    if last_err is not None:
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except Exception:
+            pass
+        print(f"[Data] Khong the ghi {file_path}: {last_err}")
+        try:
+            st.warning("⚠️ File dữ liệu đang bị khóa tạm thời. Vui lòng bấm lại sau vài giây.")
+        except Exception:
+            pass
+        return False
     try:
         _load_data_cached.clear()
         _load_video_list_core.clear()
@@ -3736,6 +3772,7 @@ def save_data(file_path, data):
         pass
     # Tự động đẩy file dữ liệu lên Hugging Face Dataset
     push_file_to_hf_async(file_path)
+    return True
 
 HF_JSON_CONFIG_FILES = [
     "users.json", "patient_symptoms.json", "doctor_evaluations.json",
