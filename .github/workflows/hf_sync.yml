@@ -41,16 +41,17 @@ jobs:
           
           # Day de len nhanh main cua Hugging Face — retry khi HF tra 429 (rate limit)
           HF_REMOTE="https://quynhphuong1209:$HF_TOKEN@huggingface.co/spaces/quynhphuong1209/Rehab-AI-Monitor-2026"
-          for attempt in 1 2 3 4 5; do
+          for attempt in 1 2 3 4 5 6; do
             if git push --force "$HF_REMOTE" temp-hf-branch:main; then
               echo "Push thanh cong (lan $attempt)"
               exit 0
             fi
-            if [ "$attempt" -lt 5 ]; then
-              wait_secs=$((attempt * 30))
+            if [ "$attempt" -lt 6 ]; then
+              # Tang thoi gian cho theo fibonacci-style: 60 120 180 300 420s
+              wait_secs=$((attempt * 60 + (attempt > 2 ? (attempt - 2) * 60 : 0)))
               echo "Push that bai (co the 429 rate limit). Cho ${wait_secs}s roi thu lai..."
               sleep "$wait_secs"
             fi
           done
-          echo "Push that bai sau 5 lan thu — thu lai sau hoac chay workflow_dispatch thu cong."
+          echo "Push that bai sau 6 lan thu — vao GitHub Actions chay lai 'workflow_dispatch' thu cong."
           exit 1
