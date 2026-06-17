@@ -10322,6 +10322,12 @@ def khoi_dong_phan_tich_lai_video(v, auto_start=True):
 
     _chuan_bi_phan_tich_lai(video_path, v)
     ncv_gd = st.session_state.get("ncv_giai_doan", PHASE_UI_LABELS["g2"])
+    # Uu tien thiet lap CUU-HO (video dai tren HF) do _bat_che_do_cuu_ho_hf dat qua key
+    # rieng — tranh phai ghi de widget-key (gay StreamlitAPIException). Pop ngay de khong
+    # dinh sang lan phan tich binh thuong sau do.
+    _force_model = st.session_state.pop("_ncv_force_model", None)
+    _force_resize = st.session_state.pop("_ncv_force_resize", None)
+    _force_skip = st.session_state.pop("_ncv_force_skip", None)
     return bat_dau_phan_tich_background(
         video_path=video_path,
         username=v.get("username"),
@@ -10329,10 +10335,10 @@ def khoi_dong_phan_tich_lai_video(v, auto_start=True):
         video_name=v.get("video_name"),
         exercise_name=v.get("exercise"),
         giai_doan=ncv_gd,
-        model_type=st.session_state.get("ncv_model_type", "MediaPipe Heavy"),
+        model_type=_force_model or st.session_state.get("ncv_model_type", "MediaPipe Heavy"),
         confidence=st.session_state.get("ncv_confidence", 0.5),
-        skip_step=st.session_state.get("ncv_skip_frames", 0),
-        resize_width=st.session_state.get("ncv_resize_width", 720),
+        skip_step=_force_skip if _force_skip is not None else st.session_state.get("ncv_skip_frames", 0),
+        resize_width=_force_resize or st.session_state.get("ncv_resize_width", 720),
         force_train_classifier=True,
         force_restart=True,
     )
@@ -11792,9 +11798,15 @@ def _bat_che_do_cuu_ho_hf(video_path):
         frames, duration = 0, 0
     if frames <= 3000 and duration <= 105:
         return False
-    st.session_state.ncv_model_type = "MediaPipe Lite"
-    st.session_state.ncv_resize_width = 480
-    st.session_state.ncv_skip_frames = 5 if (frames > 9000 or duration > 300) else 4
+    _skip = 5 if (frames > 9000 or duration > 300) else 4
+    # KHONG ghi thang vao widget-key (ncv_model_type / ncv_resize_width / ncv_skip_frames):
+    # cac selectbox sidebar DA duoc tao trong lan chay nay -> Streamlit nem
+    # StreamlitAPIException "cannot be modified after the widget ... is instantiated".
+    # Luu vao key override RIENG; khoi_dong_phan_tich_lai_video (luon goi NGAY sau ham nay)
+    # se uu tien doc cac key nay.
+    st.session_state["_ncv_force_model"] = "MediaPipe Lite"
+    st.session_state["_ncv_force_resize"] = 480
+    st.session_state["_ncv_force_skip"] = _skip
     return True
 
 
