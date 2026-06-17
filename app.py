@@ -33,7 +33,13 @@ for _thr_var in (
 ):
     os.environ.setdefault(_thr_var, str(_compute_threads))
 
-# Lọc warning "fragment does not exist anymore" — vô hại, chỉ là lifecycle noise từ run_every
+# === CHAN SPAM LOG "fragment ... does not exist anymore" (HF Space bi ngap dong nay) ===
+# Day la log INFO vo hai tu logger streamlit.runtime.app_session (lifecycle cua run_every
+# fragment). Chi gan logging.Filter KHONG dang tin cay tren runtime that (da thu, van lot)
+# -> dung NHIEU lop, manh nhat la setLevel:
+#  (1) setLevel(WARNING) cho app_session: logger.info(...) bi chan NGAY tai isEnabledFor,
+#      truoc khi tao record/goi handler -> chac chan im (thong diep nay la INFO).
+#  (2) filter tren MOI handler + logger streamlit: catch-all phong khi phat tu logger khac.
 import logging as _logging
 class _SuppressFragmentWarning(_logging.Filter):
     def filter(self, record):
@@ -42,16 +48,41 @@ class _SuppressFragmentWarning(_logging.Filter):
         except Exception:
             return True
 _frag_log_filter = _SuppressFragmentWarning()
-# Warning nay phat ra tu logger CON "streamlit.runtime.app_session" (muc INFO).
-# Python logging KHONG ap filter cua logger cha cho record cua logger con — no chi
-# goi filter cua chinh logger goc + cua handler. Vi vay gan filter vao logger "streamlit"
-# (cu) khong co tac dung -> log HF Space bi ngap dong "fragment ... does not exist
-# anymore". Gan TRUC TIEP vao logger con (va handler cua "streamlit") moi chan triet de.
-for _lg_name in ("streamlit", "streamlit.runtime.app_session"):
-    _lg = _logging.getLogger(_lg_name)
-    _lg.addFilter(_frag_log_filter)
-    for _h in list(_lg.handlers):
-        _h.addFilter(_frag_log_filter)
+
+def _chan_log_fragment_spam():
+    try:
+        import streamlit.runtime.app_session  # noqa: F401 — ep logger duoc tao/cau hinh
+    except Exception:
+        pass
+    # (1) Chan tan goc: ha INFO -> WARNING cho rieng app_session.
+    try:
+        _logging.getLogger("streamlit.runtime.app_session").setLevel(_logging.WARNING)
+    except Exception:
+        pass
+    # (2) Catch-all: gan filter vao moi logger streamlit + moi handler cua chung.
+    try:
+        _names = ["", "streamlit"] + [
+            n for n in list(_logging.root.manager.loggerDict)
+            if isinstance(n, str) and n.startswith("streamlit")
+        ]
+        _seen_h = set()
+        for _nm in _names:
+            _lg = _logging.getLogger(_nm)
+            try:
+                _lg.addFilter(_frag_log_filter)
+            except Exception:
+                pass
+            for _h in list(getattr(_lg, "handlers", []) or []):
+                if id(_h) not in _seen_h:
+                    _seen_h.add(id(_h))
+                    try:
+                        _h.addFilter(_frag_log_filter)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
+_chan_log_fragment_spam()
 
 import streamlit as st
 
@@ -62,6 +93,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# Re-ap dung sau khi Streamlit da cau hinh xong logging (import streamlit co the tao lai
+# handler/dat lai level) — dam bao app_session van bi ha xuong WARNING + co filter.
+_chan_log_fragment_spam()
 
 
 class _LazyCV2:
