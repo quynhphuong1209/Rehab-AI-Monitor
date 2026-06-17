@@ -2619,6 +2619,7 @@ def hien_thi_nut_tai_lai_va_phan_tich_moi(v_re, key_suffix=""):
             type="primary",
             use_container_width=True,
         ):
+            _bat_che_do_cuu_ho_hf(v_re.get("video_path"))
             _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v_re, auto_start=True))
 
 
@@ -7095,7 +7096,7 @@ _on_hf_runtime = bool(
 if 'ncv_model_type' not in st.session_state:
     st.session_state.ncv_model_type = "MediaPipe Heavy"
 if 'ncv_resize_width' not in st.session_state:
-    st.session_state.ncv_resize_width = 720
+    st.session_state.ncv_resize_width = 480 if _on_hf_runtime else 720
 if 'ncv_skip_frames' not in st.session_state:
     st.session_state.ncv_skip_frames = 0
 if 'view_old_analysis' not in st.session_state:
@@ -10869,6 +10870,7 @@ def _hien_thi_tien_do_phan_tich_compact(prog_data, v, key_suffix):
             key=f"btn_retry_preview_{key_suffix}",
         ):
             clear_analysis_progress(video_path)
+            _bat_che_do_cuu_ho_hf(video_path)
             _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
         return False, True
     if status == "success":
@@ -11036,7 +11038,10 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
     elapsed_live = now - start_t
 
     # Phân loại trạng thái
-    is_stalled   = is_processing and heartbeat > 0 and (now - heartbeat) > _STALL_SECONDS
+    _thread_alive = _thread_dang_chay_thuc_su(video_path)
+    _heartbeat_stale = heartbeat > 0 and (now - heartbeat) > _STALL_SECONDS
+    _thread_missing_too_long = (not _thread_alive) and elapsed_live > _STALL_SECONDS and not _just_retried
+    is_stalled   = is_processing and (_heartbeat_stale or _thread_missing_too_long)
     is_slow      = (is_processing and not is_stalled
                     and elapsed_live > _SLOW_SECONDS and p_val < 0.30 and p_val > 0.01)
 
@@ -11143,6 +11148,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             st.session_state.pop(_err_stop_key, None)  # Cho phép stop-refresh lần tiếp theo
             st.session_state[_retry_key] = time.time()  # Grace period: ẩn lỗi 8s sau khi bấm
             clear_analysis_progress(video_path)
+            _bat_che_do_cuu_ho_hf(video_path)
             _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
 
     elif is_stalled:
@@ -11155,6 +11161,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         with c1:
             if st.button("🔄 Khởi động lại", width="stretch", type="primary", key=f"btn_restart_stall_{key_suffix}"):
                 clear_analysis_progress(video_path)
+                _bat_che_do_cuu_ho_hf(video_path)
                 _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
         with c2:
             if v.get("metrics") and st.button("⬅️ Xem kết quả cũ", width="stretch", type="secondary", key=f"btn_old_stall_{key_suffix}"):
@@ -11185,9 +11192,10 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                 _dung_phan_tich()
                 _lam_moi_giao_dien_sau_nut()
         with c2:
-            _sel_slow_label = st.session_state.get("ncv_model_type", "MediaPipe Heavy").replace("MediaPipe ", "")
+            _sel_slow_label = "chế độ nhanh" if _is_hf_runtime() else st.session_state.get("ncv_model_type", "MediaPipe Heavy").replace("MediaPipe ", "")
             if st.button(f"⚡ Chạy lại với {_sel_slow_label}", width="stretch", type="secondary", key=f"btn_restart_slow_{key_suffix}"):
                 clear_analysis_progress(video_path)
+                _bat_che_do_cuu_ho_hf(video_path)
                 _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
         with c3:
             if v.get("metrics") and st.button("⬅️ Kết quả cũ", width="stretch", type="secondary", key=f"btn_old_slow_{key_suffix}"):
@@ -11269,8 +11277,10 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
         with c2:
             if st.button("⬅️ Quay lại xem kết quả cũ đã lưu", width="stretch", type="secondary", key=f"btn_back_old_{key_suffix}"):
                 _quay_lai_ket_qua_cu_da_luu(v, rerun=False)
-        _sel_model_label = st.session_state.get("ncv_model_type", "MediaPipe Heavy").replace("MediaPipe ", "")
+        _sel_model_label = "chế độ nhanh" if _is_hf_runtime() else st.session_state.get("ncv_model_type", "MediaPipe Heavy").replace("MediaPipe ", "")
         if st.button(f"⚡ Dừng & chạy lại với {_sel_model_label}", width="stretch", type="primary", key=f"btn_restart_model_{key_suffix}"):
+            _dung_phan_tich()
+            _bat_che_do_cuu_ho_hf(video_path)
             _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
 
     elif is_processing:
@@ -11353,6 +11363,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                 st.warning("⚠️ Không thể khởi động phân tích sau 20 giây. Thử lại bên dưới.")
                 if st.button("🔄 Thử lại phân tích", width="stretch", type="primary", key=f"btn_retry_timeout_{key_suffix}"):
                     clear_analysis_progress(video_path)
+                    _bat_che_do_cuu_ho_hf(video_path)
                     _xu_ly_ket_qua_khoi_dong_phan_tich(khoi_dong_phan_tich_lai_video(v, auto_start=True))
         else:
             st.session_state.pop(_triggered_at_key, None)
@@ -11477,18 +11488,32 @@ def tinh_tham_so_toc_do_phan_tich(video_path, exercise_name, model_type, skip_st
     user_chose_skip = (skip_step is not None and int(skip_step) > 0)
     user_chose_res = (resize_width is not None and int(resize_width) != 720)
 
+    on_hf = _is_hf_runtime()
     if not user_chose_skip and frames > 0:
-        if frames > 12000 or duration > 420:
-            skip_step = 3
-        elif frames > 6000 or duration > 210:
-            skip_step = 2
-        elif frames > 3000 or duration > 105:
-            skip_step = 1
+        if on_hf:
+            # HF Spaces CPU can stall/OOM on long videos; sample more aggressively.
+            if frames > 9000 or duration > 300:
+                skip_step = 5
+            elif frames > 6000 or duration > 210:
+                skip_step = 4
+            elif frames > 3000 or duration > 105:
+                skip_step = 2
+            else:
+                skip_step = 1 if la_bai_tap_gay(exercise_name) else 0
         else:
-            skip_step = 0  # Video ngắn — giữ mọi frame
+            if frames > 12000 or duration > 420:
+                skip_step = 3
+            elif frames > 6000 or duration > 210:
+                skip_step = 2
+            elif frames > 3000 or duration > 105:
+                skip_step = 1
+            else:
+                skip_step = 0  # Video ngắn — giữ mọi frame
 
     if not user_chose_res and frames > 0:
-        if frames > 6000 or duration > 210:
+        if on_hf and (frames > 3000 or duration > 105):
+            resize_width = 480
+        elif frames > 6000 or duration > 210:
             resize_width = 480  # 480p đủ chính xác cho MediaPipe, nhanh hơn ~2×
 
     # Ước tính thời gian sau tối ưu
@@ -11502,6 +11527,43 @@ def tinh_tham_so_toc_do_phan_tich(video_path, exercise_name, model_type, skip_st
             f"xu ly ~{eff_frames} frames (giam {100 - eff_frames * 100 // max(frames, 1):.0f}%)"
         )
     return model_type, skip_step, resize_width
+
+
+def _checkpoint_qua_nang_cho_hf(video_path, ckpt):
+    if not (_is_hf_runtime() and ckpt and video_path):
+        return False
+    try:
+        frames, fps = lay_so_khung_video(video_path)
+        duration = frames / fps if fps > 0 else 0
+    except Exception:
+        frames, duration = 0, 0
+    if frames <= 6000 and duration <= 210:
+        return False
+    try:
+        ckpt_skip = int(ckpt.get("skip_step") or 0)
+    except Exception:
+        ckpt_skip = 0
+    try:
+        ckpt_resize = int(ckpt.get("resize_width") or 720)
+    except Exception:
+        ckpt_resize = 720
+    return ckpt_skip < 2 or ckpt_resize > 480
+
+
+def _bat_che_do_cuu_ho_hf(video_path):
+    if not _is_hf_runtime():
+        return False
+    try:
+        frames, fps = lay_so_khung_video(video_path)
+        duration = frames / fps if fps > 0 else 0
+    except Exception:
+        frames, duration = 0, 0
+    if frames <= 3000 and duration <= 105:
+        return False
+    st.session_state.ncv_model_type = "MediaPipe Lite"
+    st.session_state.ncv_resize_width = 480
+    st.session_state.ncv_skip_frames = 5 if (frames > 9000 or duration > 300) else 4
+    return True
 
 
 def tim_video_trong_db(video_path):
@@ -11543,6 +11605,11 @@ def khoi_phuc_job_phan_tich_sau_deploy(cold_start=False):
             if _hb and (time.time() - _hb) > PROGRESS_STALE_SECONDS:
                 # Kiểm tra checkpoint trước khi xóa — nếu còn Pass1 data thì resume thay vì bỏ
                 _ckpt_check = load_checkpoint(get_checkpoint_path(vp, PROCESSED_DIR))
+                if _checkpoint_qua_nang_cho_hf(vp, _ckpt_check):
+                    print(f"[Resume] Xoa checkpoint qua nang tren HF de chay lai nhanh hon: {job.get('video_name')}")
+                    clear_checkpoint(get_checkpoint_path(vp, PROCESSED_DIR))
+                    clear_analysis_progress(vp)
+                    continue
                 if _ckpt_check and _ckpt_check.get("pass1_data"):
                     print(f"[Resume] Job heartbeat cu nhung co checkpoint hop le — se resume: {job.get('video_name')}")
                     # Reset heartbeat để tránh bị loop, nhưng KHÔNG xóa progress
@@ -11572,6 +11639,10 @@ def khoi_phuc_job_phan_tich_sau_deploy(cold_start=False):
         giai_doan = meta.get("giai_doan") or PHASE_UI_LABELS.get("g2", "Giai đoạn 2")
         force_train = bool(meta.get("force_train_classifier", False))
         ckpt_resume = load_checkpoint(get_checkpoint_path(vp, PROCESSED_DIR))
+        if _checkpoint_qua_nang_cho_hf(vp, ckpt_resume):
+            print(f"[Resume] Bo checkpoint qua nang tren HF, chay lai che do nhanh: {job.get('video_name')}")
+            clear_checkpoint(get_checkpoint_path(vp, PROCESSED_DIR))
+            ckpt_resume = None
         if ckpt_resume and ckpt_resume.get("pass1_data"):
             model_type = ckpt_resume.get("model_type") or model_type
             skip_step = ckpt_resume.get("skip_step") if ckpt_resume.get("skip_step") is not None else skip_step
