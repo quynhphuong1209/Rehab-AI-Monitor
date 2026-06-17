@@ -49,6 +49,24 @@ class _SuppressFragmentWarning(_logging.Filter):
             return True
 _frag_log_filter = _SuppressFragmentWarning()
 
+class _FilterFragmentStream:
+    def __init__(self, wrapped):
+        self._wrapped = wrapped
+
+    def write(self, text):
+        try:
+            if "does not exist anymore" in str(text):
+                return 0
+        except Exception:
+            pass
+        return self._wrapped.write(text)
+
+    def flush(self):
+        return self._wrapped.flush()
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped, name)
+
 def _chan_log_fragment_spam():
     try:
         import streamlit.runtime.app_session  # noqa: F401 — ep logger duoc tao/cau hinh
@@ -83,6 +101,11 @@ def _chan_log_fragment_spam():
         pass
 
 _chan_log_fragment_spam()
+try:
+    sys.stderr = _FilterFragmentStream(sys.stderr)
+    sys.stdout = _FilterFragmentStream(sys.stdout)
+except Exception:
+    pass
 
 import streamlit as st
 
@@ -2578,7 +2601,6 @@ def _fragment_tien_do_tai_media(v, key_suffix=""):
     )
     interval = timedelta(seconds=1) if can_poll else None
 
-    @st.fragment(run_every=interval)
     def _poll():
         if not v or not v.get("metrics"):
             return
@@ -5273,7 +5295,7 @@ def _rerun_toan_bo_app():
 
 
 def _lam_moi_giao_dien_sau_nut():
-    """Sau bấm nút — full app rerun (scope='app') kể cả khi gọi từ bên trong @st.fragment."""
+    """Sau bấm nút — full app rerun (scope='app') để làm mới UI ổn định."""
     try:
         st.rerun(scope="app")
     except TypeError:
@@ -10603,7 +10625,6 @@ def _noi_dung_jobs_dang_chay(key_suffix=""):
 def hien_thi_jobs_dang_chay_fragment(key_suffix=""):
     """Panel theo dõi các video đang trích xuất khung xương — dùng chung cho mọi thiết bị/phiên."""
     # run_every phải là số/timedelta/None (không truyền callable) — đánh giá mỗi lần rerun script.
-    @st.fragment(run_every=_interval_theo_doi_jobs())
     def _frag():
         _noi_dung_jobs_dang_chay(key_suffix)
 
@@ -10683,7 +10704,6 @@ def finalize_and_refresh_analysis(video_path):
 
 def hien_thi_tien_trinh_background_small(video_path):
     """Hiển thị tiến trình chạy nền nhỏ gọn bên trong cột phải (không reload toàn trang)"""
-    @st.fragment(run_every=_interval_tien_trinh_background(video_path))
     def _frag():
         _noi_dung_tien_trinh_background_small(video_path)
 
@@ -10760,7 +10780,6 @@ def _noi_dung_tien_trinh_background_small(video_path):
 
 def hien_thi_tien_trinh_background_home_fragment(video_path):
     """Hiển thị giao diện tiến trình chạy nền ở màn hình trang chủ (không reload toàn trang)"""
-    @st.fragment(run_every=_interval_tien_trinh_background(video_path))
     def _frag():
         _noi_dung_tien_trinh_background_home(video_path)
 
@@ -10920,7 +10939,6 @@ def _hien_thi_gan_lai_video_ui(v, video_path, key_suffix):
                     _lam_moi_giao_dien_sau_nut()
 
 
-@st.fragment
 def hien_thi_video_goc_fragment(video_or_v, key_suffix, video_name=""):
     """Hiển thị/ẩn video gốc trong fragment riêng -> bấm nút không làm rerun cả trang,
     nhờ vậy phần trích xuất khung xương bên cạnh KHÔNG bị tải lại từ đầu."""
@@ -10950,7 +10968,7 @@ def hien_thi_video_goc_fragment(video_or_v, key_suffix, video_name=""):
             </div>""", unsafe_allow_html=True)
         if st.button("🙈 Ẩn video gốc", key=f"btn_hide_src_video_{key_suffix}", use_container_width=True):
             st.session_state[show_key] = False
-            st.rerun(scope="fragment")
+            st.rerun()
     else:
         st.markdown(f"""
         <div style="background: rgba(30, 41, 59, 0.35); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 12px; padding: 18px;">
@@ -10960,7 +10978,7 @@ def hien_thi_video_goc_fragment(video_or_v, key_suffix, video_name=""):
         """, unsafe_allow_html=True)
         if st.button("👁️ Xem video gốc", key=f"btn_show_src_video_{key_suffix}", use_container_width=True):
             st.session_state[show_key] = True
-            st.rerun(scope="fragment")
+            st.rerun()
 
 def _tim_duong_dan_video_phan_tich_hien_tai(v, video_path, prog_data=None):
     """Tìm file video phân tích có thể phát: checkpoint đang ghi, kết quả mới, hoặc bản đã lưu."""
@@ -11113,7 +11131,7 @@ def _hien_thi_tien_do_phan_tich_compact(prog_data, v, key_suffix):
         if finalize_background_analysis_if_ready(video_path):
             _lam_moi_giao_dien_sau_nut()
         else:
-            st.rerun(scope="fragment")
+            st.rerun()
         return False, False
     if status == "processing":
         p_val = prog_data.get("progress", 0.0)
@@ -11135,7 +11153,6 @@ def hien_thi_video_phan_tich_preview_fragment(v, key_suffix):
     """Cột phải: tiến độ + phát video phân tích (checkpoint hoặc bản đã lưu)."""
     video_path = v["video_path"]
 
-    @st.fragment(run_every=_interval_khu_vuc_phan_tich(video_path))
     def _render_preview():
         prog_data = read_progress(video_path)
         is_processing, is_error = _hien_thi_tien_do_phan_tich_compact(prog_data, v, key_suffix)
@@ -11196,7 +11213,6 @@ def _interval_tien_trinh_background(video_path):
 def hien_thi_khu_vuc_phan_tich_chuyen_sau_fragment(v, key_suffix):
     video_path = v["video_path"]
 
-    @st.fragment(run_every=_interval_khu_vuc_phan_tich(video_path))
     def _render_khu_vuc():
         _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path)
 
@@ -11267,7 +11283,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
             if finalize_background_analysis_if_ready(video_path):
                 _lam_moi_giao_dien_sau_nut()
             else:
-                st.rerun(scope="fragment")
+                st.rerun()
 
     now = time.time()
     start_t = float(prog_data.get("start_time") or now) if prog_data else now
@@ -11343,7 +11359,7 @@ def _noi_dung_khu_vuc_phan_tich(v, key_suffix, video_path):
                        error_msg="⛔ Người dùng đã dừng phân tích. Nhấn 'Thử lại' để chạy lại với cài đặt khác.")
 
     # Khi error + grace period hết: dừng auto-refresh bằng cách trigger full rerun 1 lần
-    # Tránh nút nhấp nháy do fragment run_every=3s tiếp tục sau khi thread đã chết
+    # Tránh nút nhấp nháy do trạng thái tiến trình cũ còn sót sau khi thread đã chết
     _err_stop_key = f"_error_stop_refresh_{key_suffix}"
     if is_error and not _just_retried:
         if st.session_state.get(_err_stop_key) != video_path:
@@ -15681,7 +15697,6 @@ def hien_thi_ket_qua_cho_benh_nhan(target_username=None):
     hien_thi_tab_ket_qua_da_chon(my_history_vids, my_evals, user_role, is_fresh_session)
 
 
-@st.fragment
 def hien_thi_tab_ket_qua_da_chon(my_history_vids, my_evals, user_role, is_fresh_session=False):
     """Fragment: chọn phiên tập + tab kết quả — chỉ reload vùng này (nhanh cho bệnh nhân)."""
     selected_v = None
@@ -15764,7 +15779,7 @@ def hien_thi_tab_ket_qua_da_chon(my_history_vids, my_evals, user_role, is_fresh_
             if st.button("🔄 LÀM MỚI (QUAY LẠI CHỜ KẾT QUẢ)", width="stretch", type="secondary"):
                 del st.session_state['patient_history_selector_global']
                 st.session_state.pop("_patient_session_key", None)
-                st.rerun(scope="fragment")
+                st.rerun()
         else:
             selected_v = my_history_vids[0]
             st.markdown("---")
@@ -18350,7 +18365,6 @@ def hien_thi_danh_sach_video_fragment(user_role):
     _syncing = st.session_state.get("_bg_video_list_sync") or (not _pre and bool(HF_TOKEN and HF_DATASET_ID))
     interval = timedelta(seconds=5) if _syncing else None
 
-    @st.fragment(run_every=interval)
     def _body():
         _noi_dung_danh_sach_video_fragment(
             user_role,
@@ -18537,7 +18551,7 @@ def _noi_dung_danh_sach_video_fragment(user_role, video_list_preloaded=None):
                         ):
                             n_start, n_skip = bat_dau_phan_tich_hang_loat(pending_batch, only_pending=True)
                             st.toast(f"Đã khởi chạy {n_start} video (bỏ qua {n_skip}). Đang chạy nền: {running_n + n_start}.", icon="🚀")
-                            st.rerun(scope="fragment")
+                            st.rerun()
                     else:
                         st.caption("✅ Không còn video chưa phân tích trong bộ lọc hiện tại.")
                 with b_col2:
@@ -18548,7 +18562,7 @@ def _noi_dung_danh_sach_video_fragment(user_role, video_list_preloaded=None):
                     ):
                         n_start, n_skip = bat_dau_phan_tich_hang_loat(filtered_videos, only_pending=False, force_reanalyze=True)
                         st.toast(f"Đã xếp hàng chạy lại {n_start} video (bỏ qua {n_skip}).", icon="🔁")
-                        st.rerun(scope="fragment")
+                        st.rerun()
                 if running_n or pending_batch:
                     st.caption(
                         f"Tối đa **{MAX_CONCURRENT_ANALYSIS}** video chạy cùng lúc; video tiếp theo tự xếp hàng. "
@@ -18573,7 +18587,7 @@ def _noi_dung_danh_sach_video_fragment(user_role, video_list_preloaded=None):
                 with pg_c1:
                     if st.button("◀ Trang trước", disabled=(st.session_state.vid_list_page == 0), key="vid_pg_prev"):
                         st.session_state.vid_list_page -= 1
-                        st.rerun(scope="fragment")
+                        st.rerun()
                 with pg_c2:
                     st.markdown(
                         f"<div style='text-align:center; padding:6px; color:#aaa;'>Trang {st.session_state.vid_list_page + 1} / {total_pages} "
@@ -18583,7 +18597,7 @@ def _noi_dung_danh_sach_video_fragment(user_role, video_list_preloaded=None):
                 with pg_c3:
                     if st.button("Trang sau ▶", disabled=(st.session_state.vid_list_page >= total_pages - 1), key="vid_pg_next"):
                         st.session_state.vid_list_page += 1
-                        st.rerun(scope="fragment")
+                        st.rerun()
 
             start_idx = st.session_state.vid_list_page * PAGE_SIZE
             page_videos = list(enumerate(filtered_videos))[start_idx: start_idx + PAGE_SIZE]
@@ -18650,12 +18664,12 @@ def _noi_dung_danh_sach_video_fragment(user_role, video_list_preloaded=None):
                                     st.error("❌ Chưa có đường dẫn video upload cho mục này.")
                                 if st.button("⏸️ Ẩn video", key=f"hide_vid_btn_{idx}", use_container_width=True):
                                     st.session_state[show_vid_key] = False
-                                    st.rerun(scope="fragment")
+                                    st.rerun()
                             else:
                                 st.info("ℹ️ Nhấp bên dưới để xem **video gốc** bệnh nhân đã upload (không phải bản trích xuất AI).")
                                 if st.button("▶️ Xem video gốc", key=f"play_vid_btn_{idx}", type="primary", use_container_width=True):
                                     st.session_state[show_vid_key] = True
-                                    st.rerun(scope="fragment")
+                                    st.rerun()
                         with col_v2:
                             st.write(f"**Người tập:** {v['full_name']}")
                             is_gay_ex = any(kw in str(v.get('exercise', '')).lower() for kw in ["gậy", "gay", "pulley", "stick"])
@@ -19370,7 +19384,7 @@ def _render_main_tab_content(tab_titles, user_role):
                                 st.session_state.active_video_name = file_upload.name
                                 st.session_state.fresh_session = True  # <-- QUAN TRỌNG: Phải = True để hiện màn hình "Đang chờ NCV..."
                                 st.session_state.has_data = False
-                                st.rerun(scope="fragment")
+                                st.rerun()
 
                     # === HIỆN TRẠNG THÁI ĐANG XỬ LÝ HOẶC ĐÃ CÓ KẾT QUẢ ===
                     if st.session_state.processing:
