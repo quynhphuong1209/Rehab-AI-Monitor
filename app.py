@@ -228,9 +228,31 @@ def get_clean_rel_path(path):
             return p[idx:]
     return os.path.basename(path)
 
+
+def _la_duong_dan_video_gia(path):
+    """Chan artifact frame/CSV/ZIP bi nham thanh video can tai/phat."""
+    if not path:
+        return True
+    p = str(path).replace("\\", "/")
+    low = p.lower()
+    base = os.path.basename(low)
+    if low.endswith((".json", ".csv", ".zip", ".jpg", ".jpeg", ".png", ".webp")):
+        return True
+    if not low.endswith((".mp4", ".mov", ".avi", ".mkv", ".webm")):
+        return True
+    if (
+        base.endswith("_frames.mp4")
+        or base.endswith("_frames_f.mp4")
+        or "_frames_" in base
+        or ("/processed_results/processed_" in low and "_frames/" in low)
+    ):
+        return True
+    return False
+
+
 def get_final_h264_path(video_path):
     """Trả về đường dẫn tệp H264 đích (_f.mp4) tương ứng một cách chuẩn xác, độc lập với định dạng/cú pháp phần mở rộng gốc."""
-    if not video_path:
+    if not video_path or _la_duong_dan_video_gia(video_path):
         return ""
     if video_path.endswith('_f.mp4'):
         return video_path
@@ -248,6 +270,8 @@ def video_fallback_paths(file_path):
         norm = get_local_frame_path(file_path) or file_path
     except Exception:
         norm = file_path
+    if _la_duong_dan_video_gia(norm):
+        return []
     candidates = []
     if norm.endswith('_f.mp4'):
         candidates = [norm, norm.replace('_f.mp4', '.mp4')]
@@ -1992,7 +2016,7 @@ def _render_video_streamlit_native(target_path, allow_large=False):
 
 def dam_bao_tai_video_phan_tich(processed_path, allow_sync_transcode=False):
     """Tải video phân tích về local — không transcode đồng bộ khi chỉ cần phát."""
-    if not processed_path:
+    if not processed_path or _la_duong_dan_video_gia(processed_path):
         return None
     ready = find_ready_local_video(processed_path)
     if ready:
@@ -2704,6 +2728,8 @@ def _fragment_tien_do_tai_media(v, key_suffix=""):
 
 def _quay_lai_ket_qua_cu_da_luu(v, rerun=False):
     """Nạp kết quả đã lưu đầy đủ — biểu đồ ngay, video/frames tải song song."""
+    global _hf_last_download_error
+    _hf_last_download_error = None
     v = _lam_moi_ban_ghi_video_tu_db(v)
     if not v or not v.get("metrics"):
         st.error("❌ Không tìm thấy kết quả cũ cho video này.")
@@ -3769,6 +3795,9 @@ def ensure_local_file(file_path, quiet=False, try_fallbacks=True):
     """Đảm bảo file tồn tại cục bộ. Thử _f.mp4 rồi .mp4 gốc — không báo lỗi đỏ khi _f chua upload."""
     if not file_path:
         return False
+    _low_fp = str(file_path).lower()
+    if _low_fp.endswith((".mp4", ".mov", ".avi", ".mkv", ".webm")) and _la_duong_dan_video_gia(file_path):
+        return False
 
     paths = video_fallback_paths(file_path) if try_fallbacks else [file_path]
 
@@ -4810,6 +4839,8 @@ def _dam_bao_video_san_sang_play(path, prefer_raw=False, video_record=None):
     if not path and video_record:
         path = _lay_duong_dan_video_tho(video_record)
     if not path:
+        return None
+    if not prefer_raw and _la_duong_dan_video_gia(path):
         return None
     if prefer_raw:
         search_paths = list(video_raw_only_paths(path))

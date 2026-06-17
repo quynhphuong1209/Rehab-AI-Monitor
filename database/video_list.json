@@ -110,7 +110,8 @@
         "df_path": "/data/processed_results/processed_1780544672_f_data.csv",
         "sai_so": 30,
         "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)",
-        "frames_zip_path": "/data/processed_results/processed_1780393267_frames.zip"
+        "frames_zip_path": "/data/processed_results/processed_1780544672_frames.zip",
+        "frames_zip": "/data/processed_results/processed_1780544672_frames.zip"
     },
     {
         "username": "Hoàng Hạnh Nguyên",
@@ -222,7 +223,9 @@
         "df_path": "/data/processed_results/processed_1780553948_f_data.csv",
         "all_frames_data_path": "/data/processed_results/f_1780553948.json",
         "sai_so": 30,
-        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)"
+        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)",
+        "frames_zip": "/data/processed_results/processed_1780553948_frames.zip",
+        "frames_zip_path": "/data/processed_results/processed_1780553948_frames.zip"
     },
     {
         "username": "Nguyễn Thị Nga",
@@ -940,7 +943,9 @@
         "df_path": "/data/processed_results/processed_1780545425_f_data.csv",
         "all_frames_data_path": "/data/processed_results/f_1780545425.json",
         "sai_so": 30,
-        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)"
+        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)",
+        "frames_zip": "/data/processed_results/processed_1780545425_frames.zip",
+        "frames_zip_path": "/data/processed_results/processed_1780545425_frames.zip"
     },
     {
         "username": "Nguyễn Thị Nga",
@@ -1052,7 +1057,9 @@
         "df_path": "/data/processed_results/processed_1780554251_f_data.csv",
         "all_frames_data_path": "/data/processed_results/f_1780554251.json",
         "sai_so": 30,
-        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)"
+        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)",
+        "frames_zip": "/data/processed_results/processed_1780554251_frames.zip",
+        "frames_zip_path": "/data/processed_results/processed_1780554251_frames.zip"
     },
     {
         "username": "Vũ Thị Hòa",
@@ -1164,7 +1171,9 @@
         "df_path": "/data/processed_results/processed_1780545822_f_data.csv",
         "all_frames_data_path": "/data/processed_results/f_1780545822.json",
         "sai_so": 30,
-        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)"
+        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)",
+        "frames_zip": "/data/processed_results/processed_1780545822_frames.zip",
+        "frames_zip_path": "/data/processed_results/processed_1780545822_frames.zip"
     },
     {
         "username": "Vũ Thị Hòa",
@@ -5290,7 +5299,9 @@
         "df_path": "/data/processed_results/processed_1780555635_f_data.csv",
         "all_frames_data_path": "/data/processed_results/f_1780555635.json",
         "sai_so": 30,
-        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)"
+        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)",
+        "frames_zip": "/data/processed_results/processed_1780555635_frames.zip",
+        "frames_zip_path": "/data/processed_results/processed_1780555635_frames.zip"
     },
     {
         "username": "Cao Thị Thường",
@@ -7451,7 +7462,9 @@
         "df_path": "/data/processed_results/processed_1780546708_f_data.csv",
         "all_frames_data_path": "/data/processed_results/f_1780546708.json",
         "sai_so": 30,
-        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)"
+        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)",
+        "frames_zip": "/data/processed_results/processed_1780546708_frames.zip",
+        "frames_zip_path": "/data/processed_results/processed_1780546708_frames.zip"
     },
     {
         "username": "Cao Thị Thường",
@@ -7563,6 +7576,8 @@
         "df_path": "/data/processed_results/processed_1780541694_f_data.csv",
         "all_frames_data_path": "/data/processed_results/f_1780541694.json",
         "sai_so": 30,
-        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)"
+        "giai_doan": "Giai đoạn 2: Hồi phục (Sai số vừa - 30°)",
+        "frames_zip": "/data/processed_results/processed_1780541694_frames.zip",
+        "frames_zip_path": "/data/processed_results/processed_1780541694_frames.zip"
     }
 ]
