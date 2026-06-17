@@ -1952,7 +1952,7 @@ def nap_phien_benh_nhan_vao_session(selected_v):
     st.session_state.processed_video_path = selected_v.get('processed_path')
     st.session_state.all_frames_data_path = selected_v.get('all_frames_data_path')
     st.session_state.uploaded_file_name = selected_v.get('video_name')
-    st.session_state.frames_zip = selected_v.get('frames_zip')
+    st.session_state.frames_zip = _frames_zip_path_from_video(selected_v)
     st.session_state.has_data = True
     st.session_state.view_old_analysis = True
     st.session_state.reanalyze_triggered = False
@@ -2066,6 +2066,29 @@ def _duong_dan_frames_json_candidates(v):
             seen.add(p)
             out.append(p)
     return out
+
+
+def _frames_zip_from_processed_path(processed_path):
+    if not processed_path:
+        return ""
+    proc = get_local_frame_path(processed_path) or processed_path
+    import re
+    m = re.search(r"processed_(\d+)", str(proc))
+    if m:
+        return os.path.join(PROCESSED_DIR, f"processed_{m.group(1)}_frames.zip")
+    if str(proc).lower().endswith(".mp4"):
+        return str(proc)[:-4] + "_frames.zip"
+    return ""
+
+
+def _frames_zip_path_from_video(v):
+    if not v:
+        return ""
+    for key in ("frames_zip", "frames_zip_path"):
+        p = v.get(key)
+        if p:
+            return get_local_frame_path(p) or p
+    return _frames_zip_from_processed_path(v.get("processed_path") or v.get("video_path"))
 
 
 def _tim_duong_dan_csv_tu_video(v):
@@ -2262,7 +2285,7 @@ def khoi_phuc_ket_qua_cu(v, tai_csv=True, tai_day_du=False):
     st.session_state.processed_video_path = v.get("processed_path", v.get("video_path"))
     st.session_state.uploaded_file_name = v.get("video_name", "Video đã lưu")
     st.session_state.all_frames_data_path = v.get("all_frames_data_path")
-    st.session_state.frames_zip = v.get("frames_zip")
+    st.session_state.frames_zip = _frames_zip_path_from_video(v)
     st.session_state.current_df_csv_path = v.get("df_path")
     ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]["ten"] == v.get("exercise")), BAI_TAP["codman"])
     st.session_state.exercise = ex_base.copy()
@@ -2290,7 +2313,7 @@ def khoi_phuc_ket_qua_cu(v, tai_csv=True, tai_day_du=False):
         frames_json = v.get("all_frames_data_path")
         if frames_json:
             ensure_local_file(frames_json)
-        fz = v.get("frames_zip")
+        fz = _frames_zip_path_from_video(v)
         if fz:
             ensure_local_file(fz)
         if proc:
@@ -2313,7 +2336,7 @@ def _gan_session_ket_qua_tu_video(v):
     st.session_state.processed_video_path = v.get("processed_path", v.get("video_path"))
     st.session_state.uploaded_file_name = v.get("video_name", "Video đã lưu")
     st.session_state.all_frames_data_path = v.get("all_frames_data_path")
-    st.session_state.frames_zip = v.get("frames_zip")
+    st.session_state.frames_zip = _frames_zip_path_from_video(v)
     st.session_state.current_df_csv_path = v.get("df_path")
     ex_base = next((BAI_TAP[k] for k in BAI_TAP if BAI_TAP[k]["ten"] == v.get("exercise")), BAI_TAP["codman"])
     st.session_state.exercise = ex_base.copy()
@@ -2375,7 +2398,7 @@ def _trang_thai_tai_media(v):
     v = _lam_moi_ban_ghi_video_tu_db(v) or v
     proc = v.get("processed_path") or v.get("video_path")
     fj = v.get("all_frames_data_path") or st.session_state.get("all_frames_data_path")
-    fz = v.get("frames_zip") or st.session_state.get("frames_zip")
+    fz = _frames_zip_path_from_video(v) or st.session_state.get("frames_zip")
     csv_ok = st.session_state.get("angle_df") is not None
     if not csv_ok:
         for p in _duong_dan_csv_candidates(v) + ([v.get("df_path")] if v.get("df_path") else []):
@@ -2387,7 +2410,7 @@ def _trang_thai_tai_media(v):
         lp = get_local_frame_path(fj) or fj
         json_ok = is_local_file_ready(lp, min_size=2)
     vid_ok = bool(proc and is_local_file_ready(proc, min_size=50 * 1024))
-    zip_ok = not fz or is_local_file_ready(get_local_frame_path(fz) or fz, min_size=1024)
+    zip_ok = bool(fz and is_local_file_ready(get_local_frame_path(fz) or fz, min_size=1024)) or vid_ok
     job = _bg_load_jobs.get(_slot_tai_key(v), {})
     return {
         "csv": csv_ok,
@@ -2439,7 +2462,7 @@ def _bat_dau_tai_day_du_song_song(v):
                 dam_bao_tai_video_phan_tich(proc)
                 _bg_load_jobs[_key]["video"] = True
 
-            fz = v_local.get("frames_zip")
+            fz = _frames_zip_path_from_video(v_local)
             if fz and ensure_local_file(fz, quiet=True):
                 _bg_load_jobs[_key]["zip"] = True
             if proc:
@@ -2502,7 +2525,7 @@ def _fragment_tien_do_tai_media(v, key_suffix=""):
     can_poll = (
         st.session_state.get("_media_load_slot")
         or status.get("running")
-        or not all((status.get("csv"), status.get("json"), status.get("video")))
+        or not all((status.get("csv"), status.get("json"), status.get("video"), status.get("zip")))
         or dang_phan_tich
     )
     interval = timedelta(seconds=1) if can_poll else None
@@ -2516,11 +2539,11 @@ def _fragment_tien_do_tai_media(v, key_suffix=""):
             f"{'✅' if status['csv'] else '⏳'} Biểu đồ · "
             f"{'✅' if status['json'] else '⏳'} Frames · "
             f"{'✅' if status['video'] else '⏳'} Video · "
-            f"{'✅' if status['zip'] or not (v.get('frames_zip')) else '⏳'} ZIP"
+            f"{'✅' if status['zip'] or not _frames_zip_path_from_video(v) else '⏳'} ZIP"
         )
-        if status["running"] or not all((status["csv"], status["json"], status["video"])):
+        if status["running"] or not all((status["csv"], status["json"], status["video"], status["zip"])):
             st.caption(f"☁️ **Đang tải từ Cloud:** {icons}")
-        elif status["csv"] and status["json"] and status["video"]:
+        elif status["csv"] and status["json"] and status["video"] and status["zip"]:
             st.caption(f"✅ **Đã tải đủ:** {icons} — mở tab **🎬 VIDEO & ẢNH FRAME**.")
 
         if st.session_state.get("angle_df") is None and status["csv"]:
@@ -3776,6 +3799,9 @@ def tai_tep_phan_tich_tu_hf(v):
         p = v.get(key)
         if p:
             paths.append(p)
+    inferred_zip = _frames_zip_path_from_video(v)
+    if inferred_zip:
+        paths.append(inferred_zip)
     for p in _duong_dan_csv_candidates(v) + _duong_dan_frames_json_candidates(v):
         paths.append(p)
     seen, got = set(), False
@@ -4390,6 +4416,7 @@ def _video_entry_from_progress(pdata):
         "df_path": res.get("df_path"),
         "all_frames_data_path": res.get("all_frames_data_path"),
         "frames_zip": res.get("frames_zip"),
+        "frames_zip_path": res.get("frames_zip") or res.get("frames_zip_path"),
         "status": "Đã phân tích",
     }
 
@@ -4416,11 +4443,11 @@ def _merge_video_lists_union(base_list, extra_list):
         else:
             newer, older = existing, rec
         merged = dict(newer)
-        for fld in ("video_path", "processed_path", "df_path", "all_frames_data_path", "metrics", "frames_zip"):
+        for fld in ("video_path", "processed_path", "df_path", "all_frames_data_path", "metrics", "frames_zip", "frames_zip_path"):
             if not merged.get(fld) and older.get(fld):
                 merged[fld] = older[fld]
         if t_rec >= t_exist:
-            for fld in ("metrics", "processed_path", "df_path", "all_frames_data_path", "accuracy", "status"):
+            for fld in ("metrics", "processed_path", "df_path", "all_frames_data_path", "frames_zip", "frames_zip_path", "accuracy", "status"):
                 if rec.get(fld) is not None:
                     merged[fld] = rec[fld]
         elif existing.get("metrics") and not merged.get("metrics"):
@@ -4502,7 +4529,7 @@ def _merge_video_list_with_evals(video_list):
             return
         if key in by_key:
             existing = by_key[key]
-            for fld in ("video_path", "processed_path", "df_path", "all_frames_data_path", "metrics", "frames_zip"):
+            for fld in ("video_path", "processed_path", "df_path", "all_frames_data_path", "metrics", "frames_zip", "frames_zip_path"):
                 if not existing.get(fld) and rec.get(fld):
                     existing[fld] = rec[fld]
             if rec.get("accuracy") and (not existing.get("accuracy") or float(rec.get("accuracy") or 0) > float(existing.get("accuracy") or 0)):
@@ -4727,7 +4754,7 @@ def dong_bo_video_list_tu_processed(video_list):
             if rec:
                 for fld in (
                     "processed_path", "df_path", "all_frames_data_path",
-                    "metrics", "frames_zip", "accuracy", "status", "video_path",
+                    "metrics", "frames_zip", "frames_zip_path", "accuracy", "status", "video_path",
                 ):
                     new_val = rec.get(fld)
                     if new_val and v.get(fld) != new_val:
@@ -7908,7 +7935,7 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
                 st.session_state.processed_video_path = v_ai.get('processed_path')
                 st.session_state.all_frames_data_path = v_ai.get('all_frames_data_path')
                 st.session_state.uploaded_file_name = v_ai.get('video_name')
-                st.session_state.frames_zip = v_ai.get('frames_zip')
+                st.session_state.frames_zip = _frames_zip_path_from_video(v_ai)
                 
                 if v_ai.get('metrics'):
                     df_ncv = None
@@ -7938,7 +7965,7 @@ def hien_thi_tab_danh_gia_va_nckh_bac_si():
                 st.session_state.processed_video_path = v_ai.get('processed_path')
                 st.session_state.all_frames_data_path = v_ai.get('all_frames_data_path')
                 st.session_state.uploaded_file_name = v_ai.get('video_name')
-                st.session_state.frames_zip = v_ai.get('frames_zip')
+                st.session_state.frames_zip = _frames_zip_path_from_video(v_ai)
                 hien_thi_frames_day_du(key_suffix="doc_view_ncv_vid")
             else:
                 st.warning("⚠️ Không tìm thấy dữ liệu video AI tương ứng.")
@@ -10171,7 +10198,11 @@ def check_and_populate_background_result(video_path):
             st.session_state.all_frames_data_path = result.get("all_frames_data_path")
             st.session_state.exercise = result.get("exercise")
             st.session_state.current_df_csv_path = df_path
-            st.session_state.frames_zip = result.get("frames_zip")
+            st.session_state.frames_zip = (
+                result.get("frames_zip")
+                or result.get("frames_zip_path")
+                or _frames_zip_from_processed_path(result.get("processed_video_path"))
+            )
             st.session_state.temp_frames_dir = result.get("temp_frames_dir")
             st.session_state.reanalyze_triggered = False
             st.session_state.view_old_analysis = True
@@ -12265,6 +12296,8 @@ def bat_dau_phan_tich_background(
                         "metrics": stats_data,
                         "df_path": df_csv_path,
                         "all_frames_data_path": all_frames_data,
+                        "frames_zip": zip_data,
+                        "frames_zip_path": zip_data,
                         "status": "Đã phân tích",
                         "sai_so": ss_override,
                         "giai_doan": giai_doan
@@ -12335,6 +12368,7 @@ def bat_dau_phan_tich_background(
                     "all_frames_data_path": all_frames_data,
                     "exercise": bt_ncv,
                     "frames_zip": zip_data,
+                    "frames_zip_path": zip_data,
                     "temp_frames_dir": temp_folder
                 }
                 write_progress(progress_video_path, "success", username=username, video_name=video_name, progress=1.0, elapsed=elap, start_time=start_t, result=result_data)
@@ -16470,7 +16504,7 @@ def _noi_dung_frames_day_du(key_suffix=""):
             if proc:
                 ensure_local_file(proc, try_fallbacks=True)
                 check_and_extract_frames_zip(proc)
-            fz = st.session_state.get("frames_zip")
+            fz = _frames_zip_path_from_video(st.session_state.get("current_eval_video") or {}) or st.session_state.get("frames_zip")
             if fz:
                 ensure_local_file(get_local_frame_path(fz) or fz)
         if not is_local_file_ready(all_frames_data_path):
@@ -16498,7 +16532,7 @@ def _noi_dung_frames_day_du(key_suffix=""):
     # Kiểm tra sớm: nếu frame images không có local và ZIP cũng chưa có → tải từ HF Dataset
     _proc_fp = get_local_frame_path(st.session_state.get("processed_video_path") or "")
     _fz_sess = get_local_frame_path(st.session_state.get("frames_zip") or "")
-    _zip_from_proc = (_proc_fp.replace(".mp4", "_frames.zip") if _proc_fp else "")
+    _zip_from_proc = _frames_zip_from_processed_path(_proc_fp)
     _zip_local = (_zip_from_proc if (_zip_from_proc and os.path.exists(_zip_from_proc))
                   else (_fz_sess if (_fz_sess and os.path.exists(_fz_sess)) else ""))
     _first_frame_path = get_local_frame_path((all_frames_data[0] if all_frames_data else {}).get("path", ""))
@@ -17131,7 +17165,7 @@ Dòng **Xác suất 3 lớp** (nếu có): tổng ~100%, cho biết mô hình ph
         # Thử cả hai nguồn ZIP: từ video path và từ session state frames_zip
         _zip_candidates = []
         if processed_video_path:
-            _zip_candidates.append(get_local_frame_path(processed_video_path.replace('.mp4', '_frames.zip')))
+            _zip_candidates.append(get_local_frame_path(_frames_zip_from_processed_path(processed_video_path)))
         _fz_alt = get_local_frame_path(st.session_state.get('frames_zip') or "")
         if _fz_alt and _fz_alt not in _zip_candidates:
             _zip_candidates.append(_fz_alt)
