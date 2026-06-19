@@ -461,6 +461,20 @@ textarea:focus {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.filter-bar label {
+  font-size: 12px;
+}
+
 .check-row {
   display: flex;
   flex-wrap: wrap;
@@ -829,6 +843,11 @@ tr:last-child td {
   color: #475569;
   font-size: 12px;
   font-weight: 700;
+}
+
+.printable-schedules {
+  display: grid;
+  gap: 12px;
 }
 
 .result-panel,
@@ -1735,7 +1754,8 @@ tr:last-child td {
   }
 
   .form-grid,
-  .form-grid.two {
+  .form-grid.two,
+  .filter-bar {
     grid-template-columns: 1fr;
   }
 }
@@ -1758,6 +1778,10 @@ tr:last-child td {
   .info-card-grid,
   .info-card-grid.compact,
   .cleanup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-bar {
     grid-template-columns: 1fr;
   }
 
@@ -1802,5 +1826,34 @@ tr:last-child td {
   .frame-modal-meta {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .sidebar,
+  .topbar,
+  .metrics-grid,
+  .panel-header,
+  .data-form,
+  .row-actions,
+  .filter-bar {
+    display: none !important;
+  }
+
+  .workspace {
+    display: block;
+  }
+
+  .content,
+  .panel,
+  .printable-schedules {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
   }
 }

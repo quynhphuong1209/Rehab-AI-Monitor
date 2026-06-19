@@ -262,6 +262,102 @@ function textValue(...values: unknown[]) {
   return 'N/A';
 }
 
+const DELETE_CONFIRM = {
+  evaluation: 'DELETE EVALUATION',
+  schedule: 'DELETE SCHEDULE',
+  research: 'DELETE RESEARCH RECORD',
+} as const;
+
+function csvCell(value: unknown) {
+  const text = Array.isArray(value) ? value.join('; ') : String(value ?? '');
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function downloadCsvFile(filename: string, rows: Array<Record<string, unknown>>) {
+  if (!rows.length) {
+    return;
+  }
+  const headers = Array.from(rows.reduce((keys, row) => {
+    Object.keys(row).forEach((key) => keys.add(key));
+    return keys;
+  }, new Set<string>()));
+  const csv = [headers.map(csvCell).join(','), ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(','))].join('\n');
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function parseRecordDate(value: unknown): Date | null {
+  const text = String(value || '').trim();
+  if (!text) {
+    return null;
+  }
+  const iso = Date.parse(text.replace(' ', 'T'));
+  if (Number.isFinite(iso)) {
+    return new Date(iso);
+  }
+  const vnMatch = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (vnMatch) {
+    const [, day, month, year] = vnMatch;
+    const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isFinite(parsed.getTime()) ? parsed : null;
+  }
+  return null;
+}
+
+function recordDateMs(...values: unknown[]) {
+  for (const value of values) {
+    const date = parseRecordDate(value);
+    if (date) {
+      return date.getTime();
+    }
+  }
+  return null;
+}
+
+function isWithinDateRange(ms: number | null, from: string, to: string) {
+  if (ms === null) {
+    return !from && !to;
+  }
+  const fromMs = from ? new Date(`${from}T00:00:00`).getTime() : null;
+  const toMs = to ? new Date(`${to}T23:59:59`).getTime() : null;
+  return (fromMs === null || ms >= fromMs) && (toMs === null || ms <= toMs);
+}
+
+function scheduleTypeLabel(type: unknown) {
+  const labels: Record<string, string> = {
+    appointment: 'Lịch hẹn',
+    exercise: 'Lịch tập',
+    medication: 'Lịch thuốc',
+  };
+  return labels[String(type || '')] || textValue(type);
+}
+
+function scheduleWindowMatches(schedule: ScheduleRecord, windowName: string) {
+  if (windowName === 'all') {
+    return true;
+  }
+  const ms = recordDateMs(schedule.datetime, schedule.date, schedule.time);
+  if (ms === null) {
+    return false;
+  }
+  const date = new Date(ms);
+  const now = new Date();
+  if (windowName === 'today') {
+    return date.toDateString() === now.toDateString();
+  }
+  const startOfWeek = new Date(now);
+  startOfWeek.setHours(0, 0, 0, 0);
+  startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 7);
+  return date >= startOfWeek && date < endOfWeek;
+}
+
 function patientLabel(record: RecordLike) {
   return textValue(record.full_name, record.subject_code, record.username, record.patient_username);
 }
@@ -793,6 +889,14 @@ export function App() {
   const [schedules, setSchedules] = useState<ScheduleRecord[]>([]);
   const [researchRecords, setResearchRecords] = useState<ResearchRecord[]>([]);
   const [query, setQuery] = useState('');
+  const [evaluationFilterPatient, setEvaluationFilterPatient] = useState('');
+  const [evaluationFilterExercise, setEvaluationFilterExercise] = useState('');
+  const [evaluationFilterResult, setEvaluationFilterResult] = useState('');
+  const [evaluationDateFrom, setEvaluationDateFrom] = useState('');
+  const [evaluationDateTo, setEvaluationDateTo] = useState('');
+  const [scheduleFilterType, setScheduleFilterType] = useState('');
+  const [scheduleFilterStatus, setScheduleFilterStatus] = useState('');
+  const [scheduleWindow, setScheduleWindow] = useState('all');
   const [loadState, setLoadState] = useState<LoadState>('idle');
   const [formState, setFormState] = useState<LoadState>('idle');
   const [previewState, setPreviewState] = useState<LoadState>('idle');
@@ -1017,6 +1121,15 @@ export function App() {
       exercise: String(formData.get('exercise') || ''),
       symptoms: String(formData.get('symptoms') || ''),
       vas: Number(formData.get('vas') || 0),
+      pain_before: Number(formData.get('pain_before') || formData.get('vas') || 0),
+      pain_after: Number(formData.get('pain_after') || formData.get('vas') || 0),
+      pain_location: String(formData.get('pain_location') || ''),
+      pain_at_rest: formData.get('pain_at_rest') === 'on',
+      pain_during_movement: formData.get('pain_during_movement') === 'on',
+      movement_limitations: String(formData.get('movement_limitations') || ''),
+      notes: String(formData.get('notes') || ''),
+      video_name: String(formData.get('video_name') || ''),
+      session_ref: String(formData.get('session_ref') || ''),
     };
     setFormState('loading');
     setFormMessage('');
@@ -1152,10 +1265,16 @@ export function App() {
     if (!session || !record.id) {
       return;
     }
+    const confirm = window.prompt(`Nhập "${DELETE_CONFIRM.evaluation}" để xóa đánh giá này. Backend sẽ backup và audit trước khi xóa.`);
+    if (confirm !== DELETE_CONFIRM.evaluation) {
+      setFormState('error');
+      setFormMessage(`Đã hủy xóa. Cần nhập chính xác ${DELETE_CONFIRM.evaluation}.`);
+      return;
+    }
     setFormState('loading');
     setFormMessage('');
     try {
-      await api.deleteEvaluation(session.token, record.id);
+      await api.deleteEvaluation(session.token, record.id, confirm);
       setFormState('ready');
       setFormMessage('Đã xóa đánh giá.');
       await loadDashboard(session);
@@ -1183,6 +1302,7 @@ export function App() {
       frequency: String(formData.get('frequency') || ''),
       medication_name: String(formData.get('medication_name') || ''),
       dosage: String(formData.get('dosage') || ''),
+      status: String(formData.get('status') || 'Đang theo dõi'),
     };
     setFormState('loading');
     setFormMessage('');
@@ -1202,16 +1322,39 @@ export function App() {
     if (!session || !record.id) {
       return;
     }
+    const confirm = window.prompt(`Nhập "${DELETE_CONFIRM.schedule}" để xóa lịch này. Backend sẽ backup và audit trước khi xóa.`);
+    if (confirm !== DELETE_CONFIRM.schedule) {
+      setFormState('error');
+      setFormMessage(`Đã hủy xóa. Cần nhập chính xác ${DELETE_CONFIRM.schedule}.`);
+      return;
+    }
     setFormState('loading');
     setFormMessage('');
     try {
-      await api.deleteSchedule(session.token, record.id);
+      await api.deleteSchedule(session.token, record.id, confirm);
       setFormState('ready');
       setFormMessage('Đã xóa lịch nhắc.');
       await loadDashboard(session);
     } catch (error) {
       setFormState('error');
       setFormMessage(error instanceof Error ? error.message : 'Không xóa được lịch nhắc.');
+    }
+  }
+
+  async function handleUpdateScheduleStatus(record: ScheduleRecord, status: string) {
+    if (!session || !record.id) {
+      return;
+    }
+    setFormState('loading');
+    setFormMessage('');
+    try {
+      await api.updateScheduleStatus(session.token, record.id, status);
+      setFormState('ready');
+      setFormMessage('Đã cập nhật trạng thái lịch.');
+      await loadDashboard(session);
+    } catch (error) {
+      setFormState('error');
+      setFormMessage(error instanceof Error ? error.message : 'Không cập nhật được trạng thái lịch.');
     }
   }
 
@@ -1234,6 +1377,8 @@ export function App() {
       specialist_comment: String(formData.get('specialist_comment') || ''),
       recording_device: String(formData.get('recording_device') || ''),
       recording_angle: String(formData.get('recording_angle') || ''),
+      video_name: String(formData.get('video_name') || ''),
+      camera_distance: String(formData.get('camera_distance') || ''),
     };
     setFormState('loading');
     setFormMessage('');
@@ -1253,10 +1398,16 @@ export function App() {
     if (!session || !record.id) {
       return;
     }
+    const confirm = window.prompt(`Nhập "${DELETE_CONFIRM.research}" để xóa phiếu nghiên cứu này. Backend sẽ backup và audit trước khi xóa.`);
+    if (confirm !== DELETE_CONFIRM.research) {
+      setFormState('error');
+      setFormMessage(`Đã hủy xóa. Cần nhập chính xác ${DELETE_CONFIRM.research}.`);
+      return;
+    }
     setFormState('loading');
     setFormMessage('');
     try {
-      await api.deleteResearchRecord(session.token, record.id);
+      await api.deleteResearchRecord(session.token, record.id, confirm);
       setFormState('ready');
       setFormMessage('Đã xóa phiếu nghiên cứu.');
       await loadDashboard(session);
@@ -1264,6 +1415,44 @@ export function App() {
       setFormState('error');
       setFormMessage(error instanceof Error ? error.message : 'Không xóa được phiếu nghiên cứu.');
     }
+  }
+
+  function exportEvaluationsCsv() {
+    downloadCsvFile(
+      `evaluations_${new Date().toISOString().slice(0, 10)}.csv`,
+      filteredEvaluations.map((item) => ({
+        patient_username: item.patient_username,
+        video_name: item.video_name,
+        exercise: item.exercise,
+        doctor_username: item.doctor_username,
+        doctor_result: item.doctor_result,
+        errors: item.errors || [],
+        comments: item.comments,
+        plan: item.plan,
+        time: item.time,
+      })),
+    );
+  }
+
+  function exportSchedulesCsv() {
+    downloadCsvFile(
+      `schedules_${new Date().toISOString().slice(0, 10)}.csv`,
+      filteredSchedules.map((item) => ({
+        patient: textValue(item.patient_name, item.patient_username, item.subject_code),
+        type: scheduleTypeLabel(item.type),
+        title: item.title,
+        datetime: item.datetime || `${item.date || ''} ${item.time || ''}`.trim(),
+        status: item.status,
+        exercise_name: item.exercise_name,
+        medication_name: item.medication_name,
+        dosage: item.dosage,
+        notes: item.notes,
+      })),
+    );
+  }
+
+  function printSchedules() {
+    window.print();
   }
 
   async function handleCreateUser(event: FormEvent<HTMLFormElement>) {
@@ -2161,10 +2350,43 @@ export function App() {
   const filteredPatients = useMemo(() => patients.filter((patient) => matchesQuery(patient as RecordLike, query)), [patients, query]);
   const filteredUsers = useMemo(() => users.filter((user) => matchesQuery(user as RecordLike, query)), [query, users]);
   const filteredSymptoms = useMemo(() => symptoms.filter((symptom) => matchesQuery(symptom, query)), [query, symptoms]);
-  const filteredSchedules = useMemo(() => schedules.filter((schedule) => matchesQuery(schedule, query)), [query, schedules]);
+  const filteredEvaluations = useMemo(
+    () =>
+      evaluations.filter((evaluation) => {
+        const dateMs = recordDateMs(evaluation.time);
+        return (
+          matchesQuery(evaluation as RecordLike, query) &&
+          (!evaluationFilterPatient || evaluation.patient_username === evaluationFilterPatient) &&
+          (!evaluationFilterExercise || evaluation.exercise === evaluationFilterExercise) &&
+          (!evaluationFilterResult || evaluation.doctor_result === evaluationFilterResult) &&
+          isWithinDateRange(dateMs, evaluationDateFrom, evaluationDateTo)
+        );
+      }),
+    [evaluationDateFrom, evaluationDateTo, evaluationFilterExercise, evaluationFilterPatient, evaluationFilterResult, evaluations, query],
+  );
+  const filteredSchedules = useMemo(
+    () =>
+      schedules.filter((schedule) => {
+        return (
+          matchesQuery(schedule, query) &&
+          (!scheduleFilterType || schedule.type === scheduleFilterType) &&
+          (!scheduleFilterStatus || schedule.status === scheduleFilterStatus) &&
+          scheduleWindowMatches(schedule, scheduleWindow)
+        );
+      }),
+    [query, scheduleFilterStatus, scheduleFilterType, scheduleWindow, schedules],
+  );
   const filteredResearch = useMemo(
     () => researchRecords.filter((record) => matchesQuery(record, query)),
     [query, researchRecords],
+  );
+  const evaluationPatientOptions = useMemo(
+    () => Array.from(new Set(evaluations.map((item) => item.patient_username).filter(Boolean))).sort(),
+    [evaluations],
+  );
+  const evaluationExerciseOptions = useMemo(
+    () => Array.from(new Set(evaluations.map((item) => item.exercise).filter(Boolean))).sort(),
+    [evaluations],
   );
 
   useEffect(() => {
@@ -2369,7 +2591,7 @@ export function App() {
   const activeRole = session?.user.role || '';
   const activeCount = {
     home: videos.length + patients.length + symptoms.length + schedules.length + researchRecords.length + users.length,
-    videos: filteredVideos.length,
+    videos: activeView === 'videos' && canManageClinical(activeRole) ? filteredVideos.length + filteredEvaluations.length : filteredVideos.length,
     patients: filteredPatients.length,
     symptoms: filteredSymptoms.length,
     schedules: filteredSchedules.length,
@@ -2711,9 +2933,15 @@ export function App() {
   const symptomColumns: TableColumn<SymptomRecord>[] = [
     { key: 'patient', label: 'Bệnh nhân', render: (symptom) => patientLabel(symptom) },
     { key: 'symptoms', label: 'Triệu chứng', render: (symptom) => textValue(symptom.symptoms, symptom.pain_level) },
-    { key: 'pain', label: 'Mức đau', render: (symptom) => textValue(symptom.pain_score, symptom.pain_level) },
+    {
+      key: 'pain',
+      label: 'Mức đau',
+      render: (symptom) =>
+        `VAS ${textValue(symptom.vas, symptom.pain_score, symptom.pain_level)} · trước ${textValue(symptom.pain_before)} / sau ${textValue(symptom.pain_after)}`,
+    },
+    { key: 'location', label: 'Vị trí/Hoàn cảnh', render: (symptom) => textValue(symptom.pain_location, symptom.movement_limitations) },
     { key: 'time', label: 'Thời gian', render: (symptom) => textValue(symptom.created_at, symptom.timestamp, symptom.time) },
-    { key: 'notes', label: 'Ghi chú', render: (symptom) => textValue(symptom.notes) },
+    { key: 'notes', label: 'Ghi chú/Video', render: (symptom) => textValue(symptom.notes, symptom.video_name, symptom.session_ref) },
   ];
 
   const evaluationColumns: TableColumn<EvaluationRecord>[] = [
@@ -2739,6 +2967,7 @@ export function App() {
 
   const scheduleColumns: TableColumn<ScheduleRecord>[] = [
     { key: 'patient', label: 'Bệnh nhân', render: (schedule) => patientLabel(schedule) },
+    { key: 'type', label: 'Loại', render: (schedule) => scheduleTypeLabel(schedule.type) },
     { key: 'title', label: 'Nội dung', render: (schedule) => textValue(schedule.title, schedule.exercise_name, schedule.medication_name, schedule.type) },
     { key: 'time', label: 'Thời gian', render: (schedule) => textValue(schedule.datetime, schedule.date, schedule.time) },
     {
@@ -2752,10 +2981,18 @@ export function App() {
       label: 'Thao tác',
       render: (schedule) =>
         canManageClinical(session.user.role) ? (
-          <button className="table-action danger-action" onClick={() => void handleDeleteSchedule(schedule)} disabled={!schedule.id || formState === 'loading'} type="button">
-            <Trash2 size={16} />
-            Xóa
-          </button>
+          <div className="row-actions">
+            {schedule.status !== 'Hoàn thành' ? (
+              <button className="table-action muted-action" onClick={() => void handleUpdateScheduleStatus(schedule, 'Hoàn thành')} disabled={!schedule.id || formState === 'loading'} type="button">
+                <CheckCircle2 size={16} />
+                Hoàn thành
+              </button>
+            ) : null}
+            <button className="table-action danger-action" onClick={() => void handleDeleteSchedule(schedule)} disabled={!schedule.id || formState === 'loading'} type="button">
+              <Trash2 size={16} />
+              Xóa
+            </button>
+          </div>
         ) : (
           'N/A'
         ),
@@ -2766,6 +3003,7 @@ export function App() {
     { key: 'subject', label: 'Đối tượng', render: (record) => patientLabel(record) },
     { key: 'result', label: 'Kết quả', render: (record) => textValue(record.general_result, record.doctor_result, record.result) },
     { key: 'exercise', label: 'Bài tập/Video', render: (record) => textValue(record.exercise, record.video_name) },
+    { key: 'source', label: 'Nguồn', render: (record) => textValue(record.source_video_id, record.source_evaluation_id, 'Nhập tay') },
     { key: 'time', label: 'Thời gian', render: (record) => textValue(record.created_at, record.timestamp, record.time) },
     {
       key: 'actions',
@@ -3262,10 +3500,51 @@ export function App() {
                   Mức đau VAS
                   <input name="vas" type="number" min="0" max="10" defaultValue="3" required />
                 </label>
+                <label>
+                  Đau trước tập
+                  <input name="pain_before" type="number" min="0" max="10" defaultValue="3" />
+                </label>
+                <label>
+                  Đau sau tập
+                  <input name="pain_after" type="number" min="0" max="10" defaultValue="3" />
+                </label>
+                <label>
+                  Vị trí đau
+                  <input name="pain_location" placeholder="VD: mặt trước vai phải" />
+                </label>
+                <label>
+                  Video/buổi tập liên quan
+                  <select name="video_name" defaultValue="">
+                    <option value="">Không gắn video</option>
+                    {videos.map((video, index) => (
+                      <option key={videoKey(video, index)} value={textValue(video.video_name, video.original_filename)}>
+                        {textValue(video.exercise)} - {textValue(video.video_name, video.original_filename)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
+              <div className="check-row">
+                <label>
+                  <input name="pain_at_rest" type="checkbox" />
+                  Đau khi nghỉ
+                </label>
+                <label>
+                  <input name="pain_during_movement" type="checkbox" defaultChecked />
+                  Đau khi vận động
+                </label>
+              </div>
+              <label>
+                Giới hạn vận động
+                <textarea name="movement_limitations" rows={2} placeholder="VD: khó nâng tay quá vai, đau khi xoay ngoài..." />
+              </label>
               <label>
                 Mô tả triệu chứng
                 <textarea name="symptoms" rows={4} placeholder="VD: Đau nhói ở khớp vai khi nâng tay lên cao..." required />
+              </label>
+              <label>
+                Ghi chú tự do
+                <textarea name="notes" rows={3} placeholder="Thông tin thêm: thuốc đã dùng, thời điểm đau tăng, cảm giác tê lan..." />
               </label>
               <div className="form-actions">
                 <button className="primary-button" type="submit" disabled={formState === 'loading'}>
@@ -3365,6 +3644,14 @@ export function App() {
                   </select>
                 </label>
                 <label>
+                  Trạng thái
+                  <select name="status" defaultValue="Đang theo dõi">
+                    <option value="Đang theo dõi">Đang theo dõi</option>
+                    <option value="Hoàn thành">Hoàn thành</option>
+                    <option value="Đã hủy">Đã hủy</option>
+                  </select>
+                </label>
+                <label>
                   Thời gian
                   <input name="datetime" type="datetime-local" />
                 </label>
@@ -3421,7 +3708,18 @@ export function App() {
                 </label>
                 <label>
                   Mã đối tượng
-                  <input name="subject_code" placeholder="VD: BN001" />
+                  <input name="subject_code" placeholder="VD: BN001" required />
+                </label>
+                <label>
+                  Video nguồn
+                  <select name="video_name" defaultValue="">
+                    <option value="">Không auto-fill từ video</option>
+                    {filteredVideos.map((video, index) => (
+                      <option key={videoKey(video, index)} value={textValue(video.video_name, video.original_filename, mediaFilenameForVideo(video))}>
+                        {patientLabel(video as RecordLike)} - {textValue(video.exercise)} - {textValue(video.video_name, video.original_filename)}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   Tuổi
@@ -3436,15 +3734,15 @@ export function App() {
                 </label>
                 <label>
                   Chẩn đoán
-                  <input name="diagnosis" placeholder="VD: M75.0" />
+                  <input name="diagnosis" placeholder="VD: M75.0" required />
                 </label>
                 <label>
                   Bài tập
-                  <input name="exercise" placeholder="VD: Codman" />
+                  <input name="exercise" placeholder="VD: Codman" required />
                 </label>
                 <label>
                   Kết quả
-                  <select name="general_result" defaultValue="Gần đúng">
+                  <select name="general_result" defaultValue="Gần đúng" required>
                     <option value="Đúng">Đúng</option>
                     <option value="Gần đúng">Gần đúng</option>
                     <option value="Sai">Sai</option>
@@ -3473,6 +3771,10 @@ export function App() {
                     <option value="Bên trái">Bên trái</option>
                     <option value="Bên phải">Bên phải</option>
                   </select>
+                </label>
+                <label>
+                  Khoảng cách camera
+                  <input name="camera_distance" placeholder="VD: 2.5m" />
                 </label>
               </div>
               <label>
@@ -4132,12 +4434,59 @@ export function App() {
               {canManageClinical(session.user.role) ? (
                 <div className="subpanel">
                   <div className="subpanel-header">
-                    <h3>Đánh giá lâm sàng</h3>
-                    <span>{evaluations.length} bản ghi</span>
+                    <div>
+                      <h3>Đánh giá lâm sàng</h3>
+                      <span>{filteredEvaluations.length}/{evaluations.length} bản ghi theo bộ lọc</span>
+                    </div>
+                    <button className="table-action muted-action" onClick={exportEvaluationsCsv} disabled={!filteredEvaluations.length} type="button">
+                      <Download size={16} />
+                      Export CSV
+                    </button>
+                  </div>
+                  <div className="filter-bar">
+                    <label>
+                      Bệnh nhân
+                      <select value={evaluationFilterPatient} onChange={(event) => setEvaluationFilterPatient(event.target.value)}>
+                        <option value="">Tất cả</option>
+                        {evaluationPatientOptions.map((patient) => (
+                          <option key={patient} value={patient}>
+                            {patient}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Bài tập
+                      <select value={evaluationFilterExercise} onChange={(event) => setEvaluationFilterExercise(event.target.value)}>
+                        <option value="">Tất cả</option>
+                        {evaluationExerciseOptions.map((exercise) => (
+                          <option key={exercise} value={exercise}>
+                            {exercise}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Kết quả
+                      <select value={evaluationFilterResult} onChange={(event) => setEvaluationFilterResult(event.target.value)}>
+                        <option value="">Tất cả</option>
+                        <option value="Đúng">Đúng</option>
+                        <option value="Gần đúng">Gần đúng</option>
+                        <option value="Sai">Sai</option>
+                      </select>
+                    </label>
+                    <label>
+                      Từ ngày
+                      <input type="date" value={evaluationDateFrom} onChange={(event) => setEvaluationDateFrom(event.target.value)} />
+                    </label>
+                    <label>
+                      Đến ngày
+                      <input type="date" value={evaluationDateTo} onChange={(event) => setEvaluationDateTo(event.target.value)} />
+                    </label>
                   </div>
                   <DataTable
                     columns={evaluationColumns}
-                    items={evaluations.filter((evaluation) => matchesQuery(evaluation as RecordLike, query))}
+                    items={filteredEvaluations}
                     emptyText="Chưa có đánh giá phù hợp."
                     rowKey={(evaluation, index) => recordKey('evaluation', evaluation as RecordLike, index)}
                   />
@@ -4162,12 +4511,59 @@ export function App() {
             />
           ) : null}
           {activeView === 'schedules' ? (
-            <DataTable
-              columns={scheduleColumns}
-              items={filteredSchedules}
-              emptyText="Chưa có lịch nhắc phù hợp."
-              rowKey={(schedule, index) => recordKey('schedule', schedule, index)}
-            />
+            <section className="printable-schedules">
+              <div className="subpanel-header">
+                <div>
+                  <h3>Lịch nhắc</h3>
+                  <span>{filteredSchedules.length}/{schedules.length} lịch theo bộ lọc</span>
+                </div>
+                <div className="row-actions">
+                  <button className="table-action muted-action" onClick={exportSchedulesCsv} disabled={!filteredSchedules.length} type="button">
+                    <Download size={16} />
+                    Export CSV
+                  </button>
+                  <button className="table-action muted-action" onClick={printSchedules} disabled={!filteredSchedules.length} type="button">
+                    <ClipboardList size={16} />
+                    Print
+                  </button>
+                </div>
+              </div>
+              <div className="filter-bar">
+                <label>
+                  Loại lịch
+                  <select value={scheduleFilterType} onChange={(event) => setScheduleFilterType(event.target.value)}>
+                    <option value="">Tất cả</option>
+                    <option value="appointment">Lịch hẹn</option>
+                    <option value="exercise">Lịch tập</option>
+                    <option value="medication">Lịch thuốc</option>
+                  </select>
+                </label>
+                <label>
+                  Trạng thái
+                  <select value={scheduleFilterStatus} onChange={(event) => setScheduleFilterStatus(event.target.value)}>
+                    <option value="">Tất cả</option>
+                    <option value="Đang theo dõi">Đang theo dõi</option>
+                    <option value="Quá hạn">Quá hạn</option>
+                    <option value="Hoàn thành">Hoàn thành</option>
+                    <option value="Đã hủy">Đã hủy</option>
+                  </select>
+                </label>
+                <label>
+                  View
+                  <select value={scheduleWindow} onChange={(event) => setScheduleWindow(event.target.value)}>
+                    <option value="all">Tất cả</option>
+                    <option value="today">Hôm nay</option>
+                    <option value="week">Tuần này</option>
+                  </select>
+                </label>
+              </div>
+              <DataTable
+                columns={scheduleColumns}
+                items={filteredSchedules}
+                emptyText="Chưa có lịch nhắc phù hợp."
+                rowKey={(schedule, index) => recordKey('schedule', schedule, index)}
+              />
+            </section>
           ) : null}
           {activeView === 'research' ? (
             <DataTable
