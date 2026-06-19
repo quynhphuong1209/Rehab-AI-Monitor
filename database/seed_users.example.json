@@ -1,0 +1,13 @@
+{
+  "admin": {
+    "password": "<sha256 hash from BOOTSTRAP_ADMIN_PASSWORD>",
+    "full_name": "System Administrator",
+    "role": "Quản trị viên",
+    "email": "",
+    "must_change_password": true,
+    "created_at": "2026-01-01T00:00:00+07:00",
+    "updated_at": "2026-01-01T00:00:00+07:00",
+    "hash_version": "sha256",
+    "seeded": true
+  }
+}

@@ -1,5 +1,5 @@
 [server]
-maxUploadSize = 10000
+maxUploadSize = 300
 enableStaticServing = true
 # Tắt theo dõi thay đổi file (chỉ cần khi dev) — giảm CPU nền & tăng tốc rerun trên Cloud
 fileWatcherType = "none"

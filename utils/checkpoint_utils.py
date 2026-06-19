@@ -8,6 +8,11 @@ import subprocess
 import threading
 import time
 
+try:
+    from .checksum import verify_sha256_sidecar, write_sha256_sidecar
+except ImportError:
+    from checksum import verify_sha256_sidecar, write_sha256_sidecar
+
 CHECKPOINT_VERSION = 1
 CHECKPOINT_INTERVAL_PASS2 = 300
 
@@ -138,6 +143,7 @@ def save_checkpoint(path, data):
             if not isinstance(verified, dict):
                 raise ValueError("checkpoint payload invalid after write")
             os.replace(tmp, path)
+            write_sha256_sidecar(path)
             tmp = None
             return True
         except Exception as e:
@@ -160,6 +166,9 @@ def load_checkpoint(path, retries=4, retry_delay=0.2):
             _shutil.rmtree(path, ignore_errors=True)
         except Exception:
             pass
+        return None
+    if not verify_sha256_sidecar(path, required=True):
+        print(f"[Checkpoint] Checksum checkpoint khong hop le hoac thieu: {os.path.basename(path)}")
         return None
     lock = _ckpt_lock(path)
     last_err = None

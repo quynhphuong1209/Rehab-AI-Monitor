@@ -19,7 +19,7 @@ def main() -> int:
     try:
         from gtts import gTTS
     except ImportError:
-        print("Can cai gTTS: pip install gTTS")
+        print("Thieu gTTS. Cai dependencies tu requirements-prod.txt.")
         return 1
 
     ok = 0

@@ -125,7 +125,10 @@ def _ensure_yt_dlp() -> None:
     try:
         import yt_dlp  # noqa: F401
     except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "yt-dlp", "-q"])
+        raise RuntimeError(
+            "Missing dependency yt-dlp. Install project dependencies with "
+            "`requirements-prod.txt`."
+        )
 
 
 def download_youtube(url: str, out_dir: str) -> str:

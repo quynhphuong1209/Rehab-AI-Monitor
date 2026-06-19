@@ -14,18 +14,12 @@ __pycache__/
 *.json
 !BAI_TAP.json
 !reference_*.json
-!database/video_list.json
-!database/doctor_evaluations.json
-!database/users.json
-!database/patient_symptoms.json
-!database/lich_su_tap_luyen.json
-!database/schedules.json
-!database/research_data.json
+!database/seed_users.example.json
 !database/pose_classifier_features.json
-!video_list.json
-!doctor_evaluations.json
-!users.json
 # Exclude data directories
+backups/
+docs/generated/
+debug_files/*.json
 temp_frames/
 frames/
 outputs/
@@ -41,3 +35,13 @@ tmp_hf_pkg/
 .streamlit/secrets.toml
 .venv310/
 Rehab-AI-Monitor-UI-new/
+node_modules/
+web/node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+web/*.tsbuildinfo
+web/vite.config.js
+web/vite.config.d.ts
+!web/package.json
+!web/package-lock.json

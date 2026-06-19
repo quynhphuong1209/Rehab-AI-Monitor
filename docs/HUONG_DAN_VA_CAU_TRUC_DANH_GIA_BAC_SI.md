@@ -6,14 +6,14 @@ Tài liệu này chi tiết hóa cách thức truy cập, các trường thông 
 
 ## 1. HƯỚNG DẪN ĐĂNG NHẬP VÀ VAI TRÒ BÁC SĨ / KTV PHCN
 
-### 1.1. Tài khoản truy cập chuyên gia (Cố định trong hệ thống)
-Hệ thống cấu hình sẵn 5 tài khoản chuyên gia y tế dùng cho thử nghiệm lâm sàng:
-*   **Tên đăng nhập (Username):** `doctor1`, `doctor2`, `doctor3`, `doctor4`, `doctor5`
-*   **Mật khẩu (Password):** `bs123@`
-*   **Vai trò hiển thị (Role):** Bác sĩ / KTV PHCN
+### 1.1. Tài khoản truy cập chuyên gia
+Tài khoản chuyên gia y tế phải được Quản trị viên cấp trong hệ thống. Mật khẩu tạm thời không được ghi trong tài liệu hoặc commit vào repository.
+*   **Tên đăng nhập (Username):** do Quản trị viên cấp.
+*   **Mật khẩu (Password):** cấp ngoài repository, bắt buộc đổi ở lần đăng nhập đầu tiên nếu là mật khẩu tạm.
+*   **Vai trò hiển thị (Role):** Bác sĩ / KTV PHCN.
 
 ### 1.2. Cách thức chọn bệnh nhân và video
-1.  Bác sĩ/KTV đăng nhập bằng một trong các tài khoản trên.
+1.  Bác sĩ/KTV đăng nhập bằng tài khoản đã được Quản trị viên cấp.
 2.  Tại tab **🏠 TRANG CHỦ**, danh sách bệnh nhân và các video bài tập đã nộp sẽ hiển thị.
 3.  Bác sĩ chọn bệnh nhân và click vào video mong muốn đánh giá. Video này sẽ được tải vào bộ nhớ tạm của phiên làm việc (`st.session_state.current_eval_video`).
 4.  Bác sĩ chuyển sang tab **📊 QUẢN LÝ ĐÁNH GIÁ & NCKH** để thực hiện ghi nhận thông tin.
@@ -161,16 +161,14 @@ Khi nhấn gửi phiếu NCKH, hệ thống ghi nhận thông tin dưới dạng
 ## 4. TỔNG HỢP SỐ LIỆU ĐÁNH GIÁ LÂM SÀNG HIỆN TẠI TRONG CƠ SỞ DỮ LIỆU
 
 ### 4.1. Thống kê tổng quan bệnh nhân (Dữ liệu triệu chứng)
-Cơ sở dữ liệu triệu chứng bệnh nhân (`database/patient_symptoms.json`) ghi nhận **4 bệnh nhân** đã khai báo thông tin bệnh sử lâm sàng để Bác sĩ/KTV PHCN tiến hành đánh giá:
+Cơ sở dữ liệu triệu chứng bệnh nhân (`database/patient_symptoms.json`) là dữ liệu runtime nhạy cảm và không được đưa vào tài liệu công khai. Khi cần minh họa, chỉ dùng fixture đã ẩn danh:
 
-| Mã bệnh nhân | Họ và tên bệnh nhân | Tuổi | Giới tính | Điểm đau (VAS) | Triệu chứng & Bệnh lý ban đầu |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| **25009284** | Hoàng Hạnh Nguyên | 39 | Nữ | **6/10** | Đau khớp vai (P) nhiều tháng, tăng khi vận động, nhức nhiều về đêm. Chưa điều trị gì. |
-| **25007938** | Nguyễn Thị Nga | 55 | Nữ | **8/10** | Đau khớp vai (P) tăng dần, đã tập VLTL và Đông y không đỡ. Đau điểm bám gân cơ trên gai, **Jobe test (+)**, Speed test (-). Tiền sử viêm dạ dày. |
-| **26002558** | Vũ Thị Hòa | 57 | Nữ | **6/10** | Đau khớp vai 2 bên, hạn chế vận động rõ rệt (xoay trong/ngoài vai P). Đau gân cơ nhị đầu và gân cơ trên gai. **Tê bì dọc cánh tay 2 bên**. |
-| **26001385** | Cao Thị Thường | 71 | Nữ | **6/10** | Đau khớp vai (P) tự nhiên nhiều tháng, đau tăng khi vận động và về đêm. Tiền sử đau dạ dày. |
+| Mã đối tượng | Tuổi | Giới tính | Điểm đau (VAS) | Ghi chú |
+| :--- | :---: | :---: | :---: | :--- |
+| `SUBJ-0001` | Nhóm tuổi | Ẩn danh | Khoảng điểm | Mô tả lâm sàng đã tổng quát hóa |
+| `SUBJ-0002` | Nhóm tuổi | Ẩn danh | Khoảng điểm | Mô tả lâm sàng đã tổng quát hóa |
 
 ### 4.2. Trạng thái các bản ghi đánh giá lâm sàng hiện tại
 *   **Số lượng bản ghi gợi ý của AI/NCV:** **26 bản ghi** gợi ý tự động đã được lập trong `database/doctor_evaluations.json` cho 4 bệnh nhân trên (phục vụ đối sánh).
-*   **Số lượng bản ghi đánh giá độc lập của Bác sĩ / KTV:** Hiện tại, **chưa có bản ghi đánh giá độc lập nào của Bác sĩ chuyên môn (doctor1 - doctor5)** được lưu trữ vật lý trong database. Hệ thống đang sẵn sàng ở trạng thái chờ các chuyên gia y tế đăng nhập, xem video và nhấn nút gửi biểu mẫu ở cả hai subtab.
+*   **Số lượng bản ghi đánh giá độc lập của Bác sĩ / KTV:** Phụ thuộc dữ liệu runtime nội bộ. Không ghi username chuyên gia thật hoặc mật khẩu mẫu trong tài liệu công khai.
 *   **Bản ghi phiếu NCKH (`database/research_data.json`):** Hiện tại đang là danh sách rỗng (`[]`), chờ dữ liệu khảo sát lâm sàng thực tế được Bác sĩ/KTV điền khi tiến hành phỏng vấn bệnh nhân.

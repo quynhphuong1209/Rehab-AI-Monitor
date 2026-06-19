@@ -5,8 +5,9 @@ import os
 from datetime import datetime
 
 BASE = os.path.join(os.path.dirname(__file__), "..", "database")
-OUT = os.path.join(os.path.dirname(__file__), "..", "docs", "_VERIFIED_METRICS.txt")
-OUT_PHASES = os.path.join(os.path.dirname(__file__), "..", "docs", "_PHASE_METRICS_TABLES.txt")
+OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "docs", "generated")
+OUT = os.path.join(OUT_DIR, "_VERIFIED_METRICS.txt")
+OUT_PHASES = os.path.join(OUT_DIR, "_PHASE_METRICS_TABLES.txt")
 
 PHASE_KEYS = [
     ("metrics_g1", "Giai doan 1 (±45°)"),
@@ -60,6 +61,14 @@ def r2(v):
     return round(float(v), 2) if v is not None else 0.0
 
 
+def pseudonym(value, fallback="Participant"):
+    raw = str(value or "").strip()
+    if not raw:
+        return fallback
+    import hashlib
+    return f"{fallback}-{hashlib.sha256(raw.encode('utf-8')).hexdigest()[:8]}"
+
+
 def phase_block(m, pk, is_gay=False):
     """Lấy metrics một giai đoạn — GĐ2 Codman: g2 nested + override acc/pass nếu top-level mới hơn."""
     nested = m.get(pk) if isinstance(m.get(pk), dict) else {}
@@ -69,7 +78,7 @@ def phase_block(m, pk, is_gay=False):
         top_tf = int(mc.get("tong_frame_hop_le") or 0)
         g2_tf = int(g2.get("tong_frame_hop_le") or 0)
         mg = dict(g2) if g2 else dict(mc)
-        # Cao Codman: top-level là lần chạy mới toàn video (ACC khác metrics_g2) — thay hẳn G2
+        # Some historical runs store newer whole-video metrics at top level.
         if (
             g2
             and top_tf > g2_tf * 2
@@ -116,7 +125,7 @@ def write_metric_table(lines, title, videos, is_gay=False):
     lines.append("-" * len(title))
     for v in videos:
         m = v.get("metrics") or {}
-        lines.append(f"\n{v.get('full_name')} | {v.get('exercise')}")
+        lines.append(f"\n{pseudonym(v.get('username'), 'BN')} | {v.get('exercise')}")
         lines.append(
             f"{'Chi so':<22} | {'G1 ±45°':>10} | {'G2 ±30°':>10} | {'G3 ±15°':>10}"
         )
@@ -168,6 +177,7 @@ def write_metric_table(lines, title, videos, is_gay=False):
 def main():
     vl = json.load(open(os.path.join(BASE, "video_list.json"), encoding="utf-8"))
     ev = json.load(open(os.path.join(BASE, "doctor_evaluations.json"), encoding="utf-8"))
+    os.makedirs(OUT_DIR, exist_ok=True)
 
     latest = {}
     for e in ev:
@@ -209,7 +219,7 @@ def main():
         ai_e = latest.get(kai, {})
         doc_e = latest.get(kdoc, {})
 
-        lines.append(f"[{i}] {v.get('full_name')} | {ex}")
+        lines.append(f"[{i}] {pseudonym(v.get('username'), 'BN')} | {ex}")
         lines.append(f"  video_list.time: {v.get('time')}")
         lines.append(f"  ACC chinh (±30°): {acc}% | frames: {fd}/{tot}")
         lines.append(
@@ -233,8 +243,8 @@ def main():
             )
         else:
             lines.append("  3GD: (chi phan tich tong quan ±30°)")
-        lines.append(f"  AI ket luan (rule): {ai_ket_luan(acc)} | AI eval DB: {ai_e.get('doctor_result')} ({ai_e.get('time')})")
-        lines.append(f"  BS: {doc_e.get('doctor_result')} | errors={doc_e.get('errors')} ({doc_e.get('time')})")
+        lines.append(f"  AI ket luan (rule): {ai_ket_luan(acc)} | AI eval present: {'yes' if ai_e else 'no'}")
+        lines.append(f"  Clinical eval present: {'yes' if doc_e else 'no'}")
         lines.append("")
 
     lines.append("--- TONG KET ---")

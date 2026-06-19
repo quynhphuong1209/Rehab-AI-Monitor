@@ -1,0 +1,101 @@
+.stApp {
+    background: #f8f9fa;
+    color: #333;
+}
+
+.main-header {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.main-header h1 {
+    color: #000000;
+}
+
+.main-header p {
+    color: #333333;
+}
+
+[data-testid="stVerticalBlockBorderWrapper"],
+.info-box,
+.metric-card,
+.member-card,
+.lecturer-card,
+.custom-card,
+[data-testid="stMetric"] {
+    background: #ffffff;
+    border: 1px solid #ced4da;
+    color: #333333;
+}
+
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input,
+textarea,
+input,
+select {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #ced4da;
+    caret-color: #0072ff;
+}
+
+.stTabs [data-baseweb="tab"],
+.st-key-active_tab_widget button,
+div[data-testid="stSegmentedControl"] button,
+div[data-testid="stButtonGroup"] button {
+    background-color: #f1f3f5;
+    color: #495057;
+    border: 1px solid #ced4da;
+}
+
+[data-testid="stSidebar"] {
+    background-color: #ffffff;
+    border-right: 1px solid #ced4da;
+}
+
+[data-testid="stFileUploader"] section {
+    background-color: #f8f9fa;
+    border: 1px dashed #0072ff;
+    color: #333;
+}
+
+.metric-value {
+    color: #0072ff;
+    text-shadow: none;
+}
+
+.metric-label {
+    color: #495057;
+}
+
+.frame-card {
+    background-color: #ffffff;
+    border: 1.5px solid #00c6ff;
+    color: #1a1a2e;
+    box-shadow: 0 6px 16px rgba(0, 198, 255, 0.15);
+}
+
+.frame-card-img-wrapper {
+    background-color: #f1f3f5;
+}
+
+.frame-card-footer,
+.frame-card-footer span {
+    color: #1a1a2e;
+}
+
+.frame-card-index {
+    color: #555555;
+}
+
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stSidebar"],
+.main,
+textarea {
+    scrollbar-width: thin;
+    scrollbar-color: #1565c0 rgba(0, 0, 0, 0.06);
+}
+

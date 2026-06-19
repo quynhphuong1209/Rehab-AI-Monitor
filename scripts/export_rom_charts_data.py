@@ -16,18 +16,20 @@ from datetime import datetime
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(SCRIPT_DIR, "..")
 BASE = os.path.join(ROOT, "database")
-OUT_TXT = os.path.join(ROOT, "docs", "_ROM_CHARTS_DATA.txt")
-OUT_JSON = os.path.join(ROOT, "docs", "_ROM_CHARTS_DATA.json")
-HF_DATASET_ID = "quynhphuong1209/Rehab-AI-Monitor-2026-data"
+OUT_DIR = os.path.join(ROOT, "docs", "generated")
+OUT_TXT = os.path.join(OUT_DIR, "_ROM_CHARTS_DATA.txt")
+OUT_JSON = os.path.join(OUT_DIR, "_ROM_CHARTS_DATA.json")
+HF_DATASET_ID = os.environ.get("HF_DATASET_ID", "").strip() or None
 
 sys.path.insert(0, SCRIPT_DIR)
+sys.path.insert(0, os.path.abspath(ROOT))
+from cloud.hf_sync import download_dataset_file_with_progress  # noqa: E402
 from export_report_metrics import lay_metrics_chinh, phase_block, r1  # noqa: E402
 
-BN_NGHIEN_CUU = (
-    "Cao Thị Thường",
-    "Hoàng Hạnh Nguyên",
-    "Nguyễn Thị Nga",
-    "Vũ Thị Hòa",
+BN_NGHIEN_CUU = tuple(
+    x.strip()
+    for x in os.environ.get("REHAB_REPORT_PATIENTS", "").split(",")
+    if x.strip()
 )
 BAI_NGHIEN_CUU = (
     "Bài tập con lắc Codman",
@@ -42,6 +44,14 @@ DISPLAY_CSV_COLS = [
     "frame", "goc_vai", "goc_khuyu", "dung", "gan_dung",
 ]
 BOX_GROUPS = ("ĐÚNG (Pass)", "GẦN ĐÚNG (Nearly)", "SAI (Fail)")
+
+
+def pseudonym(value, fallback="Participant"):
+    raw = str(value or "").strip()
+    if not raw:
+        return fallback
+    import hashlib
+    return f"{fallback}-{hashlib.sha256(raw.encode('utf-8')).hexdigest()[:8]}"
 
 
 def parse_t(s):
@@ -86,6 +96,8 @@ def chon_video_moi_hon(a, b):
 
 
 def load_video_nghien_cuu():
+    if not BN_NGHIEN_CUU:
+        return []
     vl = json.load(open(os.path.join(BASE, "video_list.json"), encoding="utf-8"))
     ev = dedup_evals(json.load(open(os.path.join(BASE, "doctor_evaluations.json"), encoding="utf-8")))
     slots = [
@@ -204,29 +216,22 @@ def resolve_csv_path(df_path):
 
 
 def download_csv_hf(basename, token, cache_dir):
-    try:
-        from huggingface_hub import hf_hub_download
-    except ImportError:
-        print("Canh bao: chua cai huggingface_hub (pip install huggingface_hub)")
-        return None
-    if not token:
+    if not token or not HF_DATASET_ID:
         return None
     os.makedirs(cache_dir, exist_ok=True)
     last_err = None
     for remote in (f"processed_results/{basename}", basename):
-        try:
-            path = hf_hub_download(
-                repo_id=HF_DATASET_ID,
-                filename=remote,
-                repo_type="dataset",
-                token=token,
-                local_dir=cache_dir,
-            )
-            if os.path.isfile(path):
-                return path
-        except Exception as exc:
-            last_err = exc
-            continue
+        target = os.path.join(cache_dir, remote.replace("\\", "/"))
+        path, err = download_dataset_file_with_progress(
+            remote,
+            target,
+            token=token,
+            dataset_id=HF_DATASET_ID,
+            min_size=2,
+        )
+        if path and os.path.isfile(path):
+            return path
+        last_err = err
     if last_err:
         print(f"Khong tai duoc {basename} tu Dataset: {last_err}")
     return None
@@ -299,7 +304,7 @@ def write_txt(videos, payload, csv_mode):
     lines = [
         "ROM + BOXPLOT DATA — 8 video nghiên cứu",
         f"Generated: {datetime.now().strftime('%d/%m/%Y %H:%M')}",
-        "Nguon: database/video_list.json (metrics giong tab Phan tich tren web)",
+        "Nguon: database/video_list.json (metrics theo giao dien app)",
         f"Boxplot theo nhom: {'CSV' if csv_mode else 'chi tu JSON (min/max/tb/std GĐ2 hoac tong quan)'}",
         "",
     ]
@@ -308,7 +313,7 @@ def write_txt(videos, payload, csv_mode):
     lines.append("A. BIEN DO ROM THEO GIAI DOAN (Codman 3 GD | Gay tong quan hoac 3 GD)")
     lines.append("=" * 72)
     for v in videos:
-        lines.append(f"\n{v.get('full_name')} | {v.get('exercise')}")
+        lines.append(f"\n{pseudonym(v.get('username'), 'BN')} | {v.get('exercise')}")
         lines.append(f"{'GD':<12} | {'Khop':<8} | {'TB':>7} | {'Min':>7} | {'Max':>7} | {'Std':>7} | {'ACC':>7}")
         lines.append("-" * 72)
         for ph in payload[v["username"] + "|" + v["exercise"]]["phases"]:
@@ -329,7 +334,7 @@ def write_txt(videos, payload, csv_mode):
         ex_short = "Codman" if is_codman(v.get("exercise")) else "Gậy"
         for row in payload[v["username"] + "|" + v["exercise"]]["boxplot_summary"]:
             lines.append(
-                f"{v.get('full_name'):<22} | {ex_short:<10} | {row['joint']:<8} | "
+                f"{pseudonym(v.get('username'), 'BN'):<22} | {ex_short:<10} | {row['joint']:<8} | "
                 f"{fmt_num(row['tb']):>7} | {fmt_num(row['min']):>7} | {fmt_num(row['max']):>7} | {fmt_num(row['std']):>7}"
             )
 
@@ -343,7 +348,7 @@ def write_txt(videos, payload, csv_mode):
             bg = payload[key].get("boxplot_groups")
             if not bg:
                 continue
-            lines.append(f"\n{v.get('full_name')} | {v.get('exercise')} | CSV: {payload[key].get('csv_path', 'N/A')}")
+            lines.append(f"\n{pseudonym(v.get('username'), 'BN')} | {v.get('exercise')} | CSV: {payload[key].get('csv_path', 'N/A')}")
             for joint, groups in bg.items():
                 lines.append(f"  Khop {joint}:")
                 for grp, stats in groups.items():
@@ -367,8 +372,11 @@ def main():
     use_csv = args.csv or args.hf
     token = os.environ.get("HF_TOKEN", "").strip() or None
     cache_dir = os.path.join(ROOT, "processed_results")
+    os.makedirs(OUT_DIR, exist_ok=True)
 
     videos = load_video_nghien_cuu()
+    if not BN_NGHIEN_CUU:
+        print("No REHAB_REPORT_PATIENTS configured; wrote empty sanitized report.")
     if len(videos) != 8:
         print(f"Canh bao: tim thay {len(videos)}/8 video nghien cuu")
 
@@ -377,7 +385,7 @@ def main():
     for v in videos:
         key = v["username"] + "|" + v["exercise"]
         entry = {
-            "full_name": v.get("full_name"),
+            "participant": pseudonym(v.get("username"), "BN"),
             "exercise": v.get("exercise"),
             "phases": phase_blocks_for_video(v),
             "boxplot_summary": boxplot_summary_block(v),
@@ -418,12 +426,12 @@ def main():
     print(f"Wrote {OUT_JSON}")
     if use_csv and not csv_used:
         if args.hf and not token:
-            print("Ghi chu: chua co HF_TOKEN.")
-            print("  PowerShell: $env:HF_TOKEN = \"hf_xxx\"")
-            print("  CMD:        set HF_TOKEN=hf_xxx")
+            print("Ghi chu: chua co HF_TOKEN hoac HF_DATASET_ID.")
+            print("  PowerShell: $env:HF_TOKEN = \"<token>\"; $env:HF_DATASET_ID = \"<owner/dataset>\"")
+            print("  CMD:        set HF_TOKEN=<token> && set HF_DATASET_ID=<owner/dataset>")
         else:
             print("Ghi chu: khong tim thay CSV local / tai tu HF Dataset that bai.")
-            print("  Kiem tra token Read + Dataset quynhphuong1209/Rehab-AI-Monitor-2026-data")
+            print("  Kiem tra token Read + HF_DATASET_ID.")
 
 
 if __name__ == "__main__":

@@ -7,6 +7,14 @@ from datetime import datetime
 BASE = os.path.join(os.path.dirname(__file__), "..", "database")
 
 
+def pseudonym(value, fallback="Participant"):
+    raw = str(value or "").strip()
+    if not raw:
+        return fallback
+    import hashlib
+    return f"{fallback}-{hashlib.sha256(raw.encode('utf-8')).hexdigest()[:8]}"
+
+
 def parse_t(s):
     if not s:
         return datetime.min
@@ -42,7 +50,7 @@ def main():
         tf = g2.get("tong_frame_hop_le") or 0
         total_frames += tf
 
-        name = v.get("full_name")
+        name = pseudonym(v.get("username"), "BN")
         ex = v.get("exercise")
         acc_g2 = g2.get("do_chinh_xac")
         if "Codman" in ex:
@@ -62,8 +70,8 @@ def main():
         print(f"  G3: {g3.get('do_chinh_xac')}% ({g3.get('frame_dung')}/{g3.get('tong_frame_hop_le')})")
         print(f"  MAE={round(g2.get('mae_tong') or 0, 1)} F1={round(g2.get('f1_score') or 0, 2)} ICC={round(g2.get('icc') or 0, 2)}")
         print(f"  tb_goc_vai={round(m.get('tb_goc_vai') or 0, 1)} tb_goc_khuyu={round(m.get('tb_goc_khuyu') or 0, 1)}")
-        print(f"  AI latest ({ai_e.get('time')}): result={ai_e.get('doctor_result')} ai_acc={ai_e.get('ai_accuracy')}")
-        print(f"  BS latest ({doc_e.get('time')}): result={doc_e.get('doctor_result')} errors={doc_e.get('errors')}")
+        print(f"  AI latest present: {'yes' if ai_e else 'no'}")
+        print(f"  Clinical latest present: {'yes' if doc_e else 'no'}")
 
     print(f"\n--- TONG KET ---")
     print(f"Tong frames (sum G2.tong_frame_hop_le): {total_frames}")

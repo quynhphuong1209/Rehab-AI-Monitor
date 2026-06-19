@@ -1,0 +1,946 @@
+# Repair Task Status
+
+Ngay cap nhat: 2026-06-19
+
+File nay tom tat nhung viec da lam va chua lam theo `docs/repair_plans/MAIN_PLAN.md`.
+
+## Phase 0 - Containment va Baseline
+
+Trang thai: Da thuc hien.
+
+Da lam:
+- Tao backup local: `backups/pre_repair_20260618_105524/`.
+- Copy `database/` va `debug_files/` vao backup truoc khi sua.
+- Ghi baseline sanitize vao `docs/repair_plans/PHASE_0_BASELINE.md`.
+- Chay compile baseline cho `app.py`, utils va scripts lien quan.
+- Ghi nhan public exposure la unknown, xu ly nhu da public cho den khi team xac nhan.
+
+Chua lam / can team lam:
+- Xac nhan repo/app da tung public chua.
+- Rotate HF token va password da lo neu repo/app tung public hoac khong chac.
+- Review git history/HF history bang quy trinh rieng neu can xoa history.
+
+## Phase 1A - Critical Containment
+
+Trang thai: Da thuc hien phan code chinh.
+
+Da lam:
+- Xoa login bypass qua query params `logged_in_user` / `logged_in_role` trong `app.py`.
+- `_hoan_tat_dang_nhap()` khong ghi identity vao query params nua.
+- Xoa link/template bypass trong README va script report.
+- Vo hieu hoa client-side HF video URL co `?token=...`.
+- Download HF media dung Authorization header/server-side path thay vi dua token ra frontend.
+- Xoa debug hien full cloud URL co token.
+- Xoa fallback hard-code dataset/repo/owner cu trong app/scripts/README.
+- Sanitize README, go bo report clinical chi tiet va identity public.
+- Thay `scripts/sync_data_and_report.py` bang flow tao report sanitize trong `docs/generated/`.
+- Xoa script push nguy hiem `scripts/push_code.bat` va `scripts/push_to_git.bat`.
+
+Verify da chay:
+- `python -m py_compile app.py ... scripts\verify_report_numbers.py`
+- `rg` auth bypass: pass.
+- `rg` tokenized URL: pass.
+- `rg` default password/PII patterns sau sanitize: pass voi pham vi da check.
+
+Chua lam / can manual:
+- Manual UI smoke login tung role sau khi cau hinh lai user seed.
+- Manual token DOM/network smoke tren Streamlit.
+- Rotate secrets/passwords that su ngoai repo.
+
+## Phase 1B - Security Hardening
+
+Trang thai: Da thuc hien code hardening chinh va da smoke G1B.
+
+Da lam:
+- Xoa hard-coded credentials trong runtime `app.py`.
+- Them seed-once bootstrap admin khi `users.json` rong/missing.
+- Bootstrap admin yeu cau `BOOTSTRAP_ADMIN_PASSWORD` ngoai repo, `must_change_password: true`.
+- Login bat user doi password neu `must_change_password`.
+- Password change/reset cap nhat metadata `updated_at`, `hash_version`, `must_change_password`.
+- Admin-created accounts mac dinh `must_change_password: true`.
+- Detect duplicate username/email va log warning thay vi ghi de user.
+- Khong sync `users.json` mac dinh tu HF trong app.
+- `scripts/sync_from_hf.py` chi sync `users.json` khi co `--include-users`.
+- Sanitize runtime JSON nhay cam:
+  - `database/users.json` -> `{}`
+  - `database/video_list.json` -> `[]`
+  - `database/doctor_evaluations.json` -> `[]`
+  - `database/patient_symptoms.json` -> `[]`
+  - `database/research_data.json` -> `[]`
+  - `database/lich_su_tap_luyen.json` -> `[]`
+  - debug JSON tuong ung -> empty containers.
+- Cap nhat `.gitignore` de ignore `backups/`, `docs/generated/`, `debug_files/*.json`, runtime JSON.
+- Them `database/seed_users.example.json`.
+- Xoa owner-specific URL trong `.push-guard`.
+- Report scripts xuat vao `docs/generated/` va dung pseudonym thay vi ten that.
+- Harden HTTP video server:
+  - Khong con dung `SimpleHTTPRequestHandler` phuc vu project root.
+  - Chi phuc vu media trong allowed roots.
+  - Dung short-lived media token noi bo.
+  - Request traversal nhu `../database/users.json` bi reject.
+  - Khong con CORS wildcard tren media server.
+- Tat client-side HF token URL, frontend chi nhan local/proxy media URL khong chua HF token.
+- Them `safe_html()` / `safe_attr()` va escape cac surface uu tien:
+  - doctor result/comments/comments_ncv.
+  - schedules/reminders/notes.
+  - user/patient/video names o cac card/sidebar/list quan trong.
+- Cap nhat cac UI/debug message de khong render token/path nhay cam.
+- Sanitize `docs/HUONG_DAN_VA_CAU_TRUC_DANH_GIA_BAC_SI.md`:
+  - go password mac dinh cua bac si.
+  - thay bang huong dan admin tao tai khoan/mat khau ngoai repo.
+  - thay bang du lieu mau an danh thay vi PII benh nhan that.
+
+Verify da chay:
+- `python -m py_compile app.py utils\reference_utils.py utils\pose_classifier_utils.py utils\checkpoint_utils.py scripts\sync_from_hf.py scripts\sync_data_and_report.py scripts\reset_data.py`
+- `rg` auth bypass/token URL/default password/CORS/video server/ZIP patterns: pass voi runtime targets.
+- Smoke `safe_html("<script>alert(1)</script>")` -> escaped text.
+- Media server smoke:
+  - file media hop le tra `200`.
+  - URL media khong chua token gia.
+  - request `../database/users.json` tra `404`, khong lo noi dung users.
+  - request token traversal tra `404`.
+- Streamlit boot smoke local tra HTTP `200`, bootstrap HTML khong chua token gia.
+
+Chua lam / con lai:
+- Chua audit het 100% tat ca vi tri `unsafe_allow_html=True`; moi lam cac surface user-generated uu tien.
+- Chua co browser automation/Playwright de inspect DOM hydrated day du; da smoke bang code/helper, media server va HTTP bootstrap.
+- Xay permission guard media theo session/role day du se tiep tuc o Phase 2/5.
+- Neu repo da public: chay BFG/git-filter-repo theo quy trinh rieng.
+
+## Phase 2 - Access Stability
+
+Trang thai: Da thuc hien cac hang muc con lai quan trong truoc Phase 5.
+
+Da lam:
+- Giam upload production ve 300MB:
+  - `.streamlit/config.toml`
+  - `Dockerfile`
+  - constant `MAX_UPLOAD_SIZE_MB = 300` trong `app.py`.
+- Them validate upload truoc `getbuffer()`:
+  - check size.
+  - check extension allowlist.
+  - check MIME type.
+  - check magic/header file video.
+- Them `ffprobe` validation truoc khi transcode/save video:
+  - co video stream.
+  - duration hop le va toi da 60 phut.
+  - resolution toi da 3840x2160.
+- Gioi han ffmpeg threads qua `MAX_FFMPEG_THREADS`, khong con `-threads 0`.
+- Bat lai CORS/XSRF production bang cach bo:
+  - `--server.enableCORS=false`
+  - `--server.enableXsrfProtection=false`
+- Thay ZIP `extractall()` bang safe extract:
+  - gioi han so entry.
+  - gioi han tong uncompressed size.
+  - gioi han size tung entry.
+  - chi cho anh frame `.jpg/.jpeg/.png/.webp`.
+  - reject path traversal/absolute path.
+- `scripts/sync_from_hf.py`:
+  - mac dinh bo qua `users.json`.
+  - chi sync user khi co `--include-users`.
+  - backup timestamped.
+  - merge `users.json` khong ghi de password/role/hash/must_change_password.
+- `scripts/reset_data.py`:
+  - them `--dry-run`.
+  - bat buoc `--yes` khi reset that.
+  - backup truoc khi reset.
+  - guard path nam trong repo root.
+- Them helper trong `app.py`:
+  - `get_current_actor()`
+  - `require_role()`
+  - `write_audit_log()`
+  - `create_backup_before_destructive()`
+- Admin destructive UI co confirm text, backup va audit:
+  - xoa user.
+  - xoa evaluations/symptoms.
+  - xoa reminders.
+  - xoa video/temp files.
+  - reset all.
+- `delete_video_callback()`:
+  - tu check role trong business logic.
+  - backup truoc khi xoa.
+  - ghi audit.
+  - dung `.get()` khi filter evaluations de tranh KeyError.
+  - filter theo patient/video/exercise khi co.
+- UI xoa video khong con mot click truc tiep; co pending confirm + checkbox.
+- Google login khong auto cap role `Bệnh nhân` cho email bat ky; chi map email da co trong `users.json`.
+- Reset password tu phuc vu bang username+email da tam tat trong UI.
+- `_auth_lookup_key()` khong match theo `full_name` nua de tranh collision.
+- Them `utils/path_security.py`:
+  - `normalize_relative_path()`, `safe_data_path()`, `relative_to_allowed_root()`.
+  - Ap dung cho HF download/upload, resolve media path, `ensure_local_file()` va local frame path.
+  - HF upload/download chi chap nhan relative path nam trong allowed roots.
+  - HF upload bi allowlist, khong day `users.json`, session state, audit log hoac file ngoai data roots.
+- Them `auth/sessions.py`:
+  - global session version.
+  - session hien tai bi logout khi version cu.
+  - admin co nut thu hoi tat ca phien dang nhap.
+  - reset all bump session version de thu hoi phien cu.
+- Bo chon role truoc login:
+  - role duoc lay tu user DB sau khi credential/OIDC hop le.
+  - khong con thong bao mismatch role lam lo thong tin tai khoan.
+- Mo rong permission guard vao mutation:
+  - feedback, schedules, doctor evaluations.
+  - AI report, ML train/apply, progress clear.
+  - patient symptoms, research records, patient video upload.
+  - NCV/researcher analysis entrypoint.
+- Them `utils/checksum.py` va harden checkpoint/model load:
+  - checkpoint pickle can `.sha256` hop le truoc khi `pickle.load`.
+  - pose classifier joblib can `.sha256` hop le truoc khi `joblib.load`.
+  - train/save checkpoint tao checksum sidecar.
+- Them focused unit tests:
+  - path containment.
+  - session version/revocation.
+  - checksum sidecar.
+  - checkpoint checksum guard.
+
+Verify da chay:
+- `python -m py_compile app.py utils\reference_utils.py utils\pose_classifier_utils.py utils\checkpoint_utils.py scripts\sync_from_hf.py scripts\sync_data_and_report.py scripts\reset_data.py`
+- `rg` security patterns: auth bypass/token URL/CORS off/ZIP extractall/thread 0/default password: pass voi runtime targets.
+- `python scripts\reset_data.py --dry-run`: pass, chi liet ke target.
+- `python scripts\reset_data.py` khong `--yes`: refused destructive reset.
+- `python scripts\sync_from_hf.py --dataset owner/dataset --token dummy --dry-run --file users.json`: pass, mac dinh bo qua `users.json`.
+- Helper smoke:
+  - upload `.mp4` gia bi reject theo header.
+  - ZIP traversal bi reject.
+- Streamlit boot smoke local tra HTTP `200`, bootstrap HTML khong chua token gia.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 23 passed.
+
+Chua lam / con lai:
+- Chua audit 100% moi `os.remove`/write/download trong `app.py`; da uu tien HF IO, media resolve, upload/delete va cac mutation nhay cam.
+- Chua co full integration tests login/delete/upload/HF sync theo tung role.
+- Chua co manual role-flow smoke sau khi production assignment data duoc gan day du.
+- Permission media theo session/role sau khi URL da cap token noi bo van nen duoc tiep tuc khi tach module o Phase 5.
+
+## Phase 3 - Data Integrity va Quality
+
+Trang thai: Dang thuc hien, da lam batch nen tang.
+
+Da lam:
+- Them `auth/passwords.py`:
+  - Password moi dung Argon2 (`argon2-cffi`).
+  - SHA-256 cu chi con la legacy verify.
+  - Login thanh cong voi hash cu se rehash sang Argon2 va cap nhat `hash_version`.
+  - Bootstrap/register/admin create/change password deu ghi `hash_version: argon2`.
+- Them `storage/json_store.py`:
+  - `read_json`, `write_json`, `update_json`.
+  - Per-file lock trong process.
+  - Atomic temp write + `os.replace`.
+  - Invalid JSON/IO error co log thay vi nuot im.
+- `app.py`:
+  - `load_data()` / `save_data()` dung `storage.json_store`.
+  - `doc_lock_save_data()` dung `update_json`.
+  - Upload path dung `sanitize_filename()` cho filename va username path segment.
+  - Luu `original_filename` va `stored_filename` trong metadata video.
+  - Video upload validator/ffprobe wrapper chuyen sang `video/validation.py`.
+  - `_frames_zip_path_from_video()` uu tien timestamp tu `processed_path`, log warning neu frames ZIP metadata lech timestamp.
+  - Giam mot so `except/pass` o IO path quan trong: audit log, cleanup temp, frames dir scan, remove file.
+- Them `video/validation.py`:
+  - `sanitize_filename`.
+  - validate upload metadata/header.
+  - validate ffprobe metadata.
+- Them `scripts/validate_video_metadata.py`:
+  - Check root type, required keys, path containment, timestamp mismatch.
+  - `--fix` optional, mac dinh report/dry-run.
+- `utils/pose_classifier_utils.py`:
+  - `resolve_local_path()` chi chap nhan path trong `data_dir`, `processed_dir`, `db_dir` sau resolve.
+  - `reprocess_videos_with_classifier(..., dry_run=True)` liet ke file se doc/ghi va khong ghi CSV/JSON/image.
+- `scripts/reprocess_all.py` va `scripts/run_ml_pipeline.py`:
+  - Them `--dry-run`.
+  - `reprocess_all.py` co `--no-sync-report`.
+- UI NCV ap dung ML:
+  - Them checkbox dry-run mac dinh bat.
+  - Dry-run hien `would_read` / `would_write`, khong push HF/khong rerun.
+- Dependencies:
+  - `requirements.txt` include `requirements-prod.txt`.
+  - Them `requirements-prod.txt` pin runtime dependencies.
+  - Them `requirements-dev.txt` cho pytest/coverage.
+  - Them `argon2-cffi`.
+- Cleanup scripts:
+  - `scripts/extract_youtube_reference.py` khong tu `pip install yt-dlp` nua, chi bao thieu dependency.
+  - `scripts/sync_from_hf.py` dung atomic JSON store, parse/network exception cu the hon, stdout UTF-8 cho Windows.
+  - `scripts/reset_data.py` dung atomic JSON store.
+  - Message runtime pip trong script phu da doi sang huong dan cai dependencies tu requirements.
+- Them test suite Phase 3 ban dau:
+  - `tests/unit/test_password.py`
+  - `tests/unit/test_storage_json_store.py`
+  - `tests/unit/test_video_validation.py`
+  - `tests/unit/test_pose_path.py`
+  - `tests/unit/test_video_metadata_validator.py`
+  - `pytest.ini`
+- Them checksum integrity:
+  - `utils/checksum.py`.
+  - checkpoint/model `.sha256` sidecar.
+  - tests `test_checksum.py` va `test_checkpoint_checksum.py`.
+
+Verify da chay:
+- `.venv\Scripts\python.exe -m py_compile app.py utils\reference_utils.py utils\pose_classifier_utils.py utils\checkpoint_utils.py scripts\sync_from_hf.py scripts\sync_data_and_report.py scripts\reset_data.py scripts\validate_video_metadata.py scripts\reprocess_all.py scripts\run_ml_pipeline.py scripts\extract_youtube_reference.py utils\pose_classfier_untils.py`
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 23 passed.
+- `.venv\Scripts\python.exe scripts\validate_video_metadata.py --dry-run` -> no findings voi `database/video_list.json` hien tai.
+- `.venv\Scripts\python.exe scripts\reset_data.py --dry-run` -> pass, chi liet ke target.
+- `.venv\Scripts\python.exe scripts\sync_from_hf.py --dataset owner/dataset --token dummy --dry-run --file users.json` -> pass, bo qua `users.json` mac dinh.
+- `.venv\Scripts\python.exe -m pip install -r requirements.txt --dry-run` -> resolvable; `yt-dlp` would install.
+- Grep auth bypass/token URL/runtime pip: pass voi runtime targets.
+
+Chua lam / con lai:
+- Chua refactor het moi `except:` trong `app.py`; moi uu tien IO paths quan trong da cham.
+- Chua co schema test/model validation day du cho users/videos/evaluations/schedules.
+- Chua co integration tests login/delete/upload/HF sync.
+- `scripts\reprocess_all.py --dry-run` hien tra `success=false` vi repo chua co `pose_classifier.pkl`; khong crash, can model fixture neu muon test apply ML thanh cong.
+- Checksum pickle/joblib da co; checkpoint/model cu khong co `.sha256` se can duoc tao lai hoac regenerate truoc khi load/resume.
+- `yt-dlp` chua cai vao `.venv` do lan cai dau bi dut mang, nhung requirements dry-run da resolve package.
+
+## Phase 4 - Frontend va UX
+
+Trang thai: Da thuc hien batch chinh theo Phase 4.
+
+Da lam:
+- Them `models/schemas.py` va `models/migrate_json.py`:
+  - Normalize `users.json`, `video_list.json`, `doctor_evaluations.json`, `schedules.json`, `patient_symptoms.json`, `research_data.json`, `lich_su_tap_luyen.json`.
+  - Fill default optional fields, reject root type sai, skip row hong nang.
+  - Them field assignment: `assigned_patient_usernames`, `assigned_doctor_username`, `team_usernames`, `active`.
+  - Them helper scoping theo actor va pseudonymize researcher/NCV.
+- `app.py`:
+  - `load_data()` / `_load_data_cached()` validate JSON qua schema.
+  - Nhieu access dict nguy co KeyError o video/evaluation/schedule/symptom da doi sang `.get()`.
+  - Them guard data-access cho video/evaluation/schedule/research/symptom theo current actor.
+  - Bác sĩ/KTV chi xem/thao tac tren benh nhan trong assignment scope.
+  - `target_username` va `current_eval_video` stale duoc guard trong ham xem ket qua/form NCKH.
+  - NCV/researcher display/export dung pseudonymized records, bo direct identifiers/free-text nhay cam.
+  - Label video/ket qua cho NCV dung subject code thay vi ten that; ground-truth free-text/doctor name duoc an trong che do NCV.
+  - gTTS mac dinh bi disable qua `ALLOW_NETWORK_TTS=false`, fallback local beep.
+  - WebRTC khong con hard-code Google STUN; dung `WEBRTC_STUN_URLS` khi policy cho phep.
+- CSS/JS:
+  - Tao `assets/styles.css`, `assets/theme_dark.css`, `assets/theme_light.css`.
+  - Them helper `load_css_file()` co cache.
+  - Go bo CSS inline global lon va chuyen cac style header/card/frame co ban sang assets.
+  - Xoa JS DOM hacks: `window.parent`, `document.querySelector`, `MutationObserver`, `setInterval`, `components.html`.
+  - Xoa hover frame zoom `scale(2.2)`.
+- `scripts/sync_data_and_report.py`:
+  - Chi tao report sanitize trong `docs/generated/`.
+  - Khong ghi de README, khong copy JSON runtime ra root.
+  - Them `--dry-run` va guard output path.
+- Rename cac ham/thread generic:
+  - `_media_prefetch_worker`
+  - `_hf_upload_queue_worker`
+  - `_job_status_fragment`
+  - `_background_progress_fragment`
+  - `_home_progress_fragment`
+  - `_video_list_background_sync_job`
+  - `_video_prefetch_worker`
+- Cap nhat `database/database_schema.md`.
+- Them test schema Phase 4 trong `tests/unit/test_schema.py`.
+- Mo rong guard mutation theo role/scope de UI khong chi an nut ma business logic cung deny khi actor sai scope.
+- Sanitize guide bac si trong `docs/HUONG_DAN_VA_CAU_TRUC_DANH_GIA_BAC_SI.md` de khong con password mac dinh/PII mau.
+
+Verify da chay:
+- `.venv\Scripts\python.exe -m py_compile app.py models\schemas.py models\migrate_json.py scripts\sync_data_and_report.py scripts\sync_from_hf.py scripts\reset_data.py scripts\validate_video_metadata.py scripts\reprocess_all.py scripts\run_ml_pipeline.py scripts\extract_youtube_reference.py utils\reference_utils.py utils\pose_classifier_utils.py utils\checkpoint_utils.py video\validation.py storage\json_store.py auth\passwords.py`
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 23 passed.
+- `.venv\Scripts\python.exe -m models.migrate_json --data-dir database --dry-run` -> 0 file can migrate.
+- `.venv\Scripts\python.exe scripts\sync_data_and_report.py --dry-run` -> pass.
+- `rg` JS DOM hacks (`window.parent`, `document.querySelector`, `MutationObserver`, `setInterval`, `components.html`) -> no runtime match.
+- `rg` hover zoom/destructive selector (`scale(2.2)`, `.stButton > button`) -> no runtime match.
+- Streamlit boot smoke local port 8502 -> HTTP 200, process da dung sau smoke.
+
+Chua lam / con lai:
+- `app.py` van con nhieu inline HTML/CSS va `unsafe_allow_html=True`; Phase 4 moi tach CSS chinh va go cac hack/global selector uu tien, chua refactor het UI.
+- Chua co Playwright/manual role-flow day du de inspect DOM hydrated theo tung role.
+- Assignment data hien duoc schema support va code enforce, nhung du lieu production can duoc gan scope thuc te cho bac si/benh nhan.
+- NCV pseudonymization da enforce o cac viewer/export da sua, mot guide bac si da sanitize; cac docs/report audit/lich su con lai trong `docs/` van can review rieng neu dinh publish.
+
+## Phase 5 - Architecture Refactor
+
+Trang thai: Dang thuc hien incremental.
+
+Da lam:
+- Bat dau slice Auth bang `auth/permissions.py`.
+- Tach cac helper permission/scope pure logic khoi `app.py`:
+  - role allow/deny.
+  - patient scope.
+  - scope records/usernames theo actor.
+  - researcher pseudonymized view.
+  - patient display label theo role.
+- `app.py` giu wrapper cu de cac call site UI khong doi, chi delegate sang `auth.permissions` va giu audit/UI message o boundary.
+- Them `tests/unit/test_permissions.py`.
+- Tiep tuc slice Auth bang `auth/accounts.py`.
+- Tach cac helper account lookup pure logic khoi `app.py`:
+  - normalize username/email.
+  - lookup username khong match `full_name`.
+  - lookup email cho Google login.
+  - role comparison.
+  - detect duplicate username/email.
+- `app.py` giu wrapper `_auth_lookup_key()`, `_auth_lookup_email_key()`, `_normalize_auth_text()` de UI flow khong doi.
+- Them `tests/unit/test_accounts.py`.
+- Tiep tuc Auth slice bang helper password metadata trong `auth/passwords.py`.
+- Tach logic tao field password/update metadata khoi `app.py`:
+  - Argon2 hash.
+  - `hash_version`.
+  - `updated_at`.
+  - `must_change_password`.
+- `app.py` khong con import/call truc tiep `hash_password_v2()` hoac `HASH_VERSION_ARGON2`; chi goi helper password record tu module auth.
+- Mo rong `tests/unit/test_password.py`.
+- Bat dau Storage slice bang `storage/app_json.py`.
+- Tach cac helper JSON app-level khoi `app.py`:
+  - default `{}` cho users va `[]` cho cac JSON con lai.
+  - schema-aware read/write/update.
+  - format log schema issue.
+- `app.py` giu wrapper `load_data()`, `save_data()`, `doc_lock_save_data()` de cache Streamlit, warning UI va HF push khong doi flow.
+- Them `tests/unit/test_storage_app_json.py`.
+- Bat dau Cloud/HF slice bang `cloud/hf_sync.py`.
+- Tach policy/path helper pure logic khoi `app.py`:
+  - allowlist JSON/model artifact duoc sync.
+  - resolve dataset relative path tu local path.
+  - resolve download target theo relative path.
+  - resolve upload relative path va reject `users.json`/path ngoai root.
+- `app.py` giu wrapper `_dataset_rel_path_from_local()`, `_hf_download_target_for_rel_path()`, `_hf_upload_rel_path_for_local()` de network/HF queue flow khong doi.
+- Them `tests/unit/test_cloud_hf_sync.py`.
+- Tiep tuc Cloud/HF slice trong `cloud/hf_sync.py`.
+- Tach helper config/HTTP/error pure logic khoi `app.py`:
+  - min-size theo loai file.
+  - token/dataset fingerprint.
+  - library/auth/not-found error classifier.
+  - Authorization header.
+  - Dataset file URL builder.
+  - HTTP status message cho verify/download.
+- `app.py` giu network request va cache/UI boundary, chi goi helper cloud moi.
+- Tiep tuc Cloud/HF slice bang HTTP fallback service trong `cloud/hf_sync.py`.
+- Tach `_hf_verify_dataset_via_http()` va `_hf_download_via_http()` core logic khoi `app.py`:
+  - `verify_dataset_via_http()` co injectable `request_get`.
+  - `download_dataset_file_via_http()` co injectable `request_get`.
+- download target van qua policy/path guard.
+- app boundary chi con set `_hf_last_download_error` va log/UI.
+- Mo rong `tests/unit/test_cloud_hf_sync.py` de test HTTP fallback bang fake response, khong goi network that.
+- Hoan thanh Cloud/HF slice theo DoD goc.
+- Tach cac HF network operation con lai vao `cloud/hf_sync.py`:
+  - `hf_repo_info()`.
+  - `ensure_dataset_repo()`.
+  - `list_dataset_files()`.
+  - `upload_dataset_file()`.
+  - `download_dataset_file()` voi hub client + HTTP fallback tap trung.
+  - `download_dataset_file_bytes()`.
+  - `download_dataset_file_with_progress()`.
+  - `dataset_file_exists()`.
+- `app.py` khong con import/call truc tiep `HfApi`, `hf_hub_download`, `list_repo_files`, `requests.get/head`, hoac tu tao `Authorization` header/URL Dataset.
+- `scripts/sync_from_hf.py` dung `download_dataset_file_bytes()` thay vi duplicate HTTP URL/header.
+- `scripts/export_rom_charts_data.py` dung `download_dataset_file_with_progress()` thay vi import `hf_hub_download` truc tiep.
+- Mo rong `tests/unit/test_cloud_hf_sync.py` cho service API bang fake client/response, khong goi network that.
+- Bat dau Video IO slice bang `video/io.py`.
+- Tach safe ZIP frames extraction khoi `app.py`:
+  - entry count quota.
+  - total/entry size quota.
+  - image extension allowlist.
+  - reject nested path/zip-slip.
+  - write extracted frames vao target dir sau khi validate plan.
+- `app.py` giu wrapper `_safe_extract_frames_zip()` de cac call site UI/frame loading khong doi.
+- Them `tests/unit/test_video_io.py`.
+- Tiep tuc Video IO slice trong `video/io.py`.
+- Tach video path/fallback helper khoi `app.py`:
+  - detect non-playable artifacts nhu JSON/CSV/ZIP/frame images.
+  - reject `_frames.mp4`/frame artifacts bi nham thanh video.
+  - build final H264 `_f.mp4` path.
+  - build fallback candidates `_f.mp4` -> original, `_ffmp.mp4` -> original.
+- `app.py` giu wrapper `_la_duong_dan_video_gia()`, `get_final_h264_path()`, `video_fallback_paths()` de call site cu khong doi.
+- Mo rong `tests/unit/test_video_io.py`.
+- Tiep tuc Video IO slice bang ffprobe wrappers trong `video/io.py`.
+- Tach ffprobe subprocess/parse logic khoi `app.py`:
+  - `ffprobe_video_has_readable_duration()`.
+  - `ffprobe_video_codecs()`.
+  - injectable runner de unit test khong can ffprobe that.
+- `app.py` van giu cache Streamlit `_check_video_valid_cached()` va `_get_video_codec_cached()`, chi delegate ffprobe core sang module video.
+- Mo rong `tests/unit/test_video_io.py` bang mock runner.
+- Bat dau UI role/tab slice bang `ui/navigation.py`.
+- Tach shell navigation theo role khoi `app.py`:
+  - danh sach tab cho Admin/Bac si/Benh nhan/NCV.
+  - tab Bac si co them `VIDEO & ANH` khi co output.
+  - sync `active_tab` / `active_tab_widget`.
+  - consume `trigger_tab_switch`.
+  - render segmented-control menu qua helper co truyen `st` vao de tranh import Streamlit o pure helper.
+- Them `tests/unit/test_ui_navigation.py`.
+- Bat dau tach sidebar role nho:
+  - `ui/patient.py` render panel huong dan Benh nhan.
+  - `ui/doctor.py` render profile + quick stats Bac si/KTV.
+- `app.py` van tinh du lieu thong ke Bac si va route noi dung tab de tranh import vong; UI module chi render panel da duoc truyen data.
+- Tiep tuc tach sidebar Admin/NCV:
+  - `ui/admin.py` render panel Quan tri vien + quick user lookup qua callback `lookup_user`.
+  - `ui/researcher.py` render panel NCV, cau hinh AI/toc do, quick stats, model select va reset progress qua callback.
+- `app.py` van truyen `PHASE_UI_LABELS`, `normalize_phase_selection`, `_thong_ke_video_nghien_cuu()` va `clear_all_progress_files` vao UI module de tranh import vong/side effect.
+
+Verify da chay sau slice:
+- `.venv\Scripts\python.exe -m py_compile app.py auth\permissions.py`
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_permissions.py -q` -> 5 passed.
+- `.venv\Scripts\python.exe -m py_compile app.py auth\passwords.py auth\sessions.py auth\permissions.py storage\json_store.py video\validation.py models\schemas.py models\migrate_json.py scripts\sync_from_hf.py scripts\sync_data_and_report.py scripts\reset_data.py scripts\validate_video_metadata.py utils\reference_utils.py utils\pose_classifier_utils.py utils\checkpoint_utils.py`
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 28 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8503 -> HTTP 200, process da dung sau smoke.
+- `.venv\Scripts\python.exe -m py_compile app.py auth\accounts.py`
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_accounts.py tests\unit\test_password.py -q` -> 7 passed.
+- `.venv\Scripts\python.exe -m py_compile app.py auth\accounts.py auth\passwords.py auth\sessions.py auth\permissions.py storage\json_store.py video\validation.py models\schemas.py models\migrate_json.py scripts\sync_from_hf.py scripts\sync_data_and_report.py scripts\reset_data.py scripts\validate_video_metadata.py utils\reference_utils.py utils\pose_classifier_utils.py utils\checkpoint_utils.py`
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 33 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8504 -> HTTP 200, process da dung sau smoke.
+- Baseline truoc slice password metadata:
+  - `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 33 passed.
+  - `py_compile` lan dau gap Windows lock o `storage\__pycache__`; retry voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_password.py -q` -> 3 passed.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_password.py tests\unit\test_accounts.py tests\unit\test_permissions.py -q` -> 13 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 34 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8505 -> HTTP 200, process da dung sau smoke.
+- Baseline truoc Storage slice:
+  - `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+  - `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 34 passed.
+- `.venv\Scripts\python.exe -m py_compile app.py storage\app_json.py storage\json_store.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_storage_app_json.py tests\unit\test_storage_json_store.py tests\unit\test_schema.py -q` -> 13 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 38 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8506 -> HTTP 200, process da dung sau smoke.
+- Baseline truoc Cloud/HF slice:
+  - `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+  - `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 38 passed.
+- `.venv\Scripts\python.exe -m py_compile app.py cloud\hf_sync.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_cloud_hf_sync.py tests\unit\test_path_security.py -q` -> 7 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 42 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8507 -> HTTP 200, process da dung sau smoke.
+- Baseline truoc Cloud config/helper slice:
+  - `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+  - `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 42 passed.
+- `.venv\Scripts\python.exe -m py_compile app.py cloud\hf_sync.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_cloud_hf_sync.py tests\unit\test_path_security.py -q` -> 10 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 45 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8508 -> HTTP 200, process da dung sau smoke.
+- Baseline truoc Cloud HTTP fallback slice:
+  - `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+  - `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 45 passed.
+- `.venv\Scripts\python.exe -m py_compile app.py cloud\hf_sync.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_cloud_hf_sync.py tests\unit\test_path_security.py -q` -> 14 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 49 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8509 -> HTTP 200, process da dung sau smoke.
+- Baseline truoc Video IO slice:
+  - `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+  - `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 49 passed.
+- `.venv\Scripts\python.exe -m py_compile app.py video\io.py video\validation.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_video_io.py tests\unit\test_video_validation.py -q` -> 9 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 55 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8510 -> HTTP 200, process da dung sau smoke.
+- Baseline truoc Video path/fallback slice:
+  - `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+  - `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 55 passed.
+- `.venv\Scripts\python.exe -m py_compile app.py video\io.py video\validation.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_video_io.py tests\unit\test_video_validation.py -q` -> 13 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 59 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8511 -> HTTP 200, process da dung sau smoke.
+- Baseline truoc Video ffprobe slice:
+  - `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+  - `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 59 passed.
+- `.venv\Scripts\python.exe -m py_compile app.py video\io.py video\validation.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_video_io.py tests\unit\test_video_validation.py -q` -> 17 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 63 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8512 -> HTTP 200, process da dung sau smoke.
+- Tiep tuc Video IO slice bang ffmpeg command builder trong `video/io.py`.
+- Tach command construction khoi `app.py`:
+  - `temp_h264_path()`.
+  - `build_h264_transcode_command()`.
+  - `build_upload_h264_command()`.
+- `app.py` van giu orchestration/cache/UI, nhung sync transcode va patient upload H.264 compression dung builder tu module video.
+- Mo rong `tests/unit/test_video_io.py` bang command-builder tests.
+- `.venv\Scripts\python.exe -m py_compile app.py video\io.py video\validation.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_video_io.py tests\unit\test_video_validation.py -q` -> 21 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 67 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8513 -> HTTP 200, process da dung sau smoke.
+- Tiep tuc Video IO slice bang cac ffmpeg/ffprobe command wrappers nho trong `video/io.py`.
+- Tach them command construction khoi `app.py`:
+  - async H.264 transcode `_ftmp.mp4`.
+  - background upload H.264 compression.
+  - MOV -> MP4 conversion.
+  - cut exercise segment.
+  - recover mot frame bang ffmpeg.
+  - ffprobe duration text cho UI debug.
+- `app.py` van giu subprocess execution, timeout, progress, fallback va UI rendering.
+- Mo rong `tests/unit/test_video_io.py` bang command-wrapper tests khong can ffmpeg that.
+- `.venv\Scripts\python.exe -m py_compile app.py video\io.py video\validation.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_video_io.py tests\unit\test_video_validation.py -q` -> 28 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 74 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8514 -> HTTP 200, process da dung sau smoke.
+- Tiep tuc Video serving/path helper slice bang `video/serving.py`.
+- Tach media server helper khoi `app.py`:
+  - allowed media roots cho upload/processed/temp.
+  - allowed video file containment/extension check.
+  - short-lived media token register/resolve/cleanup.
+  - local origin allowlist.
+  - `_media/{token}/{filename}` request path parser va URL builder.
+- `app.py` van giu HTTP range server, response headers va subprocess/UI boundary; wrapper cu delegate sang module moi.
+- Them `tests/unit/test_video_serving.py`.
+- `.venv\Scripts\python.exe -m py_compile app.py video\io.py video\serving.py video\validation.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_video_io.py tests\unit\test_video_serving.py tests\unit\test_video_validation.py -q` -> 35 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 81 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8515 -> HTTP 200, process da dung sau smoke.
+- Cleanup trailing whitespace trong `app.py` sau khi tach Video serving helper.
+- `git diff --check -- app.py video\io.py video\serving.py tests\unit\test_video_io.py tests\unit\test_video_serving.py task.md` -> pass.
+- `.venv\Scripts\python.exe -m py_compile app.py video\io.py video\serving.py video\validation.py` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit\test_video_io.py tests\unit\test_video_serving.py tests\unit\test_video_validation.py -q` -> 35 passed.
+- `.venv\Scripts\python.exe -m py_compile ...` voi `PYTHONPYCACHEPREFIX=scratch\pycache_compile` -> pass.
+- `.venv\Scripts\python.exe -m pytest tests\unit -q` -> 81 passed.
+- `rg` auth bypass/token URL/CORS off/ZIP extractall/server patterns tren runtime targets -> no matches.
+- Streamlit boot smoke local port 8516 -> HTTP 200, process da dung sau smoke.
+- Hoan tat cleanup Cloud/HF network call con sot sau Video IO:
+  - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile app.py cloud\hf_sync.py scripts\sync_from_hf.py scripts\export_rom_charts_data.py` -> pass.
+  - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_cloud_hf_sync.py tests\unit\test_path_security.py -q` -> 20 passed.
+  - `rg -n "from huggingface_hub|import requests|requests\.|HfApi|hf_hub_download|list_repo_files|Authorization|huggingface\.co/datasets" app.py scripts` -> no matches.
+  - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile app.py auth\accounts.py auth\passwords.py auth\sessions.py auth\permissions.py storage\app_json.py storage\json_store.py cloud\hf_sync.py video\io.py video\serving.py video\validation.py models\schemas.py models\migrate_json.py scripts\sync_from_hf.py scripts\export_rom_charts_data.py scripts\sync_data_and_report.py scripts\reset_data.py scripts\validate_video_metadata.py utils\reference_utils.py utils\pose_classifier_utils.py utils\checkpoint_utils.py` -> pass.
+  - `.\.venv\Scripts\python.exe -m pytest tests\unit -q` -> 87 passed.
+  - `git diff --check -- app.py cloud\hf_sync.py scripts\sync_from_hf.py scripts\export_rom_charts_data.py tests\unit\test_cloud_hf_sync.py task.md` -> pass.
+- Bat dau UI role/tab slice:
+  - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile app.py ui\__init__.py ui\navigation.py` -> pass.
+  - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_ui_navigation.py -q` -> 4 passed.
+  - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile app.py ui\__init__.py ui\navigation.py ui\doctor.py ui\patient.py` -> pass.
+  - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile app.py auth\accounts.py auth\passwords.py auth\sessions.py auth\permissions.py storage\app_json.py storage\json_store.py cloud\hf_sync.py video\io.py video\serving.py video\validation.py ui\__init__.py ui\navigation.py ui\doctor.py ui\patient.py models\schemas.py models\migrate_json.py scripts\sync_from_hf.py scripts\export_rom_charts_data.py scripts\sync_data_and_report.py scripts\reset_data.py scripts\validate_video_metadata.py utils\reference_utils.py utils\pose_classifier_utils.py utils\checkpoint_utils.py` -> pass.
+  - `.\.venv\Scripts\python.exe -m pytest tests\unit -q` -> 91 passed.
+  - `git diff --check -- app.py ui\__init__.py ui\navigation.py ui\doctor.py ui\patient.py tests\unit\test_ui_navigation.py task.md` -> pass.
+- Tiep tuc tach sidebar Admin/NCV:
+  - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile app.py ui\admin.py ui\researcher.py ui\doctor.py ui\patient.py ui\navigation.py` -> pass.
+  - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_ui_navigation.py -q` -> 4 passed.
+  - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile app.py auth\accounts.py auth\passwords.py auth\sessions.py auth\permissions.py storage\app_json.py storage\json_store.py cloud\hf_sync.py video\io.py video\serving.py video\validation.py ui\__init__.py ui\navigation.py ui\doctor.py ui\patient.py ui\admin.py ui\researcher.py models\schemas.py models\migrate_json.py scripts\sync_from_hf.py scripts\export_rom_charts_data.py scripts\sync_data_and_report.py scripts\reset_data.py scripts\validate_video_metadata.py utils\reference_utils.py utils\pose_classifier_utils.py utils\checkpoint_utils.py` -> pass.
+  - `.\.venv\Scripts\python.exe -m pytest tests\unit -q` -> 91 passed.
+  - `git diff --check -- app.py ui\__init__.py ui\navigation.py ui\doctor.py ui\patient.py ui\admin.py ui\researcher.py tests\unit\test_ui_navigation.py task.md` -> pass.
+- Tiep tuc UI role/tab slice sau yeu cau tach noi dung con lai:
+  - Them `ui\styles.py` gom helper inject CSS assets.
+  - Tach `TRANG CHU` theo role:
+    - Benh nhan: khai bao thong tin/trieu chung, chon bai tap, upload video, quy trinh NCKH trong `ui\patient.py`.
+    - Bac si/NCV: danh sach trieu chung + danh sach video trong `ui\doctor.py` dung chung cho clinician.
+    - Admin: route home dashboard qua `ui\admin.py`.
+  - Tach router tab chinh theo role sang `render_patient_tab`, `render_doctor_tab`, `render_researcher_tab`, `render_admin_tab`; `_render_main_tab_content()` trong `app.py` chi con chon tab va dispatch.
+  - Tach sub-tab `QUAN LY DANH GIA & NCKH` cua Bac si sang `ui\doctor.py`; cac ham nghiep vu lon con lai duoc goi qua dependency callback de tranh import vong.
+  - Them `tests\unit\test_ui_role_routes.py` cho route theo role/sub-tab.
+  - `.\.venv\Scripts\python.exe -m py_compile app.py ui\*.py` -> pass.
+  - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_ui_navigation.py tests\unit\test_ui_role_routes.py -q` -> 8 passed.
+  - `.\.venv\Scripts\python.exe -m pytest -q` -> 95 passed.
+  - Streamlit boot smoke local port 8519 -> HTTP 200, process da dung sau smoke.
+  - `git diff --check -- app.py ui tests\unit\test_ui_role_routes.py` -> pass.
+- Tiep tuc Phase 5 remaining refactor theo `docs/repair_plans/PHASE_5_REMAINING_REFACTOR.md`:
+  - Baseline truoc refactor: `pytest tests` -> 100 passed; `py_compile` pass; `app.py` ~15,281 physical lines.
+  - Slice R1: tach danh sach video sang `ui\video_list.py`; `app.py` giu wrapper `hien_thi_danh_sach_video_fragment`.
+  - Slice R2: tach frame viewer/grid sang `ui\frames_viewer.py`; `app.py` giu wrapper `hien_thi_frames_day_du`.
+  - Slice R3: tach analysis tab/deep progress area sang `ui\analysis_tab.py`; core job/processing luc do van giu trong `app.py`.
+  - Slice R4: tach form danh gia bac si, lich su/ket qua gan nhat va selected result tab sang `ui\doctor_forms.py`.
+  - Sau R4: `py_compile` pass; `pytest tests` -> 100 passed; `app.py` con ~12,190 physical lines.
+  - Slice R5: tach background analysis job registry/orchestration sang `video\jobs.py`:
+    - `AnalysisJobRegistry`, `AnalysisSlotPool`, `AnalysisRequest`.
+    - `_running_threads`, `_cancel_flags`, `_analysis_slots` chuyen sang registry.
+    - `bat_dau_phan_tich_background` trong `app.py` chi con wrapper, delegate sang `video.jobs.start_background_analysis`.
+    - Them `tests\unit\test_video_jobs.py` cho duplicate start, force restart cancel flag, slot cleanup.
+  - Slice R6: tach core video processing:
+    - `video\processing.py`: `xu_ly_frame`, `xu_ly_video_day_du`.
+    - `video\metrics.py`: `segment_frames`, `recalc_metrics`, `tinh_metrics_chi_tiet`.
+    - `video\processing.py` khong import Streamlit va khong goi `st.*` truc tiep; UI/session/toast di qua deps adapter.
+    - Them `tests\unit\test_video_metrics.py` va `tests\unit\test_video_processing.py`.
+  - Slice R7-safe: cap nhat docs/checklist, don import/registry alias du, giu wrapper tam de tranh gay call-site.
+  - Gate cuoi sau R5-R7-safe:
+    - `python -m py_compile app.py app_startup.py auth\*.py storage\*.py cloud\*.py video\*.py ui\*.py` -> pass.
+    - `pytest tests` -> 107 passed.
+    - `app.py` con 9,834 physical lines / 8,709 nonblank lines.
+
+Can lam tiep:
+- Cloud/HF slice da dong theo DoD goc: low-level HF network/token handling tap trung trong `cloud/hf_sync.py`; `app.py` va scripts chi goi service helper.
+- Video IO slice da tach cac phan chinh (path/fallback, ZIP extract, ffprobe, ffmpeg builders, serving helpers). Neu tiep tuc Phase 5 thi chuyen sang UI role slice, hoac tach sau hon HTTP range handler khi co test thu cong rieng.
+- UI role/tab slice da tach navigation, sidebar, home theo role, router tab chinh va sub-tab Bac si/NCKH. Neu tiep tuc, nen boc sau cac ham nghiep vu lon con nam trong `app.py`: `hien_thi_form_danh_gia_bac_si`, `hien_thi_ket_qua_cho_benh_nhan`, `hien_thi_lich_nhac_nho`, `hien_thi_tab_quan_tri_vien`, va cac view phan tich/video NCV.
+- Phase 5 remaining cleanup con lai:
+  - Xoa wrapper tam sau khi doi het call-site sang module moi.
+  - Chia `_build_ui_tab_dependencies()`, `_build_processing_dependencies()`, `_build_analysis_job_dependencies()` thanh cac deps builder nho/ro.
+  - Tach tiep helper overlay/tinh goc/canh bao/audio/zip con trong `app.py` khi co visual/video regression tests.
+  - Cap nhat them `PHASE_5_ARCHITECTURE.md` va `ROADMAP_SUA_CHUA.md` neu can dong milestone docs.
+- Bat dau tach frontend/backend:
+  - Giu Streamlit frontend hien tai trong `app.py` + `ui/`.
+  - Them backend API rieng trong `backend/` dung Starlette/Uvicorn:
+    - `backend\main.py` voi routes `GET /health`, `POST /auth/login`, `GET /auth/me`, `POST /auth/logout`, `GET /patients`, `GET /videos`, `GET /evaluations`, `GET /symptoms`, `GET /schedules`, `GET /research-records`.
+    - `backend\repository.py` doc JSON qua `storage.app_json`, khong import `app.py`.
+    - `backend\auth.py` dung `auth.accounts` va `auth.passwords`; bearer token tam thoi luu in-memory.
+    - `backend\access.py` gom response shaping, role/patient scoping va pseudonymize record cho NCV.
+    - Scope list patients/videos/evaluations/symptoms/schedules/research records theo actor bang `auth.permissions`.
+  - Them `tests\unit\test_backend_api.py` cho health, login/me/logout, auth guard, scope doctor/patient, researcher pseudonymize va import isolation khong load `app.py`/Streamlit.
+  - Them/cap nhat `backend\README.md` voi lenh chay backend/frontend rieng va vi du bearer token.
+  - Verify backend slice:
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\main.py backend\auth.py backend\repository.py backend\config.py backend\access.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_api.py -q` -> 9 passed.
+    - `.\.venv\Scripts\python.exe -m pytest tests -q` -> 116 passed.
+- Bat dau frontend API integration slice:
+  - Them `frontend\api_client.py`:
+    - `FrontendApiConfig.from_env()` doc `REHAB_BACKEND_URL` / `REHAB_API_BASE_URL`.
+    - Opt-in bang `REHAB_FRONTEND_USE_BACKEND=1` hoac `REHAB_USE_BACKEND_API=1`.
+    - `FrontendApiClient` goi health/login/me/logout va cac list endpoint.
+  - `app.py`:
+    - login form co the goi backend API khi opt-in, luu `backend_access_token` trong session.
+    - logout revoke backend token khi dang dung API.
+    - sidebar hien trang thai Backend API neu co `REHAB_BACKEND_URL`.
+    - `load_danh_sach_video_nghien_cuu()` uu tien API khi opt-in va co token, nhung co fallback local JSON khi backend loi/tat.
+    - Tam thoi khong dung API video cho NCV de tranh pseudonymized data lam hong pipeline phan tich hien tai.
+  - Them `tests\unit\test_frontend_api_client.py` cho config opt-in, login, bearer token, backend error va disabled client.
+  - Cap nhat `backend\README.md` cach chay frontend opt-in qua backend API.
+  - Verify frontend slice:
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile app.py frontend\api_client.py frontend\__init__.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_frontend_api_client.py tests\unit\test_backend_api.py -q` -> 14 passed.
+    - `.\.venv\Scripts\python.exe -m pytest tests -q` -> 121 passed.
+    - Streamlit boot smoke voi `REHAB_BACKEND_URL=http://127.0.0.1:8000`, `REHAB_FRONTEND_USE_BACKEND=1` tren port 8520 -> HTTP 200, process da dung sau smoke.
+- Moi slice tiep theo van can baseline truoc/sau theo `TEST_PLAN.md`.
+
+- Tiep tuc frontend theo `DESIGN.md`:
+  - Doc `DESIGN.md` va ap dung token cho giao dien moi:
+    - Nen workspace `#F8FAFC`.
+    - Panel/card `#FFFFFF`, border `#E2E8F0`, radius `8px`.
+    - Accent `#0284C7`, success `#059669`, danger `#DC2626`.
+    - Spacing 8/16/24/32px, responsive mobile/tablet.
+  - Them frontend React/Vite/TypeScript trong `web/` dung song song voi Streamlit:
+    - `web\src\api.ts` goi backend API `health/login/me/logout/videos/evaluations/patients`.
+    - `web\src\App.tsx` co login bang backend token, dashboard video/danh gia, filter va metric cards.
+    - `web\src\styles.css` bam token `DESIGN.md`, dashboard data-centric, khong landing page.
+    - `web\README.md` ghi cach chay backend va frontend rieng.
+  - Them CORS cho backend qua `REHAB_BACKEND_CORS_ORIGINS`, mac dinh cho `http://127.0.0.1:5173` va `http://localhost:5173`.
+  - Them test CORS preflight trong `tests\unit\test_backend_api.py`.
+  - Them `.gitignore` cho `node_modules/`, `web/node_modules/`, `web/dist/`, artifact TypeScript/Vite; giu track `web/package.json` va `web/package-lock.json`.
+  - Chinh `web\tsconfig*.json` de TypeScript build info/output phu nam trong `web\node_modules\.tmp`.
+  - Trong luc verify, fix hang Argon2 tren Windows do `platform.machine()` goi WMI khi import/khoi tao `argon2-cffi`; `auth\passwords.py` tam thoi override `platform.machine` thanh `AMD64` trong pham vi import/hasher init.
+  - Verify slice:
+    - `npm run build` trong `web` -> pass.
+    - `npm run lint` trong `web` -> pass.
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile app.py auth\passwords.py backend\main.py backend\auth.py backend\repository.py backend\config.py backend\access.py frontend\api_client.py frontend\__init__.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_api.py tests\unit\test_frontend_api_client.py tests\unit\test_password.py -q` -> 18 passed.
+  - Can lam tiep:
+    - Ket noi dashboard React voi cac workflow con lai: upload video, playback, job progress, ket qua phan tich, lich nhac.
+    - Them e2e smoke cho login/dashboard React bang browser.
+    - Quyet dinh migration dan tu Streamlit sang React theo role thay vi big-bang rewrite.
+
+- Tiep tuc React workspace theo role:
+  - Mo rong `web\src\api.ts` de goi them:
+    - `GET /symptoms`
+    - `GET /schedules`
+    - `GET /research-records`
+  - Refactor `web\src\App.tsx` thanh workspace nhieu tab:
+    - Video.
+    - Benh nhan/Ho so.
+    - Trieu chung.
+    - Lich nhac neu role duoc backend cho phep.
+    - Nghien cuu neu role admin/nghien cuu vien.
+  - UI tiep tuc bam `DESIGN.md`: sidebar nav, metric cards, table, status pill, mono code label, responsive 4/2/1 columns.
+  - Giu slice chi doc/monitoring; upload, media playback, job progress, AI analysis van chua migrate khoi Streamlit.
+  - Verify slice:
+    - `npm run lint` trong `web` -> pass.
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\main.py backend\access.py backend\config.py frontend\api_client.py` -> pass.
+    - `npm run build` trong `web` -> pass.
+    - `git diff --check -- web\src\App.tsx web\src\api.ts web\src\styles.css` -> pass.
+
+- Them dang ky tai khoan cho React/backend:
+  - Them `POST /auth/register` trong `backend\main.py`.
+  - Them `register_patient_user()` trong `backend\auth.py`:
+    - Chi tao role `Benh nhan`.
+    - Kiem tra username/email trung.
+    - Yeu cau username >= 3 ky tu, password >= 6 ky tu va confirm password khop.
+    - Ghi password Argon2 qua `password_record_update()`.
+    - Ghi `users.json` bang `update_app_json()` de dung lock/normalize/atomic write.
+    - Tra ve bearer token de user vao workspace ngay sau dang ky.
+  - Them test backend cho dang ky thanh cong, token/me, duplicate username/email, password yeu va confirm mismatch.
+  - Them `api.register()` va segmented login/register form trong `web\src\App.tsx`.
+  - UI dang ky bam `DESIGN.md`, co note role Bac si/NCV/Admin do admin cap.
+  - Verify slice:
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\auth.py backend\main.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_api.py -q` -> 12 passed.
+    - `npm run lint` trong `web` -> pass.
+    - `npm run build` trong `web` -> pass.
+    - `git diff --check -- backend\auth.py backend\main.py tests\unit\test_backend_api.py web\src\api.ts web\src\App.tsx web\src\styles.css` -> pass.
+
+- Them khai bao trieu chung qua backend + React:
+  - Them `POST /symptoms` trong `backend\main.py`.
+  - Chi role `Benh nhan` duoc tao khai bao; `username` lay tu bearer token, khong tin payload client.
+  - Payload luu theo schema hien co: `full_name`, `patient_id`, `age`, `gender`, `exercise`, `exercises`, `symptoms`, `vas`, `time`.
+  - Ghi `patient_symptoms.json` bang `update_app_json()` de dung lock/normalize/atomic write.
+  - Them test backend cho tao thanh cong, scope doc lai, non-patient bi 403, payload thieu field bi 400.
+  - Them `CreateSymptomPayload` va `api.createSymptom()` trong `web\src\api.ts`.
+  - Them form khai bao trieu chung trong tab `Trieu chung` cua React, chi hien voi role `Benh nhan`; submit xong refresh dashboard.
+  - UI form bam `DESIGN.md`: panel nen slate-50, border slate-200, radius 8px, grid responsive.
+  - Verify slice:
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\main.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_api.py -q` -> 14 passed.
+    - `npm run lint` trong `web` -> pass.
+    - `npm run build` trong `web` -> pass.
+    - `git diff --check -- backend\main.py tests\unit\test_backend_api.py web\src\api.ts web\src\App.tsx web\src\styles.css` -> pass.
+
+- Them upload video benh nhan qua backend + React:
+  - Them `BackendConfig.upload_dir` tro den `patient_uploads/`.
+  - Them `POST /videos/upload` trong `backend\main.py`.
+  - Chi role `Benh nhan` duoc upload; `username` lay tu bearer token.
+  - Backend nhan multipart form gom `file`, `full_name`, `exercise`.
+  - Validate extension bang `ALLOWED_UPLOAD_VIDEO_EXTENSIONS`, size <= 300MB, header magic bang `upload_video_magic_matches`.
+  - File luu vao `patient_uploads/{safe_username}_{timestamp}_{safe_filename}`.
+  - Metadata append vao `video_list.json`: `username`, `full_name`, `video_name`, `original_filename`, `stored_filename`, `exercise`, `accuracy=0`, `time`, `video_path`, `processed_path=None`, `status=Cho NCV phan tich`.
+  - Ghi `video_list.json` bang `update_app_json()` de dung lock/normalize/atomic write.
+  - Them test backend cho upload thanh cong, file duoc luu dung temp repo, metadata duoc append, non-patient bi 403, payload loi bi 400.
+  - Them `UploadVideoPayload` va `api.uploadVideo()` multipart trong `web\src\api.ts`.
+  - Them form upload video trong tab `Video` cua React, chi hien voi role `Benh nhan`; submit xong refresh dashboard.
+  - Pham vi slice: chi upload + metadata. Chua migrate transcode H.264, ffprobe deep validation, media playback, job progress va AI analysis.
+  - Verify slice:
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\config.py backend\main.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_api.py -q` -> 16 passed.
+    - `npm run lint` trong `web` -> pass.
+    - `npm run build` trong `web` -> pass.
+    - `git diff --check -- backend\config.py backend\main.py tests\unit\test_backend_api.py web\src\api.ts web\src\App.tsx web\src\styles.css` -> pass.
+
+- Them xem video upload qua backend media endpoint + React:
+  - Them `GET /videos/media/{stored_filename}` trong `backend\main.py`.
+  - Endpoint yeu cau bearer token, loc video record bang `scope_records_for_actor()`.
+  - Filename bi chan neu co slash/backslash/`..`; media path phai nam trong media root hop le qua `allowed_media_file_path()`.
+  - Endpoint cho phep cac dinh dang da upload: MP4, MOV, AVI, MKV, WebM, M4V.
+  - Neu actor ngoai scope hoac file khong hop le, backend tra `404`; filename xau tra `400`.
+  - Them test backend cho doctor xem video patient duoc gan, patient ngoai scope bi 404, traversal filename bi 400.
+  - Them `api.videoBlob()` trong `web\src\api.ts`, fetch blob kem Authorization header.
+  - Them nut `Xem/An` trong bang Video cua React va khung `<video controls>` dung object URL; cleanup object URL khi doi video/logout/unmount.
+  - Cap nhat `backend\README.md` va `web\README.md` ve media endpoint/playback.
+  - Verify slice:
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\main.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_api.py -q` -> 18 passed.
+    - `npm run lint` trong `web` -> pass.
+    - `npm run build` trong `web` -> pass.
+
+- Them analysis job progress contract qua backend + React:
+  - Them `backend\analysis_jobs.py`:
+    - Dung convention progress file cua Streamlit: `processed_results/progress_<md5(video_path)>.json`.
+    - `BackendAnalysisJobs` tao/read/write progress JSON atomic qua `storage.json_store`.
+    - Resolve media path bang `video.serving.allowed_media_file_path()` va media roots upload/processed.
+    - Runner mac dinh ban dau chi validate/prep va tra trang thai cho worker tiep theo; khong gia vo AI da xong.
+  - Them `BackendConfig.processed_dir`.
+  - Them endpoint trong `backend\main.py`:
+    - `POST /videos/{stored_filename}/analysis-jobs`: chi role `Nghien cuu vien`/`Quan tri vien`, video phai nam trong scope actor.
+    - `GET /videos/{stored_filename}/analysis-jobs/latest`: cac actor co scope video doc duoc progress.
+  - Them tests backend:
+    - NCV tao job cho video hop le, progress file duoc ghi vao temp `processed_results`.
+    - Benh nhan doc duoc progress cua video minh.
+    - Benh nhan khong duoc start job, bac si ngoai scope bi 404.
+  - Them `AnalysisJob`, `api.startAnalysisJob()`, `api.latestAnalysisJob()` trong `web\src\api.ts`.
+  - Them cot `Phan tich` trong bang Video React:
+    - progress bar nho + status pill.
+    - Admin/NCV co nut `Chay`.
+    - Moi role co scope co nut `Cap nhat` va auto-poll khi status `processing`.
+  - Cap nhat docs: `backend\README.md`, `web\README.md`, `database\database_schema.md`.
+  - Verify slice:
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\config.py backend\analysis_jobs.py backend\main.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_api.py -q` -> 20 passed.
+    - `npm run lint` trong `web` -> pass.
+    - `npm run build` trong `web` -> pass.
+  - Pham vi chua lam luc nay: gan runner transcode/MediaPipe that vao backend worker; hien van la contract/progress surface de slice sau noi pipeline an toan.
+
+- Gan backend validate/transcode runner vao analysis job:
+  - Cap nhat `backend\analysis_jobs.py`:
+    - Runner mac dinh doc metadata bang `ffprobe_video_has_readable_duration()`.
+    - Doc codec bang `ffprobe_video_codecs()`.
+    - Neu video da la `.mp4` + `h264`, tra `ready_for_ai_worker` va `analysis_input_path` la file goc.
+    - Neu chua phai H.264 MP4, dung `build_background_upload_h264_command()` de tao file `_f.mp4` qua temp `_ftmp.mp4`, sau do verify codec dau ra.
+    - Progress that hon: metadata 8%, video san sang 18-22%, transcode 24-40%, loi ffprobe/ffmpeg ghi status `error`.
+    - Command runner injectable de unit test khong can ffmpeg/ffprobe that.
+  - Them `tests\unit\test_backend_analysis_jobs.py`:
+    - H.264 MP4 san co khong goi ffmpeg va tra `ready_for_ai_worker`.
+    - Video non-H.264 goi ffmpeg fake, replace temp output thanh `_f.mp4`, verify codec va progress.
+  - Cap nhat React label status `ready_for_ai_worker` thanh `San sang AI`.
+  - Cap nhat docs/schema: `backend\README.md`, `web\README.md`, `database\database_schema.md`.
+  - Verify slice:
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\analysis_jobs.py backend\main.py tests\unit\test_backend_analysis_jobs.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_analysis_jobs.py -q` -> 2 passed.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_api.py -q` -> 20 passed.
+    - `npm run lint` trong `web` -> pass.
+    - `npm run build` trong `web` -> pass.
+  - Pham vi chua lam: worker AI/MediaPipe that doc `ready_for_ai_worker`, chay `video.processing`, cap nhat metrics/processed_path/video_list.
+
+- Gan AI runner hook + persist ket qua ve backend:
+  - Cap nhat `backend\analysis_jobs.py`:
+    - Them `ai_runner` injectable chay sau khi runner validate/transcode tra `ready_for_ai_worker`.
+    - Mac dinh neu chua cau hinh `ai_runner`, behavior cu duoc giu: job dung o `ready_for_ai_worker`.
+    - Khi co `ai_runner`, progress chuyen tiep sang processing, runner nhan `analysis_input_path`, co the tra `success`/`error` kem `result`.
+    - Them `result_handler` injectable; chi goi khi AI runner tra `success` va co result dict.
+  - Cap nhat `backend\main.py`:
+    - Gan `result_handler` de cap nhat `database\video_list.json`.
+    - Ho tro result format moi (`metrics`, `processed_path`) va format Streamlit cu (`stats`, `processed_video_path`).
+    - Match record theo username + `video_path`/basename/`stored_filename`/`video_name`.
+    - Khi success, ghi `status="Da phan tich"`, `accuracy`, `metrics`, `processed_path`, `df_path`, `all_frames_data_path`, `frames_zip_path` neu co.
+  - Cap nhat React:
+    - Polling job tu reload dashboard mot lan khi status chuyen sang `success`, de bang Video thay metrics/status moi.
+  - Them tests:
+    - Unit test `BackendAnalysisJobs.start()` voi fake `ai_runner` va `result_handler`.
+    - API test fake ffprobe + fake AI runner, start job bang NCV, doi progress success va assert `video_list.json` duoc update.
+  - Cap nhat docs/schema: `backend\README.md`, `web\README.md`, `database\database_schema.md`.
+  - Verify slice:
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\analysis_jobs.py backend\main.py tests\unit\test_backend_analysis_jobs.py tests\unit\test_backend_api.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_analysis_jobs.py tests\unit\test_backend_api.py -q` -> 24 passed, 1 warning Starlette TestClient.
+    - `npm run lint` trong `web` -> pass.
+    - `npm run build` trong `web` -> pass.
+  - Pham vi chua lam: adapter MediaPipe/API that goi `video.processing.xu_ly_video_day_du` trong backend worker; hien moi co hook va persistence contract an toan.
+
+- Them backend MediaPipe AI runner opt-in:
+  - Them `backend\ai_runner.py`:
+    - Khong import `app.py`/Streamlit.
+    - Dung `video.processing.xu_ly_video_day_du` qua dependency adapter rieng.
+    - Cap helpers toi thieu con ket trong `app.py`: `tinh_goc`, ve cung/xuong/nhan, `get_pose_model`, transcode H.264, checkpoint helpers.
+    - Tinh metrics bang `video.metrics`, ghi CSV `_data.csv`, tra `processed_path`, `metrics`, `df_path`, `all_frames_data_path`, `frames_zip_path`.
+    - Pose classifier phu mac dinh tat; chi bat bang `REHAB_BACKEND_AI_ENABLE_POSE_CLASSIFIER=1`.
+  - Them config env:
+    - `REHAB_BACKEND_ENABLE_AI_RUNNER=1` de gan runner that vao backend job.
+    - `REHAB_BACKEND_AI_MODEL_TYPE`, `REHAB_BACKEND_AI_MIN_CONFIDENCE`, `REHAB_BACKEND_AI_SKIP_STEP`, `REHAB_BACKEND_AI_RESIZE_WIDTH`, `REHAB_BACKEND_AI_FFMPEG_THREADS`.
+  - Cap nhat `backend\main.py`:
+    - `_sync_analysis_jobs_config()` chi tao runner khi flag bat.
+    - Mac dinh van dung behavior cu: job dung o `ready_for_ai_worker`.
+  - Them tests:
+    - Backend wiring runner opt-in.
+    - Adapter test bang fake processing result, khong chay MediaPipe that.
+  - Pham vi con lai: smoke test voi video that tren may dev, sau do quyet dinh co bat flag trong profile local/deploy khong.
+
+- Them React/backend e2e smoke:
+  - Them Playwright config trong `web\playwright.config.ts` va script `npm run e2e:smoke`.
+  - Them `web\e2e\react-dashboard-smoke.spec.ts`:
+    - Tao database tam trong `scratch\web-e2e-smoke`.
+    - Chay backend rieng tren port `8010` voi `REHAB_DATABASE_DIR` tam.
+    - Chay Vite rieng tren port `5183` voi `VITE_REHAB_API_URL` tro vao backend tam.
+    - Browser dang nhap user benh nhan qua UI, kiem tra dashboard, tab video va lich nhac co du lieu dung scope.
+    - Cleanup process backend/frontend e2e bang `taskkill /T /F` tren Windows de tranh sot process con.
+  - Them ignore `web\test-results\` va `web\playwright-report\`.
+  - Cap nhat `web\README.md` cach cai browser va chay smoke.
+  - Verify slice:
+    - `npx playwright install chromium` -> pass tren may dev.
+    - `npm run e2e:smoke` trong `web` -> 1 passed.
+    - `npm run lint` trong `web` -> pass.
+    - `$env:PYTHONPYCACHEPREFIX='scratch\pycache_compile'; .\.venv\Scripts\python.exe -m py_compile backend\main.py backend\auth.py backend\config.py backend\analysis_jobs.py backend\ai_runner.py` -> pass.
+    - `.\.venv\Scripts\python.exe -m pytest tests\unit\test_backend_api.py tests\unit\test_backend_analysis_jobs.py -q` -> 32 passed, 1 Starlette/httpx warning.
+    - `npm run build` trong `web` -> pass.
+
+## Phase 6 - Production-ready
+
+Trang thai: Chua thuc hien.
+
+Can lam:
+- Migration JSON sang SQLite/Postgres.
+- CI/CD lint/test/build/deploy.
+- Background job system.
+- Privacy/compliance workflow.
+- Release gates va e2e smoke.
+
+## Residual Risk Quan Trong
+
+- `app.py` van rat lon va con nhieu `unsafe_allow_html=True`.
+- Password moi da dung Argon2; SHA-256 chi con legacy verify/de migrate khi user dang nhap thanh cong.
+- Video server, ZIP, upload, destructive actions, HF IO, session revocation, checksum pickle/joblib va nhieu mutation da harden; van can audit not 100% filesystem operations/inline HTML/manual browser flows.
+- Backup local co du lieu nhay cam, khong commit.
+- Runtime JSON da sanitize trong repo; neu can du lieu cu, dung backup local va xu ly ngoai Git.

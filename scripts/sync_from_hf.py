@@ -7,8 +7,8 @@ về và cập nhật vào các file JSON local.
 
 Cách dùng:
     python sync_from_hf.py                          # Dùng token từ .streamlit/secrets.toml hoặc biến môi trường
-    python sync_from_hf.py --token hf_xxxx          # Chỉ định token thủ công
-    python sync_from_hf.py --dataset quynhphuong1209/Rehab-AI-Monitor-2026-data
+    python sync_from_hf.py --token <HF_TOKEN>       # Chỉ định token thủ công
+    python sync_from_hf.py --dataset <owner/dataset>
     python sync_from_hf.py --dry-run                # Xem trước, không ghi file
     python sync_from_hf.py --file doctor_evaluations.json video_list.json  # Chỉ sync 1 số file
 """
@@ -21,18 +21,30 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-# ── Cấu hình mặc định ──────────────────────────────────────────────────────
-DEFAULT_DATASET_ID = "quynhphuong1209/Rehab-AI-Monitor-2026-data"
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except AttributeError:
+    pass
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from storage.json_store import read_json, write_json
+from cloud.hf_sync import download_dataset_file_bytes
 
 # Danh sách file JSON cần đồng bộ (tên file trên HF Dataset → local path)
 SYNC_FILES = {
     "doctor_evaluations.json": "database/doctor_evaluations.json",
     "video_list.json":         "database/video_list.json",
     "lich_su_tap_luyen.json":  "database/lich_su_tap_luyen.json",
-    "users.json":              "database/users.json",
     "research_data.json":      "database/research_data.json",
     "patient_symptoms.json":   "database/patient_symptoms.json",
     "schedules.json":          "database/schedules.json",
+}
+OPTIONAL_SYNC_FILES = {
+    "users.json":              "database/users.json",
 }
 
 # ── Đọc token / dataset_id ─────────────────────────────────────────────────
@@ -40,7 +52,7 @@ def load_hf_config():
     """Đọc HF_TOKEN và HF_DATASET_ID theo thứ tự ưu tiên:
     1. Biến môi trường
     2. .streamlit/secrets.toml
-    3. Giá trị mặc định (chỉ dataset_id)
+    3. Không có mặc định an toàn: dataset_id phải được cấu hình rõ ràng
     """
     token = os.environ.get("HF_TOKEN", "").strip()
     dataset_id = os.environ.get("HF_DATASET_ID", "").strip()
@@ -62,8 +74,8 @@ def load_hf_config():
                     secrets = tomllib.load(f)
                     token = token or secrets.get("HF_TOKEN", "").strip()
                     dataset_id = dataset_id or secrets.get("HF_DATASET_ID", "").strip()
-                except Exception:
-                    pass
+                except (OSError, tomllib.TOMLDecodeError) as exc:
+                    print(f"  ⚠️  Không đọc được secrets.toml: {exc}")
         else:
             # Đọc thủ công (không cần thư viện)
             content = secrets_path.read_text(encoding="utf-8")
@@ -74,38 +86,27 @@ def load_hf_config():
                 elif line.startswith("HF_DATASET_ID") and "=" in line:
                     dataset_id = dataset_id or line.split("=", 1)[1].strip().strip('"').strip("'")
 
-    dataset_id = dataset_id or DEFAULT_DATASET_ID
     return token, dataset_id
 
 
 # ── Tải 1 file từ HF Dataset qua HTTP ─────────────────────────────────────
 def download_hf_file(rel_path: str, token: str, dataset_id: str, timeout=60) -> bytes | None:
     """Tải nội dung file từ HuggingFace Dataset về dưới dạng bytes."""
-    import urllib.parse
-    try:
-        import requests
-    except ImportError:
-        print("  ⚠️  Cần cài đặt requests: pip install requests")
-        return None
-
-    rel_norm = rel_path.replace("\\", "/")
-    rel_enc  = urllib.parse.quote(rel_norm, safe="/")
-    url = f"https://huggingface.co/datasets/{dataset_id}/resolve/main/{rel_enc}"
-    headers = {"Authorization": f"Bearer {token}"} if token else {}
-
-    try:
-        resp = requests.get(url, headers=headers, timeout=timeout)
-        if resp.status_code == 404:
-            print(f"  ⚠️  Không tìm thấy trên HF: {rel_path}")
-            return None
-        if resp.status_code in (401, 403):
-            print(f"  ❌  Không có quyền truy cập (HTTP {resp.status_code}) — kiểm tra HF_TOKEN")
-            return None
-        resp.raise_for_status()
-        return resp.content
-    except Exception as e:
-        print(f"  ❌  Lỗi kết nối khi tải {rel_path}: {e}")
-        return None
+    raw, err = download_dataset_file_bytes(
+        rel_path,
+        token=token,
+        dataset_id=dataset_id,
+        timeout=timeout,
+    )
+    if raw is not None:
+        return raw
+    if err and str(err).startswith("Chưa có trên Dataset:"):
+        print(f"  ⚠️  Không tìm thấy trên HF: {rel_path}")
+    elif err == "Token không có quyền tải file từ Dataset.":
+        print("  ❌  Không có quyền truy cập — kiểm tra HF_TOKEN")
+    elif err:
+        print(f"  ❌  Lỗi kết nối khi tải {rel_path}: {err}")
+    return None
 
 
 # ── Merge / cập nhật JSON ──────────────────────────────────────────────────
@@ -117,20 +118,13 @@ def merge_json_list(local_path: str, remote_data: list, key_fn=None, label="bả
     Trả về dict {"added": int, "total": int}.
     """
     # Đọc local
-    local_data = []
-    if os.path.exists(local_path):
-        try:
-            with open(local_path, "r", encoding="utf-8") as f:
-                local_data = json.load(f)
-            if not isinstance(local_data, list):
-                local_data = []
-        except Exception:
-            local_data = []
+    local_data = read_json(local_path, [])
+    if not isinstance(local_data, list):
+        local_data = []
 
     if not key_fn:
         # Không có key → ghi thẳng phiên bản mới nhất (remote thường mới hơn)
-        with open(local_path, "w", encoding="utf-8") as f:
-            json.dump(remote_data, f, ensure_ascii=False, indent=2)
+        write_json(local_path, remote_data, indent=2)
         return {"added": len(remote_data), "total": len(remote_data)}
 
     # Xây index từ local
@@ -154,10 +148,46 @@ def merge_json_list(local_path: str, remote_data: list, key_fn=None, label="bả
                 if field not in existing or (val and not existing.get(field)):
                     existing[field] = val
 
-    with open(local_path, "w", encoding="utf-8") as f:
-        json.dump(local_data, f, ensure_ascii=False, indent=2)
+    write_json(local_path, local_data, indent=2)
 
     return {"added": added, "total": len(local_data)}
+
+
+def backup_local_file(local_path: str) -> str | None:
+    if not os.path.exists(local_path):
+        return None
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    bak_path = f"{local_path}.{stamp}.bak"
+    shutil.copy2(local_path, bak_path)
+    return bak_path
+
+
+def merge_users_dict(local_path: str, remote_users: dict) -> dict:
+    loaded = read_json(local_path, {})
+    local_users = loaded if isinstance(loaded, dict) else {}
+
+    protected_fields = {"password", "role", "hash_version", "must_change_password"}
+    added = 0
+    updated = 0
+    for username, remote_record in (remote_users or {}).items():
+        if not isinstance(remote_record, dict):
+            continue
+        if username not in local_users or not isinstance(local_users.get(username), dict):
+            local_users[username] = remote_record
+            added += 1
+            continue
+
+        local_record = local_users[username]
+        for field, value in remote_record.items():
+            if field in protected_fields:
+                continue
+            if field not in local_record or (value and not local_record.get(field)):
+                local_record[field] = value
+                updated += 1
+
+    write_json(local_path, local_users, indent=2)
+
+    return {"added": added, "updated": updated, "total": len(local_users)}
 
 
 # ── Key functions cho từng loại file ─────────────────────────────────────
@@ -182,7 +212,7 @@ FILE_KEY_FN = {
     "doctor_evaluations.json": _eval_key,
     "video_list.json":         _video_key,
     "lich_su_tap_luyen.json":  _history_key,
-    "users.json":              None,   # ghi thẳng (ít thay đổi)
+    "users.json":              None,
     "research_data.json":      None,
     "patient_symptoms.json":   None,
     "schedules.json":          None,
@@ -196,6 +226,7 @@ def sync_from_hf(
     files: list[str] | None = None,
     dry_run: bool = False,
     backup: bool = True,
+    include_users: bool = False,
 ):
     """
     Tải và merge dữ liệu từ HF Dataset về local.
@@ -215,10 +246,16 @@ def sync_from_hf(
     print(f"  Mode    : {'🔍 DRY-RUN (chỉ xem)' if dry_run else '💾 GHI FILE THẬT'}")
     print()
 
-    target_files = files or list(SYNC_FILES.keys())
+    sync_files = dict(SYNC_FILES)
+    if include_users:
+        sync_files.update(OPTIONAL_SYNC_FILES)
+    target_files = files or list(sync_files.keys())
+    if "users.json" in target_files and not include_users:
+        print("  ⚠️  Bỏ qua users.json. Dùng --include-users nếu thật sự cần đồng bộ tài khoản.")
+        target_files = [f for f in target_files if f != "users.json"]
 
     for hf_name in target_files:
-        local_rel = SYNC_FILES.get(hf_name)
+        local_rel = sync_files.get(hf_name)
         if not local_rel:
             print(f"  ⚠️  Không biết đường dẫn local cho: {hf_name}, bỏ qua.")
             continue
@@ -235,7 +272,7 @@ def sync_from_hf(
         # Parse JSON
         try:
             remote_data = json.loads(raw.decode("utf-8"))
-        except Exception as e:
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
             print(f"       → ❌ Parse JSON lỗi: {e}\n")
             continue
 
@@ -251,21 +288,26 @@ def sync_from_hf(
 
         # Backup file local cũ
         if backup and os.path.exists(local_path):
-            bak_path = local_path + ".bak"
-            shutil.copy2(local_path, bak_path)
+            bak_path = backup_local_file(local_path)
+            if bak_path:
+                print(f"       Backup  : {bak_path}")
 
         # Tạo thư mục nếu chưa có
         os.makedirs(os.path.dirname(local_path) or ".", exist_ok=True)
 
         # Merge
-        if isinstance(remote_data, list):
+        if hf_name == "users.json" and isinstance(remote_data, dict):
+            result = merge_users_dict(local_path, remote_data)
+            print(
+                f"       Local   : {result['total']} tài khoản "
+                f"(mới: +{result['added']}, metadata cập nhật: {result['updated']})"
+            )
+        elif isinstance(remote_data, list):
             key_fn = FILE_KEY_FN.get(hf_name)
             result = merge_json_list(local_path, remote_data, key_fn)
             print(f"       Local   : {result['total']} bản ghi (mới thêm: +{result['added']})")
         else:
-            # Với dict (ví dụ users.json có thể là dict) → ghi thẳng
-            with open(local_path, "w", encoding="utf-8") as f:
-                json.dump(remote_data, f, ensure_ascii=False, indent=2)
+            write_json(local_path, remote_data, indent=2)
             print(f"       → Ghi thẳng (dict).")
 
         print(f"       ✅ Đã cập nhật: {local_path}\n")
@@ -285,6 +327,7 @@ if __name__ == "__main__":
     parser.add_argument("--file",    type=str, nargs="+",   help="Chỉ sync các file cụ thể (VD: doctor_evaluations.json video_list.json)")
     parser.add_argument("--dry-run", action="store_true",   help="Chỉ xem, không ghi file")
     parser.add_argument("--no-backup", action="store_true", help="Không tạo file .bak")
+    parser.add_argument("--include-users", action="store_true", help="Cho phép đồng bộ users.json sau khi đã backup và xác nhận rủi ro")
     args = parser.parse_args()
 
     # Đọc config
@@ -292,11 +335,16 @@ if __name__ == "__main__":
     token      = args.token   or env_token
     dataset_id = args.dataset or env_dataset
 
+    if not dataset_id:
+        print("\n❌ Chưa có HF_DATASET_ID.")
+        print("   Cấu hình biến môi trường hoặc truyền: python sync_from_hf.py --dataset <owner/dataset>")
+        sys.exit(1)
+
     if not token:
         print("\n⚠️  Chưa có HF_TOKEN!")
-        print("   Cách 1: Thêm HF_TOKEN=hf_xxxx vào file .streamlit/secrets.toml")
-        print("   Cách 2: Chạy:  set HF_TOKEN=hf_xxxx  (Windows) rồi chạy lại script")
-        print("   Cách 3: Truyền:  python sync_from_hf.py --token hf_xxxx\n")
+        print("   Cách 1: Thêm HF_TOKEN=<token> vào file .streamlit/secrets.toml")
+        print("   Cách 2: Chạy:  set HF_TOKEN=<token>  (Windows) rồi chạy lại script")
+        print("   Cách 3: Truyền:  python sync_from_hf.py --token <token>\n")
         confirm = input("Vẫn thử tải (dataset public không cần token)? [y/N] ").strip().lower()
         if confirm != "y":
             sys.exit(0)
@@ -307,4 +355,5 @@ if __name__ == "__main__":
         files      = args.file,
         dry_run    = args.dry_run,
         backup     = not args.no_backup,
+        include_users = args.include_users,
     )

@@ -1,5 +1,5 @@
 ID=Rehab-AI-Monitor-main
-GITHUB=https://github.com/quynhphuong1209/Rehab-AI-Monitor.git
-HF_SPACE=https://huggingface.co/spaces/quynhphuong1209/Rehab-AI-Monitor-2026
+GITHUB=
+HF_SPACE=
 # File nay dung de git hook xac thuc dung project truoc khi push
 # KHONG XOA file nay

@@ -11,10 +11,15 @@ import glob
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable, Mapping
 
 import numpy as np
 import pandas as pd
+try:
+    from .checksum import verify_sha256_sidecar, write_sha256_sidecar
+except ImportError:
+    from checksum import verify_sha256_sidecar, write_sha256_sidecar
 
 
 KEY_POINTS = [11, 12, 13, 14, 15, 16, 23, 24]
@@ -194,11 +199,16 @@ def get_model_paths(db_dir: str = "database") -> tuple[str, str]:
 
 def get_pose_classifier_status(db_dir: str = "database") -> dict[str, Any]:
     model_path, features_path = get_model_paths(db_dir)
-    ready = os.path.exists(model_path) and os.path.exists(features_path)
+    model_exists = os.path.exists(model_path)
+    features_exists = os.path.exists(features_path)
+    checksum_ok = verify_sha256_sidecar(model_path, required=True) if model_exists else False
+    ready = model_exists and features_exists and checksum_ok
     return {
         "ready": ready,
         "model_path": model_path,
         "features_path": features_path,
+        "checksum_ok": checksum_ok,
+        "checksum_required": True,
         "model_mtime": datetime.fromtimestamp(os.path.getmtime(model_path)).isoformat()
         if os.path.exists(model_path)
         else None,
@@ -366,6 +376,7 @@ def train_pose_classifier(
     os.makedirs(db_dir, exist_ok=True)
     model_path, features_path = get_model_paths(db_dir)
     joblib.dump(clf, model_path)
+    model_checksum_path = write_sha256_sidecar(model_path)
     with open(features_path, "w", encoding="utf-8") as f:
         json.dump(
             {
@@ -383,6 +394,7 @@ def train_pose_classifier(
         "message": "Da train va luu pose classifier",
         "accuracy": round(accuracy * 100, 2),
         "model_path": model_path,
+        "model_checksum_path": model_checksum_path,
         "features_path": features_path,
         "classification_report": report,
         **summary,
@@ -395,6 +407,8 @@ def _load_classifier(db_dir: str = "database"):
     model_path, features_path = get_model_paths(db_dir)
     if not os.path.exists(model_path) or not os.path.exists(features_path):
         raise FileNotFoundError("Chua co pose classifier. Hay train model truoc.")
+    if not verify_sha256_sidecar(model_path, required=True):
+        raise ValueError("Pose classifier checksum thieu hoac khong hop le. Hay train lai model.")
     clf = joblib.load(model_path)
     with open(features_path, "r", encoding="utf-8") as f:
         raw_features = json.load(f)
@@ -652,23 +666,40 @@ def resolve_local_path(
     if not path_str:
         return None
 
-    clean = str(path_str).replace("\\", "/").replace("/data/", "")
-    if clean.startswith("/"):
-        clean = clean[1:]
+    roots = [
+        Path(data_dir or "."),
+        Path(processed_dir or "processed_results"),
+        Path(db_dir or "database"),
+    ]
+    allowed_roots = []
+    for root in roots:
+        try:
+            resolved_root = root.resolve()
+        except OSError:
+            continue
+        if resolved_root not in allowed_roots:
+            allowed_roots.append(resolved_root)
+
+    raw = str(path_str).replace("\\", "/")
+    clean = raw.replace("/data/", "").lstrip("/")
     basename = os.path.basename(clean)
     candidates = [
-        path_str,
-        clean,
-        os.path.join(data_dir, clean),
-        os.path.join(processed_dir, basename),
-        os.path.join(data_dir, "processed_results", basename),
-        os.path.join(db_dir, basename),
-        os.path.abspath(clean),
-        os.path.abspath(os.path.join(processed_dir, basename)),
+        Path(raw),
+        Path(clean),
+        Path(data_dir or ".") / clean,
+        Path(processed_dir or "processed_results") / basename,
+        Path(data_dir or ".") / "processed_results" / basename,
+        Path(db_dir or "database") / basename,
     ]
     for candidate in candidates:
-        if candidate and os.path.exists(candidate) and os.path.getsize(candidate) > 100:
-            return candidate
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            continue
+        if not any(resolved == root or root in resolved.parents for root in allowed_roots):
+            continue
+        if resolved.exists() and resolved.is_file() and resolved.stat().st_size > 100:
+            return str(resolved)
     return None
 
 
@@ -859,6 +890,7 @@ def reprocess_videos_with_classifier(
     db_dir: str = "database",
     data_dir: str = ".",
     phase_bounds_fn: Callable[[pd.DataFrame], list[int] | tuple[int, int, int, int]] | None = None,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     get_pose_classifier_status(db_dir)
     if not get_pose_classifier_status(db_dir)["ready"]:
@@ -870,6 +902,8 @@ def reprocess_videos_with_classifier(
     video_list = _read_json(videos_file, [])
     evaluations_list = _read_json(evaluations_file, []) if evaluations_file else []
     updated = 0
+    would_read: list[str] = []
+    would_write: list[str] = []
     results: list[dict[str, Any]] = []
 
     for v in video_list:
@@ -877,6 +911,7 @@ def reprocess_videos_with_classifier(
         if not csv_path:
             results.append({"video": v.get("video_name"), "error": "Khong tim thay CSV"})
             continue
+        would_read.append(csv_path)
 
         try:
             df = pd.read_csv(csv_path)
@@ -886,12 +921,15 @@ def reprocess_videos_with_classifier(
                 phase_bounds_fn=phase_bounds_fn,
                 exercise_name=v.get("exercise"),
             )
-            predicted_df.to_csv(csv_path, index=False)
+            would_write.append(csv_path)
+            if not dry_run:
+                predicted_df.to_csv(csv_path, index=False)
 
             frames_json_path = resolve_local_path(
                 v.get("all_frames_data_path"), data_dir, processed_dir, db_dir
             )
             if frames_json_path:
+                would_read.append(frames_json_path)
                 frame_data = _read_json(frames_json_path, [])
                 if isinstance(frame_data, list):
                     ml_cols = [
@@ -908,40 +946,56 @@ def reprocess_videos_with_classifier(
                         for col in ml_cols:
                             if col in predicted_df.columns:
                                 frame_item[col] = _json_safe_scalar(predicted_df.iloc[idx][col])
-                    _write_json(frames_json_path, frame_data)
-                    refresh_saved_frame_labels(
-                        frames_json_path,
-                        data_dir=data_dir,
-                        processed_dir=processed_dir,
-                        db_dir=db_dir,
-                    )
+                    would_write.append(frames_json_path)
+                    if not dry_run:
+                        _write_json(frames_json_path, frame_data)
+                        refresh_saved_frame_labels(
+                            frames_json_path,
+                            data_dir=data_dir,
+                            processed_dir=processed_dir,
+                            db_dir=db_dir,
+                        )
 
             ml_phases = ml_result["ml_phases"]
-            v["ml_accuracy"] = ml_phases["overall"]
-            v["metrics"] = merge_ml_metrics(v.get("metrics", {}), ml_result)
+            if not dry_run:
+                v["ml_accuracy"] = ml_phases["overall"]
+                v["metrics"] = merge_ml_metrics(v.get("metrics", {}), ml_result)
 
             is_codman = _is_codman_exercise(v.get("exercise"))
-            for eval_entry in evaluations_list:
-                same_patient = (
-                    eval_entry.get("patient_username") == v.get("username")
-                    or eval_entry.get("patient_username") == v.get("full_name")
-                )
-                same_video = os.path.basename(eval_entry.get("video_name", "")) == os.path.basename(
-                    v.get("video_name", "")
-                )
-                if same_patient and same_video and eval_entry.get("doctor_username") == "AI_Researcher":
-                    eval_entry["ml_accuracy"] = ml_phases["overall"]
-                    if is_codman:
-                        eval_entry["ml_accuracy_g1"] = ml_phases["g1"]
-                        eval_entry["ml_accuracy_g2"] = ml_phases["g2"]
-                        eval_entry["ml_accuracy_g3"] = ml_phases["g3"]
+            if not dry_run:
+                for eval_entry in evaluations_list:
+                    same_patient = (
+                        eval_entry.get("patient_username") == v.get("username")
+                        or eval_entry.get("patient_username") == v.get("full_name")
+                    )
+                    same_video = os.path.basename(eval_entry.get("video_name", "")) == os.path.basename(
+                        v.get("video_name", "")
+                    )
+                    if same_patient and same_video and eval_entry.get("doctor_username") == "AI_Researcher":
+                        eval_entry["ml_accuracy"] = ml_phases["overall"]
+                        if is_codman:
+                            eval_entry["ml_accuracy_g1"] = ml_phases["g1"]
+                            eval_entry["ml_accuracy_g2"] = ml_phases["g2"]
+                            eval_entry["ml_accuracy_g3"] = ml_phases["g3"]
 
             updated += 1
             results.append({"video": v.get("video_name"), "ml_accuracy": ml_phases["overall"]})
         except Exception as exc:
             results.append({"video": v.get("video_name"), "error": str(exc)})
 
-    _write_json(videos_file, video_list)
-    if evaluations_file and evaluations_list:
-        _write_json(evaluations_file, evaluations_list)
-    return {"success": True, "updated": updated, "results": results}
+    if not dry_run:
+        _write_json(videos_file, video_list)
+        if evaluations_file and evaluations_list:
+            _write_json(evaluations_file, evaluations_list)
+    else:
+        would_write.append(videos_file)
+        if evaluations_file:
+            would_write.append(evaluations_file)
+    return {
+        "success": True,
+        "dry_run": bool(dry_run),
+        "updated": updated,
+        "would_read": sorted(set(would_read)),
+        "would_write": sorted(set(would_write)),
+        "results": results,
+    }

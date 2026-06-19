@@ -1,160 +1,33 @@
 {
-    "Đinh Lê Quỳnh Phương": {
-        "password": "f3f61bf6873aa83f17728ee2cc0f46525c82e377411bbc25b5672a17d1035471",
-        "full_name": "Đinh Lê Quỳnh Phương",
+    "admin": {
+        "password": "$argon2id$v=19$m=65536,t=2,p=2$4jE/UNwmf7YZnuU4wM3xdA$KSaqTOdZYbHhlTjzlh0Ob3q/YiVv/u5WNAmIEgdPCqM",
+        "hash_version": "argon2",
+        "updated_at": "2026-06-18T22:16:38.649253+07:00",
+        "must_change_password": true,
+        "full_name": "System Administrator",
         "role": "Quản trị viên",
-        "email": "2211090031@studenthuph.edu.vn",
-        "mssv": "2211090031"
+        "email": "",
+        "created_at": "2026-06-18T22:16:38.649253+07:00",
+        "seeded": true,
+        "username": "admin",
+        "assigned_patient_usernames": [],
+        "assigned_doctor_username": "",
+        "team_usernames": [],
+        "active": true
     },
-    "doctor1": {
-        "password": "ada76cb4b326474af5f9d8863341bf45f5e68223a11d4f3d26a7dd17f3e391e0",
-        "full_name": "Doctor 1",
-        "role": "Bác sĩ / KTV PHCN"
-    },
-    "doctor2": {
-        "password": "ada76cb4b326474af5f9d8863341bf45f5e68223a11d4f3d26a7dd17f3e391e0",
-        "full_name": "Doctor 2",
-        "role": "Bác sĩ / KTV PHCN"
-    },
-    "doctor3": {
-        "password": "ada76cb4b326474af5f9d8863341bf45f5e68223a11d4f3d26a7dd17f3e391e0",
-        "full_name": "Doctor 3",
-        "role": "Bác sĩ / KTV PHCN"
-    },
-    "doctor4": {
-        "password": "ada76cb4b326474af5f9d8863341bf45f5e68223a11d4f3d26a7dd17f3e391e0",
-        "full_name": "Doctor 4",
-        "role": "Bác sĩ / KTV PHCN"
-    },
-    "doctor5": {
-        "password": "ada76cb4b326474af5f9d8863341bf45f5e68223a11d4f3d26a7dd17f3e391e0",
-        "full_name": "Doctor 5",
-        "role": "Bác sĩ / KTV PHCN"
-    },
-    "Kim Mạnh Hưng": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Kim Mạnh Hưng",
-        "role": "Nghiên cứu viên",
-        "email": "2211090016@studenthuph.edu.vn",
-        "mssv": "2211090016"
-    },
-    "Nguyễn Hải An": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Nguyễn Hải An",
-        "role": "Nghiên cứu viên",
-        "email": "2211090001@studenthuph.edu.vn",
-        "mssv": "2211090001"
-    },
-    "Nguyễn Thị Thanh Nga": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Nguyễn Thị Thanh Nga",
-        "role": "Nghiên cứu viên",
-        "email": "2211090027@studenthuph.edu.vn",
-        "mssv": "2211090027"
-    },
-    "Phan Vân Anh": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Phan Vân Anh",
-        "role": "Nghiên cứu viên",
-        "email": "2211090004@studenthuph.edu.vn",
-        "mssv": "2211090004"
-    },
-    "Nguyễn Thị Thơm": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Nguyễn Thị Thơm",
-        "role": "Nghiên cứu viên",
-        "email": "2216030122@studenthuph.edu.vn",
-        "mssv": "2216030122"
-    },
-    "Nguyễn Thị Thu Hương": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Nguyễn Thị Thu Hương",
-        "role": "Nghiên cứu viên",
-        "email": "2317010071@studenthuph.edu.vn",
-        "mssv": "2317010071"
-    },
-    "2211090016": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Kim Mạnh Hưng",
-        "role": "Nghiên cứu viên",
-        "email": "2211090016@studenthuph.edu.vn",
-        "mssv": "2211090016"
-    },
-    "2211090001": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Nguyễn Hải An",
-        "role": "Nghiên cứu viên",
-        "email": "2211090001@studenthuph.edu.vn",
-        "mssv": "2211090001"
-    },
-    "2211090027": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Nguyễn Thị Thanh Nga",
-        "role": "Nghiên cứu viên",
-        "email": "2211090027@studenthuph.edu.vn",
-        "mssv": "2211090027"
-    },
-    "2211090004": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Phan Vân Anh",
-        "role": "Nghiên cứu viên",
-        "email": "2211090004@studenthuph.edu.vn",
-        "mssv": "2211090004"
-    },
-    "2216030122": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Nguyễn Thị Thơm",
-        "role": "Nghiên cứu viên",
-        "email": "2216030122@studenthuph.edu.vn",
-        "mssv": "2216030122"
-    },
-    "2317010071": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Nguyễn Thị Thu Hương",
-        "role": "Nghiên cứu viên",
-        "email": "2317010071@studenthuph.edu.vn",
-        "mssv": "2317010071"
-    },
-    "2211090031": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Đinh Lê Quỳnh Phương",
-        "role": "Nghiên cứu viên",
-        "email": "2211090031@studenthuph.edu.vn",
-        "mssv": "2211090031"
-    },
-    "Đinh Lê Quỳnh Phương (NCV)": {
-        "password": "3f5ae8edf3e373abef97308ea598096c3fc8ea80e1e1920b555fc766244de585",
-        "full_name": "Đinh Lê Quỳnh Phương",
-        "role": "Nghiên cứu viên",
-        "email": "2211090031@studenthuph.edu.vn",
-        "mssv": "2211090031"
-    },
-    "Hoàng Hạnh Nguyên": {
-        "password": "6f6c9c051e1146b2d54e5d728fdc95758165dc0bd2f1115e13361b9efff56a89",
-        "email": "2211090031@studenthuph.edu.vn",
-        "full_name": "Hoàng Hạnh Nguyên",
+    "hoxuanphu": {
+        "password": "$argon2id$v=19$m=65536,t=2,p=2$s3VmAvNw4bC1I/2LUzaGtw$hTVkXtMs0UP9HWs9EXHw2D/AmDV2Ei7Xk8d0/RpnhGg",
+        "hash_version": "argon2",
+        "updated_at": "2026-06-19T00:41:41.186065+07:00",
+        "must_change_password": false,
+        "username": "hoxuanphu",
+        "full_name": "Xuân Phú Hồ",
+        "email": "hoxuanphu.stmn@gmail.com",
         "role": "Bệnh nhân",
-        "created_at": "2026-05-29T10:40:08.422136"
-    },
-    "Nguyễn Thị Nga": {
-        "password": "8f71c5f71f1a12f4cfc61f6b21a7686245a39c3400638501c10701540df27eff",
-        "email": "2211090031@studenthuph.edu.vn",
-        "full_name": "Nguyễn Thị Nga",
-        "role": "Bệnh nhân",
-        "created_at": "2026-05-29T11:13:00.404437"
-    },
-    "Vũ Thị Hòa": {
-        "password": "eedac0db7374d9cb4212a8aa1d6a5392aa57706c0ce098407d60bbb210878677",
-        "email": "2211090031@studenthuph.edu.vn",
-        "full_name": "Vũ Thị Hòa",
-        "role": "Bệnh nhân",
-        "created_at": "2026-06-01T14:02:09.046327"
-    },
-    "Cao Thị Thường": {
-        "password": "66709ebaff2f8d12e5d45c969fc3d66ffa6ab003e4023f8349b461b2cb6d4d0e",
-        "email": "2211090031@studenthuph.edu.vn",
-        "full_name": "Cao Thị Thường",
-        "role": "Bệnh nhân",
-        "created_at": "2026-06-04T02:51:26.328515"
+        "created_at": "2026-06-19T00:41:41.186065+07:00",
+        "active": true,
+        "assigned_patient_usernames": [],
+        "assigned_doctor_username": "",
+        "team_usernames": []
     }
 }

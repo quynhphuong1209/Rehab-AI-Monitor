@@ -20,9 +20,9 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def run_script(name: str) -> int:
+def run_script(name: str, *extra_args: str) -> int:
     path = os.path.join(ROOT, "scripts", name)
-    return subprocess.call([sys.executable, path], cwd=ROOT)
+    return subprocess.call([sys.executable, path, *extra_args], cwd=ROOT)
 
 
 def main() -> int:
@@ -32,6 +32,7 @@ def main() -> int:
         choices=["train", "apply", "all"],
         help="train | apply | all",
     )
+    parser.add_argument("--dry-run", action="store_true", help="For apply/all, list writes without changing files.")
     args = parser.parse_args()
 
     if args.action in ("train", "all"):
@@ -40,7 +41,8 @@ def main() -> int:
             return code
 
     if args.action in ("apply", "all"):
-        return run_script("reprocess_all.py")
+        extra = ["--dry-run"] if args.dry_run else []
+        return run_script("reprocess_all.py", *extra)
 
     return 0
 
