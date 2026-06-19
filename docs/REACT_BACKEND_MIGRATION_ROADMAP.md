@@ -110,13 +110,14 @@ Tai lieu nay tong hop lo trinh tiep theo cho viec dua cac workflow tu Streamlit 
 - Loc frame theo PASS/NEAR/FAIL.
 - Preview CSV/bieu do trong UI, khong chi download.
 - Media token tam thoi cho backend React moi, tuong duong muc an toan Streamlit da harden.
-- Download gom:
+- Download/artifact hien co gom:
   - video goc;
   - video da phan tich;
   - frames ZIP;
   - CSV;
-  - JSON frames;
-  - anh bieu do.
+  - JSON frames.
+- Backlog media con lai:
+  - anh bieu do PNG/SVG chua co artifact/endpoint rieng; hien React chi preview chart tu JSON endpoint va download du lieu nguon.
 
 ### 5. Lich nhac
 
@@ -373,6 +374,8 @@ Tieu chi xong:
 
 Trang thai: Da trien khai CI/release gate, migration dry-run/apply/rollback va checklist production ngay 2026-06-19. Runtime van doc JSON; SQLite migration hien la gate/tooling truoc khi switch repository storage.
 
+Ghi chu parity storage: hien co tooling JSON -> SQLite va test dry-run/apply/rollback. Backend runtime van dung `JsonRepository` doc/ghi JSON; chua co Postgres runtime repository switch va chua doi storage production sang SQLite/Postgres.
+
 Muc tieu: truoc deploy that, co gate tu dong va migration data ben vung.
 
 Viec can lam:
@@ -383,7 +386,8 @@ Viec can lam:
   - [x] `npm run lint`;
   - [x] `npm run build`;
   - [x] Playwright smoke.
-- [x] Migration JSON sang SQLite/Postgres.
+- [x] Tooling migration JSON sang SQLite.
+- [ ] Runtime repository switch sang SQLite hoac Postgres khi co quyet dinh deploy production.
 - [x] Background job system cho AI.
 - [x] Privacy/compliance checklist.
 - [x] Release checklist.

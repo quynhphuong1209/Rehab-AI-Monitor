@@ -1627,6 +1627,14 @@ def test_backend_patient_can_create_symptom_record(tmp_path, monkeypatch):
             "exercise": "Codman",
             "symptoms": "Đau vai khi nâng tay",
             "vas": 8,
+            "pain_before": 5,
+            "pain_after": 7,
+            "pain_location": "Vai phải",
+            "pain_at_rest": True,
+            "pain_during_movement": True,
+            "movement_limitations": "Khó nâng tay quá vai",
+            "notes": "Đau tăng sau buổi tập",
+            "video_name": "a.mp4",
             "time": "10:30 - 19/06/2026",
         },
     )
@@ -1637,6 +1645,11 @@ def test_backend_patient_can_create_symptom_record(tmp_path, monkeypatch):
     assert item["full_name"] == "Edited Name"
     assert item["patient_id"] == "BN001"
     assert item["vas"] == 8
+    assert item["pain_before"] == 5
+    assert item["pain_after"] == 7
+    assert item["pain_location"] == "Vai phải"
+    assert item["pain_at_rest"] is True
+    assert item["movement_limitations"] == "Khó nâng tay quá vai"
     assert item["exercise"] == "Codman"
     assert item["exercises"] == ["Codman"]
 
@@ -1704,9 +1717,21 @@ def test_backend_doctor_can_create_and_delete_evaluation(tmp_path, monkeypatch):
     assert listed["count"] == 1
     assert listed["items"][0]["doctor_result"] == "Gần đúng"
 
-    deleted = client.delete(f"/evaluations/{item['id']}", headers=headers)
+    rejected = client.request("DELETE", f"/evaluations/{item['id']}", headers=headers, json={"confirm": "WRONG"})
+    assert rejected.status_code == 400
+
+    deleted = client.request(
+        "DELETE",
+        f"/evaluations/{item['id']}",
+        headers=headers,
+        json={"confirm": "DELETE EVALUATION"},
+    )
     assert deleted.status_code == 200
+    assert deleted.json()["backup_path"]
     assert client.get("/evaluations", headers=headers).json()["count"] == 0
+    audit = client.get("/admin/audit-log", headers={"Authorization": f"Bearer {client.post('/auth/login', json={'username': 'admin', 'password': 'secret'}).json()['access_token']}"}).json()
+    assert any(item["action"] == "delete_evaluation" for item in audit["items"])
+    assert (tmp_path / "backups" / "admin_ops").exists()
 
 
 def test_backend_doctor_can_create_and_delete_schedule_for_assigned_patient(tmp_path, monkeypatch):
@@ -1737,8 +1762,22 @@ def test_backend_doctor_can_create_and_delete_schedule_for_assigned_patient(tmp_
     listed = client.get("/schedules", headers=headers).json()
     assert listed["count"] == 2
 
-    deleted = client.delete(f"/schedules/{item['id']}", headers=headers)
+    updated_status = client.post(
+        f"/schedules/{item['id']}/status",
+        headers=headers,
+        json={"status": "Hoàn thành"},
+    )
+    assert updated_status.status_code == 200
+    assert updated_status.json()["item"]["status"] == "Hoàn thành"
+
+    deleted = client.request(
+        "DELETE",
+        f"/schedules/{item['id']}",
+        headers=headers,
+        json={"confirm": "DELETE SCHEDULE"},
+    )
     assert deleted.status_code == 200
+    assert deleted.json()["backup_path"]
     assert client.get("/schedules", headers=headers).json()["count"] == 1
 
 
@@ -1754,7 +1793,8 @@ def test_backend_researcher_can_create_and_delete_research_record(tmp_path, monk
         json={
             "patient_username": "patient01",
             "subject_code": "BN001",
-            "exercise": "Codman",
+            "video_name": "a.mp4",
+            "exercise": "",
             "general_result": "Đúng",
             "specialist_comment": "private note",
             "diagnosis": "M75",
@@ -1766,14 +1806,69 @@ def test_backend_researcher_can_create_and_delete_research_record(tmp_path, monk
     assert item["patient_username"].startswith("SUBJ-")
     assert "specialist_comment" not in item
     assert item["id"].startswith("res_")
+    assert item["general_result"] == "Đúng"
+    assert item["exercise"] == "codman"
+    assert "source_video_id" in item
 
     listed = client.get("/research-records", headers=headers).json()
     assert listed["count"] == 3
     assert "specialist_comment" not in listed["items"][-1]
 
-    deleted = client.delete(f"/research-records/{item['id']}", headers=headers)
+    invalid = client.post(
+        "/research-records",
+        headers=headers,
+        json={
+            "patient_username": "patient01",
+            "subject_code": "BN002",
+            "diagnosis": "",
+            "exercise": "",
+            "general_result": "",
+        },
+    )
+    assert invalid.status_code == 400
+
+    rejected = client.request("DELETE", f"/research-records/{item['id']}", headers=headers, json={"confirm": "WRONG"})
+    assert rejected.status_code == 400
+
+    deleted = client.request(
+        "DELETE",
+        f"/research-records/{item['id']}",
+        headers=headers,
+        json={"confirm": "DELETE RESEARCH RECORD"},
+    )
     assert deleted.status_code == 200
+    assert deleted.json()["backup_path"]
     assert client.get("/research-records", headers=headers).json()["count"] == 2
+
+
+def test_backend_delete_clinical_records_requires_author_or_scope(tmp_path, monkeypatch):
+    _configure_tmp_backend(tmp_path, monkeypatch)
+    client = TestClient(app)
+    admin_login = client.post("/auth/login", json={"username": "admin", "password": "secret"})
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    doctor_login = client.post("/auth/login", json={"username": "doctor", "password": "doctorpass"})
+    doctor_headers = {"Authorization": f"Bearer {doctor_login.json()['access_token']}"}
+
+    created = client.post(
+        "/evaluations",
+        headers=admin_headers,
+        json={
+            "patient_username": "patient01",
+            "video_name": "admin.mp4",
+            "exercise": "codman",
+            "doctor_result": "Đúng",
+        },
+    )
+    assert created.status_code == 201
+    item = created.json()["item"]
+
+    denied = client.request(
+        "DELETE",
+        f"/evaluations/{item['id']}",
+        headers=doctor_headers,
+        json={"confirm": "DELETE EVALUATION"},
+    )
+    assert denied.status_code == 403
 
 
 def test_backend_admin_can_manage_users_and_change_password(tmp_path, monkeypatch):

@@ -99,6 +99,15 @@ export type CreateSymptomPayload = {
   exercise: string;
   symptoms: string;
   vas: number;
+  pain_before?: number;
+  pain_after?: number;
+  pain_location?: string;
+  pain_at_rest?: boolean;
+  pain_during_movement?: boolean;
+  movement_limitations?: string;
+  notes?: string;
+  video_name?: string;
+  session_ref?: string;
 };
 
 export type UploadVideoPayload = {
@@ -469,6 +478,7 @@ export type ScheduleRecord = {
   date?: string;
   time?: string;
   status?: string;
+  taken?: boolean;
   notes?: string;
   exercise_name?: string;
   frequency?: string;
@@ -504,6 +514,7 @@ export type CreateSchedulePayload = {
   frequency?: string;
   medication_name?: string;
   dosage?: string;
+  status?: string;
 };
 
 export type CreateResearchPayload = {
@@ -518,6 +529,8 @@ export type CreateResearchPayload = {
   specialist_comment: string;
   recording_device: string;
   recording_angle: string;
+  video_name?: string;
+  camera_distance?: string;
 };
 
 export type LoginResult = {
@@ -905,11 +918,12 @@ export const api = {
       },
       token,
     ),
-  deleteEvaluation: (token: string, id: string) =>
-    request<{ ok: boolean; item?: EvaluationRecord }>(
+  deleteEvaluation: (token: string, id: string, confirm: string) =>
+    request<{ ok: boolean; item?: EvaluationRecord; backup_path?: string }>(
       `/evaluations/${encodeURIComponent(id)}`,
       {
         method: 'DELETE',
+        body: JSON.stringify({ confirm }),
       },
       token,
     ),
@@ -934,11 +948,21 @@ export const api = {
       },
       token,
     ),
-  deleteSchedule: (token: string, id: string) =>
-    request<{ ok: boolean; item?: ScheduleRecord }>(
+  deleteSchedule: (token: string, id: string, confirm: string) =>
+    request<{ ok: boolean; item?: ScheduleRecord; backup_path?: string }>(
       `/schedules/${encodeURIComponent(id)}`,
       {
         method: 'DELETE',
+        body: JSON.stringify({ confirm }),
+      },
+      token,
+    ),
+  updateScheduleStatus: (token: string, id: string, status: string) =>
+    request<{ item: ScheduleRecord; backup_path?: string }>(
+      `/schedules/${encodeURIComponent(id)}/status`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ status }),
       },
       token,
     ),
@@ -952,11 +976,12 @@ export const api = {
       },
       token,
     ),
-  deleteResearchRecord: (token: string, id: string) =>
-    request<{ ok: boolean; item?: ResearchRecord }>(
+  deleteResearchRecord: (token: string, id: string, confirm: string) =>
+    request<{ ok: boolean; item?: ResearchRecord; backup_path?: string }>(
       `/research-records/${encodeURIComponent(id)}`,
       {
         method: 'DELETE',
+        body: JSON.stringify({ confirm }),
       },
       token,
     ),

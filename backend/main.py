@@ -416,6 +416,96 @@ def _backup_runtime_file(path: Path, *, action: str, target: str) -> str:
         return str(backup_path)
 
 
+CLINICAL_DELETE_CONFIRM_TEXT = {
+    "evaluation": "DELETE EVALUATION",
+    "schedule": "DELETE SCHEDULE",
+    "research": "DELETE RESEARCH RECORD",
+}
+
+
+def _confirm_text_for_delete(kind: str) -> str:
+    return CLINICAL_DELETE_CONFIRM_TEXT[kind]
+
+
+def _clinical_delete_confirm_error(kind: str, confirm: str) -> JSONResponse | None:
+    expected = _confirm_text_for_delete(kind)
+    if confirm != expected:
+        return json_error(f"confirm must be {expected}", 400)
+    return None
+
+
+def _delete_target_label(kind: str, record: dict[str, Any], record_id: str) -> str:
+    patient = _clean_text(record.get("patient_username") or record.get("username") or record.get("subject_code"))
+    if kind == "evaluation":
+        detail = _clean_text(record.get("video_name") or record.get("exercise"))
+    elif kind == "schedule":
+        detail = _clean_text(record.get("title") or record.get("exercise_name") or record.get("medication_name"))
+    else:
+        detail = _clean_text(record.get("video_name") or record.get("exercise") or record.get("timestamp"))
+    parts = [kind, patient, detail, record_id]
+    return ":".join(part for part in parts if part)
+
+
+def _parse_schedule_datetime(record: dict[str, Any]) -> datetime | None:
+    raw_datetime = _clean_text(record.get("datetime")).replace(" ", "T")
+    candidates = [raw_datetime]
+    date_text = _clean_text(record.get("date"))
+    time_text = _clean_text(record.get("time"))
+    if date_text and time_text:
+        candidates.append(f"{date_text}T{time_text}")
+    if date_text:
+        candidates.append(f"{date_text}T23:59")
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            return datetime.fromisoformat(candidate)
+        except ValueError:
+            continue
+    return None
+
+
+def _schedule_status(record: dict[str, Any]) -> str:
+    raw_status = _clean_text(record.get("status"))
+    if _payload_bool(record.get("taken"), default=False) or raw_status in {"Hoàn thành", "Đã hủy"}:
+        return raw_status or "Hoàn thành"
+    due_at = _parse_schedule_datetime(record)
+    if due_at and due_at < datetime.now():
+        return "Quá hạn"
+    return raw_status or "Đang theo dõi"
+
+
+def _schedule_with_runtime_status(record: dict[str, Any]) -> dict[str, Any]:
+    return {**record, "status": _schedule_status(record)}
+
+
+def _video_for_research_autofill(actor: dict[str, Any], patient_username: str, video_name: str) -> dict[str, Any] | None:
+    if not video_name:
+        return None
+    visible_videos = scope_records_for_actor(repo.videos(), actor, repo.users())
+    needle = _clean_text(video_name)
+    for video in reversed(visible_videos):
+        video_patient = _clean_text(video.get("username") or video.get("patient_username"))
+        if patient_username and video_patient and video_patient != patient_username:
+            continue
+        if needle in _video_identity_values(video):
+            return video
+    return None
+
+
+def _evaluation_for_research_autofill(actor: dict[str, Any], patient_username: str, video: dict[str, Any] | None) -> dict[str, Any] | None:
+    visible_evaluations = scope_records_for_actor(repo.evaluations(), actor, repo.users())
+    non_ai = [record for record in visible_evaluations if _clean_text(record.get("doctor_username")) != AI_RESEARCHER]
+    if video:
+        evaluation = _latest_matching_record(non_ai, video)
+        if evaluation:
+            return evaluation
+    for record in reversed(non_ai):
+        if _clean_text(record.get("patient_username")) == patient_username:
+            return record
+    return None
+
+
 def _admin_cleanup_targets() -> dict[str, dict[str, Any]]:
     return {
         "evaluations": {
@@ -1920,7 +2010,7 @@ async def list_evaluations(request: Request) -> JSONResponse:
     if auth_error:
         return auth_error
     evaluations = scoped_records(repo.evaluations(), actor)
-    return json_items(evaluations)
+    return json_items(_with_record_ids("evaluation", evaluations))
 
 
 async def list_patients(request: Request) -> JSONResponse:
@@ -2426,6 +2516,7 @@ async def create_symptom(request: Request) -> JSONResponse:
     if not exercise:
         return json_error("exercise is required", 400)
 
+    backup_path = _backup_runtime_file(repo.config.symptoms_file, action="create_symptom", target=_clean_text(actor.get("username")))
     item = {
         "username": _clean_text(actor.get("username")),
         "full_name": full_name,
@@ -2436,6 +2527,15 @@ async def create_symptom(request: Request) -> JSONResponse:
         "exercises": [exercise],
         "symptoms": symptoms_text,
         "vas": vas,
+        "pain_before": _bounded_int(payload.get("pain_before"), default=vas, minimum=0, maximum=10),
+        "pain_after": _bounded_int(payload.get("pain_after"), default=vas, minimum=0, maximum=10),
+        "pain_location": _bounded_text(payload.get("pain_location"), max_len=200),
+        "pain_at_rest": _payload_bool(payload.get("pain_at_rest"), default=False),
+        "pain_during_movement": _payload_bool(payload.get("pain_during_movement"), default=False),
+        "movement_limitations": _bounded_text(payload.get("movement_limitations"), max_len=500),
+        "notes": _bounded_text(payload.get("notes"), max_len=1000),
+        "video_name": _bounded_text(payload.get("video_name"), max_len=255),
+        "session_ref": _bounded_text(payload.get("session_ref"), max_len=255),
         "time": _clean_text(payload.get("time")) or "",
     }
 
@@ -2444,6 +2544,13 @@ async def create_symptom(request: Request) -> JSONResponse:
         return [record for record in records if isinstance(record, dict)] + [item]
 
     update_app_json(repo.config.symptoms_file, _append, default=[])
+    _append_audit(
+        actor,
+        action="create_symptom",
+        target=item["username"],
+        result="success",
+        metadata={"exercise": exercise, "vas": vas, "backup_path": backup_path},
+    )
     return JSONResponse({"item": item}, status_code=201)
 
 
@@ -2476,6 +2583,7 @@ async def create_evaluation(request: Request) -> JSONResponse:
     except PermissionError as exc:
         return json_error(str(exc), 403)
 
+    backup_path = _backup_runtime_file(repo.config.evaluations_file, action="create_evaluation", target=patient_username)
     item = {
         "patient_username": patient_username,
         "doctor_username": _clean_text(actor.get("username")),
@@ -2511,6 +2619,18 @@ async def create_evaluation(request: Request) -> JSONResponse:
 
     updated = update_app_json(repo.config.evaluations_file, _upsert, default=[])
     item_with_id = _with_record_ids("evaluation", updated)[-1]
+    _append_audit(
+        actor,
+        action="create_evaluation",
+        target=_delete_target_label("evaluation", item_with_id, item_with_id.get("id", "")),
+        result="success",
+        metadata={
+            "patient_username": patient_username,
+            "video_name": video_name,
+            "doctor_result": doctor_result,
+            "backup_path": backup_path,
+        },
+    )
     return JSONResponse({"item": item_with_id}, status_code=201)
 
 
@@ -2527,7 +2647,23 @@ async def delete_evaluation(request: Request) -> JSONResponse:
     record_id = _clean_text(request.path_params.get("record_id"))
     if not record_id:
         return json_error("record id is required", 400)
+    payload = await _json_payload_or_empty(request)
+    confirm = _clean_text(payload.get("confirm") or payload.get("confirm_text"))
+    confirm_error = _clinical_delete_confirm_error("evaluation", confirm)
+    if confirm_error:
+        return confirm_error
+    found_before_delete = _find_record_by_api_id("evaluation", repo.evaluations(), record_id)
+    if not found_before_delete:
+        return json_error("evaluation not found", 404)
+    preflight_record = found_before_delete[1]
+    try:
+        require_actor_patient_scope(actor, _clean_text(preflight_record.get("patient_username")), repo.users())
+        if actor.get("role") == DOCTOR_ROLE and _clean_text(preflight_record.get("doctor_username")) != actor.get("username"):
+            return json_error("only the authoring doctor can delete this evaluation", 403)
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
     deleted: dict[str, Any] | None = None
+    backup_path = _backup_runtime_file(repo.config.evaluations_file, action="delete_evaluation", target=record_id)
 
     def _delete(current: Any) -> list[dict[str, Any]]:
         nonlocal deleted
@@ -2549,7 +2685,19 @@ async def delete_evaluation(request: Request) -> JSONResponse:
         return json_error(str(exc), exc.status_code)
     except PermissionError as exc:
         return json_error(str(exc), 403)
-    return JSONResponse({"ok": True, "item": deleted})
+    _append_audit(
+        actor,
+        action="delete_evaluation",
+        target=_delete_target_label("evaluation", deleted or {}, record_id),
+        result="success",
+        metadata={
+            "record_id": record_id,
+            "patient_username": (deleted or {}).get("patient_username"),
+            "confirm": confirm,
+            "backup_path": backup_path,
+        },
+    )
+    return JSONResponse({"ok": True, "item": deleted, "backup_path": backup_path})
 
 
 async def list_schedules(request: Request) -> JSONResponse:
@@ -2561,7 +2709,7 @@ async def list_schedules(request: Request) -> JSONResponse:
         require_actor_role(actor, [ADMIN_ROLE, DOCTOR_ROLE, PATIENT_ROLE])
     except PermissionError as exc:
         return json_error(str(exc), 403)
-    schedules = scoped_records_for_response(repo.schedules(), actor, repo.users())
+    schedules = scoped_records_for_response([_schedule_with_runtime_status(record) for record in repo.schedules()], actor, repo.users())
     return json_items(_with_record_ids("schedule", schedules))
 
 
@@ -2600,6 +2748,10 @@ async def create_schedule(request: Request) -> JSONResponse:
     if schedule_type == "medication" and not medication_name:
         return json_error("medication_name is required for medication schedules", 400)
 
+    backup_path = _backup_runtime_file(repo.config.schedules_file, action="create_schedule", target=patient_username)
+    status = _clean_text(payload.get("status")) or "Đang theo dõi"
+    if status not in {"Đang theo dõi", "Hoàn thành", "Đã hủy"}:
+        status = "Đang theo dõi"
     item = {
         "id": _new_record_id("sch"),
         "type": schedule_type,
@@ -2617,7 +2769,7 @@ async def create_schedule(request: Request) -> JSONResponse:
         "medication_name": medication_name,
         "dosage": _clean_text(payload.get("dosage")),
         "taken": False,
-        "status": "Đang theo dõi",
+        "status": status,
     }
 
     def _append(current: Any) -> list[dict[str, Any]]:
@@ -2625,7 +2777,72 @@ async def create_schedule(request: Request) -> JSONResponse:
         return records + [item]
 
     update_app_json(repo.config.schedules_file, _append, default=[])
+    _append_audit(
+        actor,
+        action="create_schedule",
+        target=_delete_target_label("schedule", item, item["id"]),
+        result="success",
+        metadata={"patient_username": patient_username, "type": schedule_type, "backup_path": backup_path},
+    )
     return JSONResponse({"item": item}, status_code=201)
+
+
+async def update_schedule_status(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, DOCTOR_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+    record_id = _clean_text(request.path_params.get("record_id"))
+    if not record_id:
+        return json_error("record id is required", 400)
+    payload = await _json_payload_or_empty(request)
+    next_status = _clean_text(payload.get("status"))
+    if next_status not in {"Đang theo dõi", "Hoàn thành", "Đã hủy"}:
+        return json_error("status must be Đang theo dõi, Hoàn thành, or Đã hủy", 400)
+    found_before_update = _find_record_by_api_id("schedule", repo.schedules(), record_id)
+    if not found_before_update:
+        return json_error("schedule not found", 404)
+    try:
+        require_actor_patient_scope(actor, _clean_text(found_before_update[1].get("patient_username")), repo.users())
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+    updated_record: dict[str, Any] | None = None
+    backup_path = _backup_runtime_file(repo.config.schedules_file, action="update_schedule_status", target=record_id)
+
+    def _update(current: Any) -> list[dict[str, Any]]:
+        nonlocal updated_record
+        records = [record for record in (current if isinstance(current, list) else []) if isinstance(record, dict)]
+        found = _find_record_by_api_id("schedule", records, record_id)
+        if not found:
+            raise RegistrationError("schedule not found", 404)
+        index, record = found
+        require_actor_patient_scope(actor, _clean_text(record.get("patient_username")), repo.users())
+        updated = dict(record)
+        updated["status"] = next_status
+        updated["taken"] = next_status == "Hoàn thành"
+        updated["updated_at"] = _now_iso()
+        updated_record = updated
+        return records[:index] + [updated] + records[index + 1 :]
+
+    try:
+        update_app_json(repo.config.schedules_file, _update, default=[])
+    except RegistrationError as exc:
+        return json_error(str(exc), exc.status_code)
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+    returned = _with_record_ids("schedule", [_schedule_with_runtime_status(updated_record or {})])[0]
+    _append_audit(
+        actor,
+        action="update_schedule_status",
+        target=_delete_target_label("schedule", returned, record_id),
+        result="success",
+        metadata={"record_id": record_id, "status": next_status, "backup_path": backup_path},
+    )
+    return JSONResponse({"item": returned, "backup_path": backup_path})
 
 
 async def delete_schedule(request: Request) -> JSONResponse:
@@ -2640,7 +2857,20 @@ async def delete_schedule(request: Request) -> JSONResponse:
     record_id = _clean_text(request.path_params.get("record_id"))
     if not record_id:
         return json_error("record id is required", 400)
+    payload = await _json_payload_or_empty(request)
+    confirm = _clean_text(payload.get("confirm") or payload.get("confirm_text"))
+    confirm_error = _clinical_delete_confirm_error("schedule", confirm)
+    if confirm_error:
+        return confirm_error
+    found_before_delete = _find_record_by_api_id("schedule", repo.schedules(), record_id)
+    if not found_before_delete:
+        return json_error("schedule not found", 404)
+    try:
+        require_actor_patient_scope(actor, _clean_text(found_before_delete[1].get("patient_username")), repo.users())
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
     deleted: dict[str, Any] | None = None
+    backup_path = _backup_runtime_file(repo.config.schedules_file, action="delete_schedule", target=record_id)
 
     def _delete(current: Any) -> list[dict[str, Any]]:
         nonlocal deleted
@@ -2659,7 +2889,19 @@ async def delete_schedule(request: Request) -> JSONResponse:
         return json_error(str(exc), exc.status_code)
     except PermissionError as exc:
         return json_error(str(exc), 403)
-    return JSONResponse({"ok": True, "item": deleted})
+    _append_audit(
+        actor,
+        action="delete_schedule",
+        target=_delete_target_label("schedule", deleted or {}, record_id),
+        result="success",
+        metadata={
+            "record_id": record_id,
+            "patient_username": (deleted or {}).get("patient_username"),
+            "confirm": confirm,
+            "backup_path": backup_path,
+        },
+    )
+    return JSONResponse({"ok": True, "item": deleted, "backup_path": backup_path})
 
 
 async def list_research_records(request: Request) -> JSONResponse:
@@ -2699,11 +2941,37 @@ async def create_research_record(request: Request) -> JSONResponse:
         return json_error(str(exc), 403)
 
     exercise = _clean_text(payload.get("exercise"))
+    requested_video_name = _clean_text(payload.get("video_name") or payload.get("video_code"))
+    source_video = _video_for_research_autofill(actor, patient_username, requested_video_name)
+    source_evaluation = _evaluation_for_research_autofill(actor, patient_username, source_video)
+    exercise = exercise or _clean_text((source_evaluation or {}).get("exercise")) or _clean_text((source_video or {}).get("exercise"))
+    general_result = _clean_text(payload.get("general_result")) or _clean_text((source_evaluation or {}).get("doctor_result"))
+    plan = _clean_text(payload.get("plan")) or _clean_text((source_evaluation or {}).get("plan"))
+    specialist_comment = (
+        _clean_text(payload.get("specialist_comment"))
+        or _clean_text((source_evaluation or {}).get("comments_ncv"))
+        or _clean_text((source_evaluation or {}).get("comments"))
+    )
+    subject_code = _clean_text(payload.get("subject_code")) or patient_username
+    diagnosis = _clean_text(payload.get("diagnosis"))
+    required_errors = []
+    if not subject_code:
+        required_errors.append("subject_code")
+    if not diagnosis:
+        required_errors.append("diagnosis")
+    if not exercise:
+        required_errors.append("exercise")
+    if general_result not in {"Đúng", "Sai", "Gần đúng"}:
+        required_errors.append("general_result")
+    if required_errors:
+        return json_error(f"missing or invalid required fields: {', '.join(required_errors)}", 400)
+
     exercises = _clean_text_list(payload.get("exercises")) or ([exercise] if exercise else [])
+    backup_path = _backup_runtime_file(repo.config.research_file, action="create_research_record", target=patient_username)
     item = {
         "id": _new_record_id("res"),
         "patient_username": patient_username,
-        "subject_code": _clean_text(payload.get("subject_code")) or patient_username,
+        "subject_code": subject_code,
         "interviewer": _clean_text(payload.get("interviewer")) or _clean_text(actor.get("full_name")) or actor_username,
         "interview_date": _clean_text(payload.get("interview_date")) or datetime.now().date().isoformat(),
         "age": _bounded_int(payload.get("age"), default=0, minimum=0, maximum=120),
@@ -2713,7 +2981,7 @@ async def create_research_record(request: Request) -> JSONResponse:
         "education": _clean_text(payload.get("education")),
         "department": _clean_text(payload.get("department")),
         "treatment_type": _clean_text(payload.get("treatment_type")),
-        "diagnosis": _clean_text(payload.get("diagnosis")),
+        "diagnosis": diagnosis,
         "lesion_side": _clean_text(payload.get("lesion_side")),
         "duration": _clean_text(payload.get("duration")),
         "training_side": _clean_text(payload.get("training_side")),
@@ -2721,18 +2989,29 @@ async def create_research_record(request: Request) -> JSONResponse:
         "disease_severity": _clean_text(payload.get("disease_severity")),
         "exercises": exercises,
         "exercise": exercise or (exercises[0] if exercises else ""),
-        "general_result": _clean_text(payload.get("general_result")),
+        "general_result": general_result,
         "errors": _clean_text_list(payload.get("errors")),
-        "plan": _clean_text(payload.get("plan")),
-        "specialist_comment": _clean_text(payload.get("specialist_comment")),
-        "video_code": _clean_text(payload.get("video_code") or payload.get("video_name")),
-        "video_name": _clean_text(payload.get("video_name") or payload.get("video_code")),
+        "plan": plan,
+        "specialist_comment": specialist_comment,
+        "video_code": requested_video_name or _clean_text((source_video or {}).get("video_name") or (source_video or {}).get("stored_filename")),
+        "video_name": requested_video_name or _clean_text((source_video or {}).get("video_name") or (source_video or {}).get("stored_filename")),
         "recording_device": _clean_text(payload.get("recording_device")),
         "recording_angle": _clean_text(payload.get("recording_angle")),
         "camera_distance": _clean_text(payload.get("camera_distance")),
         "submitted_by": actor_username,
         "role": _clean_text(actor.get("role")),
         "timestamp": _now_iso(),
+        "source_video_id": _clean_text((source_video or {}).get("stored_filename") or (source_video or {}).get("video_name")),
+        "source_evaluation_id": _record_api_id("evaluation", source_evaluation, 0) if source_evaluation else "",
+        "audit_trail": [
+            {
+                "timestamp": _now_iso(),
+                "actor": actor_username,
+                "actor_role": _clean_text(actor.get("role")),
+                "action": "create",
+                "source": "video/evaluation autofill" if source_video or source_evaluation else "manual",
+            }
+        ],
     }
 
     def _append(current: Any) -> list[dict[str, Any]]:
@@ -2740,6 +3019,20 @@ async def create_research_record(request: Request) -> JSONResponse:
         return records + [item]
 
     update_app_json(repo.config.research_file, _append, default=[])
+    _append_audit(
+        actor,
+        action="create_research_record",
+        target=_delete_target_label("research", item, item["id"]),
+        result="success",
+        metadata={
+            "patient_username": patient_username,
+            "video_name": item["video_name"],
+            "general_result": general_result,
+            "source_video_id": item["source_video_id"],
+            "source_evaluation_id": item["source_evaluation_id"],
+            "backup_path": backup_path,
+        },
+    )
     returned = researcher_view_records_for_actor([item], actor)[0]
     return JSONResponse({"item": returned}, status_code=201)
 
@@ -2756,7 +3049,24 @@ async def delete_research_record(request: Request) -> JSONResponse:
     record_id = _clean_text(request.path_params.get("record_id"))
     if not record_id:
         return json_error("record id is required", 400)
+    payload = await _json_payload_or_empty(request)
+    confirm = _clean_text(payload.get("confirm") or payload.get("confirm_text"))
+    confirm_error = _clinical_delete_confirm_error("research", confirm)
+    if confirm_error:
+        return confirm_error
+    found_before_delete = _find_record_by_api_id("research", repo.research_records(), record_id)
+    if not found_before_delete:
+        return json_error("research record not found", 404)
+    try:
+        require_actor_patient_scope(
+            actor,
+            _clean_text(found_before_delete[1].get("patient_username") or found_before_delete[1].get("subject_code")),
+            repo.users(),
+        )
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
     deleted: dict[str, Any] | None = None
+    backup_path = _backup_runtime_file(repo.config.research_file, action="delete_research_record", target=record_id)
 
     def _delete(current: Any) -> list[dict[str, Any]]:
         nonlocal deleted
@@ -2779,7 +3089,19 @@ async def delete_research_record(request: Request) -> JSONResponse:
         return json_error(str(exc), exc.status_code)
     except PermissionError as exc:
         return json_error(str(exc), 403)
-    return JSONResponse({"ok": True, "item": deleted})
+    _append_audit(
+        actor,
+        action="delete_research_record",
+        target=_delete_target_label("research", deleted or {}, record_id),
+        result="success",
+        metadata={
+            "record_id": record_id,
+            "patient_username": (deleted or {}).get("patient_username"),
+            "confirm": confirm,
+            "backup_path": backup_path,
+        },
+    )
+    return JSONResponse({"ok": True, "item": deleted, "backup_path": backup_path})
 
 
 routes = [
@@ -2833,6 +3155,7 @@ routes = [
     Route("/symptoms", create_symptom, methods=["POST"]),
     Route("/schedules", list_schedules, methods=["GET"]),
     Route("/schedules", create_schedule, methods=["POST"]),
+    Route("/schedules/{record_id}/status", update_schedule_status, methods=["POST"]),
     Route("/schedules/{record_id}", delete_schedule, methods=["DELETE"]),
     Route("/research-records", list_research_records, methods=["GET"]),
     Route("/research-records", create_research_record, methods=["POST"]),
