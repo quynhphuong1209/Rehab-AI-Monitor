@@ -17,6 +17,8 @@ import {
   Lock,
   LogOut,
   Maximize2,
+  MessageSquare,
+  NotebookTabs,
   RefreshCw,
   Shield,
   Trash2,
@@ -34,13 +36,20 @@ import {
   api,
   AuditLogRecord,
   ApiError,
+  CleanupTarget,
   CreateEvaluationPayload,
+  CreateFeedbackPayload,
   CreateResearchPayload,
   CreateSchedulePayload,
   CreateSymptomPayload,
   CreateUserPayload,
   EvaluationRecord,
+  FeedbackRecord,
+  HfSyncJob,
+  HfSyncStatus,
   PatientRecord,
+  PoseClassifierJob,
+  PoseClassifierModelStatus,
   ResearchRecord,
   ScheduleRecord,
   SymptomRecord,
@@ -73,7 +82,7 @@ type FocusedFrame = {
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 type AuthMode = 'login' | 'register';
-type ViewId = 'home' | 'videos' | 'patients' | 'symptoms' | 'schedules' | 'research' | 'users';
+type ViewId = 'home' | 'videos' | 'patients' | 'symptoms' | 'schedules' | 'research' | 'info' | 'users';
 type RecordLike = Record<string, unknown>;
 
 const PATIENT_ROLE = 'Bệnh nhân';
@@ -82,6 +91,14 @@ const RESEARCHER_ROLE = 'Nghiên cứu viên';
 const ADMIN_ROLE = 'Quản trị viên';
 
 function canStartAnalysis(role: string) {
+  return role === ADMIN_ROLE || role === RESEARCHER_ROLE;
+}
+
+function canManagePoseClassifier(role: string) {
+  return role === ADMIN_ROLE || role === RESEARCHER_ROLE;
+}
+
+function canManageHfSync(role: string) {
   return role === ADMIN_ROLE || role === RESEARCHER_ROLE;
 }
 
@@ -107,6 +124,10 @@ function canManageClinical(role: string) {
 
 function canManageUsers(role: string) {
   return role === ADMIN_ROLE;
+}
+
+function canReviewFeedback(role: string) {
+  return role === ADMIN_ROLE || role === RESEARCHER_ROLE;
 }
 
 function roleWorkspaceTitle(role: string) {
@@ -149,10 +170,82 @@ function viewLabelForRole(view: ViewId, role: string) {
     symptoms: role === PATIENT_ROLE ? 'Khai báo đau' : 'Triệu chứng',
     schedules: role === PATIENT_ROLE ? 'Lịch của tôi' : 'Lịch nhắc',
     research: role === RESEARCHER_ROLE ? 'Dữ liệu NCKH' : 'Phiếu nghiên cứu',
+    info: 'Thông tin',
     users: 'Người dùng',
   };
   return labels[view];
 }
+
+function roleGuideSteps(role: string) {
+  if (role === PATIENT_ROLE) {
+    return [
+      ['Chuẩn bị quay', 'Đứng cách camera 2-3 mét, đủ sáng, thấy rõ thân người và vùng vai/khuỷu.'],
+      ['Gửi dữ liệu', 'Upload video bài tập, khai báo triệu chứng VAS và theo dõi lịch nhắc trong workspace.'],
+      ['Xem phản hồi', 'Mở kết quả chi tiết sau khi nhóm điều trị phân tích và bác sĩ gửi nhận xét.'],
+    ];
+  }
+  if (role === DOCTOR_ROLE) {
+    return [
+      ['Rà soát video', 'Xem video bệnh nhân trong phạm vi được phân công và đối chiếu kết quả AI khi đã được gửi.'],
+      ['Đánh giá lâm sàng', 'Ghi nhận đúng/sai/gần đúng, lỗi kỹ thuật, nhận xét và kế hoạch tiếp theo.'],
+      ['Theo dõi chăm sóc', 'Tạo lịch nhắc hẹn, lịch tập hoặc lịch thuốc để bệnh nhân duy trì tuân thủ.'],
+    ];
+  }
+  if (role === RESEARCHER_ROLE) {
+    return [
+      ['Chuẩn hóa dữ liệu', 'Chạy job AI, xem artifact CSV/frame/chart và kiểm tra job history theo video.'],
+      ['Huấn luyện ML', 'Dùng pose classifier ở chế độ dry-run trước khi train/apply thật cho dữ liệu đã phân tích.'],
+      ['Đồng bộ nghiên cứu', 'Thực hiện HF sync/report có guard, không đồng bộ users.json và không đưa token lên frontend.'],
+    ];
+  }
+  if (role === ADMIN_ROLE) {
+    return [
+      ['Quản lý truy cập', 'Tạo tài khoản, khóa/mở khóa, reset mật khẩu và thu hồi phiên khi cần.'],
+      ['Vận hành dữ liệu', 'Xem audit log, backup/reset từng nhóm dữ liệu và theo dõi trạng thái backend.'],
+      ['Giữ an toàn', 'Kiểm tra quyền, CORS, secrets server-side và chỉ thao tác destructive khi đã xác nhận.'],
+    ];
+  }
+  return [['Bắt đầu', 'Đăng nhập đúng vai trò để xem luồng công việc phù hợp.']];
+}
+
+function feedbackCategoryLabel(category: unknown) {
+  const labels: Record<string, string> = {
+    general: 'Góp ý chung',
+    bug: 'Lỗi hệ thống',
+    workflow: 'Quy trình',
+    content: 'Nội dung',
+    safety: 'An toàn dữ liệu',
+  };
+  const key = String(category || '');
+  return labels[key] || 'Góp ý chung';
+}
+
+const rehabKnowledge = [
+  ['Bốn trụ cột y tế', 'Phục hồi chức năng bổ sung cho phòng bệnh, điều trị và nâng cao sức khỏe bằng mục tiêu khôi phục hoạt động hằng ngày.'],
+  ['Lượng giá trước tập', 'Bài tập nên bắt đầu từ đánh giá tầm vận động, mức đau, bên tổn thương và khả năng phối hợp.'],
+  ['Theo dõi an toàn', 'Ngưng hoặc giảm cường độ khi đau tăng nhanh, chóng mặt, tê lan hoặc mệt bất thường; báo lại cho nhân viên y tế.'],
+  ['Duy trì tại nhà', 'Tập đều, ghi triệu chứng và bám lịch nhắc giúp nhóm điều trị điều chỉnh kế hoạch theo tiến triển thực tế.'],
+];
+
+const aiKnowledge = [
+  ['MediaPipe Pose', 'Ước lượng 33 điểm mốc cơ thể để trích xuất góc vai/khuỷu và trạng thái chuyển động từ video.'],
+  ['Artifact phân tích', 'CSV góc, JSON frame, ảnh frame và video xử lý là dữ liệu đối soát giữa AI, bác sĩ và nghiên cứu viên.'],
+  ['Pose classifier', 'Mô hình ML gán nhãn đúng/gần đúng/sai trên dữ liệu đã trích xuất, có checksum sidecar trước khi apply.'],
+  ['Human-in-the-loop', 'AI hỗ trợ đo lường; quyết định lâm sàng vẫn cần bác sĩ/KTV PHCN đánh giá trong bối cảnh từng bệnh nhân.'],
+];
+
+const researchInfoSections = [
+  ['Đề tài', 'Phát triển mô hình thử nghiệm giám sát tập luyện phục hồi chức năng từ xa dựa trên AI và thị giác máy tính.'],
+  ['Bài tập mục tiêu', 'Con lắc Codman, bài tập với gậy và bài tập với dây kháng lực cho người bệnh viêm quanh khớp vai.'],
+  ['Dữ liệu thu thập', 'Video bài tập, góc khớp, nhãn đánh giá, phiếu nghiên cứu và phản hồi sử dụng trong phạm vi được phân quyền.'],
+  ['Bảo mật', 'Không công bố thông tin định danh; dữ liệu nghiên cứu cần được giả danh trước khi đồng bộ hoặc xuất báo cáo.'],
+];
+
+const teamInfoSections = [
+  ['Đơn vị triển khai', 'Bệnh viện Đa khoa Phạm Ngọc Thạch phối hợp với Trường Đại học Y tế Công cộng.'],
+  ['Nhóm chuyên môn', 'Bác sĩ/KTV PHCN, nghiên cứu viên dữ liệu y sinh và quản trị hệ thống cùng vận hành workflow.'],
+  ['Liên hệ hỗ trợ', 'Sử dụng form phản hồi trong hệ thống để gửi góp ý hoặc báo lỗi; admin/NCV sẽ rà soát trong workspace.'],
+];
 
 function textValue(...values: unknown[]) {
   for (const value of values) {
@@ -253,6 +346,7 @@ function auditActionLabel(action: unknown) {
     admin_reset_password: 'Reset mật khẩu',
     admin_revoke_user_sessions: 'Thu hồi phiên user',
     admin_revoke_all_sessions: 'Thu hồi toàn bộ phiên',
+    admin_cleanup_reset: 'Reset dữ liệu',
   };
   const key = String(action || '');
   return labels[key] || textValue(action);
@@ -276,6 +370,14 @@ function auditMetadataLabel(metadata: unknown) {
       return `${key}: ${String(value)}`;
     })
     .join(' · ');
+}
+
+function cleanupCountLabel(target: CleanupTarget) {
+  const records = `${target.record_count} bản ghi`;
+  if (target.file_count > 0) {
+    return `${records} · ${target.file_count} file`;
+  }
+  return records;
 }
 
 function countLabel(count: number) {
@@ -327,6 +429,60 @@ function jobTimeLabel(job: AnalysisJob | null | undefined) {
     return new Date(value * 1000).toLocaleString('vi-VN');
   }
   return textValue(value);
+}
+
+function poseJobTimeLabel(job: PoseClassifierJob | null | undefined) {
+  const value = job?.updated_at || job?.start_time;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value * 1000).toLocaleString('vi-VN');
+  }
+  return textValue(value);
+}
+
+function poseActionLabel(action: unknown) {
+  const text = String(action || '');
+  if (text === 'train') {
+    return 'Train';
+  }
+  if (text === 'apply') {
+    return 'Apply';
+  }
+  return text || 'N/A';
+}
+
+function hfActionLabel(action: unknown) {
+  const text = String(action || '');
+  if (text === 'sync') {
+    return 'Sync';
+  }
+  if (text === 'upload') {
+    return 'Upload';
+  }
+  if (text === 'report') {
+    return 'Report';
+  }
+  return text || 'N/A';
+}
+
+function hfJobTimeLabel(job: HfSyncJob | null | undefined) {
+  const value = job?.updated_at || job?.start_time;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value * 1000).toLocaleString('vi-VN');
+  }
+  return textValue(value);
+}
+
+function modelReadyLabel(model: PoseClassifierModelStatus | null) {
+  if (!model) {
+    return 'Chưa tải';
+  }
+  if (model.ready) {
+    return 'Sẵn sàng';
+  }
+  if (model.checksum_ok === false && model.model_path) {
+    return 'Checksum lỗi';
+  }
+  return 'Chưa có model';
 }
 
 function fileSizeLabel(size: unknown) {
@@ -631,6 +787,8 @@ export function App() {
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [users, setUsers] = useState<PatientRecord[]>([]);
   const [auditLog, setAuditLog] = useState<AuditLogRecord[]>([]);
+  const [cleanupTargets, setCleanupTargets] = useState<CleanupTarget[]>([]);
+  const [feedbackRecords, setFeedbackRecords] = useState<FeedbackRecord[]>([]);
   const [symptoms, setSymptoms] = useState<SymptomRecord[]>([]);
   const [schedules, setSchedules] = useState<ScheduleRecord[]>([]);
   const [researchRecords, setResearchRecords] = useState<ResearchRecord[]>([]);
@@ -649,6 +807,25 @@ export function App() {
   });
   const [analysisState, setAnalysisState] = useState<LoadState>('idle');
   const [analysisTargetKey, setAnalysisTargetKey] = useState('');
+  const [poseModelStatus, setPoseModelStatus] = useState<PoseClassifierModelStatus | null>(null);
+  const [poseLatestJob, setPoseLatestJob] = useState<PoseClassifierJob | null>(null);
+  const [poseHistory, setPoseHistory] = useState<PoseClassifierJob[]>([]);
+  const [poseState, setPoseState] = useState<LoadState>('idle');
+  const [poseMessage, setPoseMessage] = useState('');
+  const [poseTargetKey, setPoseTargetKey] = useState('');
+  const [poseDryRun, setPoseDryRun] = useState(true);
+  const [poseMinSamples, setPoseMinSamples] = useState(10);
+  const [poseSelectedVideoKey, setPoseSelectedVideoKey] = useState('');
+  const [hfStatus, setHfStatus] = useState<HfSyncStatus | null>(null);
+  const [hfLatestJob, setHfLatestJob] = useState<HfSyncJob | null>(null);
+  const [hfHistory, setHfHistory] = useState<HfSyncJob[]>([]);
+  const [hfState, setHfState] = useState<LoadState>('idle');
+  const [hfMessage, setHfMessage] = useState('');
+  const [hfTargetKey, setHfTargetKey] = useState('');
+  const [hfDryRun, setHfDryRun] = useState(true);
+  const [hfSelectedVideoKey, setHfSelectedVideoKey] = useState('');
+  const [hfArtifactKind, setHfArtifactKind] = useState('angle-csv');
+  const [hfSelectedFiles, setHfSelectedFiles] = useState<string[]>(['video_list.json', 'doctor_evaluations.json', 'research_data.json']);
   const [artifactState, setArtifactState] = useState<LoadState>('idle');
   const [artifactTargetKey, setArtifactTargetKey] = useState('');
   const [artifactMessage, setArtifactMessage] = useState('');
@@ -695,6 +872,8 @@ export function App() {
     setPatients([]);
     setUsers([]);
     setAuditLog([]);
+    setCleanupTargets([]);
+    setFeedbackRecords([]);
     setSymptoms([]);
     setSchedules([]);
     setResearchRecords([]);
@@ -703,6 +882,20 @@ export function App() {
     setAnalysisState('idle');
     setAnalysisTargetKey('');
     setAnalysisMessage('');
+    setPoseModelStatus(null);
+    setPoseLatestJob(null);
+    setPoseHistory([]);
+    setPoseState('idle');
+    setPoseMessage('');
+    setPoseTargetKey('');
+    setPoseSelectedVideoKey('');
+    setHfStatus(null);
+    setHfLatestJob(null);
+    setHfHistory([]);
+    setHfState('idle');
+    setHfMessage('');
+    setHfTargetKey('');
+    setHfSelectedVideoKey('');
     setAdminActionKey('');
     setArtifactState('idle');
     setArtifactTargetKey('');
@@ -749,7 +942,22 @@ export function App() {
     setMessage('');
     const role = nextSession.user.role;
     try {
-      const [videoResult, evaluationResult, patientResult, symptomResult, scheduleResult, researchResult, userResult, auditResult] = await Promise.all([
+      const [
+        videoResult,
+        evaluationResult,
+        patientResult,
+        symptomResult,
+        scheduleResult,
+        researchResult,
+        userResult,
+        auditResult,
+        cleanupResult,
+        poseResult,
+        poseHistoryResult,
+        hfResult,
+        hfHistoryResult,
+        feedbackResult,
+      ] = await Promise.all([
         api.videos(nextSession.token),
         api.evaluations(nextSession.token),
         api.patients(nextSession.token),
@@ -758,6 +966,12 @@ export function App() {
         canViewResearch(role) ? api.researchRecords(nextSession.token) : Promise.resolve({ items: [], count: 0 }),
         canManageUsers(role) ? api.adminUsers(nextSession.token) : Promise.resolve({ items: [], count: 0 }),
         canManageUsers(role) ? api.adminAuditLog(nextSession.token, 100) : Promise.resolve({ items: [], count: 0 }),
+        canManageUsers(role) ? api.cleanupStatus(nextSession.token) : Promise.resolve({ items: [], count: 0 }),
+        canManagePoseClassifier(role) ? api.poseClassifierStatus(nextSession.token) : Promise.resolve({ model: null as PoseClassifierModelStatus | null, latest_job: null }),
+        canManagePoseClassifier(role) ? api.poseClassifierHistory(nextSession.token) : Promise.resolve({ items: [], count: 0 }),
+        canManageHfSync(role) ? api.hfSyncStatus(nextSession.token) : Promise.resolve({ hf: null as HfSyncStatus | null, latest_job: null }),
+        canManageHfSync(role) ? api.hfSyncHistory(nextSession.token) : Promise.resolve({ items: [], count: 0 }),
+        canReviewFeedback(role) ? api.feedback(nextSession.token, 100) : Promise.resolve({ items: [], count: 0 }),
       ]);
       setVideos(videoResult.items);
       setEvaluations(evaluationResult.items);
@@ -767,6 +981,14 @@ export function App() {
       setSchedules(scheduleResult.items);
       setResearchRecords(researchResult.items);
       setAuditLog(auditResult.items);
+      setCleanupTargets(cleanupResult.items);
+      setPoseModelStatus(poseResult.model);
+      setPoseLatestJob(poseResult.latest_job);
+      setPoseHistory(poseHistoryResult.items);
+      setHfStatus(hfResult.hf);
+      setHfLatestJob(hfResult.latest_job);
+      setHfHistory(hfHistoryResult.items);
+      setFeedbackRecords(feedbackResult.items);
       setPreviewMessage('');
       setAnalysisMessage('');
       setLoadState('ready');
@@ -811,6 +1033,40 @@ export function App() {
         return;
       }
       setFormMessage(error instanceof Error ? error.message : 'Không gửi được khai báo triệu chứng.');
+    }
+  }
+
+  async function handleCreateFeedback(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session) {
+      return;
+    }
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const payload: CreateFeedbackPayload = {
+      category: String(formData.get('category') || 'general'),
+      message: String(formData.get('message') || ''),
+      contact_ok: formData.get('contact_ok') === 'on',
+      page: activeView,
+    };
+    setFormState('loading');
+    setFormMessage('');
+    try {
+      await api.createFeedback(session.token, payload);
+      form.reset();
+      setFormState('ready');
+      setFormMessage('Đã gửi phản hồi. Nhóm vận hành sẽ rà soát trong hệ thống.');
+      if (canReviewFeedback(session.user.role)) {
+        const result = await api.feedback(session.token, 100);
+        setFeedbackRecords(result.items);
+      }
+    } catch (error) {
+      setFormState('error');
+      if (error instanceof ApiError && error.status === 401) {
+        clearLocalSession('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return;
+      }
+      setFormMessage(error instanceof Error ? error.message : 'Không gửi được phản hồi.');
     }
   }
 
@@ -1167,6 +1423,34 @@ export function App() {
     }
   }
 
+  async function handleResetCleanupTarget(target: CleanupTarget) {
+    if (!session) {
+      return;
+    }
+    const confirm = window.prompt(`Nhập ${target.confirm} để reset ${target.label}`);
+    if (confirm !== target.confirm) {
+      setFormState('error');
+      setFormMessage('Chưa xác nhận đúng chuỗi reset dữ liệu.');
+      return;
+    }
+    setAdminActionKey(`cleanup:${target.target}`);
+    setFormState('loading');
+    setFormMessage('');
+    try {
+      const result = await api.resetCleanupTarget(session.token, target.target, confirm);
+      setFormState('ready');
+      setFormMessage(
+        `Đã reset ${result.label}: ${result.cleared_records} bản ghi, ${result.deleted_files} file. Backup đã tạo trước thao tác.`,
+      );
+      await loadDashboard(session);
+    } catch (error) {
+      setFormState('error');
+      setFormMessage(error instanceof Error ? error.message : 'Không reset được nhóm dữ liệu.');
+    } finally {
+      setAdminActionKey('');
+    }
+  }
+
   async function handleChangePassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!session) {
@@ -1395,6 +1679,277 @@ export function App() {
     }
   }
 
+  async function refreshPoseClassifier(nextSession = session) {
+    if (!nextSession || !canManagePoseClassifier(nextSession.user.role)) {
+      return;
+    }
+    try {
+      const [statusResult, historyResult] = await Promise.all([
+        api.poseClassifierStatus(nextSession.token),
+        api.poseClassifierHistory(nextSession.token),
+      ]);
+      setPoseModelStatus(statusResult.model);
+      setPoseLatestJob(statusResult.latest_job);
+      setPoseHistory(historyResult.items);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearLocalSession('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return;
+      }
+      setPoseState('error');
+      setPoseMessage(error instanceof Error ? error.message : 'Không tải được trạng thái pose classifier.');
+    }
+  }
+
+  async function pollPoseClassifierUntilSettled(nextSession = session): Promise<PoseClassifierJob | null> {
+    if (!nextSession) {
+      return null;
+    }
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, attempt < 4 ? 250 : 750));
+      const statusResult = await api.poseClassifierStatus(nextSession.token);
+      setPoseModelStatus(statusResult.model);
+      setPoseLatestJob(statusResult.latest_job);
+      if (
+        statusResult.latest_job &&
+        statusResult.latest_job.status !== 'queued' &&
+        statusResult.latest_job.status !== 'processing'
+      ) {
+        const historyResult = await api.poseClassifierHistory(nextSession.token);
+        setPoseHistory(historyResult.items);
+        return statusResult.latest_job;
+      }
+    }
+    return null;
+  }
+
+  async function handleRefreshPoseClassifier() {
+    if (!session) {
+      return;
+    }
+    setPoseState('loading');
+    setPoseTargetKey('refresh');
+    setPoseMessage('');
+    await refreshPoseClassifier(session);
+    setPoseState('ready');
+    setPoseTargetKey('');
+  }
+
+  async function handleTrainPoseClassifier() {
+    if (!session) {
+      return;
+    }
+    setPoseState('loading');
+    setPoseTargetKey('train');
+    setPoseMessage('');
+    try {
+      const result = await api.trainPoseClassifier(session.token, {
+        dry_run: poseDryRun,
+        min_samples: Math.max(2, Math.min(10000, Number(poseMinSamples) || 10)),
+      });
+      setPoseLatestJob(result.job);
+      setPoseState('ready');
+      setPoseMessage(result.started ? (poseDryRun ? 'Đã tạo job dry-run train classifier.' : 'Đã tạo job train classifier.') : 'ML job đang chạy.');
+      void pollPoseClassifierUntilSettled(session);
+    } catch (error) {
+      setPoseState('error');
+      if (error instanceof ApiError && error.status === 401) {
+        clearLocalSession('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return;
+      }
+      setPoseMessage(error instanceof Error ? error.message : 'Không tạo được job train classifier.');
+    } finally {
+      setPoseTargetKey('');
+    }
+  }
+
+  async function handleApplyPoseClassifier() {
+    if (!session) {
+      return;
+    }
+    const selectedVideo = videos.find((video, index) => videoKey(video, index) === poseSelectedVideoKey);
+    const mediaFilename = selectedVideo ? mediaFilenameForVideo(selectedVideo) : '';
+    if (!selectedVideo || !mediaFilename) {
+      setPoseState('error');
+      setPoseMessage('Vui lòng chọn video đã phân tích có CSV để apply ML.');
+      return;
+    }
+    setPoseState('loading');
+    setPoseTargetKey('apply');
+    setPoseMessage('');
+    try {
+      const result = await api.applyPoseClassifier(session.token, mediaFilename, { dry_run: poseDryRun });
+      setPoseLatestJob(result.job);
+      setPoseState('ready');
+      setPoseMessage(result.started ? (poseDryRun ? 'Đã tạo job dry-run apply ML.' : 'Đã tạo job apply ML cho video.') : 'ML job đang chạy.');
+      if (!poseDryRun) {
+        void pollPoseClassifierUntilSettled(session).then(() => loadDashboard(session));
+      } else {
+        void pollPoseClassifierUntilSettled(session);
+      }
+    } catch (error) {
+      setPoseState('error');
+      if (error instanceof ApiError && error.status === 401) {
+        clearLocalSession('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return;
+      }
+      setPoseMessage(error instanceof Error ? error.message : 'Không apply được pose classifier.');
+    } finally {
+      setPoseTargetKey('');
+    }
+  }
+
+  async function refreshHfSync(nextSession = session, verify = false) {
+    if (!nextSession || !canManageHfSync(nextSession.user.role)) {
+      return;
+    }
+    try {
+      const [statusResult, historyResult] = await Promise.all([
+        api.hfSyncStatus(nextSession.token, { verify }),
+        api.hfSyncHistory(nextSession.token),
+      ]);
+      setHfStatus(statusResult.hf);
+      setHfLatestJob(statusResult.latest_job);
+      setHfHistory(historyResult.items);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearLocalSession('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return;
+      }
+      setHfState('error');
+      setHfMessage(error instanceof Error ? error.message : 'Không tải được trạng thái HF sync.');
+    }
+  }
+
+  async function pollHfSyncUntilSettled(nextSession = session): Promise<HfSyncJob | null> {
+    if (!nextSession) {
+      return null;
+    }
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, attempt < 4 ? 250 : 750));
+      const statusResult = await api.hfSyncStatus(nextSession.token);
+      setHfStatus(statusResult.hf);
+      setHfLatestJob(statusResult.latest_job);
+      if (
+        statusResult.latest_job &&
+        statusResult.latest_job.status !== 'queued' &&
+        statusResult.latest_job.status !== 'processing'
+      ) {
+        const historyResult = await api.hfSyncHistory(nextSession.token);
+        setHfHistory(historyResult.items);
+        return statusResult.latest_job;
+      }
+    }
+    return null;
+  }
+
+  async function handleRefreshHfSync() {
+    if (!session) {
+      return;
+    }
+    setHfState('loading');
+    setHfTargetKey('refresh');
+    setHfMessage('');
+    await refreshHfSync(session, true);
+    setHfState('ready');
+    setHfTargetKey('');
+  }
+
+  async function handleStartHfMetadataSync() {
+    if (!session) {
+      return;
+    }
+    setHfState('loading');
+    setHfTargetKey('sync');
+    setHfMessage('');
+    try {
+      const result = await api.startHfSync(session.token, {
+        dry_run: hfDryRun,
+        files: hfSelectedFiles,
+      });
+      setHfLatestJob(result.job);
+      setHfState('ready');
+      setHfMessage(result.started ? (hfDryRun ? 'Đã tạo job dry-run sync metadata.' : 'Đã tạo job sync metadata.') : 'HF job đang chạy.');
+      if (!hfDryRun) {
+        void pollHfSyncUntilSettled(session).then(() => loadDashboard(session));
+      } else {
+        void pollHfSyncUntilSettled(session);
+      }
+    } catch (error) {
+      setHfState('error');
+      if (error instanceof ApiError && error.status === 401) {
+        clearLocalSession('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return;
+      }
+      setHfMessage(error instanceof Error ? error.message : 'Không tạo được job HF sync.');
+    } finally {
+      setHfTargetKey('');
+    }
+  }
+
+  async function handleUploadHfArtifact() {
+    if (!session) {
+      return;
+    }
+    const selectedVideo = videos.find((video, index) => videoKey(video, index) === hfSelectedVideoKey);
+    const mediaFilename = selectedVideo ? mediaFilenameForVideo(selectedVideo) : '';
+    if (!selectedVideo || !mediaFilename) {
+      setHfState('error');
+      setHfMessage('Vui lòng chọn video có artifact để upload.');
+      return;
+    }
+    setHfState('loading');
+    setHfTargetKey('upload');
+    setHfMessage('');
+    try {
+      const result = await api.uploadHfArtifact(session.token, mediaFilename, hfArtifactKind, { dry_run: hfDryRun });
+      setHfLatestJob(result.job);
+      setHfState('ready');
+      setHfMessage(result.started ? (hfDryRun ? 'Đã tạo job dry-run upload artifact.' : 'Đã tạo job upload artifact.') : 'HF job đang chạy.');
+      void pollHfSyncUntilSettled(session);
+    } catch (error) {
+      setHfState('error');
+      if (error instanceof ApiError && error.status === 401) {
+        clearLocalSession('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return;
+      }
+      setHfMessage(error instanceof Error ? error.message : 'Không upload được artifact lên HF.');
+    } finally {
+      setHfTargetKey('');
+    }
+  }
+
+  async function handleCreateHfReport() {
+    if (!session) {
+      return;
+    }
+    setHfState('loading');
+    setHfTargetKey('report');
+    setHfMessage('');
+    try {
+      const result = await api.createHfReport(session.token, { dry_run: hfDryRun });
+      setHfLatestJob(result.job);
+      setHfState('ready');
+      setHfMessage(result.started ? (hfDryRun ? 'Đã tạo job dry-run báo cáo.' : 'Đã tạo job xuất báo cáo.') : 'HF job đang chạy.');
+      void pollHfSyncUntilSettled(session);
+    } catch (error) {
+      setHfState('error');
+      if (error instanceof ApiError && error.status === 401) {
+        clearLocalSession('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return;
+      }
+      setHfMessage(error instanceof Error ? error.message : 'Không tạo được báo cáo HF.');
+    } finally {
+      setHfTargetKey('');
+    }
+  }
+
+  function toggleHfSyncFile(file: string) {
+    setHfSelectedFiles((current) =>
+      current.includes(file) ? current.filter((item) => item !== file) : [...current, file],
+    );
+  }
+
   async function handleLoadAnalysisHistory(video: VideoRecord, index: number) {
     if (!session) {
       return;
@@ -1613,6 +2168,25 @@ export function App() {
   );
 
   useEffect(() => {
+    if (!filteredVideos.length) {
+      setPoseSelectedVideoKey('');
+      setHfSelectedVideoKey('');
+      return;
+    }
+    const firstWithMedia = filteredVideos.find((video) => mediaFilenameForVideo(video));
+    if (!firstWithMedia) {
+      return;
+    }
+    const firstKey = videoKey(firstWithMedia, filteredVideos.indexOf(firstWithMedia));
+    if (!poseSelectedVideoKey || !filteredVideos.some((video, index) => videoKey(video, index) === poseSelectedVideoKey)) {
+      setPoseSelectedVideoKey(firstKey);
+    }
+    if (!hfSelectedVideoKey || !filteredVideos.some((video, index) => videoKey(video, index) === hfSelectedVideoKey)) {
+      setHfSelectedVideoKey(firstKey);
+    }
+  }, [filteredVideos, hfSelectedVideoKey, poseSelectedVideoKey]);
+
+  useEffect(() => {
     if (!session || activeView !== 'videos' || !filteredVideos.length) {
       return;
     }
@@ -1735,6 +2309,7 @@ export function App() {
         { view: 'videos' as ViewId, title: 'Gửi video tập luyện', body: 'Upload bài tập mới để bác sĩ và NCV theo dõi.' },
         { view: 'symptoms' as ViewId, title: 'Khai báo đau VAS', body: 'Ghi nhận triệu chứng trước hoặc sau buổi tập.' },
         { view: 'schedules' as ViewId, title: 'Xem lịch nhắc', body: 'Theo dõi lịch hẹn, lịch tập và lịch thuốc.' },
+        { view: 'info' as ViewId, title: 'Đọc hướng dẫn', body: 'Xem quy trình tập và thông tin nghiên cứu.' },
       ];
     }
     if (role === DOCTOR_ROLE) {
@@ -1742,6 +2317,7 @@ export function App() {
         { view: 'videos' as ViewId, title: 'Đánh giá video', body: 'Ghi nhận ground truth, lỗi sai và chỉ định tiếp theo.' },
         { view: 'schedules' as ViewId, title: 'Tạo lịch nhắc', body: 'Gửi lịch hẹn, lịch tập hoặc thuốc cho bệnh nhân.' },
         { view: 'research' as ViewId, title: 'Lập phiếu nghiên cứu', body: 'Hoàn thiện dữ liệu lâm sàng phục vụ nghiên cứu.' },
+        { view: 'info' as ViewId, title: 'Xem tài liệu', body: 'Tra cứu hướng dẫn, kiến thức PHCN và AI.' },
       ];
     }
     if (role === RESEARCHER_ROLE) {
@@ -1749,6 +2325,7 @@ export function App() {
         { view: 'videos' as ViewId, title: 'Chạy phân tích AI', body: 'Theo dõi hàng đợi video và tiến độ xử lý.' },
         { view: 'research' as ViewId, title: 'Rà soát dữ liệu NCKH', body: 'Xem phiếu nghiên cứu ở dạng đã giả danh.' },
         { view: 'patients' as ViewId, title: 'Danh sách đối tượng', body: 'Xem danh sách bệnh nhân ở dạng mã nghiên cứu.' },
+        { view: 'info' as ViewId, title: 'Thông tin đề tài', body: 'Xem hướng dẫn, team và phản hồi người dùng.' },
       ];
     }
     if (role === ADMIN_ROLE) {
@@ -1756,6 +2333,7 @@ export function App() {
         { view: 'users' as ViewId, title: 'Cấp tài khoản', body: 'Tạo tài khoản bác sĩ, NCV, admin hoặc bệnh nhân.' },
         { view: 'videos' as ViewId, title: 'Giám sát dữ liệu', body: 'Xem toàn bộ video, job AI và đánh giá.' },
         { view: 'research' as ViewId, title: 'Kiểm tra phiếu NCKH', body: 'Rà soát dữ liệu nghiên cứu trong hệ thống.' },
+        { view: 'info' as ViewId, title: 'Phản hồi hệ thống', body: 'Theo dõi nội dung hướng dẫn và góp ý vận hành.' },
       ];
     }
     return [];
@@ -1775,11 +2353,12 @@ export function App() {
     if (canViewResearch(role)) {
       views.push({ id: 'research', label: viewLabelForRole('research', role), icon: FlaskConical, count: researchRecords.length });
     }
+    views.push({ id: 'info', label: viewLabelForRole('info', role), icon: NotebookTabs, count: canReviewFeedback(role) ? feedbackRecords.length : 0 });
     if (canManageUsers(role)) {
       views.push({ id: 'users', label: 'Người dùng', icon: UserPlus, count: users.length });
     }
     return views;
-  }, [evaluations.length, patients.length, researchRecords.length, schedules.length, session?.user.role, symptoms.length, users.length, videos.length]);
+  }, [feedbackRecords.length, patients.length, researchRecords.length, schedules.length, session?.user.role, symptoms.length, users.length, videos.length]);
 
   useEffect(() => {
     if (!availableViews.some((view) => view.id === activeView)) {
@@ -1787,6 +2366,7 @@ export function App() {
     }
   }, [activeView, availableViews]);
 
+  const activeRole = session?.user.role || '';
   const activeCount = {
     home: videos.length + patients.length + symptoms.length + schedules.length + researchRecords.length + users.length,
     videos: filteredVideos.length,
@@ -1794,6 +2374,7 @@ export function App() {
     symptoms: filteredSymptoms.length,
     schedules: filteredSchedules.length,
     research: filteredResearch.length,
+    info: canReviewFeedback(activeRole) ? feedbackRecords.length : 0,
     users: filteredUsers.length,
   }[activeView];
 
@@ -2289,6 +2870,19 @@ export function App() {
     { key: 'metadata', label: 'Metadata', render: (item) => auditMetadataLabel(item.metadata) },
   ];
 
+  const feedbackColumns: TableColumn<FeedbackRecord>[] = [
+    { key: 'timestamp', label: 'Thời gian', render: (item) => textValue(item.timestamp) },
+    { key: 'actor', label: 'Người gửi', render: (item) => <span className="mono">{textValue(item.actor_username)}</span> },
+    { key: 'role', label: 'Vai trò', render: (item) => textValue(item.actor_role) },
+    { key: 'category', label: 'Nhóm', render: (item) => feedbackCategoryLabel(item.category) },
+    { key: 'message', label: 'Nội dung', render: (item) => textValue(item.message) },
+    {
+      key: 'status',
+      label: 'Trạng thái',
+      render: (item) => <span className={`pill ${statusClass(item.status)}`}>{textValue(item.status, 'new')}</span>,
+    },
+  ];
+
   return (
     <main className="workspace">
       <aside className="sidebar">
@@ -2372,7 +2966,7 @@ export function App() {
               <h2>{availableViews.find((view) => view.id === activeView)?.label || 'Dữ liệu'}</h2>
               <p>{activeCount} mục đang hiển thị</p>
             </div>
-            {activeView === 'home' ? null : (
+            {activeView === 'home' || activeView === 'info' ? null : (
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Lọc theo tên, mã, bài tập, trạng thái..." />
             )}
           </div>
@@ -2513,6 +3107,125 @@ export function App() {
                   <strong>{Math.round(analysisOptions.min_confidence * 100)}%</strong>
                 </label>
               </div>
+            </section>
+          ) : null}
+
+          {activeView === 'videos' && canManagePoseClassifier(session.user.role) ? (
+            <section className="analysis-config-panel pose-classifier-panel" aria-label="Pose classifier ML">
+              <div className="analysis-config-title">
+                <FlaskConical size={18} />
+                <div>
+                  <h3>Pose classifier ML</h3>
+                  <span>
+                    {modelReadyLabel(poseModelStatus)} · {poseModelStatus?.feature_count || 0} đặc trưng · checksum{' '}
+                    {poseModelStatus?.checksum_ok ? 'OK' : 'chưa hợp lệ'}
+                  </span>
+                </div>
+              </div>
+              <div className="pose-status-grid">
+                <div>
+                  <span>Model</span>
+                  <strong>{textValue(poseModelStatus?.model_path)}</strong>
+                </div>
+                <div>
+                  <span>Cập nhật</span>
+                  <strong>{textValue(poseModelStatus?.model_mtime)}</strong>
+                </div>
+                <div>
+                  <span>Job gần nhất</span>
+                  <strong>
+                    {poseLatestJob
+                      ? `${poseActionLabel(poseLatestJob.action)} · ${analysisStatusLabel(poseLatestJob.status)} · ${Math.round(
+                          Math.max(0, Math.min(1, poseLatestJob.progress || 0)) * 100,
+                        )}%`
+                      : 'Chưa có'}
+                  </strong>
+                </div>
+              </div>
+              <div className="analysis-config-grid pose-config-grid">
+                <label>
+                  Video apply
+                  <select value={poseSelectedVideoKey} onChange={(event) => setPoseSelectedVideoKey(event.target.value)}>
+                    <option value="">Chọn video</option>
+                    {filteredVideos.map((video, index) => (
+                      <option value={videoKey(video, index)} key={videoKey(video, index)}>
+                        {textValue(video.video_name, video.original_filename)} · {patientLabel(video as RecordLike)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Min samples
+                  <input
+                    type="number"
+                    min="2"
+                    max="10000"
+                    value={poseMinSamples}
+                    onChange={(event) => setPoseMinSamples(Number(event.target.value))}
+                  />
+                </label>
+                <label className="checkbox-row">
+                  <input checked={poseDryRun} onChange={(event) => setPoseDryRun(event.target.checked)} type="checkbox" />
+                  Dry-run
+                </label>
+              </div>
+              <div className="pose-actions">
+                <button
+                  className="table-action"
+                  disabled={poseState === 'loading' && poseTargetKey === 'train'}
+                  onClick={() => void handleTrainPoseClassifier()}
+                  type="button"
+                >
+                  {poseState === 'loading' && poseTargetKey === 'train' ? <RefreshCw className="spin" size={16} /> : <Cpu size={16} />}
+                  Train
+                </button>
+                <button
+                  className="table-action muted-action"
+                  disabled={!poseSelectedVideoKey || (poseState === 'loading' && poseTargetKey === 'apply')}
+                  onClick={() => void handleApplyPoseClassifier()}
+                  type="button"
+                >
+                  {poseState === 'loading' && poseTargetKey === 'apply' ? <RefreshCw className="spin" size={16} /> : <ArrowRight size={16} />}
+                  Apply
+                </button>
+                <button
+                  className="table-action muted-action"
+                  disabled={poseState === 'loading' && poseTargetKey === 'refresh'}
+                  onClick={() => void handleRefreshPoseClassifier()}
+                  type="button"
+                >
+                  <RefreshCw className={poseState === 'loading' && poseTargetKey === 'refresh' ? 'spin' : ''} size={16} />
+                  Cập nhật
+                </button>
+              </div>
+              {poseLatestJob ? (
+                <div className="progress-track" aria-label="Tiến độ ML">
+                  <span
+                    className={`progress-fill ${statusClass(poseLatestJob.status)}`}
+                    style={{ width: `${Math.round(Math.max(0, Math.min(1, poseLatestJob.progress || 0)) * 100)}%` }}
+                  />
+                </div>
+              ) : null}
+              {poseMessage ? <div className={poseState === 'error' ? 'alert inline' : 'status-line inline ok'}>{poseMessage}</div> : null}
+              {poseLatestJob?.status_msg || poseLatestJob?.error_msg ? (
+                <p className={poseLatestJob.status === 'error' ? 'danger-text' : 'muted'}>
+                  {textValue(poseLatestJob.status_msg, poseLatestJob.error_msg)}
+                </p>
+              ) : null}
+              {poseHistory.length ? (
+                <div className="analysis-history pose-history">
+                  {poseHistory.slice(-3).map((job) => (
+                    <div key={job.job_id}>
+                      <span className={`pill ${statusClass(job.status)}`}>{analysisStatusLabel(job.status)}</span>
+                      <strong>
+                        {poseActionLabel(job.action)}
+                        {job.dry_run ? ' · dry-run' : ''}
+                      </strong>
+                      <small>{poseJobTimeLabel(job)}</small>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </section>
           ) : null}
 
@@ -2776,6 +3489,122 @@ export function App() {
             </form>
           ) : null}
 
+          {activeView === 'research' && canManageHfSync(session.user.role) ? (
+            <section className="analysis-config-panel hf-sync-panel" aria-label="Hugging Face sync">
+              <div className="analysis-config-title">
+                <FlaskConical size={18} />
+                <div>
+                  <h3>Hugging Face sync</h3>
+                  <span>
+                    {hfStatus?.configured ? textValue(hfStatus.dataset_id) : 'Chưa cấu hình Dataset'} · token{' '}
+                    {hfStatus?.token_configured ? 'đã cấu hình' : 'chưa có'} · {hfStatus?.verify_ok ? 'kết nối OK' : 'dry-run trước'}
+                  </span>
+                </div>
+              </div>
+              <div className="pose-status-grid">
+                <div>
+                  <span>Dataset</span>
+                  <strong>{textValue(hfStatus?.dataset_id)}</strong>
+                </div>
+                <div>
+                  <span>Token fingerprint</span>
+                  <strong>{textValue(hfStatus?.token_fingerprint)}</strong>
+                </div>
+                <div>
+                  <span>Job gần nhất</span>
+                  <strong>
+                    {hfLatestJob
+                      ? `${hfActionLabel(hfLatestJob.action)} · ${analysisStatusLabel(hfLatestJob.status)} · ${Math.round(
+                          Math.max(0, Math.min(1, hfLatestJob.progress || 0)) * 100,
+                        )}%`
+                      : 'Chưa có'}
+                  </strong>
+                </div>
+              </div>
+              <div className="analysis-config-grid hf-config-grid">
+                <label>
+                  Video artifact
+                  <select value={hfSelectedVideoKey} onChange={(event) => setHfSelectedVideoKey(event.target.value)}>
+                    <option value="">Chọn video</option>
+                    {filteredVideos.map((video, index) => (
+                      <option value={videoKey(video, index)} key={videoKey(video, index)}>
+                        {textValue(video.video_name, video.original_filename)} · {patientLabel(video as RecordLike)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Artifact
+                  <select value={hfArtifactKind} onChange={(event) => setHfArtifactKind(event.target.value)}>
+                    <option value="angle-csv">CSV góc</option>
+                    <option value="frames-json">JSON frame</option>
+                    <option value="frames-zip">ZIP frame</option>
+                    <option value="processed-video">Video xử lý</option>
+                  </select>
+                </label>
+                <label className="checkbox-row">
+                  <input checked={hfDryRun} onChange={(event) => setHfDryRun(event.target.checked)} type="checkbox" />
+                  Dry-run
+                </label>
+              </div>
+              <div className="hf-file-grid" aria-label="File metadata cần sync">
+                {(hfStatus?.allowed_sync_files || ['video_list.json', 'doctor_evaluations.json', 'research_data.json']).map((file) => (
+                  <label className="checkbox-row hf-file-toggle" key={file}>
+                    <input checked={hfSelectedFiles.includes(file)} onChange={() => toggleHfSyncFile(file)} type="checkbox" />
+                    {file}
+                  </label>
+                ))}
+              </div>
+              <div className="pose-actions">
+                <button className="table-action" disabled={hfState === 'loading' && hfTargetKey === 'sync'} onClick={() => void handleStartHfMetadataSync()} type="button">
+                  {hfState === 'loading' && hfTargetKey === 'sync' ? <RefreshCw className="spin" size={16} /> : <RefreshCw size={16} />}
+                  Sync metadata
+                </button>
+                <button className="table-action muted-action" disabled={!hfSelectedVideoKey || (hfState === 'loading' && hfTargetKey === 'upload')} onClick={() => void handleUploadHfArtifact()} type="button">
+                  {hfState === 'loading' && hfTargetKey === 'upload' ? <RefreshCw className="spin" size={16} /> : <ArrowRight size={16} />}
+                  Upload artifact
+                </button>
+                <button className="table-action muted-action" disabled={hfState === 'loading' && hfTargetKey === 'report'} onClick={() => void handleCreateHfReport()} type="button">
+                  {hfState === 'loading' && hfTargetKey === 'report' ? <RefreshCw className="spin" size={16} /> : <ClipboardList size={16} />}
+                  Report
+                </button>
+                <button className="table-action muted-action" disabled={hfState === 'loading' && hfTargetKey === 'refresh'} onClick={() => void handleRefreshHfSync()} type="button">
+                  <RefreshCw className={hfState === 'loading' && hfTargetKey === 'refresh' ? 'spin' : ''} size={16} />
+                  Kiểm tra
+                </button>
+              </div>
+              {hfLatestJob ? (
+                <div className="progress-track" aria-label="Tiến độ HF sync">
+                  <span
+                    className={`progress-fill ${statusClass(hfLatestJob.status)}`}
+                    style={{ width: `${Math.round(Math.max(0, Math.min(1, hfLatestJob.progress || 0)) * 100)}%` }}
+                  />
+                </div>
+              ) : null}
+              {hfMessage ? <div className={hfState === 'error' ? 'alert inline' : 'status-line inline ok'}>{hfMessage}</div> : null}
+              {hfStatus?.message ? <p className="muted">{hfStatus.message}</p> : null}
+              {hfLatestJob?.status_msg || hfLatestJob?.error_msg ? (
+                <p className={hfLatestJob.status === 'error' ? 'danger-text' : 'muted'}>
+                  {textValue(hfLatestJob.status_msg, hfLatestJob.error_msg)}
+                </p>
+              ) : null}
+              {hfHistory.length ? (
+                <div className="analysis-history pose-history">
+                  {hfHistory.slice(-3).map((job) => (
+                    <div key={job.job_id}>
+                      <span className={`pill ${statusClass(job.status)}`}>{analysisStatusLabel(job.status)}</span>
+                      <strong>
+                        {hfActionLabel(job.action)}
+                        {job.dry_run ? ' · dry-run' : ''}
+                      </strong>
+                      <small>{hfJobTimeLabel(job)}</small>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           {activeView === 'users' && canManageUsers(session.user.role) ? (
             <form className="data-form" onSubmit={handleCreateUser}>
               <div className="form-grid">
@@ -2846,6 +3675,44 @@ export function App() {
                   {adminActionKey === 'revoke:all' ? <RefreshCw className="spin" size={16} /> : <Shield size={16} />}
                   Revoke all
                 </button>
+              </div>
+            </div>
+          ) : null}
+
+          {activeView === 'users' && canManageUsers(session.user.role) ? (
+            <div className="cleanup-panel">
+              <div className="subpanel-header">
+                <div>
+                  <h3>Dọn dữ liệu</h3>
+                  <span>Reset từng nhóm có backup và audit</span>
+                </div>
+                <Trash2 size={18} />
+              </div>
+              <div className="cleanup-grid">
+                {cleanupTargets.map((target) => {
+                  const empty = target.record_count === 0 && target.file_count === 0;
+                  const busy = formState === 'loading' || adminActionKey === `cleanup:${target.target}`;
+                  return (
+                    <div className="cleanup-item" key={target.target}>
+                      <div>
+                        <strong>{target.label}</strong>
+                        <span>{cleanupCountLabel(target)}</span>
+                        <small className="mono">{target.confirm}</small>
+                      </div>
+                      <button
+                        className="table-action danger-action"
+                        disabled={empty || busy}
+                        onClick={() => void handleResetCleanupTarget(target)}
+                        title={empty ? 'Không có dữ liệu để reset' : `Nhập ${target.confirm} để reset`}
+                        type="button"
+                      >
+                        {adminActionKey === `cleanup:${target.target}` ? <RefreshCw className="spin" size={16} /> : <Trash2 size={16} />}
+                        Reset
+                      </button>
+                    </div>
+                  );
+                })}
+                {!cleanupTargets.length ? <div className="empty-gallery">Chưa tải được trạng thái cleanup.</div> : null}
               </div>
             </div>
           ) : null}
@@ -3309,6 +4176,135 @@ export function App() {
               emptyText="Chưa có dữ liệu nghiên cứu phù hợp."
               rowKey={(record, index) => recordKey('research', record, index)}
             />
+          ) : null}
+          {activeView === 'info' ? (
+            <section className="info-workspace" aria-label="Thông tin và hướng dẫn">
+              <div className="info-band">
+                <div>
+                  <p className="eyebrow">Hướng dẫn theo vai trò</p>
+                  <h3>{viewLabelForRole('info', session.user.role)}</h3>
+                </div>
+                <span>{session.user.role}</span>
+              </div>
+              <div className="info-step-grid">
+                {roleGuideSteps(session.user.role).map(([title, body], index) => (
+                  <article className="info-step" key={title}>
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    <strong>{title}</strong>
+                    <p>{body}</p>
+                  </article>
+                ))}
+              </div>
+              <div className="info-section-grid">
+                <section className="info-section">
+                  <h3>Kiến thức PHCN</h3>
+                  {rehabKnowledge.map(([title, body]) => (
+                    <div className="info-row-card" key={title}>
+                      <strong>{title}</strong>
+                      <p>{body}</p>
+                    </div>
+                  ))}
+                </section>
+                <section className="info-section">
+                  <h3>Công nghệ AI</h3>
+                  {aiKnowledge.map(([title, body]) => (
+                    <div className="info-row-card" key={title}>
+                      <strong>{title}</strong>
+                      <p>{body}</p>
+                    </div>
+                  ))}
+                </section>
+              </div>
+              <section className="info-section">
+                <div className="subpanel-header">
+                  <div>
+                    <h3>Thông tin đề tài</h3>
+                    <span>Nội dung nghiên cứu và nguyên tắc bảo mật</span>
+                  </div>
+                  <FlaskConical size={18} />
+                </div>
+                <div className="info-card-grid">
+                  {researchInfoSections.map(([title, body]) => (
+                    <article className="info-card" key={title}>
+                      <strong>{title}</strong>
+                      <p>{body}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+              <section className="info-section">
+                <div className="subpanel-header">
+                  <div>
+                    <h3>Đội ngũ và hỗ trợ</h3>
+                    <span>Thông tin chung, không hiển thị PII hoặc tài khoản mặc định</span>
+                  </div>
+                  <UsersRound size={18} />
+                </div>
+                <div className="info-card-grid compact">
+                  {teamInfoSections.map(([title, body]) => (
+                    <article className="info-card" key={title}>
+                      <strong>{title}</strong>
+                      <p>{body}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+              <form className="data-form feedback-form" onSubmit={handleCreateFeedback}>
+                <div className="subpanel-header">
+                  <div>
+                    <h3>Gửi phản hồi</h3>
+                    <span>Không gửi mật khẩu, token hoặc thông tin định danh nhạy cảm.</span>
+                  </div>
+                  <MessageSquare size={18} />
+                </div>
+                <div className="form-grid two feedback-grid">
+                  <label>
+                    Nhóm phản hồi
+                    <select name="category" defaultValue="general">
+                      <option value="general">Góp ý chung</option>
+                      <option value="bug">Lỗi hệ thống</option>
+                      <option value="workflow">Quy trình</option>
+                      <option value="content">Nội dung</option>
+                      <option value="safety">An toàn dữ liệu</option>
+                    </select>
+                  </label>
+                  <label className="checkbox-row">
+                    <input name="contact_ok" type="checkbox" />
+                    Có thể liên hệ lại trong hệ thống
+                  </label>
+                </div>
+                <label>
+                  Nội dung
+                  <textarea name="message" maxLength={2000} placeholder="Mô tả góp ý hoặc vấn đề cần hỗ trợ..." required />
+                </label>
+                <div className="form-actions">
+                  <button className="primary-button" type="submit" disabled={formState === 'loading'}>
+                    {formState === 'loading' ? <RefreshCw className="spin" size={18} /> : <MessageSquare size={18} />}
+                    Gửi phản hồi
+                  </button>
+                  {formMessage ? (
+                    <span className={formState === 'error' ? 'form-status error' : 'form-status ok'}>{formMessage}</span>
+                  ) : null}
+                </div>
+              </form>
+              {canReviewFeedback(session.user.role) ? (
+                <section className="subpanel">
+                  <div className="subpanel-header">
+                    <div>
+                      <h3>Phản hồi gần đây</h3>
+                      <span>{feedbackRecords.length} phản hồi mới nhất</span>
+                    </div>
+                    <History size={18} />
+                  </div>
+                  <DataTable
+                    columns={feedbackColumns}
+                    items={feedbackRecords.filter((item) => matchesQuery(item as RecordLike, query))}
+                    emptyText="Chưa có phản hồi nào."
+                    rowKey={(item, index) => recordKey('feedback', item as RecordLike, index)}
+                  />
+                </section>
+              ) : null}
+            </section>
           ) : null}
           {activeView === 'users' ? (
             <>

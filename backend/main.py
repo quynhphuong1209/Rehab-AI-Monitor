@@ -34,7 +34,7 @@ from auth.permissions import (
 )
 from auth.sessions import bump_global_session_version
 from models.schemas import ADMIN_ROLE, DOCTOR_ROLE, PATIENT_ROLE, RESEARCHER_ROLE, AI_RESEARCHER
-from storage.app_json import update_app_json
+from storage.app_json import update_app_json, write_app_json
 from video.validation import (
     ALLOWED_UPLOAD_VIDEO_EXTENSIONS,
     MAX_UPLOAD_SIZE_BYTES,
@@ -57,6 +57,8 @@ from backend.auth import (
 )
 from backend.config import BackendConfig
 from backend.frame_gallery import frame_gallery_page, resolve_gallery_image
+from backend.hf_workflow import HF_SAFE_SYNC_FILES, HfWorkflowJobs, HfWorkflowRequest
+from backend.pose_classifier_workflow import PoseClassifierJobRequest, PoseClassifierJobs
 from backend.repository import JsonRepository
 
 
@@ -67,6 +69,21 @@ analysis_jobs = BackendAnalysisJobs(
     repo_root=config.repo_root,
     upload_dir=config.upload_dir,
     processed_dir=config.processed_dir,
+)
+pose_classifier_jobs = PoseClassifierJobs(
+    repo_root=config.repo_root,
+    database_dir=config.database_dir,
+    processed_dir=config.processed_dir,
+    videos_file=config.videos_file,
+    evaluations_file=config.evaluations_file,
+)
+hf_workflow_jobs = HfWorkflowJobs(
+    repo_root=config.repo_root,
+    database_dir=config.database_dir,
+    upload_dir=config.upload_dir,
+    processed_dir=config.processed_dir,
+    token=config.hf_token,
+    dataset_id=config.hf_dataset_id,
 )
 
 
@@ -243,6 +260,11 @@ def _clean_text(value: Any) -> str:
     return " ".join(str(value or "").strip().split())
 
 
+def _bounded_text(value: Any, *, max_len: int) -> str:
+    text = _clean_text(value)
+    return text[:max(0, max_len)]
+
+
 def _clean_text_list(value: Any) -> list[str]:
     if isinstance(value, list):
         raw_items = value
@@ -392,6 +414,210 @@ def _backup_runtime_file(path: Path, *, action: str, target: str) -> str:
         return str(backup_path.relative_to(repo.config.repo_root))
     except ValueError:
         return str(backup_path)
+
+
+def _admin_cleanup_targets() -> dict[str, dict[str, Any]]:
+    return {
+        "evaluations": {
+            "label": "Đánh giá lâm sàng",
+            "confirm": "RESET EVALUATIONS",
+            "file": repo.config.evaluations_file,
+            "default": [],
+            "count": lambda: len(repo.evaluations()),
+        },
+        "symptoms": {
+            "label": "Khai báo triệu chứng",
+            "confirm": "RESET SYMPTOMS",
+            "file": repo.config.symptoms_file,
+            "default": [],
+            "count": lambda: len(repo.symptoms()),
+        },
+        "schedules": {
+            "label": "Lịch nhắc",
+            "confirm": "RESET SCHEDULES",
+            "file": repo.config.schedules_file,
+            "default": [],
+            "count": lambda: len(repo.schedules()),
+        },
+        "videos": {
+            "label": "Video và metadata",
+            "confirm": "RESET VIDEOS",
+            "file": repo.config.videos_file,
+            "default": [],
+            "count": lambda: len(repo.videos()),
+            "files": "video",
+        },
+        "processed-artifacts": {
+            "label": "Artifact phân tích",
+            "confirm": "RESET PROCESSED ARTIFACTS",
+            "file": repo.config.videos_file,
+            "default": None,
+            "count": _count_processed_artifacts,
+            "files": "processed",
+        },
+    }
+
+
+def _iter_video_file_candidates(record: dict[str, Any], *, include_uploads: bool, include_processed: bool) -> list[Path]:
+    fields: list[str] = []
+    if include_uploads:
+        fields.extend(["video_path", "stored_filename"])
+    if include_processed:
+        fields.extend(["processed_path", "df_path", "all_frames_data_path", "frames_zip_path", "frames_zip"])
+    candidates: list[Path] = []
+    for field in fields:
+        raw_path = _clean_text(record.get(field))
+        if not raw_path:
+            continue
+        path = Path(raw_path)
+        if not path.is_absolute():
+            if field == "stored_filename" and path.name == raw_path:
+                path = repo.config.upload_dir / raw_path
+            else:
+                path = repo.config.repo_root / _relative_media_path(raw_path)
+        candidates.append(path)
+    if include_processed:
+        video_path = _clean_text(record.get("video_path"))
+        if video_path:
+            candidates.append(analysis_jobs.progress_file_for_video_path(video_path))
+            candidates.append(analysis_jobs.history_file_for_video_path(video_path))
+    return candidates
+
+
+def _safe_cleanup_file_path(path: Path) -> Path | None:
+    roots = video_media_allowed_roots(
+        data_dir=repo.config.repo_root,
+        upload_dir=repo.config.upload_dir,
+        processed_dir=repo.config.processed_dir,
+    )
+    allowed = allowed_media_file_path(
+        path,
+        roots,
+        allowed_extensions={
+            ".mp4",
+            ".mov",
+            ".m4v",
+            ".webm",
+            ".avi",
+            ".mkv",
+            ".csv",
+            ".json",
+            ".zip",
+            ".jpg",
+            ".jpeg",
+            ".png",
+        },
+    )
+    return Path(allowed) if allowed else None
+
+
+def _unique_cleanup_paths(paths: list[Path]) -> list[Path]:
+    seen: set[str] = set()
+    out: list[Path] = []
+    for path in paths:
+        safe_path = _safe_cleanup_file_path(path)
+        if not safe_path:
+            continue
+        key = str(safe_path.resolve())
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(safe_path)
+    return out
+
+
+def _count_processed_artifacts() -> int:
+    return len(_unique_cleanup_paths([
+        candidate
+        for record in repo.videos()
+        for candidate in _iter_video_file_candidates(record, include_uploads=False, include_processed=True)
+    ]))
+
+
+def _cleanup_target_status(target: str, definition: dict[str, Any]) -> dict[str, Any]:
+    record_count = int(definition["count"]())
+    file_count = 0
+    if definition.get("files") == "video":
+        file_count = len(_unique_cleanup_paths([
+            candidate
+            for record in repo.videos()
+            for candidate in _iter_video_file_candidates(record, include_uploads=True, include_processed=True)
+        ]))
+    elif definition.get("files") == "processed":
+        file_count = _count_processed_artifacts()
+    return {
+        "target": target,
+        "label": definition["label"],
+        "confirm": definition["confirm"],
+        "record_count": record_count,
+        "file_count": file_count,
+    }
+
+
+def _backup_cleanup_files(paths: list[Path], *, action: str, target: str) -> tuple[int, str]:
+    safe_paths = _unique_cleanup_paths(paths)
+    if not safe_paths:
+        return 0, ""
+    backup_dir = repo.config.repo_root / "backups" / "admin_ops" / f"{_now_compact()}_{sanitize_filename(action, fallback='cleanup')}_{sanitize_filename(target, fallback='target')}_files"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    copied = 0
+    for path in safe_paths:
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            relative = path.resolve().relative_to(repo.config.repo_root.resolve())
+        except ValueError:
+            relative = Path(path.name)
+        destination = backup_dir / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+        copied += 1
+    if copied == 0:
+        try:
+            backup_dir.rmdir()
+        except OSError:
+            pass
+        return 0, ""
+    try:
+        return copied, str(backup_dir.relative_to(repo.config.repo_root))
+    except ValueError:
+        return copied, str(backup_dir)
+
+
+def _delete_cleanup_files(paths: list[Path]) -> int:
+    deleted = 0
+    for path in _unique_cleanup_paths(paths):
+        if not path.exists() or not path.is_file():
+            continue
+        path.unlink()
+        deleted += 1
+    return deleted
+
+
+def _strip_processed_fields_from_videos() -> int:
+    cleared = 0
+
+    def _update(current: Any) -> list[dict[str, Any]]:
+        nonlocal cleared
+        records = [record for record in (current if isinstance(current, list) else []) if isinstance(record, dict)]
+        out: list[dict[str, Any]] = []
+        fields = ("processed_path", "df_path", "all_frames_data_path", "frames_zip_path", "frames_zip")
+        for record in records:
+            next_record = dict(record)
+            touched = False
+            for field in fields:
+                if next_record.get(field):
+                    next_record[field] = None
+                    touched = True
+            if touched:
+                next_record["status"] = "Chờ NCV phân tích"
+                next_record["updated_at"] = _now_iso()
+                cleared += 1
+            out.append(next_record)
+        return out
+
+    update_app_json(repo.config.videos_file, _update, default=[])
+    return cleared
 
 
 def _safe_media_filename(value: Any) -> str | None:
@@ -662,6 +888,27 @@ def _sync_analysis_jobs_config() -> None:
         analysis_jobs.ai_runner = _build_backend_ai_runner()
     elif getattr(analysis_jobs.ai_runner, "is_backend_mediapipe_ai_runner", False):
         analysis_jobs.ai_runner = None
+
+
+def _sync_pose_classifier_jobs_config() -> None:
+    pose_classifier_jobs.configure(
+        repo_root=repo.config.repo_root,
+        database_dir=repo.config.database_dir,
+        processed_dir=repo.config.processed_dir,
+        videos_file=repo.config.videos_file,
+        evaluations_file=repo.config.evaluations_file,
+    )
+
+
+def _sync_hf_workflow_jobs_config() -> None:
+    hf_workflow_jobs.configure(
+        repo_root=repo.config.repo_root,
+        database_dir=repo.config.database_dir,
+        upload_dir=repo.config.upload_dir,
+        processed_dir=repo.config.processed_dir,
+        token=repo.config.hf_token,
+        dataset_id=repo.config.hf_dataset_id,
+    )
 
 
 def _visible_video_record(actor: dict[str, Any], stored_filename: str) -> dict[str, Any] | None:
@@ -1148,6 +1395,248 @@ async def rerun_analysis_job(request: Request) -> JSONResponse:
     return JSONResponse(result, status_code=202 if result.get("started") else 200)
 
 
+async def pose_classifier_status(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+
+    _sync_pose_classifier_jobs_config()
+    return JSONResponse(
+        {
+            "model": pose_classifier_jobs.public_model_status(),
+            "latest_job": pose_classifier_jobs.read_latest(),
+        }
+    )
+
+
+async def pose_classifier_history(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+
+    _sync_pose_classifier_jobs_config()
+    history = pose_classifier_jobs.read_history()
+    return JSONResponse({"items": history, "count": len(history)})
+
+
+async def train_pose_classifier_job(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+
+    payload = await _json_payload_or_empty(request)
+    _sync_pose_classifier_jobs_config()
+    result = pose_classifier_jobs.start(
+        PoseClassifierJobRequest(
+            actor_username=_clean_text(actor.get("username")),
+            action="train",
+            dry_run=_payload_bool(payload.get("dry_run"), default=False),
+            min_samples=_bounded_int(payload.get("min_samples"), default=10, minimum=2, maximum=10000),
+        )
+    )
+    return JSONResponse(result, status_code=202 if result.get("started") else 200)
+
+
+async def apply_pose_classifier_job(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+
+    filename = _safe_media_filename(request.path_params.get("stored_filename"))
+    if not filename:
+        return json_error("invalid media filename", 400)
+    record = _visible_video_record(actor, filename)
+    if record is None:
+        return json_error("video not found", 404)
+
+    payload = await _json_payload_or_empty(request)
+    _sync_pose_classifier_jobs_config()
+    result = pose_classifier_jobs.start(
+        PoseClassifierJobRequest(
+            actor_username=_clean_text(actor.get("username")),
+            action="apply",
+            dry_run=_payload_bool(payload.get("dry_run"), default=False),
+            stored_filename=filename,
+        )
+    )
+    return JSONResponse(result, status_code=202 if result.get("started") else 200)
+
+
+async def hf_sync_status(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+
+    _sync_hf_workflow_jobs_config()
+    verify = _payload_bool(request.query_params.get("verify"), default=False)
+    list_files_flag = _payload_bool(request.query_params.get("list_files"), default=False)
+    return JSONResponse(
+        {
+            "hf": hf_workflow_jobs.public_status(verify=verify, list_files_flag=list_files_flag),
+            "latest_job": hf_workflow_jobs.read_latest(),
+        }
+    )
+
+
+async def hf_sync_history(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+
+    _sync_hf_workflow_jobs_config()
+    history = hf_workflow_jobs.read_history()
+    return JSONResponse({"items": history, "count": len(history)})
+
+
+async def start_hf_metadata_sync(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+
+    payload = await _json_payload_or_empty(request)
+    requested_files = payload.get("files")
+    files = tuple(
+        _clean_text(item)
+        for item in (requested_files if isinstance(requested_files, list) else [])
+        if _clean_text(item)
+    )
+    if any(item == "users.json" for item in files):
+        _append_audit(
+            actor,
+            action="hf_sync_rejected_file",
+            target="users.json",
+            result="skipped",
+            metadata={"reason": "users_json_not_synced_by_default"},
+        )
+    _sync_hf_workflow_jobs_config()
+    result = hf_workflow_jobs.start(
+        HfWorkflowRequest(
+            actor_username=_clean_text(actor.get("username")),
+            action="sync",
+            dry_run=_payload_bool(payload.get("dry_run"), default=True),
+            files=files or tuple(HF_SAFE_SYNC_FILES),
+        )
+    )
+    _append_audit(
+        actor,
+        action="hf_metadata_sync",
+        target="metadata",
+        result="queued" if result.get("started") else "already_running",
+        metadata={"dry_run": _payload_bool(payload.get("dry_run"), default=True), "files": list(files or HF_SAFE_SYNC_FILES)},
+    )
+    return JSONResponse(result, status_code=202 if result.get("started") else 200)
+
+
+async def upload_hf_artifact(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+
+    filename = _safe_media_filename(request.path_params.get("stored_filename"))
+    kind = _clean_text(request.path_params.get("artifact_kind"))
+    if not filename:
+        return json_error("invalid media filename", 400)
+    if kind not in ARTIFACT_DEFINITIONS:
+        return json_error("unknown artifact kind", 404)
+    record = _visible_video_record(actor, filename)
+    if record is None:
+        return json_error("video not found", 404)
+    artifact_path = _resolve_artifact_path(record, kind)
+    if not artifact_path:
+        return json_error("artifact not found", 404)
+
+    payload = await _json_payload_or_empty(request)
+    _sync_hf_workflow_jobs_config()
+    result = hf_workflow_jobs.start(
+        HfWorkflowRequest(
+            actor_username=_clean_text(actor.get("username")),
+            action="upload",
+            dry_run=_payload_bool(payload.get("dry_run"), default=True),
+            stored_filename=filename,
+            artifact_kind=kind,
+            local_path=artifact_path,
+        )
+    )
+    _append_audit(
+        actor,
+        action="hf_artifact_upload",
+        target=f"{filename}:{kind}",
+        result="queued" if result.get("started") else "already_running",
+        metadata={"dry_run": _payload_bool(payload.get("dry_run"), default=True), "artifact_kind": kind},
+    )
+    return JSONResponse(result, status_code=202 if result.get("started") else 200)
+
+
+async def create_hf_report(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+
+    payload = await _json_payload_or_empty(request)
+    _sync_hf_workflow_jobs_config()
+    result = hf_workflow_jobs.start(
+        HfWorkflowRequest(
+            actor_username=_clean_text(actor.get("username")),
+            action="report",
+            dry_run=_payload_bool(payload.get("dry_run"), default=True),
+            report_format=_clean_text(payload.get("format")) or "markdown",
+        )
+    )
+    _append_audit(
+        actor,
+        action="hf_report",
+        target="sync_report",
+        result="queued" if result.get("started") else "already_running",
+        metadata={"dry_run": _payload_bool(payload.get("dry_run"), default=True)},
+    )
+    return JSONResponse(result, status_code=202 if result.get("started") else 200)
+
+
 async def list_analysis_artifacts(request: Request) -> JSONResponse:
     actor = current_actor(request)
     auth_error = auth_error_if_missing(actor)
@@ -1475,6 +1964,61 @@ async def list_admin_audit_log(request: Request) -> JSONResponse:
     return json_items(items)
 
 
+async def list_feedback(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE, RESEARCHER_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+    limit = _bounded_int(request.query_params.get("limit"), default=100, minimum=1, maximum=500)
+    items = _with_record_ids("feedback", repo.feedback())[-limit:]
+    items.reverse()
+    return json_items(items)
+
+
+async def create_feedback(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    payload = await _json_payload_or_empty(request)
+    category = _bounded_text(payload.get("category"), max_len=40) or "general"
+    if category not in {"general", "bug", "workflow", "content", "safety"}:
+        return json_error("unsupported feedback category", 400)
+    message = _bounded_text(payload.get("message"), max_len=2000)
+    if len(message) < 5:
+        return json_error("feedback message is required", 400)
+    contact_ok = _payload_bool(payload.get("contact_ok"), default=False)
+    item = {
+        "id": _new_record_id("fb"),
+        "timestamp": _now_iso(),
+        "actor_username": _clean_text(actor.get("username")),
+        "actor_role": _clean_text(actor.get("role")),
+        "category": category,
+        "message": message,
+        "contact_ok": contact_ok,
+        "page": _bounded_text(payload.get("page"), max_len=80),
+        "status": "new",
+    }
+
+    def _append(current: Any) -> list[dict[str, Any]]:
+        records = [record for record in (current if isinstance(current, list) else []) if isinstance(record, dict)]
+        return (records + [item])[-1000:]
+
+    update_app_json(repo.config.feedback_file, _append, default=[])
+    _append_audit(
+        actor,
+        action="create_feedback",
+        target=category,
+        result="created",
+        metadata={"page": item["page"], "contact_ok": contact_ok},
+    )
+    return JSONResponse({"item": item}, status_code=201)
+
+
 async def create_admin_user(request: Request) -> JSONResponse:
     actor = current_actor(request)
     auth_error = auth_error_if_missing(actor)
@@ -1754,6 +2298,96 @@ async def revoke_admin_sessions(request: Request) -> JSONResponse:
             "global_session_version": version,
         }
     )
+
+
+async def admin_cleanup_status(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+    targets = _admin_cleanup_targets()
+    items = [_cleanup_target_status(target, definition) for target, definition in targets.items()]
+    return json_items(items)
+
+
+async def admin_cleanup_reset(request: Request) -> JSONResponse:
+    actor = current_actor(request)
+    auth_error = auth_error_if_missing(actor)
+    if auth_error:
+        return auth_error
+    try:
+        require_actor_role(actor, [ADMIN_ROLE])
+    except PermissionError as exc:
+        return json_error(str(exc), 403)
+    payload = await _json_payload_or_empty(request)
+    target = _clean_text(request.path_params.get("target"))
+    targets = _admin_cleanup_targets()
+    definition = targets.get(target)
+    if not definition:
+        return json_error("unsupported cleanup target", 404)
+    confirm = _clean_text(payload.get("confirm"))
+    if confirm != definition["confirm"]:
+        return json_error(f"confirm must be {definition['confirm']}", 400)
+
+    before = _cleanup_target_status(target, definition)
+    file_candidates: list[Path] = []
+    if definition.get("files") == "video":
+        file_candidates = [
+            candidate
+            for record in repo.videos()
+            for candidate in _iter_video_file_candidates(record, include_uploads=True, include_processed=True)
+        ]
+    elif definition.get("files") == "processed":
+        file_candidates = [
+            candidate
+            for record in repo.videos()
+            for candidate in _iter_video_file_candidates(record, include_uploads=False, include_processed=True)
+        ]
+
+    backup_path = ""
+    if definition.get("file") and Path(definition["file"]).exists():
+        backup_path = _backup_runtime_file(Path(definition["file"]), action="admin_cleanup_reset", target=target)
+    file_backup_count, file_backup_path = _backup_cleanup_files(file_candidates, action="admin_cleanup_reset", target=target)
+    deleted_files = _delete_cleanup_files(file_candidates)
+    cleared_records = 0
+    if target == "processed-artifacts":
+        cleared_records = _strip_processed_fields_from_videos()
+    else:
+        write_app_json(definition["file"], definition["default"])
+        cleared_records = before["record_count"]
+
+    after = _cleanup_target_status(target, definition)
+    result = {
+        "ok": True,
+        "target": target,
+        "label": definition["label"],
+        "before": before,
+        "after": after,
+        "cleared_records": cleared_records,
+        "deleted_files": deleted_files,
+        "backup_path": backup_path,
+        "file_backup_path": file_backup_path,
+        "file_backup_count": file_backup_count,
+    }
+    _append_audit(
+        actor,
+        action="admin_cleanup_reset",
+        target=target,
+        result="success",
+        metadata={
+            "confirm": confirm,
+            "cleared_records": cleared_records,
+            "deleted_files": deleted_files,
+            "backup_path": backup_path,
+            "file_backup_path": file_backup_path,
+            "file_backup_count": file_backup_count,
+        },
+    )
+    return JSONResponse(result)
 
 
 async def list_symptoms(request: Request) -> JSONResponse:
@@ -2163,6 +2797,10 @@ routes = [
     Route("/admin/users/{username}", delete_admin_user, methods=["DELETE"]),
     Route("/admin/sessions/revoke", revoke_admin_sessions, methods=["POST"]),
     Route("/admin/audit-log", list_admin_audit_log, methods=["GET"]),
+    Route("/admin/cleanup/status", admin_cleanup_status, methods=["GET"]),
+    Route("/admin/cleanup/{target}", admin_cleanup_reset, methods=["POST"]),
+    Route("/feedback", list_feedback, methods=["GET"]),
+    Route("/feedback", create_feedback, methods=["POST"]),
     Route("/patients", list_patients, methods=["GET"]),
     Route("/videos", list_videos, methods=["GET"]),
     Route("/videos/media/{stored_filename}", video_media, methods=["GET"]),
@@ -2173,6 +2811,15 @@ routes = [
     Route("/videos/{stored_filename}/analysis-jobs/cancel", cancel_analysis_job, methods=["POST"]),
     Route("/videos/{stored_filename}/analysis-jobs/retry", retry_analysis_job, methods=["POST"]),
     Route("/videos/{stored_filename}/analysis-jobs/rerun", rerun_analysis_job, methods=["POST"]),
+    Route("/pose-classifier/status", pose_classifier_status, methods=["GET"]),
+    Route("/pose-classifier/jobs", train_pose_classifier_job, methods=["POST"]),
+    Route("/pose-classifier/jobs/history", pose_classifier_history, methods=["GET"]),
+    Route("/videos/{stored_filename}/pose-classifier/apply", apply_pose_classifier_job, methods=["POST"]),
+    Route("/hf-sync/status", hf_sync_status, methods=["GET"]),
+    Route("/hf-sync/jobs", start_hf_metadata_sync, methods=["POST"]),
+    Route("/hf-sync/jobs/history", hf_sync_history, methods=["GET"]),
+    Route("/hf-sync/report", create_hf_report, methods=["POST"]),
+    Route("/videos/{stored_filename}/hf-sync/artifacts/{artifact_kind}", upload_hf_artifact, methods=["POST"]),
     Route("/videos/{stored_filename}/results", video_result_detail, methods=["GET"]),
     Route("/videos/{stored_filename}/analysis-frames", list_analysis_frames, methods=["GET"]),
     Route("/videos/{stored_filename}/analysis-frames/{image_id}", analysis_frame_image, methods=["GET"]),

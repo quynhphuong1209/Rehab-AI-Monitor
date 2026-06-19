@@ -4,18 +4,61 @@ import sys
 import time
 import zipfile
 
+import pytest
 from starlette.testclient import TestClient
 
 from auth.passwords import password_record_update
 from backend.config import BackendConfig
-from backend.main import analysis_jobs, app, tokens
+from backend.main import analysis_jobs, app, hf_workflow_jobs, pose_classifier_jobs, tokens
 from backend.repository import JsonRepository
 from models.schemas import ADMIN_ROLE, DOCTOR_ROLE, PATIENT_ROLE, RESEARCHER_ROLE
+from utils.checksum import write_sha256_sidecar
+from utils.pose_classifier_utils import FEATURE_COLS
+
+
+class FakePoseClassifier:
+    classes_ = [0, 1, 2]
+
+    def predict(self, X):
+        import numpy as np
+
+        return np.array([2 for _ in range(len(X))])
+
+    def predict_proba(self, X):
+        import numpy as np
+
+        return np.array([[0.05, 0.15, 0.80] for _ in range(len(X))])
 
 
 def _write(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+
+def _wait_for_pose_job(client, headers, status="success", timeout=2):
+    deadline = time.time() + timeout
+    latest = None
+    while time.time() < deadline:
+        latest = client.get("/pose-classifier/status", headers=headers)
+        assert latest.status_code == 200
+        job = latest.json()["latest_job"]
+        if job and job["status"] == status:
+            return job
+        time.sleep(0.01)
+    return latest.json()["latest_job"] if latest is not None else None
+
+
+def _wait_for_hf_job(client, headers, status="success", timeout=2):
+    deadline = time.time() + timeout
+    latest = None
+    while time.time() < deadline:
+        latest = client.get("/hf-sync/status", headers=headers)
+        assert latest.status_code == 200
+        job = latest.json()["latest_job"]
+        if job and job["status"] == status:
+            return job
+        time.sleep(0.01)
+    return latest.json()["latest_job"] if latest is not None else None
 
 
 def _configure_tmp_backend(tmp_path, monkeypatch):
@@ -96,7 +139,45 @@ def _configure_tmp_backend(tmp_path, monkeypatch):
     analysis_jobs.result_handler = None
     analysis_jobs.command_runner = subprocess.run
     analysis_jobs._running.clear()
+    analysis_jobs._queued.clear()
     analysis_jobs._cancel_events.clear()
+    while not analysis_jobs._queue.empty():
+        try:
+            analysis_jobs._queue.get_nowait()
+            analysis_jobs._queue.task_done()
+        except Exception:
+            break
+    pose_classifier_jobs.configure(
+        repo_root=tmp_path,
+        database_dir=db,
+        processed_dir=tmp_path / "processed_results",
+        videos_file=db / "video_list.json",
+        evaluations_file=db / "doctor_evaluations.json",
+    )
+    pose_classifier_jobs._running_job_id = ""
+    pose_classifier_jobs._queued_job_ids.clear()
+    while not pose_classifier_jobs._queue.empty():
+        try:
+            pose_classifier_jobs._queue.get_nowait()
+            pose_classifier_jobs._queue.task_done()
+        except Exception:
+            break
+    hf_workflow_jobs.configure(
+        repo_root=tmp_path,
+        database_dir=db,
+        upload_dir=tmp_path / "patient_uploads",
+        processed_dir=tmp_path / "processed_results",
+        token="",
+        dataset_id="",
+    )
+    hf_workflow_jobs._running_job_id = ""
+    hf_workflow_jobs._queued_job_ids.clear()
+    while not hf_workflow_jobs._queue.empty():
+        try:
+            hf_workflow_jobs._queue.get_nowait()
+            hf_workflow_jobs._queue.task_done()
+        except Exception:
+            break
     tokens._tokens.clear()
 
 
@@ -153,6 +234,46 @@ def test_backend_rejects_bad_login_and_requires_auth(tmp_path, monkeypatch):
 
     assert client.post("/auth/login", json={"username": "admin", "password": "bad"}).status_code == 401
     assert client.get("/videos").status_code == 401
+
+
+def test_backend_feedback_create_and_role_guarded_listing(tmp_path, monkeypatch):
+    _configure_tmp_backend(tmp_path, monkeypatch)
+    client = TestClient(app)
+    patient_login = client.post("/auth/login", json={"username": "patient01", "password": "patientpass"})
+    doctor_login = client.post("/auth/login", json={"username": "doctor", "password": "doctorpass"})
+    admin_login = client.post("/auth/login", json={"username": "admin", "password": "secret"})
+    researcher_login = client.post("/auth/login", json={"username": "researcher", "password": "researchpass"})
+    patient_headers = {"Authorization": f"Bearer {patient_login.json()['access_token']}"}
+    doctor_headers = {"Authorization": f"Bearer {doctor_login.json()['access_token']}"}
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    researcher_headers = {"Authorization": f"Bearer {researcher_login.json()['access_token']}"}
+
+    created = client.post(
+        "/feedback",
+        headers=patient_headers,
+        json={
+            "category": "workflow",
+            "message": "Can xem huong dan quay video ro hon.",
+            "contact_ok": True,
+            "token": "should_not_be_saved",
+        },
+    )
+
+    assert created.status_code == 201
+    body = created.json()["item"]
+    assert body["actor_username"] == "patient01"
+    assert body["actor_role"] == PATIENT_ROLE
+    assert body["category"] == "workflow"
+    assert body["contact_ok"] is True
+    assert "token" not in body
+    assert client.get("/feedback", headers=patient_headers).status_code == 403
+    assert client.get("/feedback", headers=doctor_headers).status_code == 403
+
+    admin_list = client.get("/feedback", headers=admin_headers)
+    researcher_list = client.get("/feedback", headers=researcher_headers)
+    assert admin_list.status_code == 200
+    assert researcher_list.status_code == 200
+    assert admin_list.json()["items"][0]["message"] == "Can xem huong dan quay video ro hon."
 
 
 def test_backend_registers_patient_account_and_logs_in(tmp_path, monkeypatch):
@@ -604,6 +725,10 @@ def test_backend_analysis_job_lifecycle_history_retry_rerun_options(tmp_path, mo
     }
     assert latest_job["steps"][0]["status"] == "done"
 
+    deadline = time.time() + 2
+    while analysis_jobs.is_running("patient_uploads/patient01_clip.mp4") and time.time() < deadline:
+        time.sleep(0.01)
+
     retry = client.post("/videos/patient01_clip.mp4/analysis-jobs/retry", headers=headers)
     assert retry.status_code == 202
     second_run_id = retry.json()["job"]["run_id"]
@@ -673,6 +798,226 @@ def test_backend_analysis_job_cancel_requires_role_and_marks_running_job(tmp_pat
     assert canceled.status_code == 200
     assert canceled.json()["job"]["status"] == "canceled"
     assert canceled.json()["job"]["job_meta"]["canceled_by"] == "researcher"
+
+
+def test_backend_pose_classifier_status_train_dry_run_and_permissions(tmp_path, monkeypatch):
+    _configure_tmp_backend(tmp_path, monkeypatch)
+    processed_dir = tmp_path / "processed_results"
+    processed_dir.mkdir()
+    rows = [
+        ",".join([*FEATURE_COLS, "dung", "gan_dung"]),
+        ",".join(["90", "170", *["0.5"] * (len(FEATURE_COLS) - 2), "1", "0"]),
+        ",".join(["120", "140", *["0.4"] * (len(FEATURE_COLS) - 2), "0", "1"]),
+        ",".join(["150", "120", *["0.3"] * (len(FEATURE_COLS) - 2), "0", "0"]),
+    ]
+    (processed_dir / "small_data.csv").write_text("\n".join(rows), encoding="utf-8")
+    client = TestClient(app)
+    researcher_login = client.post("/auth/login", json={"username": "researcher", "password": "researchpass"})
+    patient_login = client.post("/auth/login", json={"username": "patient01", "password": "patientpass"})
+    researcher_headers = {"Authorization": f"Bearer {researcher_login.json()['access_token']}"}
+    patient_headers = {"Authorization": f"Bearer {patient_login.json()['access_token']}"}
+
+    forbidden = client.get("/pose-classifier/status", headers=patient_headers)
+    status = client.get("/pose-classifier/status", headers=researcher_headers)
+    response = client.post(
+        "/pose-classifier/jobs",
+        headers=researcher_headers,
+        json={"dry_run": True, "min_samples": 2},
+    )
+
+    assert forbidden.status_code == 403
+    assert status.status_code == 200
+    assert status.json()["model"]["ready"] is False
+    assert response.status_code == 202
+    job = _wait_for_pose_job(client, researcher_headers)
+    assert job["status"] == "success"
+    assert job["action"] == "train"
+    assert job["dry_run"] is True
+    assert job["result"]["samples"] == 3
+    assert job["result"]["can_train"] is True
+
+
+def test_backend_pose_classifier_apply_updates_video_frame_and_metrics(tmp_path, monkeypatch):
+    pytest.importorskip("joblib")
+    _configure_tmp_backend(tmp_path, monkeypatch)
+    processed_dir = tmp_path / "processed_results"
+    db_dir = tmp_path / "database"
+    processed_dir.mkdir()
+    csv_path = processed_dir / "patient01_clip_data.csv"
+    frames_path = processed_dir / "patient01_clip_frames.json"
+    data_row = ",".join(["90", "170", *["0.5"] * (len(FEATURE_COLS) - 2), "1", "0"])
+    csv_path.write_text(",".join([*FEATURE_COLS, "dung", "gan_dung"]) + "\n" + data_row + "\n", encoding="utf-8")
+    frames_path.write_text(
+        json.dumps(
+            [{"index": 1, "dung": True, "gan_dung": False, "path": "frame_001.jpg", "note": "x" * 160}],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    _write(
+        db_dir / "video_list.json",
+        [
+            {
+                "username": "patient01",
+                "full_name": "Patient One",
+                "video_name": "clip.mp4",
+                "stored_filename": "patient01_clip.mp4",
+                "video_path": "patient_uploads/patient01_clip.mp4",
+                "df_path": "processed_results/patient01_clip_data.csv",
+                "all_frames_data_path": "processed_results/patient01_clip_frames.json",
+                "exercise": "Codman",
+                "metrics": {"do_chinh_xac": 91.0},
+            }
+        ],
+    )
+    _write(
+        db_dir / "doctor_evaluations.json",
+        [
+            {
+                "patient_username": "patient01",
+                "video_name": "clip.mp4",
+                "doctor_username": "AI_Researcher",
+            }
+        ],
+    )
+
+    import joblib
+
+    model_path = db_dir / "pose_classifier.pkl"
+    features_path = db_dir / "pose_classifier_features.json"
+    joblib.dump(FakePoseClassifier(), model_path)
+    write_sha256_sidecar(model_path)
+    features_path.write_text(
+        json.dumps({"feature_cols": FEATURE_COLS, "label_names": {"0": "Sai", "1": "Gan dung", "2": "Dung"}}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    client = TestClient(app)
+    researcher_login = client.post("/auth/login", json={"username": "researcher", "password": "researchpass"})
+    doctor_login = client.post("/auth/login", json={"username": "doctor", "password": "doctorpass"})
+    headers = {"Authorization": f"Bearer {researcher_login.json()['access_token']}"}
+    doctor_headers = {"Authorization": f"Bearer {doctor_login.json()['access_token']}"}
+
+    forbidden = client.post("/videos/patient01_clip.mp4/pose-classifier/apply", headers=doctor_headers, json={"dry_run": True})
+    response = client.post("/videos/patient01_clip.mp4/pose-classifier/apply", headers=headers, json={"dry_run": False})
+
+    assert forbidden.status_code == 403
+    assert response.status_code == 202
+    job = _wait_for_pose_job(client, headers)
+    assert job["status"] == "success"
+    assert job["action"] == "apply"
+    assert job["model_status"]["ready"] is True
+    assert job["result"]["updated"] == 1
+
+    csv_text = csv_path.read_text(encoding="utf-8")
+    frames = json.loads(frames_path.read_text(encoding="utf-8"))
+    videos = JsonRepository(BackendConfig(repo_root=tmp_path, database_dir=db_dir)).videos()
+    evaluations = JsonRepository(BackendConfig(repo_root=tmp_path, database_dir=db_dir)).evaluations()
+    assert "ml_label_text" in csv_text
+    assert frames[0]["ml_label_text"] == "Dung"
+    assert frames[0]["ml_probabilities"]["Đúng"] == 80.0
+    assert videos[0]["ml_accuracy"] == 100.0
+    assert videos[0]["metrics"]["ml_do_chinh_xac"] == 100.0
+    assert evaluations[0]["ml_accuracy"] == 100.0
+
+
+def test_backend_hf_sync_status_and_metadata_dry_run_are_guarded(tmp_path, monkeypatch):
+    _configure_tmp_backend(tmp_path, monkeypatch)
+    enabled_config = BackendConfig(
+        repo_root=tmp_path,
+        database_dir=tmp_path / "database",
+        hf_token="hf_secret_token",
+        hf_dataset_id="owner/dataset",
+    )
+    monkeypatch.setattr("backend.main.repo", JsonRepository(enabled_config))
+
+    def fake_download(rel_path, **kwargs):
+        assert kwargs["token"] == "hf_secret_token"
+        if rel_path == "video_list.json":
+            return b'[{"username":"patient01","video_name":"remote.mp4"}]', None
+        return b"[]", None
+
+    monkeypatch.setattr("backend.hf_workflow.download_dataset_file_bytes", fake_download)
+    client = TestClient(app)
+    researcher_login = client.post("/auth/login", json={"username": "researcher", "password": "researchpass"})
+    patient_login = client.post("/auth/login", json={"username": "patient01", "password": "patientpass"})
+    headers = {"Authorization": f"Bearer {researcher_login.json()['access_token']}"}
+    patient_headers = {"Authorization": f"Bearer {patient_login.json()['access_token']}"}
+
+    forbidden = client.get("/hf-sync/status", headers=patient_headers)
+    status = client.get("/hf-sync/status", headers=headers)
+    response = client.post(
+        "/hf-sync/jobs",
+        headers=headers,
+        json={"dry_run": True, "files": ["video_list.json", "users.json"]},
+    )
+
+    assert forbidden.status_code == 403
+    assert status.status_code == 200
+    body = status.json()
+    assert body["hf"]["dataset_id"] == "owner/dataset"
+    assert body["hf"]["token_configured"] is True
+    assert "hf_secret_token" not in json.dumps(body)
+    assert response.status_code == 202
+    job = _wait_for_hf_job(client, headers)
+    assert job["status"] == "success"
+    assert job["result"]["dry_run"] is True
+    assert "users.json" in job["result"]["skipped"]
+    videos = JsonRepository(BackendConfig(repo_root=tmp_path, database_dir=tmp_path / "database")).videos()
+    assert videos[0]["video_name"] == "a.mp4"
+
+
+def test_backend_hf_upload_artifact_and_report_dry_run(tmp_path, monkeypatch):
+    _configure_tmp_backend(tmp_path, monkeypatch)
+    enabled_config = BackendConfig(
+        repo_root=tmp_path,
+        database_dir=tmp_path / "database",
+        hf_token="hf_secret_token",
+        hf_dataset_id="owner/dataset",
+    )
+    monkeypatch.setattr("backend.main.repo", JsonRepository(enabled_config))
+    processed_dir = tmp_path / "processed_results"
+    upload_dir = tmp_path / "patient_uploads"
+    processed_dir.mkdir()
+    upload_dir.mkdir()
+    artifact = processed_dir / "patient01_clip_data.csv"
+    artifact.write_text("frame,goc_vai\n1,90\n", encoding="utf-8")
+    (upload_dir / "patient01_clip.mp4").write_bytes(b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 128)
+    _write(
+        tmp_path / "database" / "video_list.json",
+        [
+            {
+                "username": "patient01",
+                "full_name": "Patient One",
+                "video_name": "clip.mp4",
+                "stored_filename": "patient01_clip.mp4",
+                "video_path": "patient_uploads/patient01_clip.mp4",
+                "df_path": "processed_results/patient01_clip_data.csv",
+                "exercise": "Codman",
+            }
+        ],
+    )
+    client = TestClient(app)
+    researcher_login = client.post("/auth/login", json={"username": "researcher", "password": "researchpass"})
+    headers = {"Authorization": f"Bearer {researcher_login.json()['access_token']}"}
+
+    upload = client.post(
+        "/videos/patient01_clip.mp4/hf-sync/artifacts/angle-csv",
+        headers=headers,
+        json={"dry_run": True},
+    )
+    assert upload.status_code == 202
+    upload_job = _wait_for_hf_job(client, headers)
+    assert upload_job["status"] == "success"
+    assert upload_job["result"]["path_in_repo"] == "processed_results/patient01_clip_data.csv"
+    assert "hf_secret_token" not in json.dumps(upload_job)
+
+    report = client.post("/hf-sync/report", headers=headers, json={"dry_run": True})
+    assert report.status_code == 202
+    report_job = _wait_for_hf_job(client, headers)
+    assert report_job["status"] == "success"
+    assert "excludes patient identifiers" in report_job["result"]["preview"]
+    assert not (tmp_path / "docs" / "generated" / "sync_report.md").exists()
 
 
 def test_backend_lists_and_downloads_analysis_artifacts_for_visible_video(tmp_path, monkeypatch):
@@ -1542,6 +1887,104 @@ def test_backend_admin_ops_are_admin_only(tmp_path, monkeypatch):
         headers=headers,
         json={"confirm": "REVOKE ALL SESSIONS"},
     ).status_code == 403
+    assert client.get("/admin/cleanup/status", headers=headers).status_code == 403
+    assert client.post(
+        "/admin/cleanup/evaluations",
+        headers=headers,
+        json={"confirm": "RESET EVALUATIONS"},
+    ).status_code == 403
+
+
+def test_backend_admin_cleanup_resets_json_groups_with_backup_and_audit(tmp_path, monkeypatch):
+    _configure_tmp_backend(tmp_path, monkeypatch)
+    client = TestClient(app)
+    login = client.post("/auth/login", json={"username": "admin", "password": "secret"})
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    status = client.get("/admin/cleanup/status", headers=headers)
+    assert status.status_code == 200
+    items = {item["target"]: item for item in status.json()["items"]}
+    assert items["evaluations"]["record_count"] == 2
+    assert items["symptoms"]["confirm"] == "RESET SYMPTOMS"
+
+    bad_confirm = client.post(
+        "/admin/cleanup/evaluations",
+        headers=headers,
+        json={"confirm": "RESET WRONG"},
+    )
+    assert bad_confirm.status_code == 400
+
+    reset = client.post(
+        "/admin/cleanup/evaluations",
+        headers=headers,
+        json={"confirm": "RESET EVALUATIONS"},
+    )
+    assert reset.status_code == 200
+    assert reset.json()["cleared_records"] == 2
+    assert reset.json()["before"]["record_count"] == 2
+    assert reset.json()["after"]["record_count"] == 0
+    assert client.get("/evaluations", headers=headers).json()["count"] == 0
+
+    audit = client.get("/admin/audit-log", headers=headers).json()
+    assert any(item["action"] == "admin_cleanup_reset" and item["target"] == "evaluations" for item in audit["items"])
+    assert (tmp_path / "backups" / "admin_ops").exists()
+
+
+def test_backend_admin_cleanup_resets_video_files_and_processed_artifacts(tmp_path, monkeypatch):
+    _configure_tmp_backend(tmp_path, monkeypatch)
+    upload_dir = tmp_path / "patient_uploads"
+    processed_dir = tmp_path / "processed_results"
+    upload_dir.mkdir()
+    processed_dir.mkdir()
+    original = upload_dir / "patient01_clip.mp4"
+    processed = processed_dir / "processed_patient01_clip.mp4"
+    csv_file = processed_dir / "patient01_clip_data.csv"
+    frames_json = processed_dir / "patient01_clip_frames.json"
+    frames_zip = processed_dir / "patient01_clip_frames.zip"
+    for path in (original, processed, csv_file, frames_json, frames_zip):
+        path.write_bytes(b"data")
+    video_record = {
+        "username": "patient01",
+        "full_name": "Patient One",
+        "video_name": "clip.mp4",
+        "stored_filename": "patient01_clip.mp4",
+        "video_path": "patient_uploads/patient01_clip.mp4",
+        "processed_path": "processed_results/processed_patient01_clip.mp4",
+        "df_path": "processed_results/patient01_clip_data.csv",
+        "all_frames_data_path": "processed_results/patient01_clip_frames.json",
+        "frames_zip_path": "processed_results/patient01_clip_frames.zip",
+        "exercise": "Codman",
+    }
+    _write(tmp_path / "database" / "video_list.json", [video_record])
+
+    client = TestClient(app)
+    login = client.post("/auth/login", json={"username": "admin", "password": "secret"})
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    reset_processed = client.post(
+        "/admin/cleanup/processed-artifacts",
+        headers=headers,
+        json={"confirm": "RESET PROCESSED ARTIFACTS"},
+    )
+    assert reset_processed.status_code == 200
+    assert reset_processed.json()["deleted_files"] == 4
+    assert original.exists()
+    assert not processed.exists()
+    videos = JsonRepository(BackendConfig(repo_root=tmp_path, database_dir=tmp_path / "database")).videos()
+    assert videos[0]["video_path"] == "patient_uploads/patient01_clip.mp4"
+    assert videos[0]["processed_path"] is None
+    assert videos[0]["df_path"] is None
+
+    reset_videos = client.post(
+        "/admin/cleanup/videos",
+        headers=headers,
+        json={"confirm": "RESET VIDEOS"},
+    )
+    assert reset_videos.status_code == 200
+    assert reset_videos.json()["cleared_records"] == 1
+    assert reset_videos.json()["deleted_files"] == 1
+    assert not original.exists()
+    assert JsonRepository(BackendConfig(repo_root=tmp_path, database_dir=tmp_path / "database")).videos() == []
 
 
 def test_backend_researcher_gets_pseudonymized_records(tmp_path, monkeypatch):

@@ -249,7 +249,7 @@ Tieu chi xong:
 
 ## Phase C - Analysis job nang cao
 
-Trang thai: Da trien khai slice job lifecycle dau tien ngay 2026-06-19.
+Trang thai: Da trien khai job lifecycle va queue nhe ngay 2026-06-19.
 
 Muc tieu: NCV dieu khien job AI nhu mot workflow that, khong chi start/poll.
 
@@ -266,60 +266,64 @@ Viec can lam:
   - [x] resize width;
   - [x] confidence.
 - [x] Hien thi tien trinh 4 buoc.
-- [ ] Tach runner dai han ra background job queue nhe neu can.
+- [x] Tach runner dai han ra background job queue nhe neu can.
 
 Tieu chi xong:
 
 - [x] Cancel khong lam hong progress file.
 - [x] Retry/rerun tao job moi co metadata ro.
 - [x] Job loi hien error message co ich, khong leak path/token nhay cam.
-- [ ] Neu bat AI runner that trong production, can queue/worker rieng thay vi thread process noi bo.
+- [x] Neu bat AI runner that trong production, can queue/worker rieng thay vi thread process noi bo.
 
 ## Phase D - Pose classifier va ML workflow
+
+Trang thai: Da trien khai slice train/apply backend + React dau tien ngay 2026-06-19.
 
 Muc tieu: dua train/apply classifier tu Streamlit/script sang backend/React.
 
 Viec can lam:
 
-- Backend API train pose classifier.
-- Backend API xem status model/checksum.
-- Backend API apply classifier cho video da phan tich.
-- React UI cho NCV:
-  - train;
-  - dry-run;
-  - apply;
-  - xem ket qua gan nhan ML.
+- [x] Backend API train pose classifier.
+- [x] Backend API xem status model/checksum.
+- [x] Backend API apply classifier cho video da phan tich.
+- [x] React UI cho NCV:
+  - [x] train;
+  - [x] dry-run;
+  - [x] apply;
+  - [x] xem ket qua gan nhan ML.
 
 Tieu chi xong:
 
-- Model pickle/joblib van can checksum sidecar.
-- Train/apply co dry-run.
-- Khong block request lau neu job nang.
+- [x] Model pickle/joblib van can checksum sidecar.
+- [x] Train/apply co dry-run.
+- [x] Khong block request lau neu job nang.
 
 ## Phase E - Hugging Face sync/report
+
+Trang thai: Da trien khai slice guarded sync/report backend + React dau tien ngay 2026-06-19.
 
 Muc tieu: dua sync/report vao backend co guard thay vi thao tac thu cong trong Streamlit.
 
 Viec can lam:
 
-- API sync metadata/artifacts tu HF Dataset.
-- API upload artifact hop le len HF Dataset.
-- API tao report/export sanitize.
-- UI NCV/admin:
-  - sync status;
-  - dry-run;
-  - conflict summary;
-  - download report.
+- [x] API sync metadata/artifacts tu HF Dataset.
+- [x] API upload artifact hop le len HF Dataset.
+- [x] API tao report/export sanitize.
+- [x] UI NCV/admin:
+  - [x] sync status;
+  - [x] dry-run;
+  - [x] conflict summary;
+  - [x] download report.
 
 Tieu chi xong:
 
-- Mac dinh khong sync `users.json`.
-- Token khong bao gio tra ve frontend.
-- Moi sync co audit log.
+- [x] Mac dinh khong sync `users.json`.
+- [x] Token khong bao gio tra ve frontend.
+- [x] Moi sync co audit log.
 
 ## Phase F - Admin van hanh
 
-Trang thai: Da trien khai slice audit/session/user ops dau tien ngay 2026-06-19.
+Trang thai: Da trien khai audit/session/user ops va cleanup/reset theo nhom ngay 2026-06-19.
 
 Muc tieu: React thay the cac tac vu quan tri quan trong cua Streamlit.
 
@@ -329,62 +333,66 @@ Viec can lam:
 - [x] Revoke all sessions API/UI.
 - [x] Lock/unlock user.
 - [x] Reset password voi `must_change_password`.
-- Cleanup/reset tung nhom du lieu:
-  - evaluations;
-  - symptoms;
-  - schedules;
-  - videos/temp files;
-  - processed artifacts.
+- [x] Cleanup/reset tung nhom du lieu:
+  - [x] evaluations;
+  - [x] symptoms;
+  - [x] schedules;
+  - [x] videos/temp files;
+  - [x] processed artifacts.
 - [x] Backup truoc destructive action user ops.
-- [ ] Backup truoc cleanup/reset tung nhom du lieu.
+- [x] Backup truoc cleanup/reset tung nhom du lieu.
 
 Tieu chi xong:
 
 - [x] Revoke all sessions va delete user can confirm text.
-- [ ] Cleanup/reset destructive action can confirm text.
+- [x] Cleanup/reset destructive action can confirm text.
 - [x] Co audit log gom actor, action, target, timestamp.
 - [x] Co test permission admin-only cho audit/revoke/lock/reset.
 
 ## Phase G - Static/info pages
 
+Trang thai: Da trien khai React info workspace + feedback backend ngay 2026-06-19.
+
 Muc tieu: React co day du cac trang noi dung dang con o Streamlit/docs.
 
 Viec can lam:
 
-- Huong dan su dung theo role.
-- Kien thuc PHCN.
-- Cong nghe AI.
-- Thong tin de tai/thanh vien/lien he.
-- Form phan hoi neu can backend luu.
+- [x] Huong dan su dung theo role.
+- [x] Kien thuc PHCN.
+- [x] Cong nghe AI.
+- [x] Thong tin de tai/thanh vien/lien he.
+- [x] Form phan hoi neu can backend luu.
 
 Tieu chi xong:
 
-- Noi dung khong chua PII/default password/secrets.
-- Responsive mobile/desktop.
-- Khong lam thanh landing page marketing; giu trong workspace/app shell.
+- [x] Noi dung khong chua PII/default password/secrets.
+- [x] Responsive mobile/desktop.
+- [x] Khong lam thanh landing page marketing; giu trong workspace/app shell.
 
 ## Phase H - Production gate
+
+Trang thai: Da trien khai CI/release gate, migration dry-run/apply/rollback va checklist production ngay 2026-06-19. Runtime van doc JSON; SQLite migration hien la gate/tooling truoc khi switch repository storage.
 
 Muc tieu: truoc deploy that, co gate tu dong va migration data ben vung.
 
 Viec can lam:
 
-- CI:
-  - Python unit tests;
-  - backend compile;
-  - `npm run lint`;
-  - `npm run build`;
-  - Playwright smoke.
-- Migration JSON sang SQLite/Postgres.
-- Background job system cho AI.
-- Privacy/compliance checklist.
-- Release checklist.
+- [x] CI:
+  - [x] Python unit tests;
+  - [x] backend compile;
+  - [x] `npm run lint`;
+  - [x] `npm run build`;
+  - [x] Playwright smoke.
+- [x] Migration JSON sang SQLite/Postgres.
+- [x] Background job system cho AI.
+- [x] Privacy/compliance checklist.
+- [x] Release checklist.
 
 Tieu chi xong:
 
-- Khong deploy neu unit/build/e2e smoke fail.
-- Co backup/migration rollback.
-- Co config production rieng cho secrets/CORS/storage.
+- [x] Khong deploy neu unit/build/e2e smoke fail.
+- [x] Co backup/migration rollback.
+- [x] Co config production rieng cho secrets/CORS/storage.
 
 ## Thu tu lam gan nhat
 

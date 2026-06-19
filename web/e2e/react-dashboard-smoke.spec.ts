@@ -266,4 +266,12 @@ test('patient can log in and see scoped dashboard data', async ({ page }) => {
 
   await navigation.getByRole('button', { name: /Lịch của tôi/ }).click();
   await expect(page.getByText('Tập Codman')).toBeVisible();
+
+  await navigation.getByRole('button', { name: /Thông tin/ }).click();
+  await expect(page.getByRole('heading', { name: 'Kiến thức PHCN' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Công nghệ AI' })).toBeVisible();
+  await page.getByLabel('Nhóm phản hồi').selectOption('content');
+  await page.getByRole('textbox', { name: 'Nội dung' }).fill('Cần thêm ví dụ về cách đặt camera.');
+  await page.getByRole('button', { name: 'Gửi phản hồi' }).click();
+  await expect(page.getByText('Đã gửi phản hồi')).toBeVisible();
 });

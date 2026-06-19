@@ -6,7 +6,58 @@ on:
   workflow_dispatch:
 
 jobs:
+  production-gate:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements-prod.txt
+            requirements-dev.txt
+
+      - name: Install Python dependencies
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements-prod.txt -r requirements-dev.txt
+
+      - name: Backend compile and unit tests
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe -m compileall backend auth cloud models storage video utils scripts tests
+          .\.venv\Scripts\python.exe -m pytest tests\unit
+          .\.venv\Scripts\python.exe scripts\migrate_json_to_sqlite.py --repo-root . --dry-run
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: Frontend lint/build/smoke
+        shell: pwsh
+        run: |
+          cd web
+          npm ci
+          npm run lint
+          npm run build
+          npx playwright install chromium
+          npm run e2e:smoke
+
   sync:
+    needs: production-gate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

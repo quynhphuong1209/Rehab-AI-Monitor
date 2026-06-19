@@ -18,6 +18,25 @@ export type AuditLogRecord = {
   metadata?: Record<string, unknown>;
 };
 
+export type FeedbackRecord = {
+  id?: string;
+  timestamp?: string;
+  actor_username?: string;
+  actor_role?: string;
+  category?: string;
+  message?: string;
+  contact_ok?: boolean;
+  page?: string;
+  status?: string;
+};
+
+export type CreateFeedbackPayload = {
+  category: string;
+  message: string;
+  contact_ok?: boolean;
+  page?: string;
+};
+
 export type VideoRecord = {
   username?: string;
   patient_username?: string;
@@ -133,6 +152,99 @@ export type AnalysisJobActionResult = {
 
 export type AnalysisJobHistoryResult = {
   items: AnalysisJob[];
+  count: number;
+};
+
+export type PoseClassifierModelStatus = {
+  ready: boolean;
+  checksum_ok: boolean;
+  checksum_required: boolean;
+  model_path?: string;
+  features_path?: string;
+  checksum_path?: string;
+  checksum?: string | null;
+  model_mtime?: string | null;
+  feature_count?: number;
+  labels?: Record<string, string>;
+};
+
+export type PoseClassifierJob = {
+  job_id: string;
+  action: 'train' | 'apply' | string;
+  status: string;
+  progress: number;
+  requested_by?: string;
+  dry_run?: boolean;
+  stored_filename?: string;
+  min_samples?: number;
+  start_time?: number;
+  elapsed?: number;
+  updated_at?: string;
+  status_msg?: string;
+  error_msg?: string;
+  result?: Record<string, unknown>;
+  model_status?: PoseClassifierModelStatus;
+};
+
+export type PoseClassifierStatusResult = {
+  model: PoseClassifierModelStatus;
+  latest_job: PoseClassifierJob | null;
+};
+
+export type PoseClassifierJobStartResult = {
+  started: boolean;
+  reason: string;
+  job: PoseClassifierJob | null;
+};
+
+export type PoseClassifierHistoryResult = {
+  items: PoseClassifierJob[];
+  count: number;
+};
+
+export type HfSyncStatus = {
+  configured: boolean;
+  token_configured: boolean;
+  dataset_id?: string;
+  token_fingerprint?: string;
+  verify_ok?: boolean;
+  message?: string;
+  allowed_sync_files: string[];
+  files?: string[];
+};
+
+export type HfSyncJob = {
+  job_id: string;
+  action: 'sync' | 'upload' | 'report' | string;
+  status: string;
+  progress: number;
+  requested_by?: string;
+  dry_run?: boolean;
+  files?: string[];
+  stored_filename?: string;
+  artifact_kind?: string;
+  start_time?: number;
+  elapsed?: number;
+  updated_at?: string;
+  status_msg?: string;
+  error_msg?: string;
+  result?: Record<string, unknown>;
+  hf_status?: HfSyncStatus;
+};
+
+export type HfSyncStatusResult = {
+  hf: HfSyncStatus;
+  latest_job: HfSyncJob | null;
+};
+
+export type HfSyncJobStartResult = {
+  started: boolean;
+  reason: string;
+  job: HfSyncJob | null;
+};
+
+export type HfSyncHistoryResult = {
+  items: HfSyncJob[];
   count: number;
 };
 
@@ -455,6 +567,27 @@ export type RevokeSessionsResult = {
   global_session_version?: number;
 };
 
+export type CleanupTarget = {
+  target: string;
+  label: string;
+  confirm: string;
+  record_count: number;
+  file_count: number;
+};
+
+export type CleanupResetResult = {
+  ok: boolean;
+  target: string;
+  label: string;
+  before: CleanupTarget;
+  after: CleanupTarget;
+  cleared_records: number;
+  deleted_files: number;
+  backup_path?: string;
+  file_backup_path?: string;
+  file_backup_count?: number;
+};
+
 export type ListResult<T> = {
   items: T[];
   count: number;
@@ -610,6 +743,27 @@ export const api = {
       },
       token,
     ),
+  cleanupStatus: (token: string) => request<ListResult<CleanupTarget>>('/admin/cleanup/status', {}, token),
+  resetCleanupTarget: (token: string, target: string, confirm: string) =>
+    request<CleanupResetResult>(
+      `/admin/cleanup/${encodeURIComponent(target)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ confirm }),
+      },
+      token,
+    ),
+  feedback: (token: string, limit = 100) =>
+    request<ListResult<FeedbackRecord>>(`/feedback?limit=${encodeURIComponent(String(limit))}`, {}, token),
+  createFeedback: (token: string, payload: CreateFeedbackPayload) =>
+    request<{ item: FeedbackRecord }>(
+      '/feedback',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      token,
+    ),
   deleteUser: (token: string, username: string) =>
     request<{ ok: boolean; username: string }>(
       `/admin/users/${encodeURIComponent(username)}`,
@@ -658,6 +812,61 @@ export const api = {
       {
         method: 'POST',
         body: JSON.stringify(options),
+      },
+      token,
+    ),
+  poseClassifierStatus: (token: string) => request<PoseClassifierStatusResult>('/pose-classifier/status', {}, token),
+  poseClassifierHistory: (token: string) =>
+    request<PoseClassifierHistoryResult>('/pose-classifier/jobs/history', {}, token),
+  trainPoseClassifier: (token: string, payload: { dry_run?: boolean; min_samples?: number }) =>
+    request<PoseClassifierJobStartResult>(
+      '/pose-classifier/jobs',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      token,
+    ),
+  applyPoseClassifier: (token: string, storedFilename: string, payload: { dry_run?: boolean }) =>
+    request<PoseClassifierJobStartResult>(
+      `/videos/${encodeURIComponent(storedFilename)}/pose-classifier/apply`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      token,
+    ),
+  hfSyncStatus: (token: string, params: { verify?: boolean; listFiles?: boolean } = {}) =>
+    request<HfSyncStatusResult>(
+      `/hf-sync/status?verify=${encodeURIComponent(String(Boolean(params.verify)))}&list_files=${encodeURIComponent(String(Boolean(params.listFiles)))}`,
+      {},
+      token,
+    ),
+  hfSyncHistory: (token: string) => request<HfSyncHistoryResult>('/hf-sync/jobs/history', {}, token),
+  startHfSync: (token: string, payload: { dry_run?: boolean; files?: string[] }) =>
+    request<HfSyncJobStartResult>(
+      '/hf-sync/jobs',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      token,
+    ),
+  createHfReport: (token: string, payload: { dry_run?: boolean }) =>
+    request<HfSyncJobStartResult>(
+      '/hf-sync/report',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      token,
+    ),
+  uploadHfArtifact: (token: string, storedFilename: string, artifactKind: string, payload: { dry_run?: boolean }) =>
+    request<HfSyncJobStartResult>(
+      `/videos/${encodeURIComponent(storedFilename)}/hf-sync/artifacts/${encodeURIComponent(artifactKind)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
       },
       token,
     ),

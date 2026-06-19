@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import queue
 import subprocess
 import threading
 import time
@@ -77,7 +78,10 @@ class BackendAnalysisJobs:
         self.ffmpeg_threads = max(1, int(ffmpeg_threads or 1))
         self.transcode_timeout_seconds = max(30, int(transcode_timeout_seconds or 30))
         self._lock = threading.Lock()
+        self._queue: queue.Queue[tuple[AnalysisJobRequest, float]] = queue.Queue()
+        self._worker: threading.Thread | None = None
         self._running: dict[str, threading.Thread] = {}
+        self._queued: dict[str, AnalysisJobRequest] = {}
         self._cancel_events: dict[str, threading.Event] = {}
 
     def configure(self, *, repo_root: Path, upload_dir: Path, processed_dir: Path | None = None) -> None:
@@ -308,7 +312,7 @@ class BackendAnalysisJobs:
     def is_running(self, video_path: str | os.PathLike[str] | None) -> bool:
         job_id = self.job_id_for_video_path(video_path)
         thread = self._running.get(job_id)
-        return bool(thread and thread.is_alive())
+        return bool(job_id in self._queued or (thread and thread.is_alive()))
 
     def is_cancel_requested(self, video_path: str | os.PathLike[str] | None) -> bool:
         event = self._cancel_events.get(self.job_id_for_video_path(video_path))
@@ -317,6 +321,148 @@ class BackendAnalysisJobs:
     def _raise_if_canceled(self, request: AnalysisJobRequest) -> None:
         if self.is_cancel_requested(request.video_path):
             raise AnalysisJobCanceled("analysis job was canceled")
+
+    def _ensure_worker_locked(self) -> None:
+        if self._worker and self._worker.is_alive():
+            return
+        self._worker = threading.Thread(
+            target=self._worker_loop,
+            daemon=True,
+            name="rehab-analysis-job-worker",
+        )
+        self._worker.start()
+
+    def _worker_loop(self) -> None:
+        while True:
+            run_request, started_at = self._queue.get()
+            job_id = self.job_id_for_video_path(run_request.video_path)
+            with self._lock:
+                queued_request = self._queued.get(job_id)
+                if queued_request and queued_request.run_id == run_request.run_id:
+                    self._queued.pop(job_id, None)
+                self._running[job_id] = threading.current_thread()
+            try:
+                self._run_job(run_request, started_at)
+            finally:
+                with self._lock:
+                    current = self._running.get(job_id)
+                    if current is threading.current_thread():
+                        self._running.pop(job_id, None)
+                    self._cancel_events.pop(job_id, None)
+                self._queue.task_done()
+
+    def _run_job(self, run_request: AnalysisJobRequest, started_at: float) -> None:
+        try:
+            self._raise_if_canceled(run_request)
+            self.write_progress(
+                run_request,
+                status="processing",
+                progress=0.05,
+                status_msg="Đang kiểm tra file video trên backend.",
+                start_time=started_at,
+            )
+            media_path = self.resolve_media_path(run_request.video_path)
+            if not media_path:
+                self.write_progress(
+                    run_request,
+                    status="error",
+                    progress=1.0,
+                    status_msg="Không tìm thấy file video hợp lệ để phân tích.",
+                    error_msg="video file is missing or outside allowed media roots",
+                    start_time=started_at,
+                )
+                return
+
+            def _progress(**kwargs: Any) -> None:
+                self._raise_if_canceled(run_request)
+                self.write_progress(run_request, start_time=started_at, **kwargs)
+
+            runner_request = AnalysisJobRequest(
+                actor_username=run_request.actor_username,
+                username=run_request.username,
+                video_name=run_request.video_name,
+                video_path=run_request.video_path,
+                exercise=run_request.exercise,
+                options={**run_request.options, "media_path": media_path},
+                run_id=run_request.run_id,
+                action=run_request.action,
+            )
+            result = self.runner(runner_request, _progress) or {}
+            if not isinstance(result, dict):
+                result = {}
+            self._raise_if_canceled(run_request)
+
+            terminal_request = runner_request
+            terminal_status = str(result.get("status") or "ready_for_ai_worker")
+            terminal_result = result
+            terminal_payload = result.get("result") if isinstance(result.get("result"), dict) else None
+            if terminal_status == "ready_for_ai_worker" and self.ai_runner:
+                analysis_input_path = str((terminal_payload or {}).get("analysis_input_path") or media_path)
+                self.write_progress(
+                    run_request,
+                    status="processing",
+                    progress=max(float(result.get("progress") or 0.0), 0.42),
+                    status_msg="Video đã sẵn sàng, đang chạy worker AI.",
+                    result=terminal_payload,
+                    start_time=started_at,
+                )
+                terminal_request = AnalysisJobRequest(
+                    actor_username=runner_request.actor_username,
+                    username=runner_request.username,
+                    video_name=runner_request.video_name,
+                    video_path=runner_request.video_path,
+                    exercise=runner_request.exercise,
+                    options={
+                        **runner_request.options,
+                        "analysis_input_path": analysis_input_path,
+                        "prep_result": result,
+                    },
+                    run_id=runner_request.run_id,
+                    action=runner_request.action,
+                )
+                terminal_result = self.ai_runner(terminal_request, analysis_input_path, _progress) or {}
+                if not isinstance(terminal_result, dict):
+                    terminal_result = {}
+                self._raise_if_canceled(run_request)
+                terminal_status = str(terminal_result.get("status") or "success")
+                terminal_payload = (
+                    terminal_result.get("result") if isinstance(terminal_result.get("result"), dict) else None
+                )
+
+            terminal_progress = 1.0 if terminal_status in {"success", "error"} else 0.12
+            if terminal_status == "success" and terminal_payload and self.result_handler:
+                self.result_handler(terminal_request, terminal_payload)
+            self.write_progress(
+                run_request,
+                status=terminal_status,
+                progress=float(terminal_result.get("progress", terminal_progress)),
+                status_msg=str(
+                    terminal_result.get("status_msg") or "Video đã sẵn sàng, đang chờ worker AI/transcode."
+                ),
+                error_msg=str(terminal_result.get("error_msg") or ""),
+                result=terminal_payload,
+                start_time=started_at,
+            )
+        except AnalysisJobCanceled:
+            current = self.read_progress(run_request.video_path) or {}
+            if str(current.get("status") or "") != "canceled":
+                self.write_progress(
+                    run_request,
+                    status="canceled",
+                    progress=float(current.get("progress") or 0.0),
+                    status_msg="Job phân tích đã được hủy.",
+                    result=current.get("result") if isinstance(current.get("result"), dict) else None,
+                    start_time=started_at,
+                )
+        except Exception as exc:
+            self.write_progress(
+                run_request,
+                status="error",
+                progress=1.0,
+                status_msg="Lỗi khi chuẩn bị job phân tích.",
+                error_msg=str(exc),
+                start_time=started_at,
+            )
 
     def cancel(self, request: AnalysisJobRequest, *, canceled_by: str) -> dict[str, Any]:
         job_id = self.job_id_for_video_path(request.video_path)
@@ -353,7 +499,7 @@ class BackendAnalysisJobs:
         job_id = self.job_id_for_video_path(request.video_path)
         with self._lock:
             thread = self._running.get(job_id)
-            if thread and thread.is_alive():
+            if job_id in self._queued or (thread and thread.is_alive()):
                 current = self.read_progress(request.video_path) or {}
                 return {
                     "started": False,
@@ -372,126 +518,9 @@ class BackendAnalysisJobs:
                 status_msg="Đã nhận yêu cầu phân tích, đang chuẩn bị video.",
                 start_time=started_at,
             )
-
-            def _target() -> None:
-                try:
-                    self._raise_if_canceled(run_request)
-                    self.write_progress(
-                        run_request,
-                        status="processing",
-                        progress=0.05,
-                        status_msg="Đang kiểm tra file video trên backend.",
-                        start_time=started_at,
-                    )
-                    media_path = self.resolve_media_path(run_request.video_path)
-                    if not media_path:
-                        self.write_progress(
-                            run_request,
-                            status="error",
-                            progress=1.0,
-                            status_msg="Không tìm thấy file video hợp lệ để phân tích.",
-                            error_msg="video file is missing or outside allowed media roots",
-                            start_time=started_at,
-                        )
-                        return
-
-                    def _progress(**kwargs: Any) -> None:
-                        self._raise_if_canceled(run_request)
-                        self.write_progress(run_request, start_time=started_at, **kwargs)
-
-                    runner_request = AnalysisJobRequest(
-                        actor_username=run_request.actor_username,
-                        username=run_request.username,
-                        video_name=run_request.video_name,
-                        video_path=run_request.video_path,
-                        exercise=run_request.exercise,
-                        options={**run_request.options, "media_path": media_path},
-                        run_id=run_request.run_id,
-                        action=run_request.action,
-                    )
-                    result = self.runner(runner_request, _progress) or {}
-                    if not isinstance(result, dict):
-                        result = {}
-                    self._raise_if_canceled(run_request)
-
-                    terminal_request = runner_request
-                    terminal_status = str(result.get("status") or "ready_for_ai_worker")
-                    terminal_result = result
-                    terminal_payload = result.get("result") if isinstance(result.get("result"), dict) else None
-                    if terminal_status == "ready_for_ai_worker" and self.ai_runner:
-                        analysis_input_path = str((terminal_payload or {}).get("analysis_input_path") or media_path)
-                        self.write_progress(
-                            run_request,
-                            status="processing",
-                            progress=max(float(result.get("progress") or 0.0), 0.42),
-                            status_msg="Video đã sẵn sàng, đang chạy worker AI.",
-                            result=terminal_payload,
-                            start_time=started_at,
-                        )
-                        terminal_request = AnalysisJobRequest(
-                            actor_username=runner_request.actor_username,
-                            username=runner_request.username,
-                            video_name=runner_request.video_name,
-                            video_path=runner_request.video_path,
-                            exercise=runner_request.exercise,
-                            options={
-                                **runner_request.options,
-                                "analysis_input_path": analysis_input_path,
-                                "prep_result": result,
-                            },
-                            run_id=runner_request.run_id,
-                            action=runner_request.action,
-                        )
-                        terminal_result = self.ai_runner(terminal_request, analysis_input_path, _progress) or {}
-                        if not isinstance(terminal_result, dict):
-                            terminal_result = {}
-                        self._raise_if_canceled(run_request)
-                        terminal_status = str(terminal_result.get("status") or "success")
-                        terminal_payload = (
-                            terminal_result.get("result") if isinstance(terminal_result.get("result"), dict) else None
-                        )
-
-                    terminal_progress = 1.0 if terminal_status in {"success", "error"} else 0.12
-                    if terminal_status == "success" and terminal_payload and self.result_handler:
-                        self.result_handler(terminal_request, terminal_payload)
-                    self.write_progress(
-                        run_request,
-                        status=terminal_status,
-                        progress=float(terminal_result.get("progress", terminal_progress)),
-                        status_msg=str(
-                            terminal_result.get("status_msg") or "Video đã sẵn sàng, đang chờ worker AI/transcode."
-                        ),
-                        error_msg=str(terminal_result.get("error_msg") or ""),
-                        result=terminal_payload,
-                        start_time=started_at,
-                    )
-                except AnalysisJobCanceled:
-                    current = self.read_progress(run_request.video_path) or {}
-                    if str(current.get("status") or "") != "canceled":
-                        self.write_progress(
-                            run_request,
-                            status="canceled",
-                            progress=float(current.get("progress") or 0.0),
-                            status_msg="Job phân tích đã được hủy.",
-                            result=current.get("result") if isinstance(current.get("result"), dict) else None,
-                            start_time=started_at,
-                        )
-                except Exception as exc:
-                    self.write_progress(
-                        run_request,
-                        status="error",
-                        progress=1.0,
-                        status_msg="Lỗi khi chuẩn bị job phân tích.",
-                        error_msg=str(exc),
-                        start_time=started_at,
-                    )
-                finally:
-                    self._running.pop(job_id, None)
-                    self._cancel_events.pop(job_id, None)
-
-            thread = threading.Thread(target=_target, daemon=True)
-            self._running[job_id] = thread
-            thread.start()
+            self._queued[job_id] = run_request
+            self._ensure_worker_locked()
+            self._queue.put((run_request, started_at))
             return {"started": True, "reason": "", "job": job}
 
     def _validate_transcode_runner(

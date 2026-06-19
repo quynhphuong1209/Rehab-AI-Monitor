@@ -47,6 +47,8 @@ class BackendConfig:
     ai_force_train_classifier: bool = False
     ai_enable_pose_classifier: bool = False
     ai_ffmpeg_threads: int = 2
+    hf_token: str = ""
+    hf_dataset_id: str = ""
 
     @classmethod
     def from_env(cls) -> "BackendConfig":
@@ -70,6 +72,8 @@ class BackendConfig:
             ai_force_train_classifier=_env_bool("REHAB_BACKEND_AI_FORCE_TRAIN_CLASSIFIER", False),
             ai_enable_pose_classifier=_env_bool("REHAB_BACKEND_AI_ENABLE_POSE_CLASSIFIER", False),
             ai_ffmpeg_threads=max(1, _env_int("REHAB_BACKEND_AI_FFMPEG_THREADS", _env_int("MAX_FFMPEG_THREADS", 2)) or 2),
+            hf_token=os.getenv("HF_TOKEN", "").strip(),
+            hf_dataset_id=(os.getenv("HF_DATASET_ID", "") or os.getenv("REHAB_HF_DATASET_ID", "")).strip(),
         )
 
     @property
@@ -103,6 +107,10 @@ class BackendConfig:
     @property
     def research_file(self) -> Path:
         return self.database_dir / "research_data.json"
+
+    @property
+    def feedback_file(self) -> Path:
+        return self.database_dir / "user_feedback.json"
 
     @property
     def audit_log_file(self) -> Path:

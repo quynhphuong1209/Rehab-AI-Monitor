@@ -1,6 +1,7 @@
 import json
 import threading
 import time
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -173,6 +174,53 @@ def test_cancel_marks_running_job_and_writes_history(tmp_path):
     assert history[0]["status"] == "canceled"
 
 
+def test_start_queues_jobs_in_single_background_worker(tmp_path):
+    first_video = tmp_path / "patient_uploads" / "first.mp4"
+    second_video = tmp_path / "patient_uploads" / "second.mp4"
+    first_video.parent.mkdir()
+    first_video.write_bytes(b"first")
+    second_video.write_bytes(b"second")
+    first_started = threading.Event()
+    release_first = threading.Event()
+    run_order = []
+
+    def queued_runner(request, progress):
+        run_order.append(Path(request.video_path).name)
+        if Path(request.video_path).name == "first.mp4":
+            first_started.set()
+            release_first.wait(1)
+        progress(status="processing", progress=0.22, status_msg="Queued runner.")
+        return {"status": "ready_for_ai_worker", "progress": 0.40, "result": {"analysis_input_path": request.video_path}}
+
+    jobs = BackendAnalysisJobs(
+        repo_root=tmp_path,
+        upload_dir=tmp_path / "patient_uploads",
+        runner=queued_runner,
+    )
+
+    first = jobs.start(_request(first_video))
+    assert first["started"] is True
+    assert first_started.wait(1)
+
+    second = jobs.start(_request(second_video))
+    assert second["started"] is True
+    time.sleep(0.05)
+    assert run_order == ["first.mp4"]
+    assert jobs.is_running(str(second_video))
+
+    release_first.set()
+    deadline = time.time() + 2
+    while jobs.is_running(str(first_video)) and time.time() < deadline:
+        time.sleep(0.01)
+    deadline = time.time() + 2
+    while jobs.is_running(str(second_video)) and time.time() < deadline:
+        time.sleep(0.01)
+
+    assert run_order == ["first.mp4", "second.mp4"]
+    assert jobs.read_progress(str(first_video))["status"] == "ready_for_ai_worker"
+    assert jobs.read_progress(str(second_video))["status"] == "ready_for_ai_worker"
+
+
 def test_rerun_creates_new_run_id_and_preserves_public_options(tmp_path):
     video_path = tmp_path / "patient_uploads" / "clip.mp4"
     video_path.parent.mkdir()
@@ -235,6 +283,7 @@ def test_rerun_creates_new_run_id_and_preserves_public_options(tmp_path):
 
 def test_backend_mediapipe_ai_runner_wraps_processing_result(tmp_path):
     pd = pytest.importorskip("pandas")
+    pytest.importorskip("cv2")
     assert pd is not None
 
     input_path = tmp_path / "patient_uploads" / "clip.mp4"

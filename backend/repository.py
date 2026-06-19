@@ -46,5 +46,8 @@ class JsonRepository:
     def research_records(self) -> list[dict[str, Any]]:
         return _as_list(read_app_json(self.config.research_file, default=[]).data)
 
+    def feedback(self) -> list[dict[str, Any]]:
+        return _as_list(read_app_json(self.config.feedback_file, default=[]).data)
+
     def audit_log(self) -> list[dict[str, Any]]:
         return _as_list(read_app_json(self.config.audit_log_file, default=[]).data)
